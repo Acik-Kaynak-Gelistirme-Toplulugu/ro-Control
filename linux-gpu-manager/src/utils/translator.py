@@ -95,6 +95,10 @@ class Translator:
             "type_closed_desc": "Üretici resmi sürücüsü,\nyüksek oyun performansı.",
             "err_amd_pro_title": "AMD Proprietary",
             "err_amd_pro_desc": "AMD için en iyi deneyimi Açık Kaynak sunar. Açık Kaynak (Mesa) kurulacak.",
+            # --- Theme ---
+            "tooltip_theme_system": "Tema: Sistem",
+            "tooltip_theme_dark": "Tema: Koyu",
+            "tooltip_theme_light": "Tema: Açık",
         },
         "en": {
             # --- Main Window ---
@@ -184,6 +188,11 @@ class Translator:
             "type_closed_desc": "Manufacturer official driver,\nhigh gaming performance.",
             "err_amd_pro_title": "AMD Proprietary",
             "err_amd_pro_desc": "Open Source offers the best experience for AMD. Installing Open Source (Mesa).",
+            
+            # --- Theme ---
+            "tooltip_theme_system": "Theme: System",
+            "tooltip_theme_dark": "Theme: Dark",
+            "tooltip_theme_light": "Theme: Light",
         }
     }
     

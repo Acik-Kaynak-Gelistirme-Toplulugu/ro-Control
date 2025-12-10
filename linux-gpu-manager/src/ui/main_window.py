@@ -70,7 +70,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # Tema Butonu
         self.theme_btn = Gtk.Button()
         self.theme_btn.set_icon_name("computer-symbolic")
-        self.theme_btn.set_tooltip_text("Tema: Sistem")
+        self.theme_btn.set_tooltip_text(Translator.tr("tooltip_theme_system"))
         self.theme_btn.connect("clicked", self.toggle_theme)
         header.pack_end(self.theme_btn)
         
@@ -113,9 +113,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.perf_view = PerformanceView()
         self.progress_view = self.create_progress_view() # Yeni İlerleme Ekranı
 
-        self.stack.add_titled(self.simple_view, "simple", "Kurulum")
+        self.stack.add_titled(self.simple_view, "simple", Translator.tr("tab_install"))
         self.stack.add_named(self.expert_view, "expert") # Switcher'da görünmez
-        self.stack.add_titled(self.perf_view, "performance", "Performans")
+        self.stack.add_titled(self.perf_view, "performance", Translator.tr("tab_perf"))
         self.stack.add_named(self.progress_view, "progress") # İşlem sırasındaki ekran
         
         # İlk tarama
@@ -500,7 +500,7 @@ class MainWindow(Gtk.ApplicationWindow):
                         f.write(self.log_buffer.get_text(self.log_buffer.get_start_iter(), self.log_buffer.get_end_iter(), True))
                 except: passed
             dlg.destroy()
-        d.connect("response", resp); d.show()
+        d.connect("response", resp); d.present()
 
     def validate_and_start(self, action, desc):
         if not self.check_network() and action != "remove":
@@ -526,7 +526,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.target_action = action
             self.start_transaction(desc, snapshot=should_snapshot)
         dialog.connect("response", on_resp)
-        dialog.show()
+        dialog.present()
 
     # --- Threading ---
     # --- Threading ---
@@ -633,14 +633,14 @@ class MainWindow(Gtk.ApplicationWindow):
     def apply_theme(self):
         # İkon ve Tooltip
         icon_name = "computer-symbolic"
-        tooltip = "Tema: Sistem"
+        tooltip = Translator.tr("tooltip_theme_system")
         
         if self.theme_mode == "dark":
             icon_name = "weather-clear-night-symbolic"
-            tooltip = "Tema: Koyu"
+            tooltip = Translator.tr("tooltip_theme_dark")
         elif self.theme_mode == "light":
             icon_name = "weather-clear-symbolic"
-            tooltip = "Tema: Açık"
+            tooltip = Translator.tr("tooltip_theme_light")
 
         if hasattr(self, "theme_btn"): 
             self.theme_btn.set_icon_name(icon_name)
@@ -795,13 +795,13 @@ class MainWindow(Gtk.ApplicationWindow):
         btn_open.connect("clicked", on_open_clicked)
         btn_closed.connect("clicked", on_closed_clicked)
         
-        dialog.show()
+        dialog.present()
 
     def show_error_dialog(self, title, message):
         dialog = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.OK, text=title)
         dialog.props.secondary_text = message
         dialog.connect("response", lambda d, r: d.destroy())
-        dialog.show()
+        dialog.present()
 
     def show_reboot_dialog(self):
         dialog = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO, text="İşlem Tamamlandı")
@@ -810,7 +810,7 @@ class MainWindow(Gtk.ApplicationWindow):
             d.destroy(); 
             if r == Gtk.ResponseType.YES: subprocess.Popen(["pkexec", "reboot"])
         dialog.connect("response", on_resp)
-        dialog.show()
+        dialog.present()
 
     def show_report_dialog(self, message):
         dialog = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.NONE, text="İşlem Başarısız")
@@ -820,7 +820,7 @@ class MainWindow(Gtk.ApplicationWindow):
         def on_response(d, rid):
             d.destroy()
             if rid == Gtk.ResponseType.YES: self.send_error_report(message)
-        dialog.connect("response", on_response); dialog.show()
+        dialog.connect("response", on_response); dialog.present()
 
     def send_error_report(self, error_msg):
         self.append_log("Raporlanıyor...")
