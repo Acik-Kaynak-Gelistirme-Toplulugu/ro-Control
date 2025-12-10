@@ -86,6 +86,15 @@ class Translator:
             "tool_flatpak": "Flatpak/Steam İzin Onarıcı:",
             "btn_repair": "Onar",
             "btn_repaired": "Tamamlandı",
+            
+            # --- Type Selection Dialog ---
+            "dialog_type_desc": "Hangi sürücü tipini kurmak istiyorsunuz?",
+            "type_open": "Açık Kaynak (Open Source)",
+            "type_open_desc": "Topluluk destekli, kararlı.",
+            "type_closed": "Kapalı Kaynak (Proprietary)",
+            "type_closed_desc": "Üretici resmi sürücüsü,\nyüksek oyun performansı.",
+            "err_amd_pro_title": "AMD Proprietary",
+            "err_amd_pro_desc": "AMD için en iyi deneyimi Açık Kaynak sunar. Açık Kaynak (Mesa) kurulacak.",
         },
         "en": {
             # --- Main Window ---
@@ -166,6 +175,15 @@ class Translator:
             "tool_flatpak": "Flatpak/Steam Permission Fixer:",
             "btn_repair": "Repair",
             "btn_repaired": "Done",
+            
+            # --- Type Selection Dialog ---
+            "dialog_type_desc": "Which driver type do you want to install?",
+            "type_open": "Open Source",
+            "type_open_desc": "Community supported, stable.",
+            "type_closed": "Proprietary",
+            "type_closed_desc": "Manufacturer official driver,\nhigh gaming performance.",
+            "err_amd_pro_title": "AMD Proprietary",
+            "err_amd_pro_desc": "Open Source offers the best experience for AMD. Installing Open Source (Mesa).",
         }
     }
     

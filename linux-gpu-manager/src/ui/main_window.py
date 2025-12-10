@@ -726,29 +726,75 @@ class MainWindow(Gtk.ApplicationWindow):
         win.set_child(main_vbox); win.present()
 
     def on_express_install_clicked(self, btn):
-        # Hızlı Kurulum Sihirbazı
+        # 1. Sürücü Tipi Seçimi (Open vs Closed)
+        # Kullanıcıya sor: Açık Kaynak mı Kapalı Kaynak mı?
+        
+        # Dialog Creation
+        dialog = Gtk.Dialog(title=Translator.tr("express_title"), transient_for=self, modal=True)
+        dialog.add_button(Translator.tr("btn_close"), Gtk.ResponseType.CANCEL)
+        
+        # Content Area
+        content_area = dialog.get_content_area()
+        content_area.set_spacing(20); content_area.set_margin_top(20); content_area.set_margin_bottom(20); content_area.set_margin_start(20); content_area.set_margin_end(20)
+        
+        lbl = Gtk.Label(label=Translator.tr("dialog_type_desc")); lbl.add_css_class("title-2")
+        content_area.append(lbl)
+        
+        # Buttons Box
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
+        btn_box.set_halign(Gtk.Align.CENTER)
+        
+        # Open Source Button
+        btn_open = Gtk.Button()
+        b_box_o = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        b_box_o.set_margin_top(10); b_box_o.set_margin_bottom(10); b_box_o.set_margin_start(10); b_box_o.set_margin_end(10)
+        l1 = Gtk.Label(label=Translator.tr("type_open"), xalign=0.5); l1.add_css_class("heading")
+        l2 = Gtk.Label(label=Translator.tr("type_open_desc"), xalign=0.5); l2.add_css_class("dim-label")
+        b_box_o.append(l1); b_box_o.append(l2)
+        btn_open.set_child(b_box_o)
+        
+        # Closed Source Button
+        btn_closed = Gtk.Button()
+        b_box_c = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        b_box_c.set_margin_top(10); b_box_c.set_margin_bottom(10); b_box_c.set_margin_start(10); b_box_c.set_margin_end(10)
+        l3 = Gtk.Label(label=Translator.tr("type_closed"), xalign=0.5); l3.add_css_class("heading")
+        l4 = Gtk.Label(label=Translator.tr("type_closed_desc"), xalign=0.5); l4.add_css_class("dim-label")
+        b_box_c.append(l3); b_box_c.append(l4)
+        btn_closed.set_child(b_box_c)
+        btn_closed.add_css_class("suggested-action")
+        
+        btn_box.append(btn_open)
+        btn_box.append(btn_closed)
+        content_area.append(btn_box)
+        
+        # Logic Helpers
         is_amd = "AMD" in self.gpu_info.get("vendor", "")
         best_ver = self.available_versions[0] if self.available_versions else "Auto"
         
-        dialog = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.OK_CANCEL, text=Translator.tr("dialog_express_title"))
-        
-        if is_amd:
-            desc = Translator.tr("dialog_express_desc_amd")
-            action_code = "install_amd_open"
-        else:
-            desc = Translator.tr("dialog_express_desc_nvidia", best_ver)
-            action_code = "install_nvidia_closed"
-            self.selected_version = best_ver # Otomatik seç
+        def on_open_clicked(x):
+            dialog.destroy()
+            if is_amd:
+                # AMD -> Open (Mesa)
+                self.validate_and_start("install_amd_open", Translator.tr("msg_trans_start"))
+            else:
+                # NVIDIA -> Open
+                self.selected_version = best_ver
+                self.validate_and_start("install_nvidia_open", Translator.tr("msg_trans_start"))
+                
+        def on_closed_clicked(x):
+            dialog.destroy()
+            if is_amd:
+                # AMD -> Closed (Pro) warning
+                self.show_error_dialog(Translator.tr("err_amd_pro_title"), Translator.tr("err_amd_pro_desc"))
+                self.validate_and_start("install_amd_open", Translator.tr("msg_trans_start"))
+            else:
+                # NVIDIA -> Closed
+                self.selected_version = best_ver
+                self.validate_and_start("install_nvidia_closed", Translator.tr("msg_trans_start"))
 
-        # dialog.format_secondary_text(desc) -> AttributeError Fix
-        dialog.props.secondary_text = desc
+        btn_open.connect("clicked", on_open_clicked)
+        btn_closed.connect("clicked", on_closed_clicked)
         
-        def on_resp(d, r):
-            d.destroy()
-            if r == Gtk.ResponseType.OK:
-                self.validate_and_start(action_code, Translator.tr("msg_trans_start"))
-        
-        dialog.connect("response", on_resp)
         dialog.show()
 
     def show_error_dialog(self, title, message):

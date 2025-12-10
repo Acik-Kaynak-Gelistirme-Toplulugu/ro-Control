@@ -33,25 +33,45 @@ class PerformanceView(Gtk.Box):
 
         info = self.detector.get_full_system_info()
         
+        # Labels
+        self.lbl_val_os = Gtk.Label(label=info.get("distro", "Linux"), xalign=0)
+        self.lbl_val_kernel = Gtk.Label(label=info.get("kernel", "Unknown"), xalign=0)
+        self.lbl_val_cpu = Gtk.Label(label=info.get("cpu", "Unknown"), xalign=0)
+        self.lbl_val_ram = Gtk.Label(label=info.get("ram", "Unknown"), xalign=0)
+        self.lbl_val_gpu = Gtk.Label(label=f"{info.get('vendor')} {info.get('model')}", xalign=0)
+
         # Helper to add rows
-        def add_row(idx, label, value, icon):
-            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        def add_row(idx, label, val_widget, icon):
             img = Gtk.Image.new_from_icon_name(icon)
             lbl_t = Gtk.Label(label=label, xalign=0); lbl_t.add_css_class("heading")
-            lbl_v = Gtk.Label(label=value, xalign=0)
-            
             grid.attach(img, 0, idx, 1, 1)
             grid.attach(lbl_t, 1, idx, 1, 1)
-            grid.attach(lbl_v, 2, idx, 1, 1)
+            grid.attach(val_widget, 2, idx, 1, 1)
 
-        add_row(0, Translator.tr("lbl_os"), info.get("distro", "Linux"), "applications-system-symbolic")
-        add_row(1, Translator.tr("lbl_kernel"), info.get("kernel", "Unknown"), "preferences-system-symbolic")
-        add_row(2, Translator.tr("lbl_cpu"), info.get("cpu", "Unknown"), "computer-chip-symbolic")
-        add_row(3, Translator.tr("lbl_ram"), info.get("ram", "Unknown"), "media-flash-symbolic")
-        add_row(4, Translator.tr("lbl_gpu"), f"{info.get('vendor')} {info.get('model')}", "video-display-symbolic")
+        add_row(0, Translator.tr("lbl_os"), self.lbl_val_os, "applications-system-symbolic")
+        add_row(1, Translator.tr("lbl_kernel"), self.lbl_val_kernel, "preferences-system-symbolic")
+        add_row(2, Translator.tr("lbl_cpu"), self.lbl_val_cpu, "computer-chip-symbolic")
+        add_row(3, Translator.tr("lbl_ram"), self.lbl_val_ram, "media-flash-symbolic")
+        add_row(4, Translator.tr("lbl_gpu"), self.lbl_val_gpu, "video-display-symbolic")
 
         frame.set_child(grid)
         self.append(frame)
+
+    def _refresh_full_info(self):
+        """Tüm bilgileri (Statik + Dinamik) yeniler."""
+        # 1. Statik Sistem Bilgisi (RAM, vb.)
+        # Dedektör önbelleğini temizle (varsa) ve yeniden oku
+        self.detector.detect(force_refresh=True) 
+        info = self.detector.get_full_system_info()
+        
+        self.lbl_val_os.set_text(info.get("distro", "Linux"))
+        self.lbl_val_kernel.set_text(info.get("kernel", "Unknown"))
+        self.lbl_val_cpu.set_text(info.get("cpu", "Unknown"))
+        self.lbl_val_ram.set_text(info.get("ram", "Unknown"))
+        self.lbl_val_gpu.set_text(f"{info.get('vendor')} {info.get('model')}")
+        
+        # 2. Canlı İstatistikler
+        self._update_stats()
 
     def _build_dashboard(self):
         # Container Box
@@ -64,7 +84,7 @@ class PerformanceView(Gtk.Box):
         btn_refresh = Gtk.Button()
         btn_refresh.set_icon_name("view-refresh-symbolic")
         btn_refresh.set_tooltip_text("Şimdi Yenile")
-        btn_refresh.connect("clicked", lambda x: self._update_stats())
+        btn_refresh.connect("clicked", lambda x: self._refresh_full_info())
         header_box.append(btn_refresh)
         container.append(header_box)
 

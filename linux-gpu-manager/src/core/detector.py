@@ -169,14 +169,25 @@ class SystemDetector:
         if platform.system() == "Darwin": return "16 GB (Simulated)"
         
         try:
-            out = self.runner.run("free -h")
-            # Mem: 16G ...
+            # LC_ALL=C ensures 'Mem:' label regardless of system language
+            out = self.runner.run("LC_ALL=C free -h")
             if out:
                 lines = out.split("\n")
                 for line in lines:
-                    if "Mem:" in line:
+                    if line.startswith("Mem:") or "Mem:" in line:
                         parts = line.split()
-                        return parts[1] # Total RAM
+                        # Mem: Total Used ... (Index 1 is Total)
+                        # But sometimes split behaves differently on spaces
+                        # free output:
+                        #               total        used        free      shared  buff/cache   available
+                        # Mem:           15Gi       3.2Gi        11Gi       1.0Mi       856Mi        11Gi
+                        # If "Mem:" is part[0], then part[1] is total.
+                        if parts[0].startswith("Mem"):
+                             return parts[1]
+                        # Handling verify
+                        for i, p in enumerate(parts):
+                             if "Mem" in p and i+1 < len(parts):
+                                  return parts[i+1]
         except: pass
         return "Unknown"
 
