@@ -337,6 +337,9 @@ class MainWindow(Gtk.ApplicationWindow):
         scroll.set_child(box)
         return scroll
 
+    def on_custom_install_clicked(self, btn):
+        self.stack.set_visible_child_name("expert")
+
     def create_progress_view(self):
         """İşlem sırasında gösterilecek odaklanmış ekran."""
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
@@ -351,8 +354,8 @@ class MainWindow(Gtk.ApplicationWindow):
         vbox.append(self.spinner)
         
         # Durum Metni
-        self.lbl_progress_title = Gtk.Label(label="İşlem Yapılıyor..."); self.lbl_progress_title.add_css_class("title-1")
-        self.lbl_progress_desc = Gtk.Label(label="Lütfen bekleyin, sistem yapılandırılıyor..."); self.lbl_progress_desc.add_css_class("dim-label")
+        self.lbl_progress_title = Gtk.Label(label=Translator.tr("msg_trans_start")); self.lbl_progress_title.add_css_class("title-1")
+        self.lbl_progress_desc = Gtk.Label(label=Translator.tr("msg_processing")); self.lbl_progress_desc.add_css_class("dim-label")
         vbox.append(self.lbl_progress_title)
         vbox.append(self.lbl_progress_desc)
         
@@ -385,7 +388,7 @@ class MainWindow(Gtk.ApplicationWindow):
         vbox.append(self.log_expander)
         
         # Bitiş Butonu (Başta gizli)
-        self.btn_done = Gtk.Button(label="Ana Menüye Dön")
+        self.btn_done = Gtk.Button(label=Translator.tr("btn_close")) # "Ana Menüye Dön" yerine "Kapat" daha kısa
         self.btn_done.add_css_class("suggested-action")
         self.btn_done.set_visible(False)
         self.btn_done.connect("clicked", lambda x: self.stack.set_visible_child_name("simple"))
