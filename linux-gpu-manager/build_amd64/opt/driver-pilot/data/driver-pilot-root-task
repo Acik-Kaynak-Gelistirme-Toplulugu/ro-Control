@@ -1,0 +1,10 @@
+#!/bin/bash
+# Driver Pilot - Privileged Task Wrapper
+# Bu script, pkexec ile çalıştırılan komutların arayüzde temiz görünmesini sağlar.
+
+# Kritik: Etkileşimsiz mod
+export DEBIAN_FRONTEND=noninteractive
+
+# Gelen komutu çalıştır
+# Örn: driver-pilot-root-task "apt-get install x"
+/bin/sh -c "$1"

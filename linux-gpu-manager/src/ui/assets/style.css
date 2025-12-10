@@ -1,0 +1,39 @@
+/* Adwaita (GNOME) teması üzerine eklemeler */
+
+.title-1 {
+  font-weight: 800;
+  font-size: 24px;
+  color: #3584e4; /* GNOME Mavisi */
+}
+
+.heading {
+  font-size: 16px;
+  color: alpha(currentColor, 0.7);
+}
+
+.suggested-action {
+  font-weight: bold;
+  padding: 10px 20px;
+}
+
+.destructive-action {
+  background-color: #e01b24;
+  color: white;
+  font-weight: bold;
+}
+
+frame {
+  border-radius: 12px;
+  background-color: alpha(currentColor, 0.05);
+}
+
+/* Performans Barları */
+.p-green progressbar > trough > progress {
+  background-color: #2ec27e;
+}
+.p-yellow progressbar > trough > progress {
+  background-color: #f5c211;
+}
+.p-red progressbar > trough > progress {
+  background-color: #e01b24;
+}

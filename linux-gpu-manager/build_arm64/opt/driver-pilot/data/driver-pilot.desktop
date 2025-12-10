@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Driver Pilot
+Comment=Akıllı Linux GPU Sürücü Yöneticisi
+Exec=driver-pilot
+Icon=driver-pilot
+Terminal=false
+Type=Application
+Categories=System;Settings;HardwareSettings;
+Keywords=nvidia;amd;driver;gpu;
+StartupNotify=true

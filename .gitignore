@@ -1,0 +1,18 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+.env
+.venv
+.DS_Store
+build/
+dist/
+*.egg-info/
+.idea/
+.vscode/
+*.spec
+build_deb/
+# Ignore generic output files if necessary, but keep manual docs

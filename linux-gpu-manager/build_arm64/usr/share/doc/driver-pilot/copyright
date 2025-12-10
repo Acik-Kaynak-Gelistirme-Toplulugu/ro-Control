@@ -1,0 +1,5 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Driver Pilot
+Files: *
+Copyright: 2025 Sopwith <sopwith.osdev@gmail.com>
+License: GPL-3.0

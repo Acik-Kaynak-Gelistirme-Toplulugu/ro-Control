@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+APP_DIR='/opt/driver-pilot'
+
+# 1. Venv Kurulumu
+if [ ! -d "$APP_DIR/venv" ]; then
+    echo 'Sanal ortam oluşturuluyor...'
+    python3 -m venv --system-site-packages "$APP_DIR/venv" || echo 'Venv oluşturulamadı, sistem pythonu kullanılacak.'
+fi
+
+# 2. Bağımlılıklar
+if [ -d "$APP_DIR/venv" ] && [ -f "$APP_DIR/requirements.txt" ]; then
+    echo 'Bağımlılıklar güncelleniyor...'
+    "$APP_DIR/venv/bin/pip" install --upgrade pip 2>/dev/null || true
+    "$APP_DIR/venv/bin/pip" install -r "$APP_DIR/requirements.txt" 2>/dev/null || echo 'Pip uyarısı: İnternet yoksa paketler kurulamamış olabilir.'
+fi
+
+# 3. Desktop Update
+update-desktop-database /usr/share/applications || true
+gtk-update-icon-cache /usr/share/icons/hicolor || true
+echo 'Driver Pilot kurulumu tamamlandi.'

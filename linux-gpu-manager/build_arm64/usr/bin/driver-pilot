@@ -1,0 +1,8 @@
+#!/bin/bash
+export PYTHONPATH=/opt/driver-pilot
+# Venv varsa onu kullan, yoksa sistem pythonu
+if [ -f /opt/driver-pilot/venv/bin/python3 ]; then
+    exec /opt/driver-pilot/venv/bin/python3 /opt/driver-pilot/src/main.py "$@"
+else
+    exec python3 /opt/driver-pilot/src/main.py "$@"
+fi

@@ -1,0 +1,11 @@
+Package: driver-pilot
+Version: 1.1.0
+Section: utils
+Priority: optional
+Architecture: arm64
+Depends: python3, python3-venv, python3-gi, gir1.2-gtk-4.0, gir1.2-adw-1, policykit-1, pciutils, mokutil
+Maintainer: Sopwith <sopwith.osdev@gmail.com>
+Installed-Size: 8498
+Description: Linux sistemleri için akıllı ekran kartı sürücüsü yöneticisi. NVIDIA ve AMD donanımlarını otomatik algılar, en uygun sürücüyü güvenle kurar ve yönetir.
+ Bu paket Linux için GPU sürücü yönetim aracıdır.
+ NVIDIA ve AMD kartları destekler.

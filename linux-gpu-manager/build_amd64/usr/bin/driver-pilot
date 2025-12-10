@@ -1,0 +1,4 @@
+#!/bin/bash
+cd /opt/driver-pilot
+echo 'Launcher: Dizine girildi, python başlatılıyor...' > /tmp/driver-pilot-debug.log
+/usr/bin/python3 -u -m src.main "$@" >> /tmp/driver-pilot-debug.log 2>&1

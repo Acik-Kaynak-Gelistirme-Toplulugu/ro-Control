@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>driver-pilot.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0</project_license>
+  <name>Driver Pilot</name>
+  <summary>Linux için Akıllı GPU Sürücü Yöneticisi</summary>
+  <description>
+    <p>
+      Driver Pilot, Linux sistemlerinizde NVIDIA ve AMD grafik kartı sürücülerini
+      kolayca yönetmenizi, kurmanızı ve güncellemenizi sağlayan modern bir araçtır.
+    </p>
+    <p>Özellikler:</p>
+    <ul>
+      <li>Otomatik GPU tespiti ve en uygun sürücü önerisi</li>
+      <li>Tek tıkla kurulum ve güncelleme</li>
+      <li>Hibrit grafik (Laptop) yönetimi (NVIDIA Prime)</li>
+      <li>Oyun Modu (GameMode) entegrasyonu</li>
+      <li>Canlı GPU performans izleme (Sıcaklık, VRAM, Yük)</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">driver-pilot.desktop</launchable>
+  <screenshots>
+    <!-- Screenshot placeholder or typically hosted URLs are used here -->
+  </screenshots>
+  <url type="homepage">https://github.com/sopwith/driver-pilot</url>
+  <developer_name>Sopwith OSDEV</developer_name>
+  <update_contact>sopwith.osdev@gmail.com</update_contact>
+</component>
