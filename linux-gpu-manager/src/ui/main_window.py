@@ -144,6 +144,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.connect("notify::default-width", self._on_window_resize)
         # Ayrıca başlangıçta bir kez tetikle
         self.connect("map", self._on_window_resize)
+        
+        # Otomatik Güncelleme Kontrolü (Arka planda)
+        GLib.idle_add(self._auto_check_updates)
+        self.connect("map", self._on_window_resize)
 
         # --- Sayfaları Oluştur ve Ekle ---
         self.simple_view = self.create_simple_view()
@@ -894,17 +898,67 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             lbl_ver.set_text(f"v{AppConfig.VERSION} -> v{new_ver}")
             # Güncelleme Onay Diyaloğu
-            d = Gtk.MessageDialog(transient_for=self.get_root(), modal=True, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO, text="Yeni Güncelleme Mevcut")
-            d.props.secondary_text = f"Yeni sürüm: v{new_ver}\n\nİndirip kurmak ister misiniz?\n\nNotlar:\n{notes[:200]}..."
-            
-            def resp(dlg, r):
-                dlg.destroy()
-                if r == Gtk.ResponseType.YES:
-                    self._start_update_process(url)
-            d.connect("response", resp)
-            d.present()
+            self._show_update_dialog(new_ver, notes, url)
 
-    def _start_update_process(self, url):
+    def _auto_check_updates(self):
+        """Uygulama açılışında otomatik güncelleme kontrolü."""
+        def check_thread():
+             has_update, new_ver, url, notes = self.updater.check_for_updates()
+             GLib.idle_add(self._on_auto_update_checked, has_update, new_ver, url, notes)
+        threading.Thread(target=check_thread, daemon=True).start()
+        return False # One-time
+    
+    def _on_auto_update_checked(self, has_update, new_ver, url, notes):
+        if not has_update:
+            # Güncel ise sessizce loga yaz veya banner'a yaz
+            self.append_log(f"Sürüm kontrolü: Sistem güncel (v{AppConfig.VERSION})")
+            
+            # Status Bar'a küçük bir ikon/text eklenebilir
+            # self.status_box içine... (İsteğe bağlı, şimdilik log yeterli)
+        else:
+            self.append_log(f"YENİ GÜNCELLEME TESPİT EDİLDİ: v{new_ver}")
+            # Banner göster
+            self._show_update_banner(new_ver, url, notes)
+
+    def _show_update_banner(self, new_ver, url, notes):
+        """Header'da görünür bir güncelleme uyarısı oluşturur."""
+        infobar = Gtk.InfoBar(message_type=Gtk.MessageType.WARNING)
+        infobar.set_show_close_button(True)
+        
+        # İçerik
+        content = infobar.get_child() 
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        
+        lbl = Gtk.Label(label=f"<b>Yeni Güncelleme Mevcut: v{new_ver}</b>", use_markup=True)
+        btn = Gtk.Button(label="İncele ve Yükle")
+        btn.connect("clicked", lambda x: self._show_update_dialog(new_ver, notes, url))
+        
+        box.append(lbl)
+        box.append(btn)
+        content.append(box)
+        
+        infobar.connect("response", lambda w, r: w.set_revealed(False))
+        infobar.set_revealed(True)
+        
+        # En sora değil en başa ekle (Status Box'ın başına)
+        self.status_box.prepend(infobar)
+
+    def _show_update_dialog(self, new_ver, notes, url):
+        d = Gtk.MessageDialog(transient_for=self.get_root(), modal=True, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.OK_CANCEL, text="Güncelleme Mevcut")
+        d.props.secondary_text = f"Yeni sürüm (v{new_ver}) indirilebilir.\n\nDeğişiklikler:\n{notes}\n\nŞimdi yüklemek ister misiniz?"
+        
+        # OK = Yükle
+        d.set_response_appearance(Gtk.ResponseType.OK, "suggested-action")
+        
+        def on_resp(w, r):
+            w.destroy()
+            if r == Gtk.ResponseType.OK:
+                self._start_update_process(url, new_ver)
+                
+        d.connect("response", on_resp)
+        d.present()
+
+    def _start_update_process(self, url, new_ver):
         # UI Progress Moduna Geçsin
         self.start_transaction("Uygulama Güncelleniyor...")
         
