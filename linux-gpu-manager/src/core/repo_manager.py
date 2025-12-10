@@ -74,13 +74,39 @@ class RepoManager:
         # Zinciri Birleştir
         full_cmd = " && ".join(chain)
         self.log(f"Toplu işlem başlatılıyor (Tek Şifre Girişi)...")
+        self.log(f"En yakın ayna deneniyor: {cc.upper()}.archive.ubuntu.com")
         
         code, out, err = self.runner.run_full(f'pkexec ro-control-root-task "{full_cmd}"')
         
         if out: self.log(out)
         if err: self.log(f"İşlem çıktısı: {err}")
         
-        return code == 0
+        if code != 0:
+            self.log("UYARI: Yerel ayna yanıt vermedi veya hata oluştu!")
+            self.log("Yedek (Ana) sunuculara geri dönülüyor...")
+            
+            # Kurtarma Zinciri
+            # 1. Yedeği geri yükle
+            # 2. Ana sunucuları (Main) kullan
+            # 3. Tekrar güncelle
+            
+            rescue_chain = []
+            rescue_chain.append("mv /etc/apt/sources.list.backup_dp /etc/apt/sources.list")
+            rescue_chain.append("apt-get update")
+            
+            rescue_cmd = " && ".join(rescue_chain)
+            
+            code2, out2, err2 = self.runner.run_full(f'pkexec ro-control-root-task "{rescue_cmd}"')
+            
+            if code2 == 0:
+                self.log("Başarılı: Ana sunuculara (Main Server) geçiş yapıldı.")
+                return True
+            else:
+                 self.log(f"KRİTİK HATA: Ana sunuculara da erişilemedi! İnternet bağlantınızı kontrol edin. ({err2})")
+                 return False
+        
+        self.log("Repo optimizasyonu ve güncelleme başarılı.")
+        return True
 
     def optimize_sources(self):
         # Artık batch kullanıyoruz

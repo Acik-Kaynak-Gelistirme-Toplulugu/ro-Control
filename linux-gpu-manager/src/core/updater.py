@@ -19,11 +19,9 @@ class AppUpdater:
         GitHub API'yi kontrol eder.
         Dönüş: (has_update, latest_version, download_url, release_notes)
         """
-        if not self.repo or "sopwith/" in self.repo: # Placeholder koruması
-             # Gerçek bir repo olmadığı için şimdilik simülasyon yapalım veya pass geçelim
-             # Ancak kodun çalışır halde olması için mantığı yazıyorum.
-             pass
-        
+        if not self.repo: 
+             return False, None, None, None
+
         url = f"https://api.github.com/repos/{self.repo}/releases/latest"
         try:
             req = urllib.request.Request(url)

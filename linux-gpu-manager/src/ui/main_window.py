@@ -39,6 +39,7 @@ from src.utils.reporter import ErrorReporter
 from src.utils.translator import Translator
 from src.config import AppConfig
 from src.ui.performance_view import PerformanceView
+from src.ui.progress_controller import ProgressController
 
 class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, app):
@@ -54,15 +55,18 @@ class MainWindow(Gtk.ApplicationWindow):
             monitors = display.get_monitors()
             if monitors and monitors.get_n_items() > 0:
                 monitor = monitors.get_item(0) # Birinci monitör
+                
+                # Full geometry yerine Workarea (Dock vs hariç) bulmaya çalışalım
+                # Gtk4'te workarea doğrudan yok, bu yüzden biraz daha korumacı davranıyoruz.
                 geometry = monitor.get_geometry()
                 
-                # Ekranın %60'ı kadar genişlik ve %70'i kadar yükseklik
-                # Ancak minimum limitlerin altında kalmasın
-                scale_w = int(geometry.width * 0.6)
-                scale_h = int(geometry.height * 0.7)
+                # Ekranın %50 genişliği, %60 yüksekliği (Daha kompakt)
+                scale_w = int(geometry.width * 0.5)
+                scale_h = int(geometry.height * 0.6)
                 
-                default_w = max(950, min(scale_w, 1600))
-                default_h = max(680, min(scale_h, 1200))
+                # Minimum limitleri düşürdüm
+                default_w = max(800, min(scale_w, 1200)) # Min 800px genişlik
+                default_h = max(550, min(scale_h, 900))  # Min 550px yükseklik (Dock taşmasını önler)
         except:
             pass # Gdk hatası olursa varsayılan kullanılır
             
@@ -117,11 +121,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.available_versions = self.installer.get_available_versions()
         self.gpu_info = self.detector.detect()
 
-        # --- Main Layout ---
-        # Ana kutuyu ScrolledWindow içine alalım
-        # Böylece ekran küçülse veya tam ekran olsa bile içerik taşmaz, ortalanır
-        self.scroll_container = Gtk.ScrolledWindow()
-        self.scroll_container.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC) # Yatay kapalı, Dikey otomatik
         
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         # İçeriği dikey ve yatayda esneyecek şekilde ayarla
@@ -136,33 +135,77 @@ class MainWindow(Gtk.ApplicationWindow):
         main_box.append(self.status_box)
         main_box.append(self.stack) # Stack'i ekle
         
-        self.scroll_container.set_child(main_box)
-        self.set_child(self.scroll_container)
+        self.set_child(main_box)
 
-        # Responsive Layout Listener
-        # Pencere boyutu değiştikçe tetiklenir
         self.connect("notify::default-width", self._on_window_resize)
-        # Ayrıca başlangıçta bir kez tetikle
-        self.connect("map", self._on_window_resize)
         
-        # Otomatik Güncelleme Kontrolü (Arka planda)
-        GLib.idle_add(self._auto_check_updates)
-        self.connect("map", self._on_window_resize)
-
         # --- Sayfaları Oluştur ve Ekle ---
         self.simple_view = self.create_simple_view()
         self.expert_view = self.create_pro_view()
         self.perf_view = PerformanceView()
-        self.progress_view = self.create_progress_view() # Yeni İlerleme Ekranı
+        
+        # Progress Controller'ı başlat
+        self.progress_controller = ProgressController(self, self.stack, self.installer, self.repo_manager, self.updater)
+        self.progress_view = self.progress_controller.get_view()
 
         self.stack.add_titled(self.simple_view, "simple", Translator.tr("tab_install"))
-        self.stack.add_named(self.expert_view, "expert") # Switcher'da görünmez
+        self.stack.add_named(self.expert_view, "expert") 
         self.stack.add_titled(self.perf_view, "performance", Translator.tr("tab_perf"))
-        self.stack.add_named(self.progress_view, "progress") # İşlem sırasındaki ekran
+        self.stack.add_named(self.progress_view, "progress") 
         
         # İlk tarama
         GLib.timeout_add(500, self.run_initial_scan)
+        
+        # Auto Update Check (1 saniye sonra)
+        GLib.timeout_add(1000, self._auto_check_updates)
+    
+    def _auto_check_updates(self):
+        """Uygulama ve sürücü güncellemelerini kontrol eder."""
+        def run():
+            # 1. Uygulama Güncellemesi
+            has_up, ver, url, notes = self.updater.check_for_updates()
+            if has_up:
+                GLib.idle_add(self._show_app_update_notification, ver, url, notes)
+            
+            # 2. Sürücü Güncellemesi (Sadece NVIDIA ise)
+            if "NVIDIA" in self.gpu_info.get("vendor", ""):
+                 # Basit bir kontrol: `apt list --upgradable` içinde nvidia-driver kelimesi geçiyor mu?
+                 # Bunu yapmak için thread güvenliği ve command runner lazım.
+                 # Hızlı bir check için installer'a soralım (şimdilik mock/basit)
+                 pass 
+                 
+        threading.Thread(target=run, daemon=True).start()
+        return False # Tek sefer çalışır
 
+    def _show_app_update_notification(self, ver, url, notes):
+        """Güncelleme varsa üstte bilgi çubuğu gösterir."""
+        info_bar = Gtk.InfoBar()
+        info_bar.set_message_type(Gtk.MessageType.INFO)
+        info_bar.set_show_close_button(True)
+        info_bar.connect("response", lambda w, r: w.hide())
+        
+        box = info_bar.get_content_area()
+        lbl = Gtk.Label(label=f"Yeni Güncelleme Mevcut: v{ver}")
+        box.append(lbl)
+        
+        btn_up = Gtk.Button(label="Şimdi Güncelle")
+        btn_up.add_css_class("suggested-action")
+        
+        def on_update_click(btn):
+            info_bar.set_revealed(False)
+            self.progress_controller.start_transaction(
+                action="self_update",
+                desc=f"Uygulama Güncelleniyor (v{ver})...",
+                update_url=url
+            )
+            
+        btn_up.connect("clicked", on_update_click)
+        info_bar.add_action_widget(btn_up, Gtk.ResponseType.OK)
+        
+        self.status_box.prepend(info_bar)
+        info_bar.set_revealed(True)
+
+        
     # --- UI Builders ---
     def create_info_bars(self):
         # Header Label (Info)
@@ -442,40 +485,47 @@ class MainWindow(Gtk.ApplicationWindow):
         vbox.append(self.lbl_progress_title)
         vbox.append(self.lbl_progress_desc)
         
+        # Log Görüntüleyici (Expander içinde)
+        expander = Gtk.Expander(label="Ayrıntıları Göster")
+        log_scroll = Gtk.ScrolledWindow()
+        log_scroll.set_min_content_height(150)
+        log_scroll.set_min_content_width(500)
+        
+        log_view = Gtk.TextView()
+        log_view.set_editable(False)
+        log_view.set_monospace(True)
+        log_view.set_wrap_mode(Gtk.WrapMode.WORD)
+        
+        self.log_buffer = log_view.get_buffer()
+        log_scroll.set_child(log_view)
+        expander.set_child(log_scroll)
+        vbox.append(expander)
+        
         # Progress Bar
         self.progress_bar = Gtk.ProgressBar()
-        self.progress_bar.set_size_request(300, 20)
-        self.progress_bar.set_pulse_step(0.05)
         self.progress_bar.set_show_text(True)
+        self.progress_bar.set_size_request(300, 20) # Added from original
+        self.progress_bar.set_pulse_step(0.05) # Added from original
         vbox.append(self.progress_bar)
         
-        # Log Expander (Varsayılan kapalı)
-        self.log_expander = Gtk.Expander(label="Detayları Göster")
+        # Actions Box
+        action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        action_box.set_halign(Gtk.Align.CENTER)
         
-        log_scroll = Gtk.ScrolledWindow()
-        log_scroll.set_min_content_height(200); log_scroll.set_max_content_height(300); log_scroll.set_min_content_width(500)
-        
-        self.log_view = Gtk.TextView(editable=False, monospace=True)
-        self.log_buffer = self.log_view.get_buffer()
-        log_scroll.set_child(self.log_view)
-        
-        # Log Kontrolleri
-        log_ctrl = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        log_ctrl.append(log_scroll)
-        
-        btn_save = Gtk.Button(label="Logu Kaydet", halign=Gtk.Align.END)
-        btn_save.connect("clicked", self.on_save_log_clicked)
-        log_ctrl.append(btn_save)
-        
-        self.log_expander.set_child(log_ctrl)
-        vbox.append(self.log_expander)
-        
-        # Bitiş Butonu (Başta gizli)
-        self.btn_done = Gtk.Button(label=Translator.tr("btn_close")) # "Ana Menüye Dön" yerine "Kapat" daha kısa
+        self.btn_done = Gtk.Button(label=Translator.tr("btn_close")) # Changed label to original
         self.btn_done.add_css_class("suggested-action")
         self.btn_done.set_visible(False)
-        self.btn_done.connect("clicked", lambda x: self.stack.set_visible_child_name("simple"))
-        vbox.append(self.btn_done)
+        self.btn_done.connect("clicked", lambda x: self.stack.set_visible_child_name("simple")) # Reverted to original lambda
+        
+        # İptal Butonu (Yeni)
+        self.btn_cancel_op = Gtk.Button(label="İşlemi Durdur")
+        self.btn_cancel_op.add_css_class("destructive-action") # Kırmızı/Uyarı tonu
+        self.btn_cancel_op.connect("clicked", self.on_cancel_op_clicked)
+        
+        action_box.append(self.btn_done)
+        action_box.append(self.btn_cancel_op)
+        
+        vbox.append(action_box)
         
         return vbox
 
@@ -550,8 +600,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.selected_version = combo.get_active_id()
 
     def on_optimize_clicked(self, w):
-        self.start_transaction("Repo Optimizasyonu (Konum + PPA)...")
-        self.target_action = "optimize_repos"
+        self.progress_controller.start_transaction("optimize_repos", "Repo Optimizasyonu (Konum + PPA)...")
 
     def on_simple_closed_clicked(self, w): 
         if "AMD" in self.gpu_info.get("vendor", ""): return
@@ -618,8 +667,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.ask_for_snapshot(action, desc)
                 return
 
-        self.target_action = action
-        self.start_transaction(desc)
+        self.progress_controller.start_transaction(action, desc, version=self.selected_version)
 
     def ask_for_snapshot(self, action, desc):
         dialog = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO, text="Sistem Yedeği")
@@ -629,113 +677,12 @@ class MainWindow(Gtk.ApplicationWindow):
         def on_resp(d, r):
             d.destroy()
             should_snapshot = (r == Gtk.ResponseType.YES)
-            self.target_action = action
-            self.start_transaction(desc, snapshot=should_snapshot)
+            self.progress_controller.start_transaction(action, desc, version=self.selected_version, snapshot=should_snapshot)
         dialog.connect("response", on_resp)
         dialog.present()
 
-    # --- Threading ---
-    # --- Threading ---
-    def start_transaction(self, msg, snapshot=False):
-        # UI'ı Progress Moduna Al
-        self.stack.set_visible_child_name("progress")
-        self.btn_done.set_visible(False)
-        self.spinner.start()
-        
-        self.lbl_progress_title.set_text("İşlem Başlatılıyor")
-        self.lbl_progress_desc.set_text(msg)
-        
-        self.log_buffer.set_text("")
-        self.append_log(msg)
-        self.is_processing = True
-        self.progress_bar.set_text("İşleniyor...")
-        self.progress_bar.set_fraction(0.1)
-        
-        threading.Thread(target=self._worker, args=(snapshot,), daemon=True).start()
-        GLib.timeout_add(100, self._update_progress)
-
-    def _worker(self, snapshot=False):
-        if snapshot:
-            self.append_log("Sistem yedeği alınıyor (timeshift)...")
-            if self.installer.create_timeshift_snapshot():
-                self.append_log("Yedek başarıyla alındı.")
-            else:
-                self.append_log("Yedek alınamadı veya iptal edildi.")
-
-        if self.target_action == "optimize_repos":
-            self.append_log("Konum algılanıyor ve sunucular optimize ediliyor...")
-            s1 = self.repo_manager.optimize_sources()
-            if not s1: self.append_log("UYARI: Kaynak optimizasyonu başarısız.")
-
-            self.append_log("Resmi Ubuntu depoları (Restricted/Multiverse) açılıyor...")
-            s2 = self.repo_manager.ensure_standard_repos()
-            if not s2: self.append_log("UYARI: Repo ekleme başarısız.")
-            
-            self.append_log("Paket listesi güncelleniyor (apt update)...")
-            s3 = self.repo_manager.update_repos()
-            if not s3: self.append_log("UYARI: Paket listesi güncellenemedi.")
-            
-            # Kısmi başarı kabul edilebilir mi? Evet, ama kullanıcıya bilgi verelim
-            final_success = s1 or s2 or s3
-            GLib.idle_add(self._on_finished, final_success)
-            return
-
-        self.append_log("Asıl işlem başlatılıyor...")
-        
-        # Derin Temizlik Kontrolü
-        is_deep = False
-        if hasattr(self, "chk_deep_clean"):
-            is_deep = self.chk_deep_clean.get_active()
-
-        success = False
-        if self.target_action == "remove": 
-            success = self.installer.remove_nvidia(deep_clean=is_deep)
-        elif self.target_action == "install_nvidia_open": 
-            self.repo_manager.ensure_standard_repos() # Standart Repo
-            success = self.installer.install_nvidia_open(self.selected_version)
-        elif self.target_action == "install_nvidia_closed": 
-            self.repo_manager.ensure_standard_repos() # Standart Repo
-            success = self.installer.install_nvidia_closed(self.selected_version)
-        elif self.target_action == "install_amd_open": 
-            self.repo_manager.fix_gamemode_repo() # Update only
-            success = self.installer.install_amd_open()
-            
-        GLib.idle_add(self._on_finished, success)
-
-    def _update_progress(self):
-        if self.is_processing: self.progress_bar.pulse(); return True
-        return False
-
-    def _on_finished(self, success):
-        self.is_processing = False
-        self.progress_bar.set_fraction(1.0)
-        self.spinner.stop()
-        self.btn_done.set_visible(True) # Dönüş butonunu göster
-        
-        self.spinner.stop()
-        self.btn_done.set_visible(True) # Dönüş butonunu göster
-        
-        # self.on_scan_clicked(None) # Gereksiz popup açıyor, bunu kaldırdık.
-        # Kullanıcı zaten elle refresh yapabilir.
-        
-        if success:
-             self.progress_bar.set_text("Tamamlandı")
-             self.lbl_progress_title.set_text("İşlem Başarıyla Tamamlandı")
-             self.lbl_progress_desc.set_text("Logları kontrol edebilir veya ana menüye dönebilirsiniz.")
-             self.append_log("BAŞARILI")
-             
-             if "optimize" in str(self.target_action): return # Reboot isteme
-             self.show_reboot_dialog()
-        else:
-             self.progress_bar.set_text("Hata")
-             self.lbl_progress_title.set_text("İşlem Sırasında Hata Oluştu")
-             self.lbl_progress_desc.set_text("Lütfen aşağıdaki detayları inceleyin.")
-             self.append_log("HATA")
-             self.log_expander.set_expanded(True) # Hatada logu otomatik aç
-             # self.show_report_dialog("İşlem başarısız oldu.") # Artık log ekranındayız, popup'a gerek olmayabilir ama kalsın.
-
     def append_log(self, msg):
-        GLib.idle_add(lambda: self.log_buffer.insert(self.log_buffer.get_end_iter(), f"\n> {msg}"))
+        self.progress_controller.append_log(msg)
 
     # --- Theme & Style ---
     def toggle_theme(self, widget):
@@ -1056,28 +1003,37 @@ class MainWindow(Gtk.ApplicationWindow):
             except Exception as e:
                 self.show_error_dialog("Hata", f"Test başlatılamadı: {e}")
         else:
-            # Yoksa otomatik kur ve çalıştır
-            self.start_transaction("Test Aracı Kuruluyor (mesa-utils)...")
+            # Yoksa Kur (Manuel Dialog)
+            dialog = Gtk.Dialog(title="Test Aracı Kuruluyor", transient_for=self, modal=True)
+            dialog.set_deletable(False)
+            box = dialog.get_content_area()
+            box.set_spacing(15); box.set_margin_top(20); box.set_margin_bottom(20); box.set_margin_start(20); box.set_margin_end(20)
             
-            def install_and_run():
-                # Kurulum (mesa-utils)
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            hbox.set_halign(Gtk.Align.CENTER)
+            spinner = Gtk.Spinner(); spinner.start()
+            lbl = Gtk.Label(label="mesa-utils paketi yükleniyor...")
+            hbox.append(spinner); hbox.append(lbl)
+            box.append(hbox)
+            
+            def install_thread():
                 cmd = 'pkexec ro-control-root-task "apt-get install -y mesa-utils"'
                 from src.utils.command_runner import CommandRunner
                 runner = CommandRunner()
                 code, out, err = runner.run_full(cmd)
-                
-                if code == 0:
-                    GLib.idle_add(self.append_log, "Kurulum başarılı. Test başlatılıyor...")
-                    GLib.idle_add(self._on_finished, True)
-                    time.sleep(0.5)
-                    try:
-                        subprocess.Popen(["glxgears"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    except: pass
-                else:
-                    GLib.idle_add(self.append_log, f"Kurulum başarısız: {err}")
-                    GLib.idle_add(self._on_finished, False)
+                GLib.idle_add(on_install_done, code, err)
 
-            threading.Thread(target=install_and_run, daemon=True).start()
+            def on_install_done(code, err):
+                dialog.destroy()
+                if code == 0:
+                   self.append_log("mesa-utils başarıyla kuruldu.")
+                   # Tekrar tetikle
+                   self.on_test_clicked(w)
+                else:
+                   self.show_error_dialog("Kurulum Hatası", f"Test aracı kurulamadı: {err}")
+
+            dialog.present()
+            threading.Thread(target=install_thread, daemon=True).start()
 
     def on_scan_clicked(self, w):
         self.gpu_info = self.detector.detect(force_refresh=True)

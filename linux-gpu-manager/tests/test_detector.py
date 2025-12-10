@@ -1,12 +1,24 @@
 import unittest
 from src.core.detector import SystemDetector
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 class TestSystemDetector(unittest.TestCase):
     def setUp(self):
+        # platform.system'i patchle
+        self.patcher = patch('platform.system', return_value="Linux")
+        self.mock_system = self.patcher.start()
+        
+        # shutil.which'i patchle (lspci var gibi davransın)
+        self.patcher_which = patch('shutil.which', return_value="/usr/bin/lspci")
+        self.mock_which = self.patcher_which.start()
+
         self.detector = SystemDetector()
         # Runner'ı mockla
         self.detector.runner = MagicMock()
+
+    def tearDown(self):
+        self.patcher.stop()
+        self.patcher_which.stop()
 
     def test_gpu_detection_nvidia(self):
         # Mock çıktı (lspci -vmm)

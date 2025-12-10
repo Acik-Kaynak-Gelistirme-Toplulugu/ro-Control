@@ -229,28 +229,34 @@ class PerformanceView(Gtk.Box):
         # Label Box
         box_gm = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         lbl_game = Gtk.Label(label=Translator.tr("tool_gamemode"))
+        lbl_game.set_halign(Gtk.Align.START)
         btn_info_gm = Gtk.Button(icon_name="dialog-information-symbolic")
         btn_info_gm.add_css_class("flat") # Buton çerçevesini gizle
         btn_info_gm.set_tooltip_text("GameMode Nedir?")
         btn_info_gm.connect("clicked", lambda x: self._show_info("gamemode"))
         box_gm.append(lbl_game)
         box_gm.append(btn_info_gm)
+        box_gm.set_halign(Gtk.Align.START) # Kutuyu sola yasla
         
         self.switch_game = Gtk.Switch()
         self.switch_game.set_active(self.tweaks.is_gamemode_active())
+        self.switch_game.set_halign(Gtk.Align.END) # Switch sağa yaslansın
         self.switch_game.connect("state-set", self._on_gamemode_toggle)
         
         # --- Flatpak Fix ---
         box_fp = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         lbl_flat = Gtk.Label(label=Translator.tr("tool_flatpak"))
+        lbl_flat.set_halign(Gtk.Align.START)
         btn_info_fp = Gtk.Button(icon_name="dialog-information-symbolic")
         btn_info_fp.add_css_class("flat")
         btn_info_fp.set_tooltip_text("Ne İşe Yarar?")
         btn_info_fp.connect("clicked", lambda x: self._show_info("flatpak"))
         box_fp.append(lbl_flat)
         box_fp.append(btn_info_fp)
+        box_fp.set_halign(Gtk.Align.START)
         
         btn_flat = Gtk.Button(label=Translator.tr("btn_repair"))
+        btn_flat.set_halign(Gtk.Align.END) # Buton sağa yaslansın
         btn_flat.connect("clicked", self._on_flatpak_fix)
         
         grid.attach(box_gm, 0, 0, 1, 1)
@@ -258,6 +264,36 @@ class PerformanceView(Gtk.Box):
         
         grid.attach(box_fp, 0, 1, 1, 1)
         grid.attach(btn_flat, 1, 1, 1, 1)
+
+        # 3. NVIDIA Wayland Fix (Eğer NVIDIA ise)
+        if self.tweaks.is_nvidia or True:
+            # Sol taraf (Label + Info)
+            box_nv_label = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+            lbl_nv = Gtk.Label(label="NVIDIA Wayland Fix")
+            btn_nv_info = Gtk.Button(icon_name="dialog-information-symbolic")
+            btn_nv_info.add_css_class("flat")
+            btn_nv_info.connect("clicked", lambda x: self._show_info("nv_fix"))
+            
+            box_nv_label.append(lbl_nv)
+            box_nv_label.append(btn_nv_info)
+            box_nv_label.set_halign(Gtk.Align.START)
+
+            # Sağ taraf (Buton)
+            btn_nv = Gtk.Button(label="Uygula")
+            btn_nv.add_css_class("suggested-action")
+            btn_nv.set_halign(Gtk.Align.END)
+            btn_nv.connect("clicked", self._on_nv_fix)
+            
+            grid.attach(box_nv_label, 0, 2, 1, 1)
+            grid.attach(btn_nv, 1, 2, 1, 1)
+            
+        # Grid'in ikinci sütununu (Butonların olduğu sütun) genişletelim ki sağa yaslansınlar
+        grid.set_column_homogeneous(False)
+        # 1. sütun (widgets) genişlesin (hexpand)
+        # Ama GtkGrid'de bu biraz trick gerektirir. Basitçe widgetlara hexpand verelim.
+        box_gm.set_hexpand(True)
+        box_fp.set_hexpand(True)
+        if 'box_nv_label' in locals(): box_nv_label.set_hexpand(True)
         
         frame.set_child(grid)
         self.append(frame)
@@ -281,6 +317,13 @@ class PerformanceView(Gtk.Box):
                     "2. Eksik NVIDIA Runtime kütüphanelerini tamamlar.\n"
                     "3. Oyunların açılmama sorununu çözer.\n\n"
                     "Sisteminizde bir sorun yoksa çalıştırmanıza gerek yoktur.")
+        elif key == "nv_fix":
+            title = "NVIDIA Wayland Düzeltmesi"
+            text = ("NVIDIA kartların Wayland masaüstü ortamında (GNOME/KDE) daha akıcı çalışması için Kernel parametresi ekler.\n\n"
+                    "Yapılan işlem:\n"
+                    "- /etc/default/grub dosyasına 'nvidia-drm.modeset=1' ekler.\n"
+                    "- GRUB önyükleyicisini günceller.\n\n"
+                    "Eğer masaüstünde takılmalar veya senkronizasyon sorunu yaşıyorsanız bunu uygulayın.")
 
         dialog = Gtk.MessageDialog(transient_for=self.get_root(), modal=True, message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.OK, text=title)
         dialog.props.secondary_text = text
@@ -401,6 +444,24 @@ class PerformanceView(Gtk.Box):
                  GLib.idle_add(lambda: self._show_dialog("Onarım Tamamlandı", msg, Gtk.MessageType.INFO))
             else:
                  GLib.idle_add(lambda: self._show_dialog("Onarım Hatası", msg, Gtk.MessageType.ERROR))
+                
+        threading.Thread(target=run, daemon=True).start()
+
+    def _on_nv_fix(self, btn):
+        self.logger.info("NVIDIA Wayland Fix başlatılıyor...")
+        def run():
+            GLib.idle_add(lambda: btn.set_sensitive(False))
+            GLib.idle_add(lambda: btn.set_label("Uygulanıyor..."))
+            
+            success, msg = self.tweaks.enable_nvidia_wayland_fix()
+            
+            GLib.idle_add(lambda: btn.set_sensitive(True))
+            GLib.idle_add(lambda: btn.set_label("Uygula"))
+            
+            if success:
+                 GLib.idle_add(lambda: self._show_dialog("Başarılı", msg, Gtk.MessageType.INFO))
+            else:
+                 GLib.idle_add(lambda: self._show_dialog("Hata", msg, Gtk.MessageType.ERROR))
                 
         threading.Thread(target=run, daemon=True).start()
 

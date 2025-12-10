@@ -7,8 +7,8 @@ from src.core.detector import SystemDetector
 
 from src.config import AppConfig
 
-# Raporların gönderileceği geliştirici adresi
-DEVELOPER_EMAIL = AppConfig.DEVELOPER_EMAIL
+# Raporların gönderileceği geliştirici adresi (GitHub Repo)
+GITHUB_REPO_URL = f"https://github.com/{AppConfig.GITHUB_REPO}/issues/new"
 
 class ErrorReporter:
     @staticmethod
@@ -34,89 +34,60 @@ class ErrorReporter:
         return info
 
     @staticmethod
-    def prepare_mailto_link(error_message, system_info):
-        """Mailto linkini oluşturur."""
-        subject = f"Hata Raporu: {system_info.get('GPU', 'Generic')}"
+    def prepare_github_link(error_message, system_info, labels="bug"):
+        """GitHub Issue linkini oluşturur."""
         
-        # JSON formatını okunabilir string'e çevir
-        sys_str = "\n".join([f"- {k}: {v}" for k, v in system_info.items()])
-        
-        body = f"""Merhaba,
+        # Markdown body oluştur
+        body = f"**Hata Açıklaması**\n{error_message}\n\n" \
+               "**Sistem Bilgileri**\n" \
+               f"- OS: {system_info.get('OS', '-')}\n" \
+               f"- Mimari: {system_info.get('Arch', '-')}\n" \
+               f"- Masaüstü: {system_info.get('Desktop', '-')}\n" \
+               f"- GPU: {system_info.get('GPU', '-')}\n" \
+               f"- Sürücü: {system_info.get('Driver', '-')}\n\n" \
+               "**Ek Loglar**\n(Lütfen terminal çıktılarını buraya ekleyin)"
 
-Uygulamayı kullanırken aşağıdaki hatayı aldım:
-
-HATA MESAJI:
-{error_message}
-
-SİSTEM BİLGİLERİ:
-{sys_str}
-
-LOG KAYITLARI:
-(Lütfen logları buraya yapıştırın - CTRL+V)
-
---------------------------------------------------
-"""
-        # URL encoding (Boşlukları %20 vb. yapma)
         params = {
-            "to": DEVELOPER_EMAIL,
-            "subject": subject,
-            "body": body
+            "title": f"[BUG] {error_message[:50]}...",
+            "body": body,
+            "labels": labels
         }
         
-        # urllib.parse.urlencode 'to' parametresini desteklemez, manuel ekliyoruz
-        query = urllib.parse.urlencode({"subject": subject, "body": body}, quote_via=urllib.parse.quote)
-        return f"mailto:{DEVELOPER_EMAIL}?{query}"
+        query = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+        return f"{GITHUB_REPO_URL}?{query}"
 
     @staticmethod
     def send_report(error_message, log_content):
         """
-        Mail istemcisini açar ve logu panoya kopyalar.
-        Not: Pano işlemi UI thread'inde yapılmalıdır, burada sadece linki açıyoruz.
+        Tarayıcıda GitHub Issue sayfasını açar.
         """
         try:
             logging.info("Sistem bilgileri toplanıyor...")
             sys_info = ErrorReporter.collect_system_info()
             
-            link = ErrorReporter.prepare_mailto_link(error_message, sys_info)
+            link = ErrorReporter.prepare_github_link(error_message, sys_info)
             
-            logging.info("Mail istemcisi açılıyor...")
-            logging.info("Mail istemcisi açılıyor...")
+            logging.info("GitHub Issue sayfası açılıyor...")
             
             try:
                 webbrowser.open(link)
             except Exception:
-                # Fallback: xdg-open veya sensible-browser
                 import subprocess
-                try:
-                    subprocess.run(["xdg-open", link], check=False)
-                except FileNotFoundError:
-                    subprocess.run(["sensible-browser", link], check=False)
+                subprocess.run(["xdg-open", link], check=False)
 
         except Exception as e:
-            logging.error(f"Mail istemcisi açılamadı: {e}")
+            logging.error(f"Tarayıcı açılamadı: {e}")
             return False
 
     @staticmethod
     def send_feedback():
-        """Genel geri bildirim için mail istemcisini açar."""
+        """Genel geri bildirim için GitHub sayfasını açar."""
         try:
-            subject = "ro-Control Feedback"
-            body = "\n\n\n--\nro-Control v{} - Linux Driver Manager".format(AppConfig.VERSION)
-            
-            query = urllib.parse.urlencode({"subject": subject, "body": body}, quote_via=urllib.parse.quote)
-            link = f"mailto:{DEVELOPER_EMAIL}?{query}"
-            
-            logging.info("Geri bildirim maili açılıyor...")
-            
-            try:
-                webbrowser.open(link)
-            except Exception:
-                import subprocess
-                try:
-                    subprocess.run(["xdg-open", link], check=False)
-                except:
-                    subprocess.run(["sensible-browser", link], check=False)
+            # Sadece issue sayfasına yönlendir (şablonsuz)
+            link = f"https://github.com/{AppConfig.GITHUB_REPO}/issues"
+            logging.info("Geri bildirim sayfası açılıyor...")
+            webbrowser.open(link)
             return True
         except Exception as e:
-            logging.error(f"Mail açma hatası: {e}")
+            logging.error(f"Sayfa açma hatası: {e}")
             return False

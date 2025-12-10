@@ -8,7 +8,7 @@ Aşağıda projemize katkıda bulunurken süreci kolaylaştıracak bazı yönerg
 
 ### 1. Hata Bildirimi (Bug Reporting)
 
-Karşılaştığınız hataları GitHub [Issues](https://github.com/sopwith/ro-control/issues) sayfası üzerinden bildirebilirsiniz. İyi bir hata raporu şunları içermelidir:
+Karşılaştığınız hataları GitHub [Issues](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/issues) sayfası üzerinden bildirebilirsiniz. İyi bir hata raporu şunları içermelidir:
 
 - **Net ve açıklayıcı bir başlık.**
 - **Adım adım yeniden oluşturma talimatları:** Hatayı tekrar oluşturmak için ne yapmalıyız?
@@ -41,7 +41,7 @@ Projeyi yerel makinenizde çalıştırmak için:
 
 ```bash
 # Repoyu klonlayın
-git clone https://github.com/sopwith/ro-control.git
+git clone https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control.git
 cd ro-control
 
 # Sanal ortam oluşturun (Önerilen)

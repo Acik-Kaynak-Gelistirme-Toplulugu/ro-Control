@@ -142,5 +142,52 @@ class SystemTweaks:
             return False, msg
             
         msg = f"Flatpak onarımı başarıyla tamamlandı.\n\nÇıktı:\n{out[:500]}..." # Çıktının başını göster
+        msg = f"Flatpak onarımı başarıyla tamamlandı.\n\nÇıktı:\n{out[:500]}..." # Çıktının başını göster
         self.logger.info("Flatpak onarımı başarıyla tamamlandı.")
         return True, msg
+
+    def enable_nvidia_wayland_fix(self):
+        """
+        NVIDIA kullanıcıları için Wayland akıcılığı sağlayan
+        'nvidia-drm.modeset=1' parametresini GRUB'a ekler.
+        """
+        self.logger.info("NVIDIA Wayland Fix uygulanıyor...")
+        
+        # Güvenli backup ve sed işlemi
+        # 1. Yedek al
+        # 2. Eğer satır zaten varsa (modeset=1) işlem yapma
+        # 3. Yoksa, GRUB_CMDLINE_LINUX_DEFAULT satırına ekle
+        # 4. update-grub çalıştır
+        
+        # Karmaşık shell işlemleri için script yazmak yerine tek satırlık bash komutu oluşturuyoruz:
+        # "grep -q 'nvidia-drm.modeset=1' /etc/default/grub || (sed -i '...' && update-grub)"
+        
+        param = "nvidia-drm.modeset=1"
+        file = "/etc/default/grub"
+        
+        check_cmd = f"grep -q '{param}' {file}"
+        
+        # Önce kontrol et (sudo gerekmez çünkü okuma izni genelde vardır, ama garanti olsun)
+        # grep return 0 ise buldu demektir.
+        if subprocess.call(f"grep -q '{param}' {file}", shell=True) == 0:
+            return True, "Parametre zaten ekli. İşlem gerekmez."
+            
+        # Eklememiz lazım
+        # Parametre GRUB_CMDLINE_LINUX_DEFAULT="..." içine, tırnak kapanmadan hemen önce eklenmeli.
+        # Basit bir sed regex'i: s/GRUB_CMDLINE_LINUX_DEFAULT="/&nvidia-drm.modeset=1 /
+        # Ancak bu riskli olabilir. Daha güvenli yol: Var olanın sonuna ekle.
+        
+        # append komutu
+        sed_cmd = f"sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"/GRUB_CMDLINE_LINUX_DEFAULT=\"{param} /' {file}"
+        update_cmd = "update-grub"
+        
+        full_cmd = f"cp {file} {file}.bak && {sed_cmd} && {update_cmd}"
+        
+        self.logger.info(f"Yürütülen komut: {full_cmd}")
+        
+        code, out, err = self.runner.run_full(f'pkexec ro-control-root-task "{full_cmd}"')
+        
+        if code == 0:
+            return True, "İşlem başarılı. Değişikliklerin etkili olması için bilgisayarınızı YENİDEN BAŞLATIN."
+        else:
+            return False, f"Hata oluştu: {err}"

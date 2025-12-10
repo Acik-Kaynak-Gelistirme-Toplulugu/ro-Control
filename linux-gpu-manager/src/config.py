@@ -7,7 +7,7 @@ class AppConfig:
     LICENSE = "GPL-3.0"
     
     # Güncelleme için GitHub Repo (user/repo formatında)
-    GITHUB_REPO = "sopwith/ro-control" # Örnek: 'sopwith/ro-control'
+    GITHUB_REPO = "Acik-Kaynak-Gelistirme-Toplulugu/ro-Control"
     
     CHANGELOG = """
     v1.0.0 (GitHub Release) Yenilikleri:
@@ -51,5 +51,5 @@ class AppConfig:
     # Bağımlılıklar (Debian/Ubuntu isimleri)
     DEPENDENCIES = "python3, python3-gi, gir1.2-gtk-4.0"
 
-    # E-posta
-    DEVELOPER_EMAIL = "sopwith.osdev@gmail.com"
+    # E-posta - DEPRECATED (GitHub Issues kullanılır)
+    # DEVELOPER_EMAIL = ""

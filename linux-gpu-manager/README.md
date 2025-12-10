@@ -39,15 +39,19 @@ _(Ekran görüntüsü buraya gelecek)_
 
 ### Debian / Ubuntu / Mint / Pop!\_OS
 
-En son sürümü [Releases](https://github.com/sopwith/ro-control/releases) sayfasından indirin ve çalıştırın.
+En son sürümü [Releases](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases) sayfasından indirebilirsiniz.
 
-Veya terminal üzerinden:
+**Intel/AMD İşlemcili Sistemler (x86_64/AMD64) İçin:**
+
+```bash
+sudo apt install ./ro-control_1.0.0_amd64.deb
+```
+
+**ARM İşlemcili Sistemler (Raspberry Pi/ARM64) İçin:**
 
 ```bash
 sudo apt install ./ro-control_1.0.0_arm64.deb
 ```
-
-_(Mimariye göre dosya adı değişebilir: amd64 / arm64)_
 
 ## 🖥 Kullanım
 
@@ -73,7 +77,7 @@ Bu proje açık kaynaklıdır ve her türlü katkıya açıktır! Lütfen katkı
 
 ## 🐛 Hata Bildirimi
 
-Bir hata mı buldunuz? Lütfen [Issues](https://github.com/sopwith/ro-control/issues) sekmesini kullanarak bize bildirin. Hata bildiriminde şunları eklemeyi unutmayın:
+Bir hata mı buldunuz? Lütfen [Issues](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/issues) sekmesini kullanarak bize bildirin. Hata bildiriminde şunları eklemeyi unutmayın:
 
 - Kullandığınız dağıtım ve sürümü
 - Ekran kartı modeliniz
@@ -86,5 +90,5 @@ Bu proje **GPL-3.0** lisansı ile lisanslanmıştır. Detaylar için repodaki li
 ---
 
 <div align="center">
-  <sub>Sopwith tarafından ❤️ ile geliştirildi.</sub>
+  <sub>Sopwit tarafından  ile geliştirildi.</sub>
 </div>
