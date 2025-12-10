@@ -89,6 +89,10 @@ class SystemTweaks:
         cmd = ["pkexec", "apt-get", "install", "-y", "gamemode"]
         return subprocess.run(cmd).returncode == 0
 
+    def is_prime_supported(self):
+        """Sistemin NVIDIA Prime (Hybrid Graphics) destekleyip desteklemediğini kontrol eder."""
+        return shutil.which("prime-select") is not None
+
     def get_prime_profile(self):
         """Mevcut Hybrid Graphics modunu döndürür (nvidia/intel/on-demand)."""
         if not shutil.which("prime-select"):

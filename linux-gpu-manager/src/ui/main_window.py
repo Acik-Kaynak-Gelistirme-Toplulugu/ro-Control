@@ -110,7 +110,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.perf_view = PerformanceView()
 
         self.stack.add_titled(self.simple_view, "simple", "Kurulum")
-        self.stack.add_titled(self.expert_view, "expert", "Uzman")
+        self.stack.add_named(self.expert_view, "expert") # Switcher'da görünmez, butondan erişilir
         self.stack.add_titled(self.perf_view, "performance", "Performans")
         
         # İlk tarama
@@ -289,7 +289,8 @@ class MainWindow(Gtk.ApplicationWindow):
             action_code = "install_nvidia_closed"
             self.selected_version = best_ver # Otomatik seç
 
-        dialog.format_secondary_text(desc)
+        # dialog.format_secondary_text(desc) -> AttributeError Fix
+        dialog.props.secondary_text = desc
         
         def on_resp(d, r):
             d.destroy()
@@ -450,7 +451,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def ask_for_snapshot(self, action, desc):
         dialog = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO, text="Sistem Yedeği")
-        dialog.format_secondary_text(f"İşleme başlamadan önce Timeshift ile sistem yedeği (snapshot) alınsın mı?\n\n(Önerilir)")
+        dialog.props.secondary_text = "İşleme başlamadan önce Timeshift ile sistem yedeği (snapshot) alınsın mı?\n\n(Önerilir)"
         dialog.add_button("Yedeksiz Devam Et", Gtk.ResponseType.NO)
         
         def on_resp(d, r):
@@ -625,13 +626,13 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def show_error_dialog(self, title, message):
         dialog = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.OK, text=title)
-        dialog.format_secondary_text(message)
+        dialog.props.secondary_text = message
         dialog.connect("response", lambda d, r: d.destroy())
         dialog.show()
 
     def show_reboot_dialog(self):
         dialog = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO, text="İşlem Tamamlandı")
-        dialog.format_secondary_text("Yeniden başlatılsın mı?")
+        dialog.props.secondary_text = "Yeniden başlatılsın mı?"
         def on_resp(d, r):
             d.destroy(); 
             if r == Gtk.ResponseType.YES: subprocess.Popen(["pkexec", "reboot"])
@@ -640,7 +641,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def show_report_dialog(self, message):
         dialog = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.NONE, text="İşlem Başarısız")
-        dialog.format_secondary_text(f"{message}\nRapor gönderilsin mi?")
+        dialog.props.secondary_text = f"{message}\nRapor gönderilsin mi?"
         dialog.add_button("Kapat", Gtk.ResponseType.CLOSE)
         dialog.add_button("Rapor Gönder", Gtk.ResponseType.YES)
         def on_response(d, rid):
