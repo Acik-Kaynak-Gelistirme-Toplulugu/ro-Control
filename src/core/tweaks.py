@@ -178,7 +178,10 @@ class SystemTweaks:
         # Ancak bu riskli olabilir. Daha güvenli yol: Var olanın sonuna ekle.
         
         # append komutu
-        sed_cmd = f"sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"/GRUB_CMDLINE_LINUX_DEFAULT=\"{param} /' {file}"
+        # Regex: GRUB_CMDLINE_LINUX_DEFAULT followed by optional spaces, =, optional spaces, and opening quote.
+        # We replace it with the match + param + space.
+        # Use & to represent the matched string (e.g. 'GRUB_CMDLINE_LINUX_DEFAULT="')
+        sed_cmd = f"sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT\\s*=\\s*\"/&{param} /' {file}"
         update_cmd = "update-grub"
         
         full_cmd = f"cp {file} {file}.bak && {sed_cmd} && {update_cmd}"

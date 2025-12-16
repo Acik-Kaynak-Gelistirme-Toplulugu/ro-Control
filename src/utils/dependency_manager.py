@@ -11,6 +11,13 @@ class DependencyManager:
         """
         missing_pkgs = []
         
+        # 0. Distro modülü (Linux dağıtım tespiti için kritik)
+        try:
+             import distro
+        except ImportError:
+             print("DEBUG: 'distro' modülü bulunamadı, kurulum listesine ekleniyor.")
+             missing_pkgs.append("python3-distro")
+
         # 1. Python GObject ve GTK4 Typelib
         try:
             import gi
