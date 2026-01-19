@@ -8,13 +8,22 @@
 **ro-Control**, Linux sistemlerindeki grafik sürücüsü ve oyun performans yönetimini demokratikleştiren, son kullanıcı dostu, güçlü bir araçtır. Karmaşık terminal komutlarına son verin; NVIDIA, AMD ve Intel GPU'larınızın gücünü tek tıkla kontrol altına alın.
 
 ![Screenshot](https://via.placeholder.com/800x450.png?text=ro-Control+Screenshot)
-_(Ekran görüntüsü buraya gelecek)_
+_(Ekran görüntüsü yakında eklenecektir)_
+
+## 📑 İçindekiler
+
+- [Öne Çıkan Özellikler](#-öne-çıkan-özellikler)
+- [Kurulum](#-kurulum)
+- [Kullanım](#-kullanım)
+- [Katkıda Bulunma](#-katkıda-bulunma-contributing)
+- [Hata Bildirimi](#-hata-bildirimi)
+- [Lisans](#-lisans)
 
 ## 🌟 Öne Çıkan Özellikler
 
 ### 🚀 **Akıllı Sürücü Yönetimi**
 
-- **Otomatik Tespit:** donanımınızı milisaniyeler içinde analiz eder.
+- **Otomatik Tespit:** Donanımınızı milisaniyeler içinde analiz eder.
 - **Tek Tıkla Kurulum:** En stabil veya en yeni sürücüleri (Open Source / Proprietary) sorunsuz kurar.
 - **Derin Temizlik (Deep Clean):** Eski sürücü kalıntılarını "nükleer" yöntemlerle temizleyerek çakışmaları önler.
 
@@ -55,19 +64,17 @@ sudo apt install ./ro-control_1.0.0_arm64.deb
 
 ## 🖥 Kullanım
 
-Uygulamayı menüden **ro-Control** adıyla veya terminalden:
+Uygulamayı menüden **ro-Control** adıyla veya terminalden aşağıdaki komutla başlatabilirsiniz:
 
 ```bash
 ro-control
 ```
 
-komutuyla başlatabilirsiniz.
-
-_Not: Sürücü kurma, kaldırma ve sistem onarım işlemleri için `pkexec` aracılığıyla yönetici parolası istenir._
+> **Not:** Sürücü kurma, kaldırma ve sistem onarım işlemleri için `pkexec` aracılığıyla yönetici parolası istenir.
 
 ## 🤝 Katkıda Bulunma (Contributing)
 
-Bu proje açık kaynaklıdır ve her türlü katkıya açıktır! Lütfen katkıda bulunmadan önce [CONTRIBUTING.md](CONTRIBUTING.md) dosyasını okuyun.
+Bu proje açık kaynaklıdır ve her türlü katkıya açıktır! Lütfen katkıda bulunmadan önce [CONTRIBUTING.md](CONTRIBUTING.md) ve [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) dosyalarını okuyun.
 
 1.  Bu repoyu Fork'layın.
 2.  Yeni bir özellik dalı (branch) oluşturun (`git checkout -b feature/yeniozellik`).
