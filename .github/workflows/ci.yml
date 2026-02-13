@@ -183,5 +183,5 @@ jobs:
         with:
           name: ro-control-rpm
           path: |
-            rpmbuild/RPMS/**/*.rpm
+            rpmbuild/RPMS/**/*.x86_64.rpm
             rpmbuild/SRPMS/*.src.rpm

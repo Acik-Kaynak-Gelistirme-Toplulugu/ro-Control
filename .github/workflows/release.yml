@@ -121,7 +121,7 @@ jobs:
           path: |
             ro-control-*.tar.gz
             target/release/ro-control
-            rpmbuild/RPMS/**/*.rpm
+            rpmbuild/RPMS/**/*.x86_64.rpm
             rpmbuild/SRPMS/*.src.rpm
 
   release:
@@ -142,10 +142,11 @@ jobs:
           tag_name: ${{ needs.build.outputs.release_tag }}
           name: ro-control ${{ needs.build.outputs.release_tag }}
           prerelease: ${{ needs.build.outputs.is_prerelease == 'true' }}
+          overwrite_files: true
           generate_release_notes: true
           files: |
             ro-control-*.tar.gz
-            **/*.rpm
             **/*.src.rpm
+            **/*.x86_64.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

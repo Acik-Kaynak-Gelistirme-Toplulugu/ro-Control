@@ -3,6 +3,8 @@ Version:        1.0.0
 Release:        1%{?dist}
 Summary:        Smart GPU driver manager for Linux
 
+%global debug_package %{nil}
+
 License:        GPL-3.0-or-later
 URL:            https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control
 Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
