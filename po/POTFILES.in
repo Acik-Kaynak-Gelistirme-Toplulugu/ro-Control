@@ -1,0 +1,10 @@
+# List of source files containing translatable strings
+src/utils/i18n.rs
+src/ui/window.rs
+src/ui/install_view.rs
+src/ui/expert_view.rs
+src/ui/perf_view.rs
+src/ui/progress_view.rs
+data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.desktop
+data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.metainfo.xml
+data/polkit/io.github.AcikKaynakGelistirmeToplulugu.ro-control.policy

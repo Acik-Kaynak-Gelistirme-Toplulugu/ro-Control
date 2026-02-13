@@ -1,101 +1,175 @@
-# ro-Control 🎮🚀
+<p align="center">
+  <img src="data/icons/hicolor/scalable/apps/com.sopwith.rocontrol.svg" width="128" height="128" alt="ro-Control">
+</p>
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![License](https://img.shields.io/badge/license-GPLv3-green.svg)
-![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)
-![Status](https://img.shields.io/badge/status-Stable-success.svg)
+<h1 align="center">ro-Control</h1>
 
-**ro-Control**, Linux sistemlerindeki grafik sürücüsü ve oyun performans yönetimini demokratikleştiren, son kullanıcı dostu, güçlü bir araçtır. Karmaşık terminal komutlarına son verin; NVIDIA, AMD ve Intel GPU'larınızın gücünü tek tıkla kontrol altına alın.
+<p align="center">
+  <strong>Smart GPU Driver Manager for Linux</strong>
+</p>
 
-![Screenshot](https://via.placeholder.com/800x450.png?text=ro-Control+Screenshot)
-_(Ekran görüntüsü yakında eklenecektir)_
+<p align="center">
+  <a href="https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases"><img src="https://img.shields.io/github/v/release/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control?style=flat-square&color=blue" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square" alt="License"></a>
+  <a href="https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/actions"><img src="https://img.shields.io/github/actions/workflow/status/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/ci.yml?style=flat-square&label=CI" alt="CI"></a>
+  <img src="https://img.shields.io/badge/language-Rust-orange?style=flat-square" alt="Rust">
+  <img src="https://img.shields.io/badge/toolkit-GTK4%20%2B%20libadwaita-4A86CF?style=flat-square" alt="GTK4">
+  <img src="https://img.shields.io/badge/platform-Fedora%20Linux-51A2DA?style=flat-square" alt="Fedora">
+</p>
 
-## 📑 İçindekiler
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#building-from-source">Building</a> •
+  <a href="#contributing">Contributing</a> •
+  <a href="#license">License</a>
+</p>
 
-- [Öne Çıkan Özellikler](#-öne-çıkan-özellikler)
-- [Kurulum](#-kurulum)
-- [Kullanım](#-kullanım)
-- [Katkıda Bulunma](#-katkıda-bulunma-contributing)
-- [Hata Bildirimi](#-hata-bildirimi)
-- [Lisans](#-lisans)
+---
 
-## 🌟 Öne Çıkan Özellikler
+ro-Control is a native Linux desktop application that simplifies GPU driver management. Built in **Rust** with **GTK4 + libadwaita**, it provides a modern interface for installing, configuring, and monitoring NVIDIA graphics drivers on Fedora and other Linux distributions.
 
-### 🚀 **Akıllı Sürücü Yönetimi**
+<!-- TODO: Add screenshots
+<p align="center">
+  <img src="docs/screenshots/install.png" width="45%" alt="Install View">
+  <img src="docs/screenshots/performance.png" width="45%" alt="Performance View">
+</p>
+-->
 
-- **Otomatik Tespit:** Donanımınızı milisaniyeler içinde analiz eder.
-- **Tek Tıkla Kurulum:** En stabil veya en yeni sürücüleri (Open Source / Proprietary) sorunsuz kurar.
-- **Derin Temizlik (Deep Clean):** Eski sürücü kalıntılarını "nükleer" yöntemlerle temizleyerek çakışmaları önler.
+## Features
 
-### 🎮 **Oyun Performansı**
+### 🚀 Smart Driver Management
 
-- **GameMode Entegrasyonu:** Feral GameMode'u otomatik kurar ve yönetir.
-- **Hybrid GPU Switch (MUX):** Laptop kullanıcıları için NVIDIA (Performans), Intel (Güç Tasarrufu) ve Hybrid modları arasında _yeniden başlatma uyarılı_ güvenli geçiş.
-- **Canlı Monitör:** GPU sıcaklığı, yükü, VRAM kullanımı ile CPU ve RAM durumunu anlık izleyin.
+- **Express Install** — One-click NVIDIA driver setup via RPM Fusion (`akmod-nvidia`)
+- **Expert Mode** — Choose between Proprietary and Open Kernel modules
+- **Deep Clean** — Remove old driver artifacts to prevent conflicts
+- **Secure Boot** — Automatic detection and warnings for unsigned modules
 
-### 🛠 **Uzman Araçları**
+### 📊 Live Performance Monitor
 
-- **Flatpak Onarıcı:** Steam oyunlarının açılmama sorununu çözen tek tuşlu onarım aracı.
-- **X11 / Wayland Tespiti:** Hangi görüntü sunucusunda çalıştığınızı anında görün.
-- **Repo Optimizasyonu:** İndirme hızlarını artırmak için en yakın yansıyı seçer.
+- Real-time GPU temperature, load, and VRAM usage
+- CPU load and temperature tracking
+- RAM usage monitoring
+- Color-coded progress bars (green → yellow → red)
 
-### 🔄 **Akıllı Güncelleme**
+### 🎮 Gaming Optimization
 
-- **Otomatik Kontrol:** Uygulama açılışında GitHub üzerindeki yeni sürümleri kontrol eder.
-- **Yerinde Güncelleme:** Yeni sürümleri arayüz üzerinden indirip kurar.
+- **Feral GameMode** — One-click installation and management
+- **Flatpak/Steam** — Permission repair for Flatpak gaming issues
 
-## 📦 Kurulum
+### 🖥 Display Server
 
-### Debian / Ubuntu / Mint / Pop!\_OS
+- **Wayland Fix** — Automatic `nvidia-drm.modeset=1` GRUB configuration
+- **Hybrid Graphics** — Switch between NVIDIA, Intel, and On-Demand modes
 
-En son sürümü [Releases](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases) sayfasından indirebilirsiniz.
+### 🔄 Auto-Updates
 
-**Intel/AMD İşlemcili Sistemler (x86_64/AMD64) İçin:**
+- GitHub Releases integration for self-updating
+- RPM package download and installation
+
+### 🌍 Internationalization
+
+- English and Turkish bilingual interface
+- Extensible translation system
+
+## Installation
+
+### Fedora (RPM)
+
+Download the latest release from [Releases](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases):
 
 ```bash
-sudo apt install ./ro-control_1.0.0_amd64.deb
+sudo dnf install ./ro-control-1.0.0-1.fc*.x86_64.rpm
 ```
 
-**ARM İşlemcili Sistemler (Raspberry Pi/ARM64) İçin:**
+### From Source
 
 ```bash
-sudo apt install ./ro-control_1.0.0_arm64.deb
+# Install dependencies
+sudo dnf install rust cargo gtk4-devel libadwaita-devel glib2-devel \
+    cairo-devel pango-devel gdk-pixbuf2-devel graphene-devel gcc
+
+# Build and install
+git clone https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control.git
+cd ro-Control
+make build
+sudo make install
 ```
 
-## 🖥 Kullanım
+See [docs/BUILDING.md](docs/BUILDING.md) for detailed build instructions for Fedora, Ubuntu, and Arch Linux.
 
-Uygulamayı menüden **ro-Control** adıyla veya terminalden aşağıdaki komutla başlatabilirsiniz:
+## Usage
+
+Launch from your application menu or terminal:
 
 ```bash
 ro-control
 ```
 
-> **Not:** Sürücü kurma, kaldırma ve sistem onarım işlemleri için `pkexec` aracılığıyla yönetici parolası istenir.
+> **Note:** Driver operations require administrator authentication via PolicyKit.
 
-## 🤝 Katkıda Bulunma (Contributing)
+## Project Structure
 
-Bu proje açık kaynaklıdır ve her türlü katkıya açıktır! Lütfen katkıda bulunmadan önce [CONTRIBUTING.md](CONTRIBUTING.md) ve [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) dosyalarını okuyun.
+```
+ro-Control/
+├── src/                    # Rust source code
+│   ├── core/               #   Business logic (detection, installation, monitoring)
+│   ├── ui/                 #   GTK4 + libadwaita interface
+│   └── utils/              #   Shared utilities (i18n, logging, commands)
+├── data/                   # FreeDesktop data files
+│   ├── icons/              #   Hicolor theme icons (scalable + symbolic SVG)
+│   ├── polkit/             #   PolicyKit authorization policy
+│   ├── *.desktop           #   Desktop entry
+│   ├── *.metainfo.xml      #   AppStream metadata
+│   └── *.gschema.xml       #   GSettings schema
+├── packaging/              # Distribution packaging
+│   ├── rpm/                #   Fedora RPM spec
+│   └── flatpak/            #   Flatpak manifest
+├── scripts/                # Helper scripts
+├── po/                     # Translation files
+├── docs/                   # Documentation
+│   ├── ARCHITECTURE.md     #   Technical architecture
+│   └── BUILDING.md         #   Build instructions
+├── .github/                # CI/CD and issue templates
+├── Cargo.toml              # Rust dependencies
+├── Makefile                # Build/install targets
+├── CHANGELOG.md            # Release history
+├── CONTRIBUTING.md         # Contribution guide
+└── CODE_OF_CONDUCT.md      # Community guidelines
+```
 
-1.  Bu repoyu Fork'layın.
-2.  Yeni bir özellik dalı (branch) oluşturun (`git checkout -b feature/yeniozellik`).
-3.  Değişikliklerinizi commit'leyin (`git commit -m 'Yeni özellik eklendi'`).
-4.  Dalınızı Push'layın (`git push origin feature/yeniozellik`).
-5.  Bir Pull Request (PR) oluşturun.
+## Contributing
 
-## 🐛 Hata Bildirimi
+We welcome contributions from everyone! Please read our [Contributing Guide](CONTRIBUTING.md) before submitting a Pull Request.
 
-Bir hata mı buldunuz? Lütfen [Issues](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/issues) sekmesini kullanarak bize bildirin. Hata bildiriminde şunları eklemeyi unutmayın:
+Quick start:
 
-- Kullandığınız dağıtım ve sürümü
-- Ekran kartı modeliniz
-- Hatanın ekran görüntüsü veya log çıktısı
+```bash
+git clone https://github.com/YOUR_USERNAME/ro-Control.git
+cd ro-Control
+cargo build
+cargo run
 
-## 📜 Lisans
+# Before submitting
+cargo fmt --all
+cargo clippy -- -D warnings
+cargo test
+```
 
-Bu proje **GPL-3.0** lisansı ile lisanslanmıştır. Detaylar için repodaki lisans dosyasına bakabilirsiniz.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a technical overview of the codebase.
+
+## Translators
+
+ro-Control supports multiple languages. See the [Contributing Guide](CONTRIBUTING.md#-translations) for instructions on adding new translations.
+
+Currently supported: **English**, **Türkçe**
+
+## License
+
+This project is licensed under the [GPL-3.0](LICENSE) license.
 
 ---
 
 <div align="center">
-  <sub>Sopwit tarafından  ile geliştirildi.</sub>
+  <sub>Built with 🦀 Rust and ❤️ by <a href="https://github.com/Acik-Kaynak-Gelistirme-Toplulugu">Açık Kaynak Geliştirme Topluluğu</a></sub>
 </div>

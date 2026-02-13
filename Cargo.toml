@@ -1,0 +1,44 @@
+[package]
+name = "ro-control"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.77"
+authors = ["Açık Kaynak Geliştirme Topluluğu <info@akgt.dev>"]
+description = "Smart GPU driver manager for Linux — install, configure and monitor NVIDIA graphics drivers"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control"
+homepage = "https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control"
+readme = "README.md"
+keywords = ["nvidia", "gpu", "driver", "qt6", "linux"]
+categories = ["gui"]
+
+[[bin]]
+name = "ro-control"
+path = "src/main.rs"
+
+[dependencies]
+# Qt6 / cxx-qt bindings
+cxx = "1.0.95"
+cxx-qt = "0.7"
+cxx-qt-lib = { version = "0.7", features = ["qt_full"] }
+cxx-qt-lib-extras = "0.7"
+
+# Core
+log = "0.4"
+env_logger = "0.11"
+ureq = { version = "3", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+chrono = "0.4"
+open = "5"
+dirs = "6"
+
+[build-dependencies]
+cxx-qt-build = { version = "0.7", features = ["link_qt_object_files"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.AcikKaynakGelistirmeToplulugu.ro-control</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <name>ro-Control</name>
+  <name xml:lang="tr">ro-Control</name>
+
+  <summary>Smart GPU driver manager for Linux</summary>
+  <summary xml:lang="ar">مدير تعريف بطاقة الرسوميات الذكي لنظام لينكس</summary>
+  <summary xml:lang="de">Intelligenter GPU-Treiber-Manager für Linux</summary>
+  <summary xml:lang="es">Gestor inteligente de controladores GPU para Linux</summary>
+  <summary xml:lang="fr">Gestionnaire intelligent de pilotes GPU pour Linux</summary>
+  <summary xml:lang="it">Gestore intelligente di driver GPU per Linux</summary>
+  <summary xml:lang="ja">Linux 用スマート GPU ドライバーマネージャー</summary>
+  <summary xml:lang="ko">Linux용 스마트 GPU 드라이버 관리자</summary>
+  <summary xml:lang="nl">Slimme GPU-stuurprogrammabeheer voor Linux</summary>
+  <summary xml:lang="pl">Inteligentny menedżer sterowników GPU dla Linuksa</summary>
+  <summary xml:lang="pt">Gestor inteligente de controladores GPU para Linux</summary>
+  <summary xml:lang="pt_BR">Gerenciador inteligente de drivers GPU para Linux</summary>
+  <summary xml:lang="ru">Умный менеджер драйверов GPU для Linux</summary>
+  <summary xml:lang="tr">Linux için akıllı GPU sürücü yöneticisi</summary>
+  <summary xml:lang="uk">Розумний менеджер драйверів GPU для Linux</summary>
+  <summary xml:lang="zh_CN">Linux 智能 GPU 驱动管理器</summary>
+  <summary xml:lang="zh_TW">Linux 智慧 GPU 驅動程式管理員</summary>
+
+  <description>
+    <p>
+      ro-Control is a native Linux application that simplifies NVIDIA GPU driver management.
+      It automatically detects your hardware, recommends the optimal drivers, and handles the
+      entire installation process — including kernel module compilation, initramfs updates,
+      and secure boot signing.
+    </p>
+    <p xml:lang="tr">
+      ro-Control, NVIDIA GPU sürücü yönetimini kolaylaştıran native bir Linux uygulamasıdır.
+      Donanımınızı otomatik tespit eder, optimal sürücüleri önerir ve tüm kurulum sürecini
+      yönetir — çekirdek modülü derleme, initramfs güncelleme ve secure boot imzalama dahil.
+    </p>
+    <p>Key features include:</p>
+    <ul>
+      <li>One-click express driver installation via RPM Fusion</li>
+      <li>Real-time GPU temperature, load, and VRAM monitoring</li>
+      <li>NVIDIA Wayland support (nvidia-drm.modeset)</li>
+      <li>Feral GameMode integration for optimized gaming</li>
+      <li>Flatpak/Steam permission repair utility</li>
+      <li>Hybrid graphics switching (NVIDIA Optimus)</li>
+      <li>Built-in system diagnostics and error reporting</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.AcikKaynakGelistirmeToplulugu.ro-control.desktop</launchable>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#0a84ff</color>
+    <color type="primary" scheme_preference="dark">#5e5ce6</color>
+  </branding>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Express Installation — one-click GPU driver setup</caption>
+      <caption xml:lang="tr">Hızlı Kurulum — tek tıkla GPU sürücü kurulumu</caption>
+      <!-- <image>https://raw.githubusercontent.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/main/docs/screenshots/install.png</image> -->
+    </screenshot>
+    <screenshot>
+      <caption>Live Performance Monitor — real-time GPU and system stats</caption>
+      <caption xml:lang="tr">Canlı Performans Monitörü — anlık GPU ve sistem istatistikleri</caption>
+      <!-- <image>https://raw.githubusercontent.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/main/docs/screenshots/performance.png</image> -->
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control</url>
+  <url type="bugtracker">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/issues</url>
+  <url type="contribute">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/blob/main/CONTRIBUTING.md</url>
+  <url type="vcs-browser">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control</url>
+  <url type="translate">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/tree/main/po</url>
+
+  <developer id="io.github.AcikKaynakGelistirmeToplulugu">
+    <name>Açık Kaynak Geliştirme Topluluğu</name>
+  </developer>
+
+  <translation type="gettext">ro-control</translation>
+
+  <content_rating type="oars-1.1" />
+
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <releases>
+    <release version="1.0.0" date="2026-02-14">
+      <description>
+        <p>Initial stable release — rewritten in Rust for native performance.</p>
+        <ul>
+          <li>NVIDIA driver management via RPM Fusion (akmod-nvidia)</li>
+          <li>Live GPU/CPU/RAM performance monitoring dashboard</li>
+          <li>NVIDIA Wayland fix (nvidia-drm.modeset=1)</li>
+          <li>GameMode and Flatpak repair tools</li>
+          <li>Multi-language interface (16+ languages)</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+</component>

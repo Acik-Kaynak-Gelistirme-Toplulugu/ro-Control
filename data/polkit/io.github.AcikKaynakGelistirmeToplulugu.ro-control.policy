@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<!--
+  PolicyKit policy for ro-Control
+  Defines authorization rules for privileged GPU driver operations.
+-->
+<policyconfig>
+  <vendor>ro-Control</vendor>
+  <vendor_url>https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control</vendor_url>
+  <icon_name>io.github.AcikKaynakGelistirmeToplulugu.ro-control</icon_name>
+
+  <action id="io.github.AcikKaynakGelistirmeToplulugu.ro-control.pkexec.run">
+    <description>Run ro-Control privileged helper</description>
+    <description xml:lang="ar">تشغيل مساعد ro-Control المميز</description>
+    <description xml:lang="de">Privilegierten ro-Control-Helfer ausführen</description>
+    <description xml:lang="es">Ejecutar el asistente privilegiado de ro-Control</description>
+    <description xml:lang="fr">Exécuter l'assistant privilégié ro-Control</description>
+    <description xml:lang="it">Esegui l'assistente privilegiato di ro-Control</description>
+    <description xml:lang="ja">ro-Control 特権ヘルパーを実行する</description>
+    <description xml:lang="ko">ro-Control 권한 도우미 실행</description>
+    <description xml:lang="pl">Uruchom uprzywilejowanego pomocnika ro-Control</description>
+    <description xml:lang="pt">Executar o assistente privilegiado do ro-Control</description>
+    <description xml:lang="pt_BR">Executar o assistente privilegiado do ro-Control</description>
+    <description xml:lang="ru">Запустить привилегированного помощника ro-Control</description>
+    <description xml:lang="tr">ro-Control ayrıcalıklı yardımcıyı çalıştır</description>
+    <description xml:lang="uk">Запустити привілейований помічник ro-Control</description>
+    <description xml:lang="zh_CN">运行 ro-Control 特权助手</description>
+    <description xml:lang="zh_TW">執行 ro-Control 特權助手</description>
+
+    <message>Authentication is required to manage GPU drivers</message>
+    <message xml:lang="ar">المصادقة مطلوبة لإدارة تعريفات بطاقة الرسوميات</message>
+    <message xml:lang="de">Authentifizierung ist erforderlich, um GPU-Treiber zu verwalten</message>
+    <message xml:lang="es">Se requiere autenticación para gestionar los controladores de GPU</message>
+    <message xml:lang="fr">L'authentification est requise pour gérer les pilotes GPU</message>
+    <message xml:lang="it">È richiesta l'autenticazione per gestire i driver GPU</message>
+    <message xml:lang="ja">GPU ドライバーを管理するには認証が必要です</message>
+    <message xml:lang="ko">GPU 드라이버를 관리하려면 인증이 필요합니다</message>
+    <message xml:lang="pl">Wymagane jest uwierzytelnienie do zarządzania sterownikami GPU</message>
+    <message xml:lang="pt">É necessária autenticação para gerir controladores GPU</message>
+    <message xml:lang="pt_BR">É necessária autenticação para gerenciar drivers de GPU</message>
+    <message xml:lang="ru">Для управления драйверами GPU требуется аутентификация</message>
+    <message xml:lang="tr">GPU sürücülerini yönetmek için kimlik doğrulaması gerekli</message>
+    <message xml:lang="uk">Для керування драйверами GPU потрібна автентифікація</message>
+    <message xml:lang="zh_CN">管理 GPU 驱动程序需要身份验证</message>
+    <message xml:lang="zh_TW">管理 GPU 驅動程式需要身份驗證</message>
+
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/ro-control-root-task</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+</policyconfig>

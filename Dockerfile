@@ -1,11 +1,19 @@
-FROM ubuntu:22.04
+FROM fedora:40
 
-# Install dependencies strictly required for building the .deb package
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    dpkg \
-    lintian \
-    && rm -rf /var/lib/apt/lists/*
+# Install Rust and GTK4 build dependencies
+RUN dnf install -y \
+    rust cargo clippy rustfmt \
+    gtk4-devel libadwaita-devel glib2-devel \
+    cairo-devel pango-devel gdk-pixbuf2-devel \
+    graphene-devel pkgconf-pkg-config gcc \
+    rpm-build \
+    && dnf clean all
 
 WORKDIR /app
+COPY . .
+
+# Build release binary
+RUN cargo build --release
+
+# Verify binary exists
+RUN test -f target/release/ro-control && echo "Build successful"

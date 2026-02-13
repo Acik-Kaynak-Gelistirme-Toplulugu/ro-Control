@@ -1,0 +1,39 @@
+# ro-Control Packaging for Flatpak
+# Build and install via: flatpak-builder build-dir io.github.AcikKaynakGelistirmeToplulugu.ro-control.yml --force-clean
+#
+# Note: This manifest is a starting point. GPU driver management via Flatpak
+# is limited by sandboxing. This is primarily for testing/preview purposes.
+
+app-id: io.github.AcikKaynakGelistirmeToplulugu.ro-control
+runtime: org.kde.Platform
+runtime-version: "6.8"
+sdk: org.kde.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: ro-control
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=all
+  - --system-talk-name=org.freedesktop.PolicyKit1
+  - --filesystem=/sys/class:ro
+  - --filesystem=/proc:ro
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+
+modules:
+  - name: ro-control
+    buildsystem: simple
+    build-commands:
+      - cargo build --release
+      - install -Dm755 target/release/ro-control /app/bin/ro-control
+      - install -Dm644 data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.desktop /app/share/applications/io.github.AcikKaynakGelistirmeToplulugu.ro-control.desktop
+      - install -Dm644 data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.metainfo.xml /app/share/metainfo/io.github.AcikKaynakGelistirmeToplulugu.ro-control.metainfo.xml
+      - install -Dm644 data/icons/hicolor/scalable/apps/io.github.AcikKaynakGelistirmeToplulugu.ro-control.svg /app/share/icons/hicolor/scalable/apps/io.github.AcikKaynakGelistirmeToplulugu.ro-control.svg
+    sources:
+      - type: dir
+        path: .

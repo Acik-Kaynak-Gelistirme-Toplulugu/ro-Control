@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="io.github.AcikKaynakGelistirmeToplulugu.ro-control"
+          path="/io/github/AcikKaynakGelistirmeToplulugu/ro-control/">
+    <key name="window-width" type="i">
+      <default>950</default>
+      <summary>Window width</summary>
+      <description>The last used width of the main window.</description>
+    </key>
+    <key name="window-height" type="i">
+      <default>680</default>
+      <summary>Window height</summary>
+      <description>The last used height of the main window.</description>
+    </key>
+    <key name="window-maximized" type="b">
+      <default>false</default>
+      <summary>Window maximized</summary>
+      <description>Whether the main window is maximized.</description>
+    </key>
+    <key name="color-scheme" type="s">
+      <default>'default'</default>
+      <summary>Color scheme</summary>
+      <description>The preferred color scheme: 'default', 'dark', or 'light'.</description>
+    </key>
+    <key name="last-update-check" type="s">
+      <default>''</default>
+      <summary>Last update check timestamp</summary>
+      <description>ISO 8601 timestamp of the last successful update check.</description>
+    </key>
+  </schema>
+</schemalist>

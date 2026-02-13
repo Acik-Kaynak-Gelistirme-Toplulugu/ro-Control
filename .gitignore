@@ -1,74 +1,31 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# Rust / Cargo
+/target/
+**/*.rs.bk
+*.pdb
 
-# Virtual Environment
-venv/
-env/
-ENV/
-.env
-.venv
+# Build
+/build/
+/build-dir/
+*.rpm
+*.deb
+*.tar.gz
+*.flatpak
 
-# Installer Logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.noseids
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# VS Code
+# IDE
 .vscode/
-.history/
-
-# PyCharm
 .idea/
+.history/
+*.swp
+*.swo
+*~
+.direnv/
 
 # macOS
 .DS_Store
 
-# Debian / Build Artifacts
-build_deb/
-build_amd64/
-build_arm64/
-*.deb
-.deb
-*.spec
+# Logs
+*.log
+
+# Generated
+.flatpak-builder/
+.repo/

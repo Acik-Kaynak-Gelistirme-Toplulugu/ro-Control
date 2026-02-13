@@ -1,0 +1,121 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug! Please fill out the sections below.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+      placeholder: What happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce the issue?
+      placeholder: |
+        1. Open ro-Control
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: input
+    id: distro
+    attributes:
+      label: Distribution
+      description: Your Linux distribution and version
+      placeholder: "Fedora 40 Workstation"
+    validations:
+      required: true
+
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU Model
+      description: Your graphics card model
+      placeholder: "NVIDIA GeForce RTX 3070"
+    validations:
+      required: true
+
+  - type: input
+    id: kernel
+    attributes:
+      label: Kernel Version
+      description: Output of `uname -r`
+      placeholder: "6.8.11-300.fc40.x86_64"
+    validations:
+      required: false
+
+  - type: input
+    id: desktop
+    attributes:
+      label: Desktop Environment
+      description: KDE Plasma, GNOME, etc.
+      placeholder: "KDE Plasma 6.1"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: display-server
+    attributes:
+      label: Display Server
+      options:
+        - Wayland
+        - X11
+        - Unknown
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste relevant log output from `~/.local/share/ro-control/app.log`
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, add screenshots to help explain the problem.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues that might be related
+          required: true
+        - label: I am using the latest version of ro-Control
+          required: false

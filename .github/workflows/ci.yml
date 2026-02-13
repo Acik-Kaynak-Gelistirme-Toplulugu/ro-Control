@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    container: fedora:40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          dnf install -y \
+            rust cargo clippy rustfmt \
+            gtk4-devel libadwaita-devel glib2-devel \
+            cairo-devel pango-devel gdk-pixbuf2-devel \
+            graphene-devel pkgconf-pkg-config gcc
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check
+        run: cargo check --all-targets
+
+  fmt:
+    name: Format
+    runs-on: ubuntu-latest
+    container: fedora:40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: dnf install -y rust cargo rustfmt
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    container: fedora:40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          dnf install -y \
+            rust cargo clippy \
+            gtk4-devel libadwaita-devel glib2-devel \
+            cairo-devel pango-devel gdk-pixbuf2-devel \
+            graphene-devel pkgconf-pkg-config gcc
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-clippy-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    container: fedora:40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          dnf install -y \
+            rust cargo \
+            gtk4-devel libadwaita-devel glib2-devel \
+            cairo-devel pango-devel gdk-pixbuf2-devel \
+            graphene-devel pkgconf-pkg-config gcc
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-test-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run tests
+        run: cargo test --all-targets
+
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+    container: fedora:40
+    needs: [check, fmt, clippy, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          dnf install -y \
+            rust cargo \
+            gtk4-devel libadwaita-devel glib2-devel \
+            cairo-devel pango-devel gdk-pixbuf2-devel \
+            graphene-devel pkgconf-pkg-config gcc
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-release-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ro-control-x86_64
+          path: target/release/ro-control

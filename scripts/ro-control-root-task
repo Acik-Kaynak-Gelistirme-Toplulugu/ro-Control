@@ -1,0 +1,22 @@
+#!/bin/bash
+# ro-Control — Privileged Task Wrapper
+# Invoked by PolicyKit (pkexec) to run commands as root.
+# See: data/polkit/com.sopwith.rocontrol.policy
+#
+# Usage: ro-control-root-task "dnf install -y akmod-nvidia"
+#
+# SECURITY NOTE: This script only executes commands passed by the
+# ro-control binary. It is protected by PolicyKit authentication.
+
+set -euo pipefail
+
+if [ $# -eq 0 ]; then
+    echo "Error: No command provided." >&2
+    exit 1
+fi
+
+# Non-interactive mode for package managers
+export DEBIAN_FRONTEND=noninteractive
+
+# Execute the provided command
+/bin/sh -c "$1"

@@ -1,41 +1,56 @@
-# Davranış Kuralları (Code of Conduct)
+# Contributor Covenant Code of Conduct
 
-## Taahhüdümüz
+## Our Pledge
 
-Biz üyeler, katkıda bulunanlar ve liderler olarak, cinsel yönelim, cinsiyet, cinsel kimlik ve ifade, engellilik, dış görünüş, vücut ölçüsü, ırk, etnik köken, yaş, din veya milliyet ayrımı gözetmeksizin herkes için katılımcı ve tacizden arındırılmış bir topluluk deneyimi sağlamayı taahhüt ediyoruz.
+We as members, contributors, and leaders pledge to make participation in our
+community a harassment-free experience for everyone, regardless of age, body
+size, visible or invisible disability, ethnicity, sex characteristics, gender
+identity and expression, level of experience, education, socio-economic status,
+nationality, personal appearance, race, caste, color, religion, or sexual
+identity and orientation.
 
-## Standartlarımız
+## Our Standards
 
-Topluluğumuz için olumlu bir ortam oluşturmaya yardımcı olan davranış örnekleri şunlardır:
+Examples of behavior that contributes to a positive environment:
 
-- Hoşgörülü ve kapsayıcı bir dil kullanmak
-- Farklı bakış açılarına ve deneyimlere saygı duymak
-- Yapıcı geri bildirimleri nezaketle kabul etmek
-- Topluluk için en iyisine odaklanmak
-- Diğer topluluk üyelerine karşı empati göstermek
+- Using welcoming and inclusive language
+- Being respectful of differing viewpoints and experiences
+- Gracefully accepting constructive criticism
+- Focusing on what is best for the community
+- Showing empathy towards other community members
 
-Kabul edilemez davranış örnekleri şunlardır:
+Examples of unacceptable behavior:
 
-- Cinsel içerikli dil veya görsellerin kullanımı ve istenmeyen cinsel ilgi veya yakınlaşma
-- Trolleme, hakaret edici/küçümseyici yorumlar ve kişisel veya politik saldırılar
-- Genel veya özel taciz
-- İzinleri olmaksızın başkalarının fiziksel adresi veya e-posta adresi gibi özel bilgilerini yayınlamak
-- Profesyonel bir ortamda makul bulunmayacak diğer davranışlar
+- The use of sexualized language or imagery, and sexual attention or advances
+- Trolling, insulting or derogatory comments, and personal or political attacks
+- Public or private harassment
+- Publishing others' private information without explicit permission
+- Other conduct which could reasonably be considered inappropriate in a professional setting
 
-## Sorumluluklarımız
+## Enforcement Responsibilities
 
-Proje yöneticileri, kabul edilebilir davranış standartlarını netleştirmekten ve bu kurallara uymayan davranışlara, yorumlara ve diğer eylemlere karşı adil ve düzeltici önlemler almaktan sorumludur.
+Community leaders are responsible for clarifying and enforcing our standards of
+acceptable behavior and will take appropriate and fair corrective action in
+response to any behavior that they deem inappropriate, threatening, offensive,
+or harmful.
 
-Proje yöneticileri, bu Davranış Kuralları ile bağdaşmayan yorumları, kodları, wiki düzenlemelerini, sorunları (issues) ve diğer katkıları kaldırma, düzenleme veya reddetme hakkına ve sorumluluğuna sahiptir. Ayrıca uygunsuz davranışlarda bulunan katkıcıları geçici veya kalıcı olarak engelleyebilirler.
+## Scope
 
-## Kapsam
+This Code of Conduct applies within all community spaces, and also applies when
+an individual is officially representing the community in public spaces.
 
-Bu Davranış Kuralları, hem proje alanlarında hem de bir bireyin projeyi veya topluluğunu temsil ettiği kamusal alanlarda geçerlidir.
+## Enforcement
 
-## Yürütme
+Instances of abusive, harassing, or otherwise unacceptable behavior may be
+reported to the community leaders responsible for enforcement at
+**sopwith.osdev@gmail.com**.
 
-Taciz edici, baskıcı veya kabul edilemez davranışlar, proje ekibine bildirilerek şikayet edilebilir. Tüm şikayetler incelenecek ve durumun gerektirdiği şekilde adil bir yanıtla sonuçlandırılacaktır. Proje ekibi, olayı bildiren kişinin gizliliğini korumakla yükümlüdür.
+All complaints will be reviewed and investigated promptly and fairly. All
+community leaders are obligated to respect the privacy and security of the
+reporter of any incident.
 
-## Atıf
+## Attribution
 
-Bu Davranış Kuralları, [Contributor Covenant](https://www.contributor-covenant.org), sürüm 1.4'ten uyarlanmıştır.
+This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org),
+version 2.1, available at
+[https://www.contributor-covenant.org/version/2/1/code_of_conduct.html](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html).
