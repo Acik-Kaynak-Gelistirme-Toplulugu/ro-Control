@@ -4,7 +4,7 @@ Release:        1%{?dist}
 Summary:        Smart GPU driver manager for Linux
 
 License:        GPL-3.0-or-later
-URL:            https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control
+URL:            https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control
 Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 
 BuildRequires:  rust >= 1.70
@@ -38,7 +38,7 @@ Features include real-time GPU/CPU/RAM monitoring, Feral GameMode integration,
 Flatpak/Steam permission repair, and NVIDIA Wayland support configuration.
 
 %prep
-%autosetup -n ro-Control-%{version}
+%autosetup -n ro-control-%{version}
 
 %build
 cargo build --release %{?_smp_mflags}
