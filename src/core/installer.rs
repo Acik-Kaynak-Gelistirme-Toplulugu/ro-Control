@@ -1,8 +1,8 @@
 // Driver Installer — Fedora (DNF) focused NVIDIA/AMD driver management
 // Uses pkexec for privilege escalation via PolicyKit
 
-use crate::utils::command;
 use crate::core::detector;
+use crate::utils::command;
 use chrono::Local;
 
 /// Log callback type for real-time UI updates.
@@ -36,14 +36,16 @@ impl DriverInstaller {
     pub fn install_nvidia_closed(&self) -> bool {
         self.log("--- BAŞLATILIYOR: NVIDIA Proprietary (DNF/RPM Fusion) ---");
         let mut commands = self.prepare_install_chain();
-        
+
         self.log("NVIDIA paketleri hazırlanıyor...");
-        
+
         match self.pkg_manager {
             Some("dnf") => {
                 // Ensure RPM Fusion is enabled
                 commands.push("dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || true".into());
-                commands.push("dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda nvidia-settings".into());
+                commands.push(
+                    "dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda nvidia-settings".into(),
+                );
             }
             Some("apt") => {
                 commands.push("apt-get install -y nvidia-driver nvidia-settings".into());
@@ -94,10 +96,16 @@ impl DriverInstaller {
 
         match self.pkg_manager {
             Some("dnf") => {
-                commands.push("dnf install -y xorg-x11-drv-amdgpu mesa-dri-drivers mesa-vulkan-drivers".into());
+                commands.push(
+                    "dnf install -y xorg-x11-drv-amdgpu mesa-dri-drivers mesa-vulkan-drivers"
+                        .into(),
+                );
             }
             Some("apt") => {
-                commands.push("apt-get install -y xserver-xorg-video-amdgpu mesa-vulkan-drivers mesa-utils".into());
+                commands.push(
+                    "apt-get install -y xserver-xorg-video-amdgpu mesa-vulkan-drivers mesa-utils"
+                        .into(),
+                );
             }
             Some("pacman") => {
                 commands.push("pacman -Sy --noconfirm xf86-video-amdgpu mesa vulkan-radeon".into());
@@ -215,14 +223,23 @@ impl DriverInstaller {
         let final_cmd = format!(r#"pkexec ro-control-root-task "{}""#, full_command);
 
         let now = Local::now().format("%H:%M:%S");
-        self.log(&format!("\n[{}] --- İŞLEM BAŞLATILIYOR: {} ---", now, task_name));
+        self.log(&format!(
+            "\n[{}] --- İŞLEM BAŞLATILIYOR: {} ---",
+            now, task_name
+        ));
 
         // System diagnostic report
         let sys_info = detector::get_full_system_info();
         self.log("\n[SYSTEM DIAGNOSTIC REPORT]");
-        self.log(&format!("OS: {} | Kernel: {}", sys_info.distro, sys_info.kernel));
+        self.log(&format!(
+            "OS: {} | Kernel: {}",
+            sys_info.distro, sys_info.kernel
+        ));
         self.log(&format!("CPU: {} | RAM: {}", sys_info.cpu, sys_info.ram));
-        self.log(&format!("GPU: {} {}", sys_info.gpu.vendor, sys_info.gpu.model));
+        self.log(&format!(
+            "GPU: {} {}",
+            sys_info.gpu.vendor, sys_info.gpu.model
+        ));
         self.log(&format!("Driver In Use: {}", sys_info.gpu.driver_in_use));
         self.log(&"-".repeat(40));
 

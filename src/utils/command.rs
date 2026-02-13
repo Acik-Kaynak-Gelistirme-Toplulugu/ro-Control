@@ -4,11 +4,7 @@ use std::process::Command;
 /// Run a command and return stdout as String, or None on failure.
 pub fn run(command: &str) -> Option<String> {
     log::debug!("Running command: {}", command);
-    match Command::new("sh")
-        .arg("-c")
-        .arg(command)
-        .output()
-    {
+    match Command::new("sh").arg("-c").arg(command).output() {
         Ok(output) => {
             if output.status.success() {
                 let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -35,11 +31,7 @@ pub fn run(command: &str) -> Option<String> {
 /// Run a command returning (exit_code, stdout, stderr).
 pub fn run_full(command: &str) -> (i32, String, String) {
     log::debug!("Running full command: {}", command);
-    match Command::new("sh")
-        .arg("-c")
-        .arg(command)
-        .output()
-    {
+    match Command::new("sh").arg("-c").arg(command).output() {
         Ok(output) => {
             let code = output.status.code().unwrap_or(-1);
             let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();

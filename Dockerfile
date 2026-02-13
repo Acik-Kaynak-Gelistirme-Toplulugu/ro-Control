@@ -1,11 +1,11 @@
 FROM fedora:40
 
-# Install Rust and GTK4 build dependencies
+# Install Rust and Qt6/QML build dependencies
 RUN dnf install -y \
     rust cargo clippy rustfmt \
-    gtk4-devel libadwaita-devel glib2-devel \
-    cairo-devel pango-devel gdk-pixbuf2-devel \
-    graphene-devel pkgconf-pkg-config gcc \
+    cmake gcc-c++ pkgconf-pkg-config \
+    qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
+    kf6-qqc2-desktop-style \
     rpm-build \
     && dnf clean all
 

@@ -1,8 +1,8 @@
 // System Detector — GPU, CPU, RAM, Distro, Secure Boot detection
 // Fedora/Linux native — no macOS simulation
 
-use regex::Regex;
 use crate::utils::command;
+use regex::Regex;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Default)]
@@ -44,7 +44,10 @@ pub fn detect_gpu() -> GpuInfo {
         if let Some(output) = command::run("lspci -vmm") {
             let devices: Vec<&str> = output.split("\n\n").collect();
             for device in devices {
-                if device.contains("VGA") || device.contains("3D controller") || device.contains("Display controller") {
+                if device.contains("VGA")
+                    || device.contains("3D controller")
+                    || device.contains("Display controller")
+                {
                     let mut details: HashMap<&str, &str> = HashMap::new();
                     for line in device.lines() {
                         if let Some((key, val)) = line.split_once(':') {
@@ -114,7 +117,7 @@ pub fn detect_gpu() -> GpuInfo {
 /// Get full system information.
 pub fn get_full_system_info() -> SystemInfo {
     let gpu = detect_gpu();
-    
+
     SystemInfo {
         gpu,
         cpu: get_cpu_info(),
@@ -185,9 +188,7 @@ fn get_ram_info() -> String {
             if line.starts_with("Mem:") {
                 let parts: Vec<&str> = line.split_whitespace().collect();
                 if parts.len() >= 2 {
-                    return parts[1]
-                        .replace("Gi", " GB")
-                        .replace("Mi", " MB");
+                    return parts[1].replace("Gi", " GB").replace("Mi", " MB");
                 }
             }
         }
@@ -218,7 +219,8 @@ pub fn get_available_nvidia_versions() -> Vec<String> {
     if let Some(output) = command::run("dnf list available 'akmod-nvidia*' 2>/dev/null") {
         let re = Regex::new(r"akmod-nvidia[^\s]*\s+(\d+\.\d+[\.\d]*)").ok();
         if let Some(re) = re {
-            let mut versions: Vec<String> = re.captures_iter(&output)
+            let mut versions: Vec<String> = re
+                .captures_iter(&output)
                 .filter_map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
                 .collect();
             versions.sort_by(|a, b| b.cmp(a)); // Descending

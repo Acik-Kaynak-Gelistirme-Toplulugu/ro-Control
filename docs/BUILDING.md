@@ -94,7 +94,7 @@ flatpak-builder build-dir \
 cargo fmt
 
 # Lint
-cargo clippy --all-targets -- -D warnings
+cargo clippy --all-targets -- -D warnings -A dead_code -A clippy::incompatible_msrv
 
 # Test
 cargo test

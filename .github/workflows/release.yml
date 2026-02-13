@@ -23,9 +23,9 @@ jobs:
         run: |
           dnf install -y \
             rust cargo \
-            gtk4-devel libadwaita-devel glib2-devel \
-            cairo-devel pango-devel gdk-pixbuf2-devel \
-            graphene-devel pkgconf-pkg-config gcc \
+            cmake gcc-c++ pkgconf-pkg-config \
+            qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
+            kf6-qqc2-desktop-style \
             rpm-build
 
       - name: Build release binary

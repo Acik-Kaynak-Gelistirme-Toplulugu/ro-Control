@@ -45,22 +45,54 @@ fn detect_language() -> Lang {
         .unwrap_or_default()
         .to_lowercase();
 
-    if raw.starts_with("tr") { return Lang::Tr; }
-    if raw.starts_with("de") { return Lang::De; }
-    if raw.starts_with("es") { return Lang::Es; }
-    if raw.starts_with("fr") { return Lang::Fr; }
-    if raw.starts_with("it") { return Lang::It; }
-    if raw.starts_with("ar") { return Lang::Ar; }
-    if raw.starts_with("ja") { return Lang::Ja; }
-    if raw.starts_with("ko") { return Lang::Ko; }
-    if raw.starts_with("nl") { return Lang::Nl; }
-    if raw.starts_with("pl") { return Lang::Pl; }
-    if raw.starts_with("pt_br") { return Lang::PtBr; }
-    if raw.starts_with("pt") { return Lang::Pt; }
-    if raw.starts_with("ru") { return Lang::Ru; }
-    if raw.starts_with("uk") { return Lang::Uk; }
-    if raw.starts_with("zh_tw") || raw.starts_with("zh_hant") { return Lang::ZhTw; }
-    if raw.starts_with("zh") { return Lang::ZhCn; }
+    if raw.starts_with("tr") {
+        return Lang::Tr;
+    }
+    if raw.starts_with("de") {
+        return Lang::De;
+    }
+    if raw.starts_with("es") {
+        return Lang::Es;
+    }
+    if raw.starts_with("fr") {
+        return Lang::Fr;
+    }
+    if raw.starts_with("it") {
+        return Lang::It;
+    }
+    if raw.starts_with("ar") {
+        return Lang::Ar;
+    }
+    if raw.starts_with("ja") {
+        return Lang::Ja;
+    }
+    if raw.starts_with("ko") {
+        return Lang::Ko;
+    }
+    if raw.starts_with("nl") {
+        return Lang::Nl;
+    }
+    if raw.starts_with("pl") {
+        return Lang::Pl;
+    }
+    if raw.starts_with("pt_br") {
+        return Lang::PtBr;
+    }
+    if raw.starts_with("pt") {
+        return Lang::Pt;
+    }
+    if raw.starts_with("ru") {
+        return Lang::Ru;
+    }
+    if raw.starts_with("uk") {
+        return Lang::Uk;
+    }
+    if raw.starts_with("zh_tw") || raw.starts_with("zh_hant") {
+        return Lang::ZhTw;
+    }
+    if raw.starts_with("zh") {
+        return Lang::ZhCn;
+    }
 
     Lang::En
 }

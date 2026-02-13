@@ -37,8 +37,7 @@ pub const DESCRIPTION_TR: &str =
 pub const HOMEPAGE: &str = "https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control";
 
 /// Bug tracker URL
-pub const ISSUE_URL: &str =
-    "https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/issues";
+pub const ISSUE_URL: &str = "https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/issues";
 
 /// Changelog (shown in about dialog)
 pub const CHANGELOG: &str = "\

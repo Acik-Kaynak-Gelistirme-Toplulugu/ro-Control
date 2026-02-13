@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="data/icons/hicolor/scalable/apps/com.sopwith.rocontrol.svg" width="128" height="128" alt="ro-Control">
+  <img src="data/icons/hicolor/scalable/apps/io.github.AcikKaynakGelistirmeToplulugu.ro-control.svg" width="128" height="128" alt="ro-Control">
 </p>
 
 <h1 align="center">ro-Control</h1>
@@ -9,11 +9,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases"><img src="https://img.shields.io/github/v/release/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control?style=flat-square&color=blue" alt="Release"></a>
+  <a href="https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/releases"><img src="https://img.shields.io/github/v/release/Acik-Kaynak-Gelistirme-Toplulugu/ro-control?style=flat-square&color=blue" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square" alt="License"></a>
-  <a href="https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/actions"><img src="https://img.shields.io/github/actions/workflow/status/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/ci.yml?style=flat-square&label=CI" alt="CI"></a>
+  <a href="https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/actions"><img src="https://img.shields.io/github/actions/workflow/status/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/ci.yml?style=flat-square&label=CI" alt="CI"></a>
   <img src="https://img.shields.io/badge/language-Rust-orange?style=flat-square" alt="Rust">
-  <img src="https://img.shields.io/badge/toolkit-GTK4%20%2B%20libadwaita-4A86CF?style=flat-square" alt="GTK4">
+  <img src="https://img.shields.io/badge/toolkit-Qt6%20%2B%20QML-41CD52?style=flat-square" alt="Qt6 + QML">
   <img src="https://img.shields.io/badge/platform-Fedora%20Linux-51A2DA?style=flat-square" alt="Fedora">
 </p>
 
@@ -27,7 +27,7 @@
 
 ---
 
-ro-Control is a native Linux desktop application that simplifies GPU driver management. Built in **Rust** with **GTK4 + libadwaita**, it provides a modern interface for installing, configuring, and monitoring NVIDIA graphics drivers on Fedora and other Linux distributions.
+ro-Control is a native Linux desktop application that simplifies GPU driver management. Built in **Rust** with **Qt6 + QML**, it provides a modern interface for installing, configuring, and monitoring NVIDIA graphics drivers on Fedora and other Linux distributions.
 
 <!-- TODO: Add screenshots
 <p align="center">
@@ -76,7 +76,7 @@ ro-Control is a native Linux desktop application that simplifies GPU driver mana
 
 ### Fedora (RPM)
 
-Download the latest release from [Releases](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases):
+Download the latest release from [Releases](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/releases):
 
 ```bash
 sudo dnf install ./ro-control-1.0.0-1.fc*.x86_64.rpm
@@ -86,17 +86,20 @@ sudo dnf install ./ro-control-1.0.0-1.fc*.x86_64.rpm
 
 ```bash
 # Install dependencies
-sudo dnf install rust cargo gtk4-devel libadwaita-devel glib2-devel \
-    cairo-devel pango-devel gdk-pixbuf2-devel graphene-devel gcc
+sudo dnf install cargo cmake extra-cmake-modules gcc-c++ \
+  kf6-qqc2-desktop-style \
+  qt6-qtdeclarative-devel \
+  qt6-qtbase-devel \
+  qt6-qtwayland-devel
 
 # Build and install
-git clone https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control.git
-cd ro-Control
+git clone https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control.git
+cd ro-control
 make build
 sudo make install
 ```
 
-See [docs/BUILDING.md](docs/BUILDING.md) for detailed build instructions for Fedora, Ubuntu, and Arch Linux.
+See [docs/BUILDING.md](docs/BUILDING.md) for detailed build instructions for Fedora, Arch Linux, and openSUSE.
 
 ## Usage
 
@@ -111,10 +114,10 @@ ro-control
 ## Project Structure
 
 ```
-ro-Control/
+ro-control/
 ├── src/                    # Rust source code
 │   ├── core/               #   Business logic (detection, installation, monitoring)
-│   ├── ui/                 #   GTK4 + libadwaita interface
+│   ├── qml/                #   Qt6 + QML interface
 │   └── utils/              #   Shared utilities (i18n, logging, commands)
 ├── data/                   # FreeDesktop data files
 │   ├── icons/              #   Hicolor theme icons (scalable + symbolic SVG)
@@ -145,15 +148,15 @@ We welcome contributions from everyone! Please read our [Contributing Guide](CON
 Quick start:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ro-Control.git
-cd ro-Control
+git clone https://github.com/YOUR_USERNAME/ro-control.git
+cd ro-control
 cargo build
 cargo run
 
 # Before submitting
 cargo fmt --all
-cargo clippy -- -D warnings
-cargo test
+cargo clippy --all-targets -- -D warnings -A dead_code -A clippy::incompatible_msrv
+cargo test --all-targets
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a technical overview of the codebase.

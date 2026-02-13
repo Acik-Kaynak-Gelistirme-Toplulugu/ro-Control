@@ -113,7 +113,10 @@ pub fn download_and_install(url: &str) -> bool {
     log::info!("Download complete, installing...");
 
     // Install via dnf
-    let cmd = format!(r#"pkexec ro-control-root-task "dnf install -y {}""#, tmp_path);
+    let cmd = format!(
+        r#"pkexec ro-control-root-task "dnf install -y {}""#,
+        tmp_path
+    );
     let (code, _, err) = crate::utils::command::run_full(&cmd);
 
     // Cleanup
@@ -130,11 +133,8 @@ pub fn download_and_install(url: &str) -> bool {
 
 /// Compare semver strings. Returns positive if v1 > v2.
 fn compare_versions(v1: &str, v2: &str) -> i32 {
-    let parse = |v: &str| -> Vec<u32> {
-        v.split('.')
-            .filter_map(|s| s.parse::<u32>().ok())
-            .collect()
-    };
+    let parse =
+        |v: &str| -> Vec<u32> { v.split('.').filter_map(|s| s.parse::<u32>().ok()).collect() };
 
     let p1 = parse(v1);
     let p2 = parse(v2);

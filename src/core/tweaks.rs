@@ -102,7 +102,7 @@ pub fn is_gamemode_installed() -> bool {
 pub fn install_gamemode() -> Result<String, String> {
     log::info!("GameMode installation starting...");
     let cmd = r#"pkexec ro-control-root-task "dnf install -y gamemode""#;
-    let (code, out, err) = command::run_full(cmd);
+    let (code, _out, err) = command::run_full(cmd);
 
     if code != 0 {
         let msg = format!("GameMode kurulum başarısız. Code: {}, Err: {}", code, err);
@@ -162,7 +162,10 @@ pub fn repair_flatpak_permissions() -> Result<String, String> {
         log::error!("{}", msg);
         Err(msg)
     } else {
-        let msg = format!("Flatpak onarımı tamamlandı.\n\nÇıktı:\n{}...", &out[..out.len().min(500)]);
+        let msg = format!(
+            "Flatpak onarımı tamamlandı.\n\nÇıktı:\n{}...",
+            &out[..out.len().min(500)]
+        );
         log::info!("Flatpak repair completed.");
         Ok(msg)
     }
@@ -187,7 +190,7 @@ pub fn enable_nvidia_wayland_fix() -> Result<String, String> {
         r#"sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT\s*=\s*"/&{} /' {}"#,
         param, grub_file
     );
-    
+
     // Fedora uses grub2-mkconfig instead of update-grub
     let update_cmd = if command::which("grub2-mkconfig") {
         "grub2-mkconfig -o /boot/grub2/grub.cfg"
@@ -200,10 +203,14 @@ pub fn enable_nvidia_wayland_fix() -> Result<String, String> {
         grub_file, grub_file, sed_cmd, update_cmd
     );
 
-    let (code, _, err) = command::run_full(&format!(r#"pkexec ro-control-root-task "{}""#, full_cmd));
+    let (code, _, err) =
+        command::run_full(&format!(r#"pkexec ro-control-root-task "{}""#, full_cmd));
 
     if code == 0 {
-        Ok("İşlem başarılı. Değişikliklerin etkili olması için bilgisayarınızı YENİDEN BAŞLATIN.".into())
+        Ok(
+            "İşlem başarılı. Değişikliklerin etkili olması için bilgisayarınızı YENİDEN BAŞLATIN."
+                .into(),
+        )
     } else {
         Err(format!("Hata oluştu: {}", err))
     }
@@ -222,7 +229,11 @@ fn parse_meminfo_value(line: &str) -> u64 {
 
 fn num_cpus() -> usize {
     if let Ok(contents) = fs::read_to_string("/proc/cpuinfo") {
-        contents.lines().filter(|l| l.starts_with("processor")).count().max(1)
+        contents
+            .lines()
+            .filter(|l| l.starts_with("processor"))
+            .count()
+            .max(1)
     } else {
         1
     }

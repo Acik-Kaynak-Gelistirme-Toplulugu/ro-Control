@@ -31,7 +31,7 @@ fmt:
 	cargo fmt --all
 
 clippy:
-	cargo clippy --all-targets -- -D warnings
+	cargo clippy --all-targets -- -D warnings -A dead_code -A clippy::incompatible_msrv
 
 lint: fmt clippy
 

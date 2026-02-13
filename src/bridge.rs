@@ -3,6 +3,7 @@
 // GpuController: GPU detection, driver install/remove actions
 // PerfMonitor:   Live GPU/CPU/RAM stats (called by QML timer)
 
+use cxx_qt::Threading;
 use std::pin::Pin;
 
 #[cxx_qt::bridge]
@@ -30,7 +31,6 @@ pub mod ffi {
         #[qproperty(i32, install_progress)]
         #[qproperty(QString, install_log)]
         type GpuController = super::GpuControllerRust;
-
 
         /// Detect GPU and populate properties
         #[qinvokable]
@@ -60,6 +60,8 @@ pub mod ffi {
         #[qinvokable]
         fn check_network(self: Pin<&mut GpuController>);
     }
+
+    impl cxx_qt::Threading for GpuController {}
 
     // ─── PerfMonitor ────────────────────────────────────────────
 
@@ -121,7 +123,8 @@ impl ffi::GpuController {
 
         self.as_mut().set_gpu_vendor(QString::from(&info.vendor));
         self.as_mut().set_gpu_model(QString::from(&info.model));
-        self.as_mut().set_driver_in_use(QString::from(&info.driver_in_use));
+        self.as_mut()
+            .set_driver_in_use(QString::from(&info.driver_in_use));
         self.as_mut().set_secure_boot(info.secure_boot);
 
         let versions = detector::get_available_nvidia_versions();
@@ -133,9 +136,13 @@ impl ffi::GpuController {
         self.as_mut().set_is_up_to_date(up_to_date);
 
         self.as_mut().set_current_status(QString::from("ready"));
-        log::info!("GPU detected: {} {} (driver: {})", info.vendor, info.model, info.driver_in_use);
+        log::info!(
+            "GPU detected: {} {} (driver: {})",
+            info.vendor,
+            info.model,
+            info.driver_in_use
+        );
     }
-
 
     fn get_available_versions(self: Pin<&mut Self>) -> QString {
         use crate::core::detector;
@@ -150,21 +157,25 @@ impl ffi::GpuController {
     }
 
     fn install_express(mut self: Pin<&mut Self>) {
-        if *self.is_installing() { return; }
+        if *self.is_installing() {
+            return;
+        }
 
         self.as_mut().set_is_installing(true);
         self.as_mut().set_install_progress(0);
-        self.as_mut().set_install_log(QString::from("Starting express installation...\n"));
-        self.as_mut().set_current_status(QString::from("installing"));
+        self.as_mut()
+            .set_install_log(QString::from("Starting express installation...\n"));
+        self.as_mut()
+            .set_current_status(QString::from("installing"));
 
         // Capture Qt thread handle to update UI from background thread
-        let qt_thread = cxx_qt::Threading::qt_thread(self.as_ref().get_ref());
+        let qt_thread = self.as_ref().qt_thread();
 
         std::thread::spawn(move || {
             use crate::core::installer::DriverInstaller;
 
             let mut installer = DriverInstaller::new();
-            
+
             // Setup callback to update UI log
             let qt_thread_cb = qt_thread.clone();
             installer.set_log_callback(Box::new(move |msg| {
@@ -173,8 +184,8 @@ impl ffi::GpuController {
                     let old_log = qobject.as_ref().install_log().to_string();
                     let new_log = format!("{}{}\n", old_log, msg);
                     qobject.as_mut().set_install_log(QString::from(&new_log));
-                    
-                     // Fake progress increment for visual feedback
+
+                    // Fake progress increment for visual feedback
                     let current = *qobject.install_progress();
                     if current < 90 {
                         qobject.as_mut().set_install_progress(current + 5);
@@ -187,14 +198,18 @@ impl ffi::GpuController {
             // Final UI update
             let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
                 qobject.as_mut().set_is_installing(false);
-                qobject.as_mut().set_install_progress(if success { 100 } else { 0 });
-                let status_msg = if success { 
+                qobject
+                    .as_mut()
+                    .set_install_progress(if success { 100 } else { 0 });
+                let status_msg = if success {
                     "Installation completed successfully.\nPlease REBOOT your system."
                 } else {
                     "Installation FAILED.\nCheck logs for details."
                 };
                 let old_log = qobject.as_ref().install_log().to_string();
-                qobject.as_mut().set_install_log(QString::from(&format!("{}\n\n{}", old_log, status_msg)));
+                qobject
+                    .as_mut()
+                    .set_install_log(QString::from(&format!("{}\n\n{}", old_log, status_msg)));
             });
         });
 
@@ -202,28 +217,37 @@ impl ffi::GpuController {
     }
 
     fn install_custom(mut self: Pin<&mut Self>, version: &QString, use_open_kernel: bool) {
-        if *self.is_installing() { return; }
-        
+        if *self.is_installing() {
+            return;
+        }
+
         let version_str = version.to_string();
+        let version_for_log = version_str.clone();
         self.as_mut().set_is_installing(true);
         self.as_mut().set_install_progress(0);
-        let msg = format!("Starting custom installation (v{}, OpenKernel: {})...\n", version_str, use_open_kernel);
+        let msg = format!(
+            "Starting custom installation (v{}, OpenKernel: {})...\n",
+            version_str, use_open_kernel
+        );
         self.as_mut().set_install_log(QString::from(&msg));
-        self.as_mut().set_current_status(QString::from("installing"));
+        self.as_mut()
+            .set_current_status(QString::from("installing"));
 
-        let qt_thread = cxx_qt::Threading::qt_thread(self.as_ref().get_ref());
+        let qt_thread = self.as_ref().qt_thread();
 
         std::thread::spawn(move || {
             use crate::core::installer::DriverInstaller;
             let mut installer = DriverInstaller::new();
-            
+
             let qt_thread_cb = qt_thread.clone();
             installer.set_log_callback(Box::new(move |msg| {
                 let msg = String::from(msg);
                 let _ = qt_thread_cb.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
                     let old_log = qobject.as_ref().install_log().to_string();
-                    qobject.as_mut().set_install_log(QString::from(&format!("{}{}\n", old_log, msg)));
-                    
+                    qobject
+                        .as_mut()
+                        .set_install_log(QString::from(&format!("{}{}\n", old_log, msg)));
+
                     let current = *qobject.install_progress();
                     if current < 90 {
                         qobject.as_mut().set_install_progress(current + 2);
@@ -241,24 +265,30 @@ impl ffi::GpuController {
 
             let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
                 qobject.as_mut().set_is_installing(false);
-                qobject.as_mut().set_install_progress(if success { 100 } else { 0 });
-                
-                let result_msg = if success { 
-                    format!("v{} installation complete. REBOOT required.", version_str) 
-                } else { 
-                    "Installation failed.".to_string() 
+                qobject
+                    .as_mut()
+                    .set_install_progress(if success { 100 } else { 0 });
+
+                let result_msg = if success {
+                    format!("v{} installation complete. REBOOT required.", version_str)
+                } else {
+                    "Installation failed.".to_string()
                 };
-                
+
                 let old_log = qobject.as_ref().install_log().to_string();
-                qobject.as_mut().set_install_log(QString::from(&format!("{}\n\n{}", old_log, result_msg)));
+                qobject
+                    .as_mut()
+                    .set_install_log(QString::from(&format!("{}\n\n{}", old_log, result_msg)));
             });
         });
 
-        log::info!("Custom install thread started: {}", version_str);
+        log::info!("Custom install thread started: {}", version_for_log);
     }
 
     fn remove_drivers(mut self: Pin<&mut Self>, deep_clean: bool) {
-        if *self.is_installing() { return; }
+        if *self.is_installing() {
+            return;
+        }
 
         self.as_mut().set_is_installing(true);
         self.as_mut().set_install_progress(0);
@@ -270,19 +300,21 @@ impl ffi::GpuController {
         self.as_mut().set_install_log(QString::from(msg));
         self.as_mut().set_current_status(QString::from("removing"));
 
-        let qt_thread = cxx_qt::Threading::qt_thread(self.as_ref().get_ref());
+        let qt_thread = self.as_ref().qt_thread();
 
         std::thread::spawn(move || {
             use crate::core::installer::DriverInstaller;
             let mut installer = DriverInstaller::new();
-            
+
             let qt_thread_cb = qt_thread.clone();
             installer.set_log_callback(Box::new(move |msg| {
                 let msg = String::from(msg);
                 let _ = qt_thread_cb.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
                     let old_log = qobject.as_ref().install_log().to_string();
-                    qobject.as_mut().set_install_log(QString::from(&format!("{}{}\n", old_log, msg)));
-                    
+                    qobject
+                        .as_mut()
+                        .set_install_log(QString::from(&format!("{}{}\n", old_log, msg)));
+
                     let current = *qobject.install_progress();
                     if current < 90 {
                         qobject.as_mut().set_install_progress(current + 10);
@@ -294,10 +326,18 @@ impl ffi::GpuController {
 
             let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
                 qobject.as_mut().set_is_installing(false);
-                qobject.as_mut().set_install_progress(if success { 100 } else { 0 });
-                let status_msg = if success { "Removal complete. Reboot to nouveau." } else { "Removal failed." };
+                qobject
+                    .as_mut()
+                    .set_install_progress(if success { 100 } else { 0 });
+                let status_msg = if success {
+                    "Removal complete. Reboot to nouveau."
+                } else {
+                    "Removal failed."
+                };
                 let old_log = qobject.as_ref().install_log().to_string();
-                qobject.as_mut().set_install_log(QString::from(&format!("{}\n\n{}", old_log, status_msg)));
+                qobject
+                    .as_mut()
+                    .set_install_log(QString::from(&format!("{}\n\n{}", old_log, status_msg)));
             });
         });
 
@@ -308,10 +348,9 @@ impl ffi::GpuController {
         use std::net::TcpStream;
         use std::time::Duration;
 
-        let connected = TcpStream::connect_timeout(
-            &"8.8.8.8:53".parse().unwrap(),
-            Duration::from_secs(3),
-        ).is_ok();
+        let connected =
+            TcpStream::connect_timeout(&"8.8.8.8:53".parse().unwrap(), Duration::from_secs(3))
+                .is_ok();
 
         self.as_mut().set_has_internet(connected);
     }
@@ -365,7 +404,11 @@ impl ffi::PerfMonitor {
         self.as_mut().set_kernel(QString::from(&info.kernel));
         self.as_mut().set_cpu_name(QString::from(&info.cpu));
         self.as_mut().set_ram_info(QString::from(&info.ram));
-        self.as_mut().set_gpu_full_name(QString::from(&format!("{} {}", info.gpu.vendor, info.gpu.model)));
-        self.as_mut().set_display_server(QString::from(&info.display_server));
+        self.as_mut().set_gpu_full_name(QString::from(&format!(
+            "{} {}",
+            info.gpu.vendor, info.gpu.model
+        )));
+        self.as_mut()
+            .set_display_server(QString::from(&info.display_server));
     }
 }

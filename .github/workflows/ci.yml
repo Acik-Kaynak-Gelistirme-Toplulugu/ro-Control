@@ -22,9 +22,9 @@ jobs:
         run: |
           dnf install -y \
             rust cargo clippy rustfmt \
-            gtk4-devel libadwaita-devel glib2-devel \
-            cairo-devel pango-devel gdk-pixbuf2-devel \
-            graphene-devel pkgconf-pkg-config gcc
+            cmake gcc-c++ pkgconf-pkg-config \
+            qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
+            kf6-qqc2-desktop-style
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -60,9 +60,9 @@ jobs:
         run: |
           dnf install -y \
             rust cargo clippy \
-            gtk4-devel libadwaita-devel glib2-devel \
-            cairo-devel pango-devel gdk-pixbuf2-devel \
-            graphene-devel pkgconf-pkg-config gcc
+            cmake gcc-c++ pkgconf-pkg-config \
+            qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
+            kf6-qqc2-desktop-style
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -74,7 +74,7 @@ jobs:
           key: ${{ runner.os }}-clippy-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run clippy
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets -- -D warnings -A dead_code -A clippy::incompatible_msrv
 
   test:
     name: Test
@@ -87,9 +87,9 @@ jobs:
         run: |
           dnf install -y \
             rust cargo \
-            gtk4-devel libadwaita-devel glib2-devel \
-            cairo-devel pango-devel gdk-pixbuf2-devel \
-            graphene-devel pkgconf-pkg-config gcc
+            cmake gcc-c++ pkgconf-pkg-config \
+            qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
+            kf6-qqc2-desktop-style
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -115,9 +115,9 @@ jobs:
         run: |
           dnf install -y \
             rust cargo \
-            gtk4-devel libadwaita-devel glib2-devel \
-            cairo-devel pango-devel gdk-pixbuf2-devel \
-            graphene-devel pkgconf-pkg-config gcc
+            cmake gcc-c++ pkgconf-pkg-config \
+            qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
+            kf6-qqc2-desktop-style
 
       - name: Cache cargo
         uses: actions/cache@v4

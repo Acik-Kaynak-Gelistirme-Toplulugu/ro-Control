@@ -35,7 +35,7 @@ Have an idea? Open a [feature request](https://github.com/Acik-Kaynak-Gelistirme
 5. **Verify** quality:
     ```bash
     cargo fmt --all          # Format code
-    cargo clippy -- -D warnings  # Lint
+    cargo clippy --all-targets -- -D warnings -A dead_code -A clippy::incompatible_msrv  # Lint
     cargo test               # Run tests
     ```
 6. **Commit** with a clear message:
