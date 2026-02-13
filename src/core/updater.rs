@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // Application self-updater via GitHub Releases API
 
 use crate::config;

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // ro-control — NVIDIA GPU Driver Manager for KDE Plasma
 //
 // Entry point: initializes Qt6 application with QML UI

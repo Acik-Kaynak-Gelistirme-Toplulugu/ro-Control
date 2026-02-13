@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // System Detector — GPU, CPU, RAM, Distro, Secure Boot detection
 // Fedora/Linux native — no macOS simulation
 

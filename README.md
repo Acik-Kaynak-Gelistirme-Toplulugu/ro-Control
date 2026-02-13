@@ -113,7 +113,7 @@ ro-control
 
 ## Project Structure
 
-```
+```text
 ro-control/
 ├── src/                    # Rust source code
 │   ├── core/               #   Business logic (detection, installation, monitoring)

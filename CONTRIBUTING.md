@@ -39,7 +39,7 @@ Have an idea? Open a [feature request](https://github.com/Acik-Kaynak-Gelistirme
     cargo test               # Run tests
     ```
 6. **Commit** with a clear message:
-    ```
+    ```text
     feat: add AMD driver detection via lspci
     fix: resolve crash when nvidia-smi is not installed
     docs: update build instructions for Arch Linux

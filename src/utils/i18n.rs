@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // Internationalization — multi-language dictionary-based translation
 //
 // Supported languages (same as po/LINGUAS):

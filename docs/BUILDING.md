@@ -105,7 +105,7 @@ make lint
 
 ### Project Structure
 
-```
+```text
 src/
 ├── main.rs          # Qt6 app entry point (QApplication + QML engine)
 ├── bridge.rs        # cxx-qt bridge — QObjects exposed to QML

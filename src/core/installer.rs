@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // Driver Installer — Fedora (DNF) focused NVIDIA/AMD driver management
 // Uses pkexec for privilege escalation via PolicyKit
 

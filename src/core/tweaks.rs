@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // System Tweaks — GPU stats, GameMode, Prime Switch, Flatpak fix, Wayland fix
 
 use crate::utils::command;

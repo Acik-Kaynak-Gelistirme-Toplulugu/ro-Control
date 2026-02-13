@@ -1,10 +1,14 @@
+#![allow(dead_code)]
+
 // Application-wide constants
 
 /// Reverse-domain App ID (FreeDesktop / Flatpak standard)
 pub const APP_ID: &str = "io.github.AcikKaynakGelistirmeToplulugu.ro-control";
 
 /// Default window dimensions
+#[allow(dead_code)]
 pub const DEFAULT_WIDTH: i32 = 950;
+#[allow(dead_code)]
 pub const DEFAULT_HEIGHT: i32 = 680;
 
 /// Binary / package name
