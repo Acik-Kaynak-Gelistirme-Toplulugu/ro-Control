@@ -81,7 +81,7 @@ jobs:
       - name: Build RPM package
         run: |
           set -euo pipefail
-          VERSION="${{ steps.meta.outputs.release_version }}"
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
           TOPDIR="$PWD/rpmbuild"
 
           mkdir -p "$TOPDIR/SOURCES" "$TOPDIR/SPECS" "$TOPDIR/RPMS" "$TOPDIR/SRPMS" "$TOPDIR/BUILD" "$TOPDIR/BUILDROOT"
@@ -93,6 +93,8 @@ jobs:
             --exclude='./rpmbuild' \
             --transform "s,^\./,ro-control-${VERSION}/," \
             .
+
+          test -f "$TOPDIR/SOURCES/ro-control-${VERSION}.tar.gz"
 
           rpmbuild -ba "$TOPDIR/SPECS/ro-control.spec" \
             --define "_topdir $TOPDIR" \

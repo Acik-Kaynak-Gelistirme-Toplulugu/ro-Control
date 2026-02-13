@@ -91,7 +91,7 @@ update-desktop-database %{_datadir}/applications &>/dev/null || :
 %{_datadir}/glib-2.0/schemas/io.github.AcikKaynakGelistirmeToplulugu.ro-control.gschema.xml
 
 %changelog
-* Fri Feb 14 2026 Sopwith <sopwith.osdev@gmail.com> - 1.0.0-1
+* Sat Feb 14 2026 Sopwith <sopwith.osdev@gmail.com> - 1.0.0-1
 - Initial native stable release
 - Fedora-native architecture with DNF/RPM Fusion support
 - Qt Quick Controls 2 UI with KDE Breeze native style
