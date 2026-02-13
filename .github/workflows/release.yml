@@ -87,7 +87,12 @@ jobs:
           mkdir -p "$TOPDIR/SOURCES" "$TOPDIR/SPECS" "$TOPDIR/RPMS" "$TOPDIR/SRPMS" "$TOPDIR/BUILD" "$TOPDIR/BUILDROOT"
           cp packaging/rpm/ro-control.spec "$TOPDIR/SPECS/"
 
-          git archive --format=tar.gz --prefix=ro-control-${VERSION}/ -o "$TOPDIR/SOURCES/ro-control-${VERSION}.tar.gz" HEAD
+          tar -czf "$TOPDIR/SOURCES/ro-control-${VERSION}.tar.gz" \
+            --exclude-vcs \
+            --exclude='./target' \
+            --exclude='./rpmbuild' \
+            --transform "s,^\./,ro-control-${VERSION}/," \
+            .
 
           rpmbuild -ba "$TOPDIR/SPECS/ro-control.spec" \
             --define "_topdir $TOPDIR" \
