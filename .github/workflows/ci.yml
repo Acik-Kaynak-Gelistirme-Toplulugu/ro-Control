@@ -188,7 +188,7 @@ jobs:
             --transform "s,^\./,ro-control-${VERSION}/," \
             .
 
-          rpmbuild -ba "$TOPDIR/SPECS/ro-control.spec" \
+          rpmbuild -ba --nodeps "$TOPDIR/SPECS/ro-control.spec" \
             --define "_topdir $TOPDIR" \
             --define "_sourcedir $TOPDIR/SOURCES" \
             --define "_rpmdir $TOPDIR/RPMS" \

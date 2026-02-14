@@ -98,7 +98,7 @@ jobs:
 
           test -f "$TOPDIR/SOURCES/ro-control-${VERSION}.tar.gz"
 
-          rpmbuild -ba "$TOPDIR/SPECS/ro-control.spec" \
+          rpmbuild -ba --nodeps "$TOPDIR/SPECS/ro-control.spec" \
             --define "_topdir $TOPDIR" \
             --define "_sourcedir $TOPDIR/SOURCES" \
             --define "_rpmdir $TOPDIR/RPMS" \
