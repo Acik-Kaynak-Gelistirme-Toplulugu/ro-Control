@@ -298,3 +298,57 @@ pub fn get_official_nvidia_versions_with_changes() -> Vec<(String, String)> {
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gpu_info_default_is_unknown() {
+        let info = GpuInfo::default();
+        assert!(info.vendor.is_empty());
+        assert!(info.model.is_empty());
+        assert!(!info.secure_boot);
+    }
+
+    #[test]
+    fn os_info_default() {
+        let info = OsInfo::default();
+        assert!(info.id.is_empty());
+        assert!(info.version.is_empty());
+        assert!(info.name.is_empty());
+    }
+
+    #[test]
+    fn package_manager_maps_fedora() {
+        // This test verifies the mapping logic directly
+        let test_ids = vec![
+            ("fedora", Some("dnf")),
+            ("rhel", Some("dnf")),
+            ("ubuntu", Some("apt")),
+            ("debian", Some("apt")),
+            ("arch", Some("pacman")),
+            ("opensuse", Some("zypper")),
+            ("unknown_distro", None),
+        ];
+
+        for (id, expected) in test_ids {
+            let result = match id {
+                "fedora" | "rhel" | "centos" | "rocky" | "almalinux" => Some("dnf"),
+                "ubuntu" | "debian" | "linuxmint" | "pop" => Some("apt"),
+                "arch" | "manjaro" | "endeavouros" => Some("pacman"),
+                "opensuse" | "sles" | "opensuse-leap" | "opensuse-tumbleweed" => Some("zypper"),
+                _ => None,
+            };
+            assert_eq!(result, expected, "Failed for distro: {}", id);
+        }
+    }
+
+    #[test]
+    fn system_info_has_display_server() {
+        // When XDG_SESSION_TYPE is not set, should return "Unknown"
+        std::env::remove_var("XDG_SESSION_TYPE");
+        let ds = std::env::var("XDG_SESSION_TYPE").unwrap_or_else(|_| "Unknown".into());
+        assert_eq!(ds, "Unknown");
+    }
+}

@@ -587,3 +587,62 @@ fn get_dictionary() -> &'static Dictionary {
         Dictionary { en, langs }
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn detect_turkish() {
+        std::env::set_var("LANG", "tr_TR.UTF-8");
+        std::env::remove_var("LC_ALL");
+        std::env::remove_var("LC_MESSAGES");
+        assert_eq!(detect_language(), Lang::Tr);
+    }
+
+    #[test]
+    fn detect_english_fallback() {
+        std::env::set_var("LANG", "en_US.UTF-8");
+        std::env::remove_var("LC_ALL");
+        std::env::remove_var("LC_MESSAGES");
+        assert_eq!(detect_language(), Lang::En);
+    }
+
+    #[test]
+    fn detect_unknown_falls_back_to_english() {
+        std::env::set_var("LANG", "xx_XX.UTF-8");
+        std::env::remove_var("LC_ALL");
+        std::env::remove_var("LC_MESSAGES");
+        assert_eq!(detect_language(), Lang::En);
+    }
+
+    #[test]
+    fn detect_portuguese_brazil() {
+        std::env::set_var("LANG", "pt_BR.UTF-8");
+        std::env::remove_var("LC_ALL");
+        std::env::remove_var("LC_MESSAGES");
+        assert_eq!(detect_language(), Lang::PtBr);
+    }
+
+    #[test]
+    fn dictionary_has_english_keys() {
+        let dict = get_dictionary();
+        assert!(dict.en.contains_key("title_main"));
+        assert!(dict.en.contains_key("desc_main"));
+    }
+
+    #[test]
+    fn dictionary_has_turkish_translations() {
+        let dict = get_dictionary();
+        let tr_map = dict.langs.get(&Lang::Tr).expect("Turkish translations missing");
+        assert!(tr_map.contains_key("title_main"));
+    }
+
+    #[test]
+    fn unknown_key_returns_fallback() {
+        // Ensure dictionary is initialized with English
+        let _ = LANG.set(Lang::En);
+        let result = tr("this_key_does_not_exist_xyz");
+        assert_eq!(result, "???");
+    }
+}

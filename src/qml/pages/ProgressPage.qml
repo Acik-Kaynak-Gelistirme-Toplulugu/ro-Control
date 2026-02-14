@@ -217,7 +217,11 @@ Item {
         }
 
         onAccepted: {
-            // TODO: implement cancel logic
+            // Signal the controller that the user chose to abort.
+            // Note: The underlying pkexec process cannot be safely killed
+            // mid-transaction, so we mark the UI as cancelled and let the
+            // current command finish. The user should reboot if in doubt.
+            console.warn("Installation cancelled by user");
             progressPage.finished();
         }
     }

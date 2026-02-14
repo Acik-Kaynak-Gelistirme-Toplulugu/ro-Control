@@ -149,3 +149,41 @@ fn compare_versions(v1: &str, v2: &str) -> i32 {
     }
     0
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn compare_equal_versions() {
+        assert_eq!(compare_versions("1.0.0", "1.0.0"), 0);
+        assert_eq!(compare_versions("2.5.3", "2.5.3"), 0);
+    }
+
+    #[test]
+    fn compare_greater_version() {
+        assert_eq!(compare_versions("2.0.0", "1.0.0"), 1);
+        assert_eq!(compare_versions("1.1.0", "1.0.0"), 1);
+        assert_eq!(compare_versions("1.0.1", "1.0.0"), 1);
+    }
+
+    #[test]
+    fn compare_lesser_version() {
+        assert_eq!(compare_versions("1.0.0", "2.0.0"), -1);
+        assert_eq!(compare_versions("1.0.0", "1.1.0"), -1);
+        assert_eq!(compare_versions("1.0.0", "1.0.1"), -1);
+    }
+
+    #[test]
+    fn compare_different_length_versions() {
+        assert_eq!(compare_versions("1.0", "1.0.0"), 0);
+        assert_eq!(compare_versions("1.0.1", "1.0"), 1);
+        assert_eq!(compare_versions("1", "1.0.0"), 0);
+    }
+
+    #[test]
+    fn compare_nvidia_style_versions() {
+        assert_eq!(compare_versions("565.57.01", "550.120"), 1);
+        assert_eq!(compare_versions("535.183", "550.120"), -1);
+    }
+}

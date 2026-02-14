@@ -5,8 +5,8 @@
 #
 # Usage: ro-control-root-task "dnf install -y akmod-nvidia"
 #
-# SECURITY NOTE: This script only executes commands passed by the
-# ro-control binary. It is protected by PolicyKit authentication.
+# SECURITY: Only commands starting with an allowed prefix are executed.
+# The allowlist is intentionally strict to prevent arbitrary root execution.
 
 set -euo pipefail
 
@@ -15,8 +15,64 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+# ─── Command Allowlist ───────────────────────────────────────────
+# Only these command prefixes are permitted to run as root.
+# Each entry is a regex anchored to the start of the command string.
+ALLOWED_COMMANDS=(
+    "^dnf "
+    "^rpm "
+    "^apt-get "
+    "^pacman "
+    "^zypper "
+    "^dracut "
+    "^mkinitcpio "
+    "^mkinitrd "
+    "^update-initramfs "
+    "^modprobe "
+    "^grubby "
+    "^cp /etc/"
+    "^rm -f /etc/"
+    "^printf "
+    "^test "
+    "^\\[ "
+    "^timeshift "
+)
+
+# Validate each command in a '&&'-chained sequence
+validate_command() {
+    local cmd="$1"
+    # Split on ' && ' to handle chained commands
+    local IFS_BACKUP="$IFS"
+    local parts
+    # Use a while loop to handle && separators
+    while IFS= read -r part; do
+        part="$(echo "$part" | sed 's/^[[:space:]]*//')"
+        [ -z "$part" ] && continue
+
+        local allowed=false
+        for pattern in "${ALLOWED_COMMANDS[@]}"; do
+            if echo "$part" | grep -qE "$pattern"; then
+                allowed=true
+                break
+            fi
+        done
+
+        if [ "$allowed" = false ]; then
+            echo "SECURITY: Blocked disallowed command: $part" >&2
+            return 1
+        fi
+    done <<< "$(echo "$cmd" | sed 's/ && /\n/g')"
+
+    return 0
+}
+
+if ! validate_command "$1"; then
+    echo "Error: Command rejected by security policy." >&2
+    exit 126
+fi
+
 # Non-interactive mode for package managers
 export DEBIAN_FRONTEND=noninteractive
 
-# Execute the provided command
+# Execute the validated command
 /bin/sh -c "$1"

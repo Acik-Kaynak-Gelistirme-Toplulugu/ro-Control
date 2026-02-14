@@ -1,0 +1,11 @@
+target/
+.git/
+.github/
+rpmbuild/
+*.md
+LICENSE
+Makefile
+Dockerfile
+.dockerignore
+packaging/
+docs/

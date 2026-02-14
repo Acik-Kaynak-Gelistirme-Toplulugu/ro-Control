@@ -21,7 +21,7 @@ pub const PRETTY_NAME: &str = "ro-Control";
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// GitHub owner/repo path
-pub const GITHUB_REPO: &str = "Acik-Kaynak-Gelistirme-Toplulugu/ro-control";
+pub const GITHUB_REPO: &str = "Acik-Kaynak-Gelistirme-Toplulugu/ro-Control";
 
 /// Organization / developer name
 pub const DEVELOPER_NAME: &str = "Açık Kaynak Geliştirme Topluluğu";
@@ -38,10 +38,10 @@ pub const DESCRIPTION_TR: &str =
     "Linux için akıllı GPU sürücü yöneticisi — NVIDIA ekran kartı sürücülerini kurun, yapılandırın ve izleyin.";
 
 /// Project homepage
-pub const HOMEPAGE: &str = "https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control";
+pub const HOMEPAGE: &str = "https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control";
 
 /// Bug tracker URL
-pub const ISSUE_URL: &str = "https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/issues";
+pub const ISSUE_URL: &str = "https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/issues";
 
 /// Changelog (shown in about dialog)
 pub const CHANGELOG: &str = "\

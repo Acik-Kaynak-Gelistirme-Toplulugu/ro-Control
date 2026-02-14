@@ -50,3 +50,45 @@ pub fn which(name: &str) -> bool {
         .map(|o| o.status.success())
         .unwrap_or(false)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn run_echo_returns_output() {
+        let result = run("echo hello");
+        assert_eq!(result, Some("hello".to_string()));
+    }
+
+    #[test]
+    fn run_false_returns_none() {
+        let result = run("false");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn run_full_captures_exit_code() {
+        let (code, _, _) = run_full("true");
+        assert_eq!(code, 0);
+
+        let (code, _, _) = run_full("false");
+        assert_ne!(code, 0);
+    }
+
+    #[test]
+    fn run_full_captures_stdout() {
+        let (_, stdout, _) = run_full("echo test_output");
+        assert_eq!(stdout, "test_output");
+    }
+
+    #[test]
+    fn which_finds_sh() {
+        assert!(which("sh"));
+    }
+
+    #[test]
+    fn which_returns_false_for_nonexistent() {
+        assert!(!which("definitely_not_a_real_binary_xyz_12345"));
+    }
+}

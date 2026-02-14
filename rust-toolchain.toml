@@ -1,2 +1,5 @@
 [toolchain]
+# Use latest stable for local development.
+# CI pins a specific version (1.88.0) for reproducibility.
+# MSRV is 1.82 — see Cargo.toml rust-version field.
 channel = "stable"

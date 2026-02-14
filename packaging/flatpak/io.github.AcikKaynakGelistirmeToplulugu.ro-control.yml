@@ -33,7 +33,11 @@ modules:
       - install -Dm755 target/release/ro-control /app/bin/ro-control
       - install -Dm644 data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.desktop /app/share/applications/io.github.AcikKaynakGelistirmeToplulugu.ro-control.desktop
       - install -Dm644 data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.metainfo.xml /app/share/metainfo/io.github.AcikKaynakGelistirmeToplulugu.ro-control.metainfo.xml
+      - install -Dm644 data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.gschema.xml /app/share/glib-2.0/schemas/io.github.AcikKaynakGelistirmeToplulugu.ro-control.gschema.xml
       - install -Dm644 data/icons/hicolor/scalable/apps/io.github.AcikKaynakGelistirmeToplulugu.ro-control.svg /app/share/icons/hicolor/scalable/apps/io.github.AcikKaynakGelistirmeToplulugu.ro-control.svg
+      - install -Dm644 data/icons/hicolor/symbolic/apps/io.github.AcikKaynakGelistirmeToplulugu.ro-control-symbolic.svg /app/share/icons/hicolor/symbolic/apps/io.github.AcikKaynakGelistirmeToplulugu.ro-control-symbolic.svg || true
     sources:
       - type: dir
         path: .
+    cleanup:
+      - /lib/debug

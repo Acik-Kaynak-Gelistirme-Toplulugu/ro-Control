@@ -60,20 +60,20 @@
     <screenshot type="default">
       <caption>Express Installation — one-click GPU driver setup</caption>
       <caption xml:lang="tr">Hızlı Kurulum — tek tıkla GPU sürücü kurulumu</caption>
-      <!-- <image>https://raw.githubusercontent.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/main/docs/screenshots/install.png</image> -->
+      <image>https://raw.githubusercontent.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/main/docs/screenshots/install.png</image>
     </screenshot>
     <screenshot>
       <caption>Live Performance Monitor — real-time GPU and system stats</caption>
       <caption xml:lang="tr">Canlı Performans Monitörü — anlık GPU ve sistem istatistikleri</caption>
-      <!-- <image>https://raw.githubusercontent.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/main/docs/screenshots/performance.png</image> -->
+      <image>https://raw.githubusercontent.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/main/docs/screenshots/performance.png</image>
     </screenshot>
   </screenshots>
 
-  <url type="homepage">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control</url>
-  <url type="bugtracker">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/issues</url>
-  <url type="contribute">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/blob/main/CONTRIBUTING.md</url>
-  <url type="vcs-browser">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control</url>
-  <url type="translate">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control/tree/main/po</url>
+  <url type="homepage">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control</url>
+  <url type="bugtracker">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/issues</url>
+  <url type="contribute">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/blob/main/CONTRIBUTING.md</url>
+  <url type="vcs-browser">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control</url>
+  <url type="translate">https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/tree/main/po</url>
 
   <developer id="io.github.AcikKaynakGelistirmeToplulugu">
     <name>Açık Kaynak Geliştirme Topluluğu</name>

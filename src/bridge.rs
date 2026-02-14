@@ -176,8 +176,45 @@ impl ffi::GpuController {
     }
 
     fn is_version_compatible(self: Pin<&mut Self>, version: &QString) -> bool {
-        let _ver = version.to_string();
-        // TODO: Implement kernel compatibility check
+        let ver = version.to_string();
+        // NVIDIA 545+ requires kernel ≥ 6.0
+        // NVIDIA 525+ requires kernel ≥ 5.10
+        // Older versions are broadly compatible
+        if let Some(kernel_str) = crate::utils::command::run("uname -r") {
+            let kernel_parts: Vec<u32> = kernel_str
+                .split(|c: char| !c.is_ascii_digit())
+                .take(2)
+                .filter_map(|s| s.parse().ok())
+                .collect();
+            let (kmajor, kminor) = (
+                kernel_parts.first().copied().unwrap_or(0),
+                kernel_parts.get(1).copied().unwrap_or(0),
+            );
+            let driver_major: u32 = ver
+                .split('.')
+                .next()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(0);
+
+            if driver_major >= 545 && (kmajor < 6) {
+                log::warn!(
+                    "Driver {} requires kernel ≥ 6.0, current: {}.{}",
+                    ver,
+                    kmajor,
+                    kminor
+                );
+                return false;
+            }
+            if driver_major >= 525 && (kmajor < 5 || (kmajor == 5 && kminor < 10)) {
+                log::warn!(
+                    "Driver {} requires kernel ≥ 5.10, current: {}.{}",
+                    ver,
+                    kmajor,
+                    kminor
+                );
+                return false;
+            }
+        }
         true
     }
 
