@@ -24,7 +24,7 @@ jobs:
 
       - name: Install tooling
         run: |
-          dnf install -y git
+          dnf install -y git gcc
 
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
