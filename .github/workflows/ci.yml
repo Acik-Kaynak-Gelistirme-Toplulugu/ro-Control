@@ -18,10 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.88.0
+
       - name: Install dependencies
         run: |
           dnf install -y \
-            rust cargo clippy rustfmt \
             cmake gcc-c++ pkgconf-pkg-config \
             qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
             kf6-qqc2-desktop-style
@@ -44,8 +46,12 @@ jobs:
     container: fedora:40
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust
-        run: dnf install -y rust cargo rustfmt
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.88.0
+        with:
+          components: rustfmt
+
       - name: Check formatting
         run: cargo fmt --all -- --check
 
@@ -56,10 +62,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.88.0
+        with:
+          components: clippy
+
       - name: Install dependencies
         run: |
           dnf install -y \
-            rust cargo clippy \
             cmake gcc-c++ pkgconf-pkg-config \
             qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
             kf6-qqc2-desktop-style
@@ -83,10 +93,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.88.0
+
       - name: Install dependencies
         run: |
           dnf install -y \
-            rust cargo \
             cmake gcc-c++ pkgconf-pkg-config \
             qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
             kf6-qqc2-desktop-style
@@ -111,10 +123,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.88.0
+
       - name: Install dependencies
         run: |
           dnf install -y \
-            rust cargo \
             cmake gcc-c++ pkgconf-pkg-config \
             qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
             kf6-qqc2-desktop-style
@@ -145,11 +159,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.88.0
+
       - name: Install dependencies
         run: |
           dnf install -y \
             git \
-            rust cargo \
             cmake gcc-c++ pkgconf-pkg-config \
             extra-cmake-modules \
             qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
