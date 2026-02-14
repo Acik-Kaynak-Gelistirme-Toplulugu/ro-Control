@@ -6,7 +6,7 @@ Summary:        Smart GPU driver manager for Linux
 %global debug_package %{nil}
 
 License:        GPL-3.0-or-later
-URL:            https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control
+URL:            https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control
 Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 
 BuildRequires:  rust >= 1.70
@@ -95,6 +95,15 @@ update-desktop-database %{_datadir}/applications &>/dev/null || :
 %{_datadir}/glib-2.0/schemas/io.github.AcikKaynakGelistirmeToplulugu.ro-control.gschema.xml
 
 %changelog
+* Fri Feb 14 2026 Sopwith <sopwith.osdev@gmail.com> - 1.1.0-1
+- Root-task script hardened with strict command allowlist
+- Kernel version compatibility check before driver install
+- 23 unit tests across updater, detector, command, i18n modules
+- MSRV 1.82 CI verification job
+- Dockerfile upgraded to Fedora 42 multi-stage build
+- SECURITY.md responsible disclosure policy
+- Unused dependencies removed (env_logger, open)
+
 * Sat Feb 14 2026 Sopwith <sopwith.osdev@gmail.com> - 1.0.0-1
 - Initial native stable release
 - Fedora-native architecture with DNF/RPM Fusion support

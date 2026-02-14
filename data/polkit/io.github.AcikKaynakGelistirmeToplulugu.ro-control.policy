@@ -8,7 +8,7 @@
 -->
 <policyconfig>
   <vendor>ro-Control</vendor>
-  <vendor_url>https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-control</vendor_url>
+  <vendor_url>https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control</vendor_url>
   <icon_name>io.github.AcikKaynakGelistirmeToplulugu.ro-control</icon_name>
 
   <action id="io.github.AcikKaynakGelistirmeToplulugu.ro-control.pkexec.run">

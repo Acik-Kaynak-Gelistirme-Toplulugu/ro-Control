@@ -76,7 +76,7 @@ ro-Control, **Rust** ve **Qt6/QML** ([CXX-Qt](https://github.com/KDAB/cxx-qt)) i
 En güncel `.rpm` dosyasını [Releases](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases) sayfasından indirip kurabilirsiniz:
 
 ```bash
-sudo dnf install ./ro-control-1.0.0-2.fc40.x86_64.rpm
+sudo dnf install ./ro-control-1.1.0-1.fc40.x86_64.rpm
 ```
 
 ### Kaynaktan

@@ -83,7 +83,7 @@ ro-Control is a native Linux desktop application built with **Rust** and **Qt6/Q
 Download the latest `.rpm` from [Releases](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases):
 
 ```bash
-sudo dnf install ./ro-control-1.0.0-2.fc40.x86_64.rpm
+sudo dnf install ./ro-control-1.1.0-1.fc40.x86_64.rpm
 ```
 
 ### From Source
