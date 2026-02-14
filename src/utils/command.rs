@@ -44,8 +44,9 @@ pub fn run_full(command: &str) -> (i32, String, String) {
 
 /// Check if a binary exists in PATH.
 pub fn which(name: &str) -> bool {
-    Command::new("which")
-        .arg(name)
+    Command::new("sh")
+        .arg("-c")
+        .arg(format!("command -v {}", name))
         .output()
         .map(|o| o.status.success())
         .unwrap_or(false)
