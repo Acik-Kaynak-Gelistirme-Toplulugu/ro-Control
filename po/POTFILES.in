@@ -6,7 +6,10 @@ src/qml/pages/ExpertPage.qml
 src/qml/pages/PerfPage.qml
 src/qml/pages/ProgressPage.qml
 src/qml/components/ActionCard.qml
-src/qml/components/WarningBanner.qml
+src/qml/components/CustomProgressBar.qml
+src/qml/components/GradientButton.qml
+src/qml/components/StatusBar.qml
+src/qml/components/StepItem.qml
 data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.desktop
 data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.metainfo.xml
 data/polkit/io.github.AcikKaynakGelistirmeToplulugu.ro-control.policy

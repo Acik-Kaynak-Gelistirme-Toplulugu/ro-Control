@@ -125,11 +125,12 @@ ro-Control/
 │   │   ├── installer.rs    #     DNF tabanlı sürücü kurulum/kaldırma
 │   │   ├── tweaks.rs       #     GPU istatistikleri, GameMode, Wayland düzeltme
 │   │   └── updater.rs      #     GitHub Releases güncelleme kontrolü
-│   ├── qml/                #   Qt Quick arayüz dosyaları
-│   │   ├── Main.qml        #     Uygulama penceresi + kenar çubuğu
-│   │   ├── Theme.qml       #     Koyu/açık tema tanımları
+│   ├── qml/                #   Qt Quick arayüz (Rust Edition)
+│   │   ├── Main.qml        #     Uygulama penceresi, kenar çubuğu, StatusBar
+│   │   ├── Theme.qml       #     Renk paleti singleton
 │   │   ├── pages/          #     Install, Expert, Perf, Progress
-│   │   └── components/     #     Yeniden kullanılabilir bileşenler
+│   │   └── components/     #     ActionCard, CustomProgressBar,
+│   │                       #     GradientButton, StatusBar, StepItem
 │   └── utils/              #   Yardımcı modüller
 │       ├── command.rs      #     Kabuk komut çalıştırıcı
 │       ├── i18n.rs         #     TR/EN çeviri sistemi

@@ -33,13 +33,6 @@
 
 ro-Control is a native Linux desktop application built with **Rust** and **Qt6/QML** (via [CXX-Qt](https://github.com/KDAB/cxx-qt)) that simplifies NVIDIA GPU driver management on Fedora. It provides a modern interface for installing, configuring, and monitoring graphics drivers with full PolicyKit integration for secure privilege escalation.
 
-<!-- TODO: Add screenshots
-<p align="center">
-  <img src="docs/screenshots/install.png" width="45%" alt="Install View">
-  <img src="docs/screenshots/performance.png" width="45%" alt="Performance View">
-</p>
--->
-
 ## Features
 
 ### 🚀 Smart Driver Management
@@ -132,11 +125,12 @@ ro-Control/
 │   │   ├── installer.rs    #     DNF-based driver install/remove
 │   │   ├── tweaks.rs       #     GPU stats, GameMode, Wayland fix
 │   │   └── updater.rs      #     GitHub Releases update check
-│   ├── qml/                #   Qt Quick interface
-│   │   ├── Main.qml        #     App window + sidebar navigation
-│   │   ├── Theme.qml       #     Dark/light theme definitions
+│   ├── qml/                #   Qt Quick interface (Rust Edition)
+│   │   ├── Main.qml        #     App window, sidebar, StatusBar
+│   │   ├── Theme.qml       #     Color palette singleton
 │   │   ├── pages/          #     Install, Expert, Perf, Progress
-│   │   └── components/     #     Reusable UI components
+│   │   └── components/     #     ActionCard, CustomProgressBar,
+│   │                       #     GradientButton, StatusBar, StepItem
 │   └── utils/              #   Shared utilities
 │       ├── command.rs      #     Shell command runner
 │       ├── i18n.rs         #     TR/EN translation system
@@ -161,8 +155,7 @@ ro-Control/
 ├── Cargo.toml              # Project manifest
 ├── Makefile                # Build/install targets
 ├── CHANGELOG.md            # Release history
-├── CONTRIBUTING.md         # Contribution guide
-└── CODE_OF_CONDUCT.md      # Community guidelines
+└── CONTRIBUTING.md         # Contribution guide
 ```
 
 ## Contributing

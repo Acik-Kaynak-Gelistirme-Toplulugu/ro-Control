@@ -85,7 +85,15 @@ pub fn check_for_updates() -> UpdateInfo {
 pub fn download_and_install(url: &str) -> bool {
     log::info!("Downloading update from: {}", url);
 
-    let tmp_path = "/tmp/ro-control-update.rpm";
+    // Use unique temp path to prevent symlink/TOCTOU attacks
+    let tmp_path = format!(
+        "/tmp/ro-control-update-{}-{}.rpm",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+    );
 
     // Download
     match ureq::get(url).call() {

@@ -45,15 +45,14 @@ pub const ISSUE_URL: &str = "https://github.com/Acik-Kaynak-Gelistirme-Toplulugu
 
 /// Changelog (shown in about dialog)
 pub const CHANGELOG: &str = "\
-v1.1.0  — Security hardening & CI improvements
-  • Root-task script hardened with strict command allowlist
-  • Kernel version compatibility check before driver install
-  • 23 unit tests across 4 modules
-  • MSRV 1.82 CI verification job
-  • Multi-language support expanded to 16 languages
-  • Dockerfile upgraded to Fedora 42 multi-stage build
-  • SECURITY.md responsible disclosure policy
-  • Unused dependencies removed
+v1.1.0  — Rust Edition UI Redesign
+  • Premium 🦀 Rust Edition branding and visual identity
+  • Modern color palette (blue/purple/emerald)
+  • StatusBar, CustomProgressBar, GradientButton components
+  • Emoji info grid cards on Performance page
+  • Animated backgrounds, shimmer effects, gradient overlays
+  • About dialog and app update dialog
+  • Log output panel restored in ProgressPage
 
 v1.0.0  — Initial Rust release
   • NVIDIA proprietary driver install via RPM Fusion (akmod-nvidia)

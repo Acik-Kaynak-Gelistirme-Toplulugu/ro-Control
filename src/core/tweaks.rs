@@ -111,12 +111,12 @@ pub fn install_gamemode() -> Result<String, String> {
     let (code, _out, err) = command::run_full(cmd);
 
     if code != 0 {
-        let msg = format!("GameMode kurulum başarısız. Code: {}, Err: {}", code, err);
+        let msg = format!("GameMode installation failed. Code: {}, Err: {}", code, err);
         log::error!("{}", msg);
         Err(msg)
     } else {
-        log::info!("GameMode başarıyla kuruldu.");
-        Ok("GameMode başarıyla kuruldu.".into())
+        log::info!("GameMode installed successfully.");
+        Ok("GameMode installed successfully.".into())
     }
 }
 
@@ -164,7 +164,7 @@ pub fn repair_flatpak_permissions() -> Result<String, String> {
     let (code, out, err) = command::run_full(cmd);
 
     if code != 0 {
-        let msg = format!("Flatpak onarım hatası: {}", err);
+        let msg = format!("Flatpak repair error: {}", err);
         log::error!("{}", msg);
         Err(msg)
     } else {
@@ -179,7 +179,7 @@ pub fn repair_flatpak_permissions() -> Result<String, String> {
             }
             &out[..end]
         };
-        let msg = format!("Flatpak onarımı tamamlandı.\n\nÇıktı:\n{}...", truncated);
+        let msg = format!("Flatpak repair completed.\n\nOutput:\n{}...", truncated);
         log::info!("Flatpak repair completed.");
         Ok(msg)
     }
@@ -195,7 +195,7 @@ pub fn enable_nvidia_wayland_fix() -> Result<String, String> {
     // Check if already applied
     if let Ok(contents) = fs::read_to_string(grub_file) {
         if contents.contains(param) {
-            return Ok("Parametre zaten ekli. İşlem gerekmez.".into());
+            return Ok("Parameter already applied. No action needed.".into());
         }
     }
 
@@ -221,12 +221,9 @@ pub fn enable_nvidia_wayland_fix() -> Result<String, String> {
         command::run_full(&format!(r#"pkexec ro-control-root-task "{}""#, full_cmd));
 
     if code == 0 {
-        Ok(
-            "İşlem başarılı. Değişikliklerin etkili olması için bilgisayarınızı YENİDEN BAŞLATIN."
-                .into(),
-        )
+        Ok("Operation successful. REBOOT your computer for changes to take effect.".into())
     } else {
-        Err(format!("Hata oluştu: {}", err))
+        Err(format!("Error occurred: {}", err))
     }
 }
 

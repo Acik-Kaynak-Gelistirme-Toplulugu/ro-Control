@@ -41,10 +41,10 @@ impl DriverInstaller {
 
     /// Install NVIDIA proprietary driver with optional version pinning.
     pub fn install_nvidia_closed_versioned(&self, version: Option<&str>) -> bool {
-        self.log("--- BAŞLATILIYOR: NVIDIA Proprietary (DNF/RPM Fusion) ---");
+        self.log("--- STARTING: NVIDIA Proprietary (DNF/RPM Fusion) ---");
         let mut commands = self.prepare_install_chain();
 
-        self.log("NVIDIA paketleri hazırlanıyor...");
+        self.log("Preparing NVIDIA packages...");
 
         match self.pkg_manager {
             Some("dnf") => {
@@ -52,7 +52,7 @@ impl DriverInstaller {
                 commands.push("dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || true".into());
                 let pkg = match version {
                     Some(v) if !v.is_empty() => {
-                        self.log(&format!("Sürüm sabitlendi: {}", v));
+                        self.log(&format!("Version pinned: {}", v));
                         format!("dnf install -y akmod-nvidia-{v}* xorg-x11-drv-nvidia-cuda-{v}* nvidia-settings", v = v)
                     }
                     _ => "dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda nvidia-settings"
@@ -74,7 +74,7 @@ impl DriverInstaller {
                 commands.push("pacman -Sy --noconfirm nvidia nvidia-utils nvidia-settings".into());
             }
             _ => {
-                self.log("HATA: Desteklenmeyen paket yöneticisi!");
+                self.log("ERROR: Unsupported package manager!");
                 return false;
             }
         }
@@ -90,7 +90,7 @@ impl DriverInstaller {
 
     /// Install NVIDIA open kernel driver with optional version pinning.
     pub fn install_nvidia_open_versioned(&self, version: Option<&str>) -> bool {
-        self.log("--- BAŞLATILIYOR: NVIDIA Open Kernel ---");
+        self.log("--- STARTING: NVIDIA Open Kernel ---");
         let mut commands = self.prepare_install_chain();
 
         match self.pkg_manager {
@@ -98,7 +98,7 @@ impl DriverInstaller {
                 commands.push("dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || true".into());
                 let pkg = match version {
                     Some(v) if !v.is_empty() => {
-                        self.log(&format!("Sürüm sabitlendi: {}", v));
+                        self.log(&format!("Version pinned: {}", v));
                         format!(
                             "dnf install -y akmod-nvidia-open-{v}* nvidia-settings",
                             v = v
@@ -133,7 +133,7 @@ impl DriverInstaller {
 
     /// Install AMD open source (Mesa) drivers.
     pub fn install_amd_open(&self) -> bool {
-        self.log("--- BAŞLATILIYOR: AMD Mesa (Open Source) ---");
+        self.log("--- STARTING: AMD Mesa (Open Source) ---");
         let mut commands = self.prepare_install_chain();
 
         match self.pkg_manager {
@@ -163,7 +163,7 @@ impl DriverInstaller {
 
     /// Remove NVIDIA drivers and revert to nouveau.
     pub fn remove_nvidia(&self, deep_clean: bool) -> bool {
-        self.log("--- BAŞLATILIYOR: NVIDIA Sürücü Kaldırma ---");
+        self.log("--- STARTING: NVIDIA Driver Removal ---");
         let mut commands = self.backup_config_commands();
 
         // Remove blacklist
@@ -202,8 +202,8 @@ impl DriverInstaller {
             log::warn!("Timeshift not installed, skipping backup.");
             return false;
         }
-        self.log("Timeshift yedeği oluşturuluyor...");
-        let cmd = r#"pkexec timeshift --create --comments "ro-Control Otomatik Yedek" --tags D"#;
+        self.log("Creating Timeshift backup...");
+        let cmd = r#"pkexec timeshift --create --comments "ro-Control Auto Backup" --tags D"#;
         command::run(cmd).is_some()
     }
 
@@ -211,10 +211,10 @@ impl DriverInstaller {
 
     fn prepare_install_chain(&self) -> Vec<String> {
         let mut chain = Vec::new();
-        self.log("Adım 1: Mevcut Xorg yapılandırması yedekleniyor...");
+        self.log("Step 1: Backing up current Xorg configuration...");
         chain.extend(self.backup_config_commands());
 
-        self.log("Adım 2: Nouveau sürücüsü engelleniyor (Blacklist)...");
+        self.log("Step 2: Blacklisting nouveau driver...");
         chain.push("printf 'blacklist nouveau\\noptions nouveau modeset=0' > /etc/modprobe.d/blacklist-nouveau.conf".into());
 
         match self.pkg_manager {
@@ -266,7 +266,7 @@ impl DriverInstaller {
 
         let now = Local::now().format("%H:%M:%S");
         self.log(&format!(
-            "\n[{}] --- İŞLEM BAŞLATILIYOR: {} ---",
+            "\n[{}] --- OPERATION STARTING: {} ---",
             now, task_name
         ));
 
@@ -291,8 +291,8 @@ impl DriverInstaller {
         }
         self.log(&format!("{}\n", "-".repeat(40)));
 
-        self.log("Yetki bekleniyor (Root/Admin)...");
-        self.log("Lütfen açılan pencerede şifrenizi girin.\n");
+        self.log("Waiting for authorization (Root/Admin)...");
+        self.log("Please enter your password in the dialog.\n");
 
         let (ret_code, out, err) = command::run_full(&final_cmd);
 
@@ -305,7 +305,7 @@ impl DriverInstaller {
             } else {
                 err
             });
-            self.log("HATA: İşlem başarısız oldu.");
+            self.log("ERROR: Operation failed.");
             return false;
         }
 
@@ -314,8 +314,8 @@ impl DriverInstaller {
             self.log(&out);
         }
 
-        self.log(&format!("\nBAŞARILI: {} tamamlandı.", task_name));
-        self.log("Değişikliklerin etkili olması için sistemi yeniden başlatın.");
+        self.log(&format!("\nSUCCESS: {} completed.", task_name));
+        self.log("Reboot the system for changes to take effect.");
         true
     }
 }

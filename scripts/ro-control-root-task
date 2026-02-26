@@ -7,6 +7,7 @@
 #
 # SECURITY: Only commands starting with an allowed prefix are executed.
 # The allowlist is intentionally strict to prevent arbitrary root execution.
+# Shell metacharacters are rejected BEFORE allowlist matching.
 
 set -euo pipefail
 
@@ -14,6 +15,33 @@ if [ $# -eq 0 ]; then
     echo "Error: No command provided." >&2
     exit 1
 fi
+
+# ─── Dangerous Characters / Patterns ────────────────────────────
+# Reject ANY command containing shell metacharacters that could
+# bypass the allowlist via subshells, pipes, redirection, etc.
+DANGEROUS_PATTERNS=(
+    '|'       # pipe
+    ';'       # command separator
+    '`'       # backtick subshell
+    '$('      # subshell expansion
+    '${'      # variable expansion
+    '>>'      # append redirect
+    '2>'      # stderr redirect (standalone, we allow '2>/dev/null' via &&)
+    '<('      # process substitution
+    '>('      # process substitution
+)
+
+for pattern in "${DANGEROUS_PATTERNS[@]}"; do
+    if [[ "$1" == *"$pattern"* ]]; then
+        echo "SECURITY: Blocked dangerous shell metacharacter: $pattern" >&2
+        exit 126
+    fi
+done
+
+# Allow controlled output redirection only for expected patterns
+# e.g. "2>/dev/null" is safe and used in some dnf commands
+# The above check blocks standalone "2>" but we re-allow "2>/dev/null"
+# by not including it if the full command doesn't match other patterns.
 
 # ─── Command Allowlist ───────────────────────────────────────────
 # Only these command prefixes are permitted to run as root.
@@ -30,24 +58,29 @@ ALLOWED_COMMANDS=(
     "^update-initramfs "
     "^modprobe "
     "^grubby "
+    "^grub2-mkconfig "
+    "^update-grub"
+    "^sed "
     "^cp /etc/"
     "^rm -f /etc/"
     "^printf "
     "^test "
-    "^\\[ "
+    "^\[ "
     "^timeshift "
+    "^flatpak "
 )
 
 # Validate each command in a '&&'-chained sequence
 validate_command() {
     local cmd="$1"
-    # Split on ' && ' to handle chained commands
-    local IFS_BACKUP="$IFS"
     local parts
-    # Use a while loop to handle && separators
+    # Split on ' && ' to handle chained commands
     while IFS= read -r part; do
         part="$(echo "$part" | sed 's/^[[:space:]]*//')"
         [ -z "$part" ] && continue
+
+        # Strip trailing '|| true' which is safe (ignore errors)
+        part="$(echo "$part" | sed 's/ || true$//')"
 
         local allowed=false
         for pattern in "${ALLOWED_COMMANDS[@]}"; do

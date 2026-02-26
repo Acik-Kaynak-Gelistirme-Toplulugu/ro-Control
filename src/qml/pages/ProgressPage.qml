@@ -12,117 +12,168 @@ Item {
     required property bool darkMode
     signal finished
 
-    readonly property color cSurface:  darkMode ? "#242b35" : "#ffffff"
-    readonly property color cBorder:   darkMode ? "#313840" : "#d0d7de"
-    readonly property color cText:     darkMode ? "#e6edf3" : "#1f2328"
-    readonly property color cTextSub:  darkMode ? "#8b949e" : "#656d76"
-    readonly property color cTextMuted:darkMode ? "#6e7681" : "#8c959f"
+    readonly property color cCard:    darkMode ? "#1e293b" : "#fcfcfc"
+    readonly property color cBorder:  darkMode ? "#334155" : "#e5e7eb"
+    readonly property color cFg:      darkMode ? "#e2e8f0" : "#1a1d23"
+    readonly property color cMutedFg: darkMode ? "#94a3b8" : "#64748b"
+    readonly property color cPrimary: darkMode ? "#60a5fa" : "#3b82f6"
+    readonly property color cAccent:  darkMode ? "#a78bfa" : "#8b5cf6"
+    readonly property color cMuted:   darkMode ? "#1e293b" : "#f1f5f9"
+    readonly property color cWarning: darkMode ? "#fbbf24" : "#f59e0b"
+    readonly property color cError:   darkMode ? "#f87171" : "#ef4444"
+
+    readonly property var steps: [
+        { step: qsTr("Checking compatibility..."),  threshold: 10 },
+        { step: qsTr("Downloading packages..."),    threshold: 30 },
+        { step: qsTr("Installing akmod-nvidia..."), threshold: 60 },
+        { step: qsTr("Building kernel module..."),  threshold: 85 },
+        { step: qsTr("Running dracut..."),          threshold: 100 }
+    ]
+
+    function getStepStatus(index) {
+        var prog = page.controller.install_progress;
+        var thr = steps[index].threshold;
+        var prev = index > 0 ? steps[index - 1].threshold : 0;
+        if (prog >= thr) return "done";
+        if (prog > prev) return "running";
+        return "pending";
+    }
 
     Controls.ScrollView {
         anchors.fill: parent
+        contentWidth: availableWidth
 
         ColumnLayout {
-            width: Math.min(parent.width - 48, 640)
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 0
+            width: parent.width; spacing: 24
 
-            Item { Layout.preferredHeight: 32 }
+            Item { Layout.preferredHeight: 24 }
 
-            // ── Title ──
-            Controls.Label {
-                text: page.controller.current_status === "removing"
-                    ? qsTr("Removing Drivers\u2026")
-                    : qsTr("Installing nvidia-%1").arg(page.controller.best_version)
-                font.pixelSize: 20; font.weight: Font.DemiBold; color: page.cText
-            }
+            // ── Hero ──
+            ColumnLayout {
+                Layout.alignment: Qt.AlignHCenter; spacing: 20
 
-            Item { Layout.preferredHeight: 16 }
-
-            // ── Progress Bar ──
-            RowLayout {
-                Layout.fillWidth: true; spacing: 12
-
-                Controls.ProgressBar {
-                    Layout.fillWidth: true
-                    from: 0; to: 100
-                    value: page.controller.install_progress
-                    indeterminate: page.controller.install_progress === 0 && page.controller.is_installing
-
-                    background: Rectangle {
-                        implicitHeight: 8; radius: 4
-                        color: darkMode ? "#1b2028" : "#e8ebef"
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    width: 96; height: 96; radius: 20
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#EF4444" }
+                        GradientStop { position: 1.0; color: "#DC2626" }
                     }
+                    Controls.Label { anchors.centerIn: parent; text: "🦀"; font.pixelSize: 48 }
 
-                    contentItem: Item {
-                        implicitHeight: 8
-                        Rectangle {
-                            width: page.controller.install_progress / 100.0 * parent.width
-                            height: parent.height; radius: 4; color: "#3daee9"
-                            Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
-                        }
+                    RotationAnimator on rotation { running: page.controller.is_installing; from: 0; to: 360; duration: 3000; loops: Animation.Infinite }
+                    SequentialAnimation on scale {
+                        running: page.controller.is_installing; loops: Animation.Infinite
+                        NumberAnimation { from: 1.0; to: 1.05; duration: 1000 }
+                        NumberAnimation { from: 1.05; to: 1.0; duration: 1000 }
                     }
                 }
 
                 Controls.Label {
-                    text: page.controller.install_progress + "%"
-                    font.pixelSize: 16; font.weight: Font.DemiBold
-                    color: page.cTextSub
-                    Layout.preferredWidth: 48
-                    horizontalAlignment: Text.AlignRight
+                    Layout.alignment: Qt.AlignHCenter
+                    text: page.controller.current_status === "removing"
+                        ? qsTr("Removing Drivers…") : qsTr("Installing nvidia-%1").arg(page.controller.best_version)
+                    font.pixelSize: 24; font.weight: Font.Bold; color: page.cFg
+                }
+
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter; spacing: 8
+                    Controls.Label { text: qsTr("This may take a few minutes •"); font.pixelSize: 16; color: page.cMutedFg }
+                    Controls.Label { text: "🦀 Rust Backend"; font.pixelSize: 16; font.weight: Font.Bold; color: "#EF4444" }
                 }
             }
 
-            Item { Layout.preferredHeight: 16 }
+            // ── Progress Bar ──
+            ColumnLayout {
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720; Layout.fillWidth: true; spacing: 16
 
-            // ── Installation Steps ──
-            Rectangle {
-                visible: page.controller.is_installing
-                Layout.fillWidth: true
-                implicitHeight: stepsCol.implicitHeight + 24
-                radius: 10; color: page.cSurface
-                border.width: 1; border.color: page.cBorder
+                RowLayout {
+                    Layout.fillWidth: true
+                    Controls.Label { text: qsTr("Progress"); font.pixelSize: 14; font.weight: Font.Medium; color: page.cMutedFg }
+                    Item { Layout.fillWidth: true }
+                    Controls.Label { text: page.controller.install_progress + "%"; font.pixelSize: 24; font.weight: Font.Bold; color: page.cPrimary; font.family: "monospace" }
+                }
 
-                ColumnLayout {
-                    id: stepsCol
-                    anchors.left: parent.left; anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter; anchors.margins: 16
-                    spacing: 6
+                Rectangle {
+                    Layout.fillWidth: true; Layout.preferredHeight: 16; radius: 8; color: page.cMuted
 
-                    StepItem {
-                        text: qsTr("Checking compatibility")
-                        status: page.controller.install_progress >= 10 ? "done" : "pending"
-                        darkMode: page.darkMode
-                    }
-                    StepItem {
-                        text: qsTr("Downloading packages")
-                        status: page.controller.install_progress >= 30 ? "done" : page.controller.install_progress >= 10 ? "running" : "pending"
-                        darkMode: page.darkMode
-                    }
-                    StepItem {
-                        text: qsTr("Installing drivers")
-                        status: page.controller.install_progress >= 60 ? "done" : page.controller.install_progress >= 30 ? "running" : "pending"
-                        darkMode: page.darkMode
-                    }
-                    StepItem {
-                        text: qsTr("Building kernel module")
-                        status: page.controller.install_progress >= 80 ? "done" : page.controller.install_progress >= 60 ? "running" : "pending"
-                        darkMode: page.darkMode
-                    }
-                    StepItem {
-                        text: qsTr("Running dracut")
-                        status: page.controller.install_progress >= 100 ? "done" : page.controller.install_progress >= 80 ? "running" : "pending"
-                        darkMode: page.darkMode
+                    Rectangle {
+                        width: parent.width * Math.min(100, Math.max(0, page.controller.install_progress)) / 100
+                        height: parent.height; radius: parent.radius
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: "#EF4444" }
+                            GradientStop { position: 0.5; color: "#DC2626" }
+                            GradientStop { position: 1.0; color: "#EF4444" }
+                        }
+                        Behavior on width { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+
+                        Rectangle {
+                            anchors.fill: parent; radius: parent.radius
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: Qt.rgba(1,1,1,0.3) }
+                                GradientStop { position: 0.5; color: Qt.rgba(1,1,1,0.1) }
+                                GradientStop { position: 1.0; color: "transparent" }
+                            }
+                        }
+                        Rectangle {
+                            anchors.fill: parent; radius: parent.radius; opacity: 0.4
+                            gradient: Gradient {
+                                GradientStop { position: _shimmer.pos - 0.3; color: "transparent" }
+                                GradientStop { position: _shimmer.pos;       color: "white" }
+                                GradientStop { position: _shimmer.pos + 0.3; color: "transparent" }
+                                orientation: Gradient.Horizontal
+                            }
+                            QtObject { id: _shimmer; property real pos: -0.3 }
+                            SequentialAnimation on _shimmer.pos {
+                                running: page.controller.is_installing; loops: Animation.Infinite
+                                NumberAnimation { from: -0.3; to: 1.3; duration: 1500 }
+                            }
+                        }
+                        Controls.Label {
+                            visible: page.controller.is_installing; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                            text: "🦀"; font.pixelSize: 18
+                            SequentialAnimation on scale {
+                                running: page.controller.is_installing; loops: Animation.Infinite
+                                NumberAnimation { from: 1; to: 1.3; duration: 750 }
+                                NumberAnimation { from: 1.3; to: 1; duration: 750 }
+                            }
+                        }
                     }
                 }
             }
 
-            Item { Layout.preferredHeight: 12 }
+            // ── Installation Log ──
+            ColumnLayout {
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720; Layout.fillWidth: true; spacing: 16
+
+                Controls.Label { text: "⚙️ " + qsTr("Installation Log"); font.pixelSize: 18; font.weight: Font.Bold; color: page.cFg }
+
+                Rectangle {
+                    Layout.fillWidth: true; implicitHeight: Math.min(320, _stepsCol.implicitHeight + 40)
+                    radius: 16; color: page.cCard; border.width: 1; border.color: page.cBorder; clip: true
+
+                    ColumnLayout {
+                        id: _stepsCol; anchors.fill: parent; anchors.margins: 20; spacing: 12
+
+                        Repeater {
+                            model: page.steps
+                            delegate: StepItem {
+                                Layout.fillWidth: true
+                                status: page.getStepStatus(index)
+                                label: modelData.step
+                                darkMode: page.darkMode
+                                required property int index
+                                required property var modelData
+                            }
+                        }
+                    }
+                }
+            }
 
             // ── Log Output ──
             Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 200
-                radius: 10
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720; Layout.fillWidth: true
+                Layout.preferredHeight: 200; radius: 16
                 color: darkMode ? "#161b22" : "#f6f8fa"
                 border.width: 1; border.color: page.cBorder
 
@@ -130,116 +181,86 @@ Item {
                     anchors.fill: parent; spacing: 0
 
                     Rectangle {
-                        Layout.fillWidth: true; Layout.preferredHeight: 32
-                        color: darkMode ? "#1e252e" : "#eef1f5"
-                        radius: 10
-
-                        // Clip bottom corners
-                        Rectangle {
-                            anchors.bottom: parent.bottom; width: parent.width; height: 10
-                            color: parent.color
-                        }
-
+                        Layout.fillWidth: true; Layout.preferredHeight: 34
+                        color: darkMode ? "#1e252e" : "#eef1f5"; radius: 16
+                        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 12; color: parent.color }
                         Controls.Label {
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.left: parent.left; anchors.leftMargin: 12
-                            text: qsTr("Log Output")
-                            font.pixelSize: 12; font.weight: Font.DemiBold
-                            color: page.cTextSub
+                            anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: 14
+                            text: "📋 " + qsTr("Log Output"); font.pixelSize: 12; font.weight: Font.DemiBold; color: page.cMutedFg
                         }
                     }
 
                     Controls.ScrollView {
-                        Layout.fillWidth: true; Layout.fillHeight: true
-                        clip: true
-
+                        Layout.fillWidth: true; Layout.fillHeight: true; clip: true
                         Controls.TextArea {
-                            id: logArea
-                            readOnly: true; wrapMode: Text.WordWrap
-                            text: page.controller.install_log || qsTr("Waiting for output\u2026")
-                            font.family: "monospace"; font.pixelSize: 12
-                            color: page.cTextMuted
-                            background: null
-                            leftPadding: 12; rightPadding: 12; topPadding: 8
-
-                            onTextChanged: logArea.cursorPosition = logArea.text.length
+                            id: _logArea; readOnly: true; wrapMode: Text.WordWrap
+                            text: page.controller.install_log || qsTr("Waiting for output…")
+                            font.family: "monospace"; font.pixelSize: 12; color: page.cMutedFg
+                            background: null; leftPadding: 14; rightPadding: 14; topPadding: 8
+                            onTextChanged: _logArea.cursorPosition = _logArea.text.length
                         }
                     }
                 }
             }
 
-            Item { Layout.preferredHeight: 12 }
-
             // ── Warning ──
-            WarningBanner {
+            Rectangle {
                 visible: page.controller.is_installing
-                type: "warning"
-                text: qsTr("Do not turn off your computer during this process.")
-                darkMode: page.darkMode
-                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720; Layout.fillWidth: true
+                implicitHeight: _warnRow.implicitHeight + 40; radius: 16
+                color: Qt.rgba(page.cWarning.r, page.cWarning.g, page.cWarning.b, 0.1)
+                border.width: 1; border.color: Qt.rgba(page.cWarning.r, page.cWarning.g, page.cWarning.b, 0.3)
+
+                RowLayout {
+                    id: _warnRow; anchors.fill: parent; anchors.margins: 20; spacing: 16
+                    Rectangle {
+                        Layout.preferredWidth: 40; Layout.preferredHeight: 40; Layout.alignment: Qt.AlignTop
+                        radius: 12; color: Qt.rgba(page.cWarning.r, page.cWarning.g, page.cWarning.b, 0.2)
+                        Controls.Label { anchors.centerIn: parent; text: "⚠️"; font.pixelSize: 20 }
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true; spacing: 8
+                        Controls.Label { text: qsTr("Important Notice"); font.pixelSize: 16; font.weight: Font.Bold; color: page.cWarning }
+                        Controls.Label { text: qsTr("Do not turn off your computer or close this window during installation."); font.pixelSize: 14; color: page.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    }
+                }
             }
 
-            Item { Layout.preferredHeight: 16 }
-
-            // ── Action Buttons ──
+            // ── Buttons ──
             RowLayout {
-                Layout.fillWidth: true; spacing: 10
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720; Layout.fillWidth: true; spacing: 16
 
                 Controls.Button {
                     visible: page.controller.is_installing
-                    text: qsTr("Cancel")
-                    font.pixelSize: 14
-                    Layout.preferredWidth: 120
-                    onClicked: cancelDialog.open()
-
+                    text: "❌ " + qsTr("Cancel Installation"); implicitWidth: 200; implicitHeight: 48
                     background: Rectangle {
-                        implicitHeight: 38; radius: 10
-                        color: parent.down ? (darkMode ? "#2c3440" : "#dde0e4") : (darkMode ? "#313840" : "#e8ebef")
-                        border.width: 1; border.color: page.cBorder
+                        radius: 16; color: "transparent"; border.width: 2
+                        border.color: parent.hovered ? page.cError : page.cBorder
+                        Behavior on border.color { ColorAnimation { duration: 300 } }
                     }
-                }
-
-                Controls.Button {
-                    visible: !page.controller.is_installing
-                    text: qsTr("Done")
-                    Layout.fillWidth: true; font.pixelSize: 14
-
                     contentItem: Controls.Label {
-                        text: parent.text; font: parent.font; color: "#ffffff"
+                        text: parent.text; font.pixelSize: 16; font.weight: Font.Medium
+                        color: parent.hovered ? page.cError : page.cFg
                         horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                        Behavior on color { ColorAnimation { duration: 300 } }
                     }
-                    background: Rectangle {
-                        implicitHeight: 38; radius: 10
-                        color: parent.down ? "#2a8ec4" : "#3daee9"
-                    }
-
-                    onClicked: page.finished()
+                    onClicked: _cancelDialog.open()
                 }
 
-                Controls.Button {
+                GradientButton {
                     visible: !page.controller.is_installing && page.controller.install_progress >= 100
-                    text: qsTr("Reboot Now")
-                    icon.name: "system-reboot"
-                    Layout.fillWidth: true; font.pixelSize: 14
+                    text: "🔄 " + qsTr("Reboot Now"); Layout.fillWidth: true
+                    useGradient: true; gradientStart: "#EF4444"; gradientEnd: "#DC2626"
+                    darkMode: page.darkMode
+                    onClicked: page.controller.reboot_system()
+                }
 
-                    contentItem: RowLayout {
-                        spacing: 6
-                        Controls.Label {
-                            text: "\u27F3"; font.pixelSize: 16; color: "#ffffff"
-                        }
-                        Controls.Label {
-                            text: qsTr("Reboot Now"); font.pixelSize: 14; color: "#ffffff"
-                        }
-                    }
-                    background: Rectangle {
-                        implicitHeight: 38; radius: 10
-                        color: parent.down ? "#2a8ec4" : "#3daee9"
-                    }
-
-                    onClicked: {
-                        console.log("Reboot requested by user");
-                        page.controller.reboot_system();
-                    }
+                GradientButton {
+                    visible: !page.controller.is_installing
+                    text: qsTr("Done"); Layout.fillWidth: true
+                    useGradient: true; gradientStart: page.cPrimary; gradientEnd: page.cAccent
+                    darkMode: page.darkMode
+                    onClicked: page.finished()
                 }
             }
 
@@ -248,19 +269,9 @@ Item {
     }
 
     Controls.Dialog {
-        id: cancelDialog
-        title: qsTr("Cancel Installation?")
-        modal: true; anchors.centerIn: parent
+        id: _cancelDialog; title: qsTr("Cancel Installation?"); modal: true; anchors.centerIn: parent
         standardButtons: Controls.Dialog.Yes | Controls.Dialog.No
-
-        Controls.Label {
-            text: qsTr("Cancelling may leave your system in an incomplete state.\nAre you sure?")
-            wrapMode: Text.WordWrap
-        }
-
-        onAccepted: {
-            console.warn("Installation cancelled by user");
-            page.finished();
-        }
+        Controls.Label { text: qsTr("Cancelling may leave your system in an incomplete state.\nAre you sure?"); wrapMode: Text.WordWrap }
+        onAccepted: page.finished()
     }
 }

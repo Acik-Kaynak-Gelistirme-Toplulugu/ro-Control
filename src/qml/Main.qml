@@ -5,312 +5,292 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as Controls
 import "pages"
+import "components"
 import io.github.AcikKaynakGelistirmeToplulugu.rocontrol
 
 Controls.ApplicationWindow {
     id: root
-    width: 1360
-    height: 780
-    minimumWidth: 1060
-    minimumHeight: 640
-    title: "ro-Control"
-    visible: true
+    width: 1200; height: 800; visible: true
+    title: "ro-Control - NVIDIA Driver Manager (Rust Edition)"
 
     property bool darkMode: false
+    property string currentPage: "install"
 
-    // ─── Color Palette ───
-    readonly property color cBg:       darkMode ? "#1b2028" : "#f5f7f9"
-    readonly property color cHeader:   darkMode ? "#1e252e" : "#ffffff"
-    readonly property color cSidebar:  darkMode ? "#181e25" : "#f0f2f5"
-    readonly property color cSurface:  darkMode ? "#242b35" : "#ffffff"
-    readonly property color cBorder:   darkMode ? "#313840" : "#d0d7de"
-    readonly property color cBorderSub:darkMode ? "#282f38" : "#e1e4e8"
-    readonly property color cText:     darkMode ? "#e6edf3" : "#1f2328"
-    readonly property color cTextSub:  darkMode ? "#8b949e" : "#656d76"
-    readonly property color cTextMuted:darkMode ? "#6e7681" : "#8c959f"
-    readonly property color cPrimary:  "#3daee9"
-    readonly property color cNavActive:darkMode ? "#242b35" : "#ffffff"
+    readonly property color cBg:      darkMode ? "#0f1419" : "#f5f7fa"
+    readonly property color cCard:    darkMode ? "#1e293b" : "#fcfcfc"
+    readonly property color cCardGlass: darkMode ? Qt.rgba(0.117,0.16,0.23,0.8) : Qt.rgba(1,1,1,0.9)
+    readonly property color cBorder:  darkMode ? "#334155" : "#e5e7eb"
+    readonly property color cFg:      darkMode ? "#e2e8f0" : "#1a1d23"
+    readonly property color cMutedFg: darkMode ? "#94a3b8" : "#64748b"
+    readonly property color cPrimary: darkMode ? "#60a5fa" : "#3b82f6"
+    readonly property color cAccent:  darkMode ? "#a78bfa" : "#8b5cf6"
+    readonly property color cMuted:   darkMode ? "#1e293b" : "#f1f5f9"
+    readonly property color cSuccess: darkMode ? "#34d399" : "#10b981"
 
     background: Rectangle { color: root.cBg }
 
     // ─── Backend ───
     GpuController {
         id: gpuController
-        Component.onCompleted: {
-            check_network();
-            detect_gpu();
-            check_app_update();
+        Component.onCompleted: { check_network(); detect_gpu(); check_app_update(); }
+    }
+    PerfMonitor { id: perfMonitor }
+
+    // ─── Animated Background ───
+    Rectangle {
+        parent: root.contentItem; anchors.fill: parent; z: -1
+        color: root.cBg
+
+        Rectangle {
+            anchors.fill: parent; opacity: 0.3
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(root.cPrimary.r, root.cPrimary.g, root.cPrimary.b, 0.1) }
+                GradientStop { position: 1.0; color: Qt.rgba(root.cAccent.r, root.cAccent.g, root.cAccent.b, 0.1) }
+            }
         }
     }
 
-    PerfMonitor { id: perfMonitor }
+    // ─── Header ───
+    header: Rectangle {
+        height: 64; color: root.cCardGlass
 
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 0
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.cBorder }
 
-        // ═══════════════ Header Bar (48px) ═══════════════
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 48
-            color: root.cHeader
-
-            Rectangle {
-                anchors.bottom: parent.bottom
-                width: parent.width; height: 1
-                color: root.cBorder
-            }
+        RowLayout {
+            anchors.fill: parent; anchors.leftMargin: 24; anchors.rightMargin: 24; spacing: 16
 
             RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 18; anchors.rightMargin: 14
-                spacing: 0
-
-                // Logo
-                Controls.Label {
-                    text: "ro-Control"
-                    font.pixelSize: 15; font.weight: Font.Bold
-                    color: root.cPrimary
+                spacing: 12
+                Rectangle {
+                    width: 40; height: 40; radius: 12
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#EF4444" }
+                        GradientStop { position: 1.0; color: "#DC2626" }
+                    }
+                    Controls.Label { anchors.centerIn: parent; text: "🦀"; font.pixelSize: 20 }
+                    SequentialAnimation on rotation {
+                        running: true; loops: Animation.Infinite
+                        NumberAnimation { from: 0; to: 5; duration: 1000 }
+                        NumberAnimation { from: 5; to: -5; duration: 2000 }
+                        NumberAnimation { from: -5; to: 0; duration: 1000 }
+                    }
                 }
+                ColumnLayout {
+                    spacing: 0
+                    Controls.Label { text: "ro-Control"; font.pixelSize: 18; font.weight: Font.Bold; color: root.cFg }
+                    Controls.Label { text: "NVIDIA Driver Manager • Rust Edition"; font.pixelSize: 12; color: root.cMutedFg }
+                }
+            }
 
-                Item { Layout.preferredWidth: 24 }
+            Item { Layout.fillWidth: true }
 
-                // Status info
+            // Rust badge
+            Rectangle {
+                implicitHeight: 32; implicitWidth: _rustBadge.implicitWidth + 16
+                radius: 8; color: Qt.rgba(0.937, 0.267, 0.267, 0.1)
+                border.width: 1; border.color: Qt.rgba(0.937, 0.267, 0.267, 0.3)
                 RowLayout {
-                    spacing: 6
+                    id: _rustBadge; anchors.centerIn: parent; spacing: 8
+                    Controls.Label { text: "🦀"; font.pixelSize: 16 }
+                    Controls.Label { text: "Powered by Rust"; font.pixelSize: 14; font.weight: Font.Bold; color: "#EF4444" }
+                }
+            }
 
-                    Rectangle {
-                        implicitWidth: driverPill.implicitWidth + 16
-                        implicitHeight: 22; radius: 11
-                        color: root.darkMode ? "#282f38" : "#eef1f5"
+            // Theme toggle
+            Controls.ToolButton {
+                text: root.darkMode ? "☀️" : "🌙"; font.pixelSize: 20
+                implicitWidth: 40; implicitHeight: 40
+                onClicked: root.darkMode = !root.darkMode
+            }
+        }
+    }
 
-                        Controls.Label {
-                            id: driverPill; anchors.centerIn: parent
-                            text: qsTr("Driver: %1").arg(
-                                gpuController.driver_in_use.length > 0
-                                    ? gpuController.driver_in_use
-                                    : (gpuController.is_detecting ? qsTr("Detecting\u2026") : qsTr("N/A")))
-                            font.pixelSize: 11; font.weight: Font.Medium
-                            color: root.cTextSub
+    // ─── Status Bar ───
+    StatusBar {
+        id: statusBar
+        visible: root.currentPage !== "progress"
+        parent: root.contentItem
+        anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+        z: 10
+        darkMode: root.darkMode
+        items: [
+            { label: qsTr("Driver"), value: gpuController.driver_in_use.length > 0 ? gpuController.driver_in_use : (gpuController.is_detecting ? qsTr("Detecting…") : "N/A") },
+            { label: qsTr("Secure Boot"), value: gpuController.secure_boot ? "ON" : "OFF" },
+            { label: qsTr("GPU"), value: gpuController.gpu_model.length > 0 ? gpuController.gpu_model : (gpuController.is_detecting ? qsTr("Detecting…") : "Unknown") }
+        ]
+
+        opacity: visible ? 1.0 : 0.0; height: visible ? implicitHeight : 0
+        Behavior on opacity { NumberAnimation { duration: 300 } }
+        Behavior on height { NumberAnimation { duration: 300 } }
+    }
+
+    // ─── Body ───
+    RowLayout {
+        parent: root.contentItem
+        anchors.fill: parent; anchors.topMargin: statusBar.visible ? statusBar.height : 0
+        spacing: 0
+
+        // ─── Sidebar ───
+        Rectangle {
+            Layout.preferredWidth: 240; Layout.fillHeight: true
+            color: Qt.rgba(root.cCard.r, root.cCard.g, root.cCard.b, 0.6)
+
+            Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: root.cBorder }
+
+            ColumnLayout {
+                anchors.fill: parent; anchors.margins: 16; spacing: 12
+
+                Repeater {
+                    model: [
+                        { id: "install", label: qsTr("Install"),  icon: "📥" },
+                        { id: "expert",  label: qsTr("Expert"),   icon: "⚙️" },
+                        { id: "monitor", label: qsTr("Monitor"),  icon: "📊" }
+                    ]
+
+                    delegate: Controls.Button {
+                        Layout.fillWidth: true; implicitHeight: 48
+                        required property var modelData
+                        readonly property bool isActive: root.currentPage === modelData.id
+
+                        background: Rectangle {
+                            radius: 12
+                            color: isActive ? root.cPrimary : (parent.hovered ? root.cMuted : "transparent")
+                            Behavior on color { ColorAnimation { duration: 300 } }
+                            scale: parent.pressed ? 0.98 : 1.0
+                            Behavior on scale { NumberAnimation { duration: 150 } }
                         }
-                    }
 
-                    Rectangle {
-                        implicitWidth: gpuPill.implicitWidth + 16
-                        implicitHeight: 22; radius: 11
-                        color: root.darkMode ? "#282f38" : "#eef1f5"
-
-                        Controls.Label {
-                            id: gpuPill; anchors.centerIn: parent
-                            text: qsTr("GPU: %1").arg(
-                                gpuController.gpu_model.length > 0
-                                    ? gpuController.gpu_model
-                                    : (gpuController.is_detecting ? qsTr("Detecting\u2026") : qsTr("Unknown")))
-                            font.pixelSize: 11; font.weight: Font.Medium
-                            color: root.cTextSub
+                        contentItem: RowLayout {
+                            spacing: 12
+                            Rectangle {
+                                Layout.preferredWidth: 36; Layout.preferredHeight: 36; radius: 8
+                                color: isActive ? Qt.rgba(1,1,1,0.2) : root.cMuted
+                                Controls.Label { anchors.centerIn: parent; text: modelData.icon; font.pixelSize: 20 }
+                            }
+                            Controls.Label {
+                                text: modelData.label; font.pixelSize: 16
+                                font.weight: isActive ? Font.Bold : Font.Normal
+                                color: isActive ? "white" : root.cFg
+                            }
+                            Item { Layout.fillWidth: true }
+                            Rectangle {
+                                visible: isActive; width: 8; height: 8; radius: 4
+                                gradient: Gradient {
+                                    GradientStop { position: 0.0; color: "white" }
+                                    GradientStop { position: 1.0; color: Qt.rgba(1,1,1,0.8) }
+                                }
+                            }
                         }
-                    }
 
-                    Rectangle {
-                        implicitWidth: sbPill.implicitWidth + 16
-                        implicitHeight: 22; radius: 11
-                        color: gpuController.secure_boot
-                            ? (root.darkMode ? "#3d1418" : "#ffebe9")
-                            : (root.darkMode ? "#282f38" : "#eef1f5")
-
-                        Controls.Label {
-                            id: sbPill; anchors.centerIn: parent
-                            text: qsTr("SecBoot: %1").arg(gpuController.secure_boot ? "ON" : "OFF")
-                            font.pixelSize: 11; font.weight: Font.Medium
-                            color: gpuController.secure_boot
-                                ? (root.darkMode ? "#f85149" : "#cf222e")
-                                : root.cTextSub
-                        }
+                        onClicked: root.currentPage = modelData.id
                     }
                 }
 
-                Item { Layout.fillWidth: true }
+                Item { Layout.fillHeight: true }
 
-                // Header actions
-                Controls.ToolButton {
-                    text: root.darkMode ? "\u2600" : "\u263E"
-                    font.pixelSize: 17
-                    implicitWidth: 36; implicitHeight: 36
-                    onClicked: root.darkMode = !root.darkMode
-                    ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Toggle theme")
-                }
+                // Rust version badge
+                Rectangle {
+                    Layout.fillWidth: true; implicitHeight: 60; radius: 12
+                    color: Qt.rgba(0.937, 0.267, 0.267, 0.1)
+                    border.width: 1; border.color: Qt.rgba(0.937, 0.267, 0.267, 0.3)
 
-                Controls.ToolButton {
-                    text: "\u24D8"
-                    font.pixelSize: 17
-                    implicitWidth: 36; implicitHeight: 36
-                    onClicked: aboutDialog.open()
-                    ToolTip.visible: hovered
-                    ToolTip.text: qsTr("About")
+                    MouseArea {
+                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                        onClicked: aboutDialog.open()
+                    }
+
+                    RowLayout {
+                        anchors.fill: parent; anchors.margins: 12; spacing: 12
+                        Rectangle {
+                            Layout.preferredWidth: 36; Layout.preferredHeight: 36; radius: 8
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: "#EF4444" }
+                                GradientStop { position: 1.0; color: "#DC2626" }
+                            }
+                            Controls.Label { anchors.centerIn: parent; text: "🦀"; font.pixelSize: 18 }
+                            SequentialAnimation on scale {
+                                running: true; loops: Animation.Infinite
+                                NumberAnimation { from: 1.0; to: 1.1; duration: 2000 }
+                                NumberAnimation { from: 1.1; to: 1.0; duration: 2000 }
+                            }
+                        }
+                        ColumnLayout {
+                            spacing: 0
+                            Controls.Label { text: "Rust Edition"; font.pixelSize: 12; color: root.cMutedFg }
+                            Controls.Label {
+                                text: "v" + (gpuController.app_version.length > 0 ? gpuController.app_version : "…")
+                                font.pixelSize: 14; font.weight: Font.Bold; color: "#EF4444"
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // ═══════════════ Body ═══════════════
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 0
+        // ─── Content Area ───
+        Rectangle {
+            Layout.fillWidth: true; Layout.fillHeight: true; color: "transparent"
 
-            // ─── Sidebar (200px) ───
-            Rectangle {
-                id: sidebar
-                Layout.preferredWidth: 200
-                Layout.fillHeight: true
-                color: root.cSidebar
-
-                Rectangle {
-                    anchors.right: parent.right
-                    width: 1; height: parent.height
-                    color: root.cBorder; opacity: 0.5
-                }
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.topMargin: 12; anchors.bottomMargin: 12
-                    anchors.leftMargin: 10; anchors.rightMargin: 10
-                    spacing: 4
-
-                    Repeater {
-                        model: [
-                            { label: qsTr("Install"),  icon: "\u2193", idx: 0 },
-                            { label: qsTr("Expert"),   icon: "\u2699", idx: 1 },
-                            { label: qsTr("Monitor"),  icon: "\u223F", idx: 2 }
-                        ]
-
-                        Rectangle {
-                            required property var modelData
-                            Layout.fillWidth: true
-                            implicitHeight: 40
-                            radius: 8
-                            color: contentStack.currentIndex === modelData.idx
-                                ? root.cNavActive : "transparent"
-
-                            Behavior on color { ColorAnimation { duration: 120 } }
-
-                            // Active accent bar
-                            Rectangle {
-                                visible: contentStack.currentIndex === modelData.idx
-                                anchors.left: parent.left
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 3; height: 20; radius: 2
-                                color: root.cPrimary
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                hoverEnabled: true
-                                onClicked: contentStack.currentIndex = parent.modelData.idx
-
-                                Rectangle {
-                                    anchors.fill: parent; radius: 8
-                                    color: parent.containsMouse && contentStack.currentIndex !== parent.parent.modelData.idx
-                                        ? (root.darkMode ? "#242b3540" : "#00000008")
-                                        : "transparent"
-                                }
-                            }
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 14; anchors.rightMargin: 10
-                                spacing: 10
-
-                                Controls.Label {
-                                    text: modelData.icon
-                                    font.pixelSize: 16
-                                    color: contentStack.currentIndex === modelData.idx
-                                        ? root.cPrimary : root.cTextSub
-                                }
-
-                                Controls.Label {
-                                    text: modelData.label
-                                    font.pixelSize: 14
-                                    font.weight: contentStack.currentIndex === modelData.idx
-                                        ? Font.DemiBold : Font.Normal
-                                    color: contentStack.currentIndex === modelData.idx
-                                        ? root.cText : root.cTextSub
-                                    Layout.fillWidth: true
-                                }
-                            }
-                        }
-                    }
-
-                    Item { Layout.fillHeight: true }
-
-                    // Update notification
-                    Rectangle {
-                        visible: gpuController.app_update_available
-                        Layout.fillWidth: true
-                        implicitHeight: 36; radius: 8
-                        color: root.darkMode ? "#162d1f" : "#dafbe1"
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: updateDialog.open()
-                        }
-
-                        Controls.Label {
-                            anchors.centerIn: parent
-                            text: qsTr("Update v%1").arg(gpuController.app_latest_version)
-                            font.pixelSize: 12; font.weight: Font.DemiBold
-                            color: root.darkMode ? "#3fb950" : "#1a7f37"
-                        }
-                    }
-
-                    // Version
-                    Controls.Label {
-                        text: "v" + (gpuController.app_version.length > 0 ? gpuController.app_version : "\u2026")
-                        font.pixelSize: 11; color: root.cTextMuted
-                        Layout.leftMargin: 6
-                    }
-                }
-            }
-
-            // ─── Content Area ───
             StackLayout {
-                id: contentStack
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                currentIndex: 0
+                anchors.fill: parent
+                currentIndex: {
+                    if (root.currentPage === "install") return 0;
+                    if (root.currentPage === "expert") return 1;
+                    if (root.currentPage === "monitor") return 2;
+                    if (root.currentPage === "progress") return 3;
+                    return 0;
+                }
 
                 InstallPage {
-                    controller: gpuController
-                    darkMode: root.darkMode
-                    onShowExpert: contentStack.currentIndex = 1
-                    onShowProgress: contentStack.currentIndex = 3
+                    controller: gpuController; darkMode: root.darkMode
+                    onShowExpert: root.currentPage = "expert"
+                    onShowProgress: root.currentPage = "progress"
                 }
-
                 ExpertPage {
-                    controller: gpuController
-                    darkMode: root.darkMode
-                    kernelVersion: perfMonitor.kernel
-                    onShowProgress: contentStack.currentIndex = 3
-                    onGoBack: contentStack.currentIndex = 0
+                    controller: gpuController; darkMode: root.darkMode; kernelVersion: perfMonitor.kernel
+                    onShowProgress: root.currentPage = "progress"
+                    onGoBack: root.currentPage = "install"
                 }
-
                 PerfPage {
-                    monitor: perfMonitor
-                    darkMode: root.darkMode
+                    monitor: perfMonitor; controller: gpuController; darkMode: root.darkMode
                 }
-
                 ProgressPage {
-                    controller: gpuController
-                    darkMode: root.darkMode
-                    onFinished: {
-                        gpuController.detect_gpu();
-                        contentStack.currentIndex = 0;
-                    }
+                    controller: gpuController; darkMode: root.darkMode
+                    onFinished: { gpuController.detect_gpu(); root.currentPage = "install"; }
                 }
             }
         }
+    }
+
+    // ─── Update Dialog ───
+    Controls.Dialog {
+        id: updateDialog
+        title: qsTr("Update Available")
+        modal: true; anchors.centerIn: parent
+        standardButtons: Controls.Dialog.Ok | Controls.Dialog.Cancel
+        visible: gpuController.app_update_available
+
+        ColumnLayout {
+            spacing: 12
+            Controls.Label {
+                text: "🦀 " + qsTr("ro-Control v%1 is available!").arg(gpuController.app_latest_version)
+                font.pixelSize: 16; font.weight: Font.Bold
+            }
+            Controls.Label {
+                text: gpuController.app_release_notes || qsTr("Bug fixes and improvements.")
+                font.pixelSize: 14; wrapMode: Text.WordWrap
+                Layout.maximumWidth: 400
+            }
+            RowLayout {
+                spacing: 8
+                Controls.Label { text: qsTr("Current:"); font.pixelSize: 12; color: root.cMutedFg }
+                Controls.Label { text: "v" + gpuController.app_version; font.pixelSize: 12; font.weight: Font.Bold }
+                Controls.Label { text: "→"; font.pixelSize: 12; color: root.cMutedFg }
+                Controls.Label { text: "v" + gpuController.app_latest_version; font.pixelSize: 12; font.weight: Font.Bold; color: root.cPrimary }
+            }
+        }
+
+        onAccepted: gpuController.install_app_update()
     }
 
     // ─── About Dialog ───
@@ -321,94 +301,26 @@ Controls.ApplicationWindow {
         standardButtons: Controls.Dialog.Ok
 
         ColumnLayout {
-            spacing: 8; width: 360
-
-            Controls.Label {
-                text: "ro-Control"
-                font.pixelSize: 18; font.weight: Font.Bold
-                color: root.cPrimary
-            }
-
-            Controls.Label {
-                text: "v" + (gpuController.app_version.length > 0 ? gpuController.app_version : "\u2026")
-                font.pixelSize: 14; font.weight: Font.DemiBold; color: root.cText
-            }
-
-            Controls.Label {
-                text: qsTr("Professional NVIDIA driver manager for Linux systems.")
-                wrapMode: Text.WordWrap; color: root.cTextSub; Layout.fillWidth: true
-            }
-
-            Controls.Label {
-                text: "\u00A9 A\u00E7\u0131k Kaynak Geli\u015Ftirme Toplulu\u011Fu"
-                color: root.cTextMuted; font.pixelSize: 12
-            }
-        }
-    }
-
-    // ─── Update Dialog ───
-    Controls.Dialog {
-        id: updateDialog
-        title: qsTr("Application Update")
-        modal: true; anchors.centerIn: parent
-        standardButtons: Controls.Dialog.Cancel
-
-        ColumnLayout {
-            spacing: 12; width: 400
-
-            Controls.Label {
-                text: qsTr("A new version of ro-Control is available!")
-                font.pixelSize: 15; font.weight: Font.DemiBold; color: root.cText
-            }
-
+            spacing: 12
             RowLayout {
-                spacing: 8
-                Controls.Label {
-                    text: "v" + gpuController.app_version
-                    font.pixelSize: 13; color: root.cTextSub
-                }
-                Controls.Label {
-                    text: "\u2192"; font.pixelSize: 13; color: root.cTextMuted
-                }
-                Controls.Label {
-                    text: "v" + gpuController.app_latest_version
-                    font.pixelSize: 13; font.weight: Font.DemiBold
-                    color: root.darkMode ? "#3fb950" : "#1a7f37"
-                }
-            }
-
-            Controls.Label {
-                visible: gpuController.app_release_notes.length > 0
-                text: gpuController.app_release_notes
-                wrapMode: Text.WordWrap; color: root.cTextSub
-                font.pixelSize: 12; Layout.fillWidth: true
-                Layout.maximumHeight: 180; elide: Text.ElideRight
-            }
-
-            Controls.Button {
-                text: gpuController.app_download_url.length > 0
-                    ? qsTr("Download & Install")
-                    : qsTr("Visit GitHub")
-                Layout.fillWidth: true; font.pixelSize: 14
-
-                contentItem: Controls.Label {
-                    text: parent.text; font: parent.font; color: "#ffffff"
-                    horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-                }
-                background: Rectangle {
-                    implicitHeight: 38; radius: 10
-                    color: parent.down ? "#2a8ec4" : "#3daee9"
-                }
-
-                onClicked: {
-                    if (gpuController.app_download_url.length > 0) {
-                        gpuController.install_app_update();
-                        updateDialog.close();
-                    } else {
-                        Qt.openUrlExternally("https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases/latest");
+                spacing: 12
+                Rectangle {
+                    width: 48; height: 48; radius: 12
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#EF4444" }
+                        GradientStop { position: 1.0; color: "#DC2626" }
                     }
+                    Controls.Label { anchors.centerIn: parent; text: "🦀"; font.pixelSize: 24 }
+                }
+                ColumnLayout {
+                    spacing: 2
+                    Controls.Label { text: "ro-Control"; font.pixelSize: 18; font.weight: Font.Bold }
+                    Controls.Label { text: qsTr("NVIDIA Driver Manager · Rust Edition"); font.pixelSize: 12; color: root.cMutedFg }
                 }
             }
+            Controls.Label { text: qsTr("Version: %1").arg(gpuController.app_version); font.pixelSize: 14 }
+            Controls.Label { text: "© 2024-2025 Açık Kaynak Geliştirme Topluluğu"; font.pixelSize: 12; color: root.cMutedFg }
+            Controls.Label { text: qsTr("Licensed under GPL-3.0"); font.pixelSize: 12; color: root.cMutedFg }
         }
     }
 }

@@ -12,36 +12,39 @@ When a new version is published, add a new section at the top and keep previous 
 
 ---
 
-## [1.1.0] - 2026-02-14
+## [1.1.0] - 2026-02-26
 
 ### Added
 
-- Root-task shell script hardened with strict command allowlist (only `dnf`, `grubby`, `dracut`, `systemctl`, `modprobe`, `timeshift` permitted)
-- Kernel version compatibility check (`is_version_compatible()`) before driver installation
-- 23 unit tests across `updater`, `detector`, `command`, and `i18n` modules
-- MSRV 1.82 verification job in CI pipeline
-- SECURITY.md responsible disclosure policy
-- `.dockerignore` to keep container builds lean
-- `parse_locale()` pure function for testable locale detection without environment variable side effects
+- Premium "Rust Edition" UI redesign with modern, vibrant aesthetic
+- 🦀 Rust branding throughout the application (header, sidebar, progress page)
+- `StatusBar` component showing Driver, Secure Boot, and GPU info
+- `CustomProgressBar` with gradient fill, color thresholds, glossy overlay
+- `GradientButton` with shimmer hover effect
+- `StepItem` with emoji status icons and slide-in animations
+- Info grid cards on Performance page with emoji icons
+- Animated background gradient on main window
+- About dialog accessible from sidebar badge
+- App update dialog with release notes
 
 ### Changed
 
-- Dockerfile upgraded from Fedora 41 to Fedora 42 with multi-stage build and `rustup`-based toolchain
-- Flatpak manifest updated with `--release` build flag and Qt6 modules
-- i18n tests rewritten to avoid `std::env::set_var` (safe for parallel execution on Rust 1.88+)
-- `rust-toolchain.toml` documented in BUILDING.md
-- Config URLs corrected to use `ro-Control` (capital C) consistently
+- Color palette updated from KDE Breeze to modern blue/purple/emerald scheme
+- ActionCard redesigned as Button-based component with gradient overlays
+- ExpertPage version selector redesigned with inline radio-button delegates
+- Header redesigned with glass effect and animated 🦀 logo
+- All pages use consistent frontend design language
 
 ### Fixed
 
-- `po/POTFILES.in` paths corrected to match current source tree
-- Metainfo XML URLs and screenshot paths fixed for Flathub validation
-- CI format and test failures resolved (cargo fmt, thread-safe tests)
+- Missing QML files in `build.rs` (CustomProgressBar, GradientButton, StatusBar)
+- `install_log` terminal panel restored in ProgressPage
+- `app_update_available` and `install_app_update()` properly connected in UI
 
 ### Removed
 
-- Unused dependencies: `env_logger`, `open`
-- Environment-variable-dependent i18n tests replaced with pure function tests
+- Unused components: StatRow, VersionRow, WarningBanner (functionality inlined)
+- Legacy `frontend/` design reference directory
 
 Release: [v1.1.0](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases/tag/v1.1.0)
 

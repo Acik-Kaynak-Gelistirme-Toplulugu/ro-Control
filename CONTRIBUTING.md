@@ -94,8 +94,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for an overview of the codebase
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold this code.
-
+We are committed to providing a welcoming and inclusive experience for everyone. Please be respectful and constructive in all interactions.
 ## License
 
 By contributing, you agree that your contributions will be licensed under the [GPL-3.0](LICENSE) license.

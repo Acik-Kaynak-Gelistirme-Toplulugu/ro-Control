@@ -11,6 +11,7 @@ ro-Control is a native Linux desktop application focused on GPU driver managemen
 src/
 ├── main.rs              ← Entry point: logging, i18n, app launch
 ├── config.rs            ← Application constants (APP_ID, VERSION, etc.)
+├── bridge.rs            ← cxx-qt bridge: GpuController + PerfMonitor QObjects
 │
 ├── core/                ← Business logic (no UI dependencies)
 │   ├── detector.rs      ← Hardware detection (GPU, CPU, RAM, distro, secure boot)
@@ -18,10 +19,24 @@ src/
 │   ├── tweaks.rs        ← System tweaks (GPU stats, GameMode, Wayland fix)
 │   └── updater.rs       ← Self-update via GitHub Releases API
 │
-├── qml/                 ← User interface files
-│   ├── Main.qml         ← Main window, navigation, state management
-│   ├── pages/           ← Install/Expert/Perf/Progress pages
-│   └── components/      ← Reusable interface components
+├── qml/                 ← User interface files (Rust Edition design)
+│   ├── Main.qml         ← Main window: header, sidebar, StatusBar, navigation
+│   ├── Theme.qml        ← Singleton: color palette, spacing, radius tokens
+│   ├── qmldir           ← QML module directory (Theme singleton registration)
+│   ├── pages/
+│   │   ├── InstallPage.qml    ← Express/Custom install selection
+│   │   ├── ExpertPage.qml     ← Version picker, kernel module, deep clean
+│   │   ├── PerfPage.qml       ← System info grid + live GPU/CPU monitoring
+│   │   └── ProgressPage.qml   ← Installation progress, logs, steps
+│   └── components/
+│       ├── ActionCard.qml         ← Clickable card (Button-based, gradient overlay)
+│       ├── CustomProgressBar.qml  ← Animated progress bar (thresholds, shimmer)
+│       ├── GradientButton.qml     ← Gradient/solid button with shimmer hover
+│       ├── StatusBar.qml          ← Header status pills (driver, GPU, SecBoot)
+│       ├── StepItem.qml           ← Installation step indicator (emoji status)
+│       ├── VersionRow.qml         ← Driver version list item
+│       ├── WarningBanner.qml      ← Alert banner (warning/error/success/info)
+│       └── StatRow.qml            ← Legacy stat display row
 │
 └── utils/               ← Cross-cutting concerns
     ├── command.rs       ← Shell command execution wrapper

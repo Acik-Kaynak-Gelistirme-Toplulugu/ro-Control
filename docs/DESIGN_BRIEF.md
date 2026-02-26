@@ -1,9 +1,14 @@
 # ro-Control — Figma Design Brief
 
+> **⚠️ Note:** This document reflects the **v1.0 KDE Breeze** design language.
+> The current **v1.1 "Rust Edition"** UI uses a different aesthetic with animated
+> gradients, emoji icons, shimmer effects, and a custom blue/purple/emerald palette.
+> This document is retained as an architectural reference for screen layout and user flows.
+
 ## What is this document?
 
-This is the design specification for the ro-Control application UI.
-Use this as a reference when designing the interface in Figma.
+This is the design specification for the ro-Control application UI (v1.0).
+Use this as a reference for understanding the screen structure and user flows.
 
 ---
 

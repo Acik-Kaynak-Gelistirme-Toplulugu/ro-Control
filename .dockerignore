@@ -9,3 +9,4 @@ Dockerfile
 .dockerignore
 packaging/
 docs/
+frontend/

@@ -2,59 +2,96 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as Controls
 
-RowLayout {
-    id: stepItem
-    Layout.fillWidth: true
-    spacing: 10
+Rectangle {
+    id: root
 
-    property string text: ""
-    property string status: "pending"
+    property string status: "pending"  // pending, running, done, error
+    property string label: ""
     property bool darkMode: false
 
-    readonly property color statusColor: {
-        switch (status) {
-        case "done":    return darkMode ? "#3fb950" : "#1a7f37";
-        case "running": return "#3daee9";
-        case "error":   return darkMode ? "#f85149" : "#cf222e";
-        default:        return darkMode ? "#6e7681" : "#8c959f";
+    readonly property color cPrimary: darkMode ? "#60a5fa" : "#3b82f6"
+    readonly property color cSuccess: darkMode ? "#34d399" : "#10b981"
+    readonly property color cError:   darkMode ? "#f87171" : "#ef4444"
+    readonly property color cMuted:   darkMode ? "#1e293b" : "#f1f5f9"
+    readonly property color cFg:      darkMode ? "#e2e8f0" : "#1a1d23"
+
+    implicitHeight: 44
+    implicitWidth: parent ? parent.width : 300
+    radius: 12
+    color: {
+        switch(status) {
+            case "running": return Qt.rgba(cPrimary.r, cPrimary.g, cPrimary.b, 0.1)
+            case "done":    return Qt.rgba(cSuccess.r, cSuccess.g, cSuccess.b, 0.1)
+            case "error":   return Qt.rgba(cError.r, cError.g, cError.b, 0.1)
+            default:        return Qt.rgba(cMuted.r, cMuted.g, cMuted.b, 0.3)
+        }
+    }
+    Behavior on color { ColorAnimation { duration: 300 } }
+
+    RowLayout {
+        anchors.fill: parent; anchors.margins: 12; spacing: 12
+
+        Controls.Label {
+            Layout.preferredWidth: 20; Layout.preferredHeight: 20
+            text: {
+                switch(root.status) {
+                    case "running": return "⏳"
+                    case "done":    return "✅"
+                    case "error":   return "❌"
+                    default:        return "⭕"
+                }
+            }
+            font.pixelSize: 16
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+
+            RotationAnimator on rotation {
+                running: root.status === "running"
+                from: 0; to: 360; duration: 2000; loops: Animation.Infinite
+            }
+        }
+
+        Controls.Label {
+            Layout.fillWidth: true; text: root.label
+            font.pixelSize: 14; font.weight: Font.Medium
+            color: root.status === "error" ? root.cError : root.cFg
+        }
+
+        Rectangle {
+            visible: root.status === "running"
+            Layout.preferredWidth: 8; Layout.preferredHeight: 8; radius: 4
+            color: root.cPrimary
+
+            SequentialAnimation on scale {
+                running: root.status === "running"; loops: Animation.Infinite
+                NumberAnimation { from: 1.0; to: 1.5; duration: 750 }
+                NumberAnimation { from: 1.5; to: 1.0; duration: 750 }
+            }
+            SequentialAnimation on opacity {
+                running: root.status === "running"; loops: Animation.Infinite
+                NumberAnimation { from: 1.0; to: 0.5; duration: 750 }
+                NumberAnimation { from: 0.5; to: 1.0; duration: 750 }
+            }
+        }
+
+        Rectangle {
+            visible: root.status === "done"
+            Layout.preferredWidth: 8; Layout.preferredHeight: 8; radius: 4
+            color: root.cSuccess
+
+            NumberAnimation on scale {
+                id: _doneAnim; running: root.status === "done"
+                from: 0.0; to: 1.0; duration: 300; easing.type: Easing.OutBack
+            }
         }
     }
 
-    readonly property string statusIcon: {
-        switch (status) {
-        case "done":    return "\u2713";
-        case "running": return "\u25CF";
-        case "error":   return "\u2715";
-        default:        return "\u25CB";
-        }
-    }
-
-    Controls.Label {
-        text: stepItem.statusIcon
-        color: stepItem.statusColor
-        font.pixelSize: 14
-        font.weight: Font.DemiBold
-        Layout.preferredWidth: 20
-        horizontalAlignment: Text.AlignHCenter
-
-        SequentialAnimation on opacity {
-            running: stepItem.status === "running"
-            loops: Animation.Infinite
-            NumberAnimation { to: 0.3; duration: 600; easing.type: Easing.InOutSine }
-            NumberAnimation { to: 1.0; duration: 600; easing.type: Easing.InOutSine }
-        }
-    }
-
-    Controls.Label {
-        text: stepItem.text
-        font.pixelSize: 13
-        font.family: "monospace"
-        color: stepItem.status === "done"
-            ? (darkMode ? "#8b949e" : "#656d76")
-            : stepItem.status === "error"
-                ? stepItem.statusColor
-                : (darkMode ? "#e6edf3" : "#1f2328")
-        opacity: stepItem.status === "pending" ? 0.5 : 1.0
-        Layout.fillWidth: true
+    // Slide-in animation
+    opacity: 0; x: -20
+    Component.onCompleted: _slideIn.start()
+    ParallelAnimation {
+        id: _slideIn
+        NumberAnimation { target: root; property: "opacity"; from: 0; to: 1; duration: 300; easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "x"; from: -20; to: 0; duration: 300; easing.type: Easing.OutBack }
     }
 }

@@ -93,17 +93,16 @@
   </supports>
 
   <releases>
-    <release version="1.1.0" date="2026-02-14">
+    <release version="1.1.0" date="2026-02-26">
       <description>
-        <p>Security hardening, CI improvements, and expanded test coverage.</p>
+        <p>Premium "Rust Edition" UI redesign with modern aesthetic and enhanced user experience.</p>
         <ul>
-          <li>Root-task script hardened with strict command allowlist</li>
-          <li>Kernel version compatibility check before driver install</li>
-          <li>23 unit tests across updater, detector, command, and i18n modules</li>
-          <li>MSRV 1.82 CI verification job</li>
-          <li>Dockerfile upgraded to Fedora 42 multi-stage build</li>
-          <li>SECURITY.md responsible disclosure policy</li>
-          <li>Unused dependencies removed (env_logger, open)</li>
+          <li>🦀 Rust Edition branding with animated header, sidebar, and progress indicators</li>
+          <li>Modern color palette (blue/purple/emerald) replacing KDE Breeze defaults</li>
+          <li>StatusBar showing driver, GPU, and Secure Boot status at a glance</li>
+          <li>CustomProgressBar with gradient fill, shimmer, and pulsing indicators</li>
+          <li>Emoji info grid cards on Performance monitoring page</li>
+          <li>About dialog and app update dialog with release notes</li>
         </ul>
       </description>
     </release>

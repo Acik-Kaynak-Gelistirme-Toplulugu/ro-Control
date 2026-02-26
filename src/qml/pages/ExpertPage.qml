@@ -18,6 +18,22 @@ Item {
     property bool useOpenKernel: false
     property bool deepClean: false
 
+    property var versionList: {
+        var raw = page.controller.available_versions;
+        if (raw.length === 0) return [];
+        return raw.split(",");
+    }
+
+    property var displayVersions: {
+        var raw = page.controller.official_versions_json;
+        if (raw.length > 0) {
+            try { var p = JSON.parse(raw); if (p.length > 0) return p; } catch(e) {}
+        }
+        return versionList.map(function(v, i) {
+            return { version: v, changes: i === 0 ? qsTr("Latest Stable") : "", is_latest: i === 0, installable: true };
+        });
+    }
+
     property bool selectedVersionInstallable: {
         if (page.selectedVersion.length === 0) return false;
         for (var i = 0; i < page.displayVersions.length; i++) {
@@ -29,301 +45,252 @@ Item {
         return false;
     }
 
-    readonly property color cSurface:  darkMode ? "#242b35" : "#ffffff"
-    readonly property color cHover:    darkMode ? "#2c3440" : "#eef1f5"
-    readonly property color cBorder:   darkMode ? "#313840" : "#d0d7de"
-    readonly property color cText:     darkMode ? "#e6edf3" : "#1f2328"
-    readonly property color cTextSub:  darkMode ? "#8b949e" : "#656d76"
-    readonly property color cTextMuted:darkMode ? "#6e7681" : "#8c959f"
+    readonly property color cCard:    darkMode ? "#1e293b" : "#fcfcfc"
+    readonly property color cBorder:  darkMode ? "#334155" : "#e5e7eb"
+    readonly property color cFg:      darkMode ? "#e2e8f0" : "#1a1d23"
+    readonly property color cMutedFg: darkMode ? "#94a3b8" : "#64748b"
+    readonly property color cPrimary: darkMode ? "#60a5fa" : "#3b82f6"
+    readonly property color cAccent:  darkMode ? "#a78bfa" : "#8b5cf6"
+    readonly property color cMuted:   darkMode ? "#1e293b" : "#f1f5f9"
+    readonly property color cWarning: darkMode ? "#fbbf24" : "#f59e0b"
+    readonly property color cError:   darkMode ? "#f87171" : "#ef4444"
 
-    property var versionList: {
-        var raw = page.controller.available_versions;
-        if (raw.length === 0) return [];
-        return raw.split(",");
-    }
-
-    property var displayVersions: {
-        var raw = page.controller.official_versions_json;
-        if (raw.length > 0) {
-            try {
-                var parsed = JSON.parse(raw);
-                if (parsed.length > 0) return parsed;
-            } catch (e) { /* fallback */ }
-        }
-        return versionList.map(function (v, idx) {
-            return { version: v, changes: idx === 0 ? qsTr("Latest Stable") : qsTr("Official metadata unavailable"), is_latest: idx === 0 };
-        });
-    }
-
-    onVisibleChanged: {
-        if (visible) page.controller.load_official_versions();
-    }
+    onVisibleChanged: { if (visible) page.controller.load_official_versions(); }
 
     Controls.ScrollView {
         anchors.fill: parent
+        contentWidth: availableWidth
 
         ColumnLayout {
-            width: Math.min(parent.width - 48, 640)
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 0
+            width: parent.width; spacing: 20
 
-            Item { Layout.preferredHeight: 24 }
+            Item { Layout.preferredHeight: 12 }
 
-            // ── Header Row ──
+            // ── Header ──
             RowLayout {
-                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720
                 spacing: 12
 
-                Controls.ToolButton {
-                    text: "\u2190"
-                    font.pixelSize: 18
-                    onClicked: page.goBack()
-                    implicitWidth: 36; implicitHeight: 36
-                }
-
-                Controls.Label {
-                    text: qsTr("Expert Driver Management")
-                    font.pixelSize: 20; font.weight: Font.DemiBold
-                    color: page.cText; Layout.fillWidth: true
-                }
-
-                Controls.Button {
-                    text: qsTr("Refresh")
-                    flat: true; font.pixelSize: 13
-                    icon.name: "view-refresh"
-                    onClicked: {
-                        page.controller.detect_gpu();
-                        page.controller.load_official_versions();
-                    }
-                }
+                Controls.Label { text: qsTr("Expert Driver Management"); font.pixelSize: 24; font.weight: Font.Bold; color: page.cFg }
+                Controls.Label { text: "🦀"; font.pixelSize: 24 }
             }
-
-            Item { Layout.preferredHeight: 16 }
 
             // ── Current Driver Info ──
             Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: infoGrid.implicitHeight + 24
-                radius: 10; color: page.cSurface
-                border.width: 1; border.color: page.cBorder
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720; Layout.fillWidth: true
+                implicitHeight: _driverInfo.implicitHeight + 40
+                radius: 16; color: page.cCard; border.width: 1; border.color: page.cBorder
 
-                GridLayout {
-                    id: infoGrid
-                    anchors.left: parent.left; anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.margins: 14
-                    columns: 2; rowSpacing: 6; columnSpacing: 12
+                ColumnLayout {
+                    id: _driverInfo
+                    anchors.fill: parent; anchors.margins: 20; spacing: 12
 
-                    Controls.Label { text: qsTr("Current Driver:"); color: page.cTextSub; font.pixelSize: 13 }
-                    Controls.Label {
-                        text: page.controller.driver_in_use.length > 0 ? page.controller.driver_in_use : qsTr("Not detected")
-                        color: page.cText; font.pixelSize: 13; font.weight: Font.DemiBold
-                        horizontalAlignment: Text.AlignRight; Layout.fillWidth: true
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 16
+                        Rectangle {
+                            width: 32; height: 32; radius: 8
+                            gradient: Gradient {
+                                GradientStop { position: 0; color: page.cPrimary }
+                                GradientStop { position: 1; color: page.cAccent }
+                            }
+                            Controls.Label { anchors.centerIn: parent; text: "🔧"; font.pixelSize: 16 }
+                        }
+                        Controls.Label { text: qsTr("Current Driver"); font.pixelSize: 14; color: page.cMutedFg }
+                        Item { Layout.fillWidth: true }
+                        Controls.Label {
+                            text: (page.controller.driver_in_use.length > 0 ? page.controller.driver_in_use : qsTr("N/A")) + " (proprietary)"
+                            font.pixelSize: 14; font.weight: Font.Bold; color: page.cFg
+                        }
                     }
 
-                    Controls.Label { text: qsTr("Kernel:"); color: page.cTextSub; font.pixelSize: 13 }
-                    Controls.Label {
-                        text: page.kernelVersion || "\u2014"
-                        color: page.cText; font.pixelSize: 13; font.weight: Font.DemiBold
-                        horizontalAlignment: Text.AlignRight; Layout.fillWidth: true
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 16
+                        Controls.Label { text: qsTr("Kernel:"); font.pixelSize: 13; color: page.cMutedFg }
+                        Item { Layout.fillWidth: true }
+                        Controls.Label { text: page.kernelVersion || "—"; font.pixelSize: 13; font.weight: Font.DemiBold; color: page.cFg }
                     }
                 }
             }
 
-            Item { Layout.preferredHeight: 16 }
-
             // ── Available Versions ──
             Controls.Label {
-                text: qsTr("Available Versions")
-                font.pixelSize: 14; font.weight: Font.DemiBold; color: page.cTextSub
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720
+                text: qsTr("Available Versions"); font.pixelSize: 18; font.weight: Font.Bold; color: page.cFg
             }
 
-            Item { Layout.preferredHeight: 8 }
-
             Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: versionCol.implicitHeight + 16
-                radius: 10; color: page.cSurface
-                border.width: 1; border.color: page.cBorder
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720; Layout.fillWidth: true
+                implicitHeight: _verCol.implicitHeight + 40
+                radius: 16; color: page.cCard; border.width: 1; border.color: page.cBorder
 
                 ColumnLayout {
-                    id: versionCol
-                    anchors.left: parent.left; anchors.right: parent.right
-                    anchors.top: parent.top; anchors.margins: 8
-                    spacing: 2
+                    id: _verCol
+                    anchors.fill: parent; anchors.margins: 20; spacing: 12
 
                     Repeater {
                         model: page.displayVersions
 
-                        VersionRow {
-                            required property var modelData
+                        delegate: Controls.ItemDelegate {
+                            Layout.fillWidth: true; implicitHeight: 56
+
                             required property int index
+                            required property var modelData
 
-                            version: typeof modelData === "string" ? modelData : modelData.version
-                            statusText: typeof modelData === "string" ? (index === 0 ? qsTr("Latest Stable") : "") : modelData.changes
-                            status: (typeof modelData === "string" ? modelData : modelData.version) === page.controller.driver_in_use ? "installed" : "available"
-                            source: typeof modelData === "object" && modelData.source ? modelData.source : "repo"
-                            installable: typeof modelData === "object" && modelData.installable !== undefined ? modelData.installable : true
-                            selected: page.selectedVersion === (typeof modelData === "string" ? modelData : modelData.version)
-                            darkMode: page.darkMode
+                            readonly property string ver: typeof modelData === "string" ? modelData : modelData.version
+                            readonly property bool isSelected: page.selectedVersion === ver
 
-                            onClicked: page.selectedVersion = (typeof modelData === "string" ? modelData : modelData.version)
-                            Layout.fillWidth: true
+                            background: Rectangle {
+                                radius: 12
+                                color: isSelected ? Qt.rgba(page.cPrimary.r, page.cPrimary.g, page.cPrimary.b, 0.1)
+                                    : (parent.hovered ? page.cMuted : "transparent")
+                                border.width: isSelected ? 2 : 0; border.color: page.cPrimary
+                                Behavior on color { ColorAnimation { duration: 300 } }
+                            }
+
+                            contentItem: RowLayout {
+                                spacing: 16
+                                Rectangle {
+                                    width: 24; height: 24; radius: 12
+                                    color: isSelected ? page.cPrimary : "transparent"
+                                    border.width: 2; border.color: isSelected ? page.cPrimary : page.cMutedFg
+                                    Rectangle { visible: isSelected; anchors.centerIn: parent; width: 12; height: 12; radius: 6; color: "white" }
+                                }
+                                ColumnLayout {
+                                    spacing: 2; Layout.fillWidth: true
+                                    Controls.Label {
+                                        text: ver; font.pixelSize: 16
+                                        font.weight: isSelected ? Font.Bold : Font.Normal; color: page.cFg
+                                    }
+                                    Controls.Label {
+                                        visible: typeof modelData === "object" && modelData.changes
+                                        text: typeof modelData === "object" ? (modelData.changes || "") : ""
+                                        font.pixelSize: 12; color: page.cMutedFg; elide: Text.ElideRight
+                                    }
+                                }
+                                Rectangle {
+                                    visible: typeof modelData === "object" && modelData.is_latest
+                                    implicitWidth: _ltLbl.width + 16; implicitHeight: 22; radius: 11
+                                    color: Qt.rgba(page.cPrimary.r, page.cPrimary.g, page.cPrimary.b, 0.1)
+                                    Controls.Label { id: _ltLbl; anchors.centerIn: parent; text: "Latest"; font.pixelSize: 11; font.weight: Font.Bold; color: page.cPrimary }
+                                }
+                            }
+                            onClicked: page.selectedVersion = ver
                         }
                     }
 
                     Controls.Label {
                         visible: page.versionList.length === 0
                         text: qsTr("No versions available. Check internet connection.")
-                        color: page.cTextMuted; font.pixelSize: 12
+                        color: page.cMutedFg; font.pixelSize: 12
                         Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
-                        Layout.topMargin: 12; Layout.bottomMargin: 12
                     }
                 }
             }
 
+            // ── Configuration ──
             Controls.Label {
-                text: qsTr("Versions are fetched from NVIDIA official sources and your local package repository. Versions marked 'Repo N/A' are not yet available in your package manager.")
-                color: page.cTextMuted; font.pixelSize: 11
-                wrapMode: Text.WordWrap; Layout.fillWidth: true
-                Layout.topMargin: 6
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720
+                text: qsTr("Configuration"); font.pixelSize: 18; font.weight: Font.Bold; color: page.cFg
             }
-
-            Item { Layout.preferredHeight: 16 }
-
-            // ── Kernel Module Selection ──
-            Controls.Label {
-                text: qsTr("Kernel Module")
-                font.pixelSize: 14; font.weight: Font.DemiBold; color: page.cTextSub
-            }
-
-            Item { Layout.preferredHeight: 8 }
 
             Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: moduleRow.implicitHeight + 24
-                radius: 10; color: page.cSurface
-                border.width: 1; border.color: page.cBorder
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720; Layout.fillWidth: true
+                implicitHeight: _modLayout.implicitHeight + 40
+                radius: 16; color: page.cCard; border.width: 1; border.color: page.cBorder
 
-                RowLayout {
-                    id: moduleRow
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.left: parent.left; anchors.right: parent.right
-                    anchors.margins: 14; spacing: 16
+                ColumnLayout {
+                    id: _modLayout
+                    anchors.fill: parent; anchors.margins: 20; spacing: 16
 
-                    Controls.RadioButton {
-                        text: qsTr("Proprietary (Recommended)")
-                        checked: !page.useOpenKernel
-                        onClicked: page.useOpenKernel = false
-                        font.pixelSize: 13
-                    }
+                    Controls.Label { text: qsTr("Kernel Module Type"); font.pixelSize: 14; color: page.cMutedFg }
 
-                    Controls.RadioButton {
-                        text: qsTr("Open Kernel Module")
-                        checked: page.useOpenKernel
-                        onClicked: page.useOpenKernel = true
-                        font.pixelSize: 13
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 16
+
+                        Repeater {
+                            model: [
+                                { value: false, label: qsTr("Proprietary"), emoji: "🔒" },
+                                { value: true, label: qsTr("Open Source"), emoji: "🔓" }
+                            ]
+                            delegate: Controls.Button {
+                                Layout.fillWidth: true; implicitHeight: 48
+                                required property var modelData
+                                background: Rectangle {
+                                    radius: 12
+                                    color: page.useOpenKernel === modelData.value
+                                        ? Qt.rgba(page.cPrimary.r, page.cPrimary.g, page.cPrimary.b, 0.1) : page.cMuted
+                                    border.width: page.useOpenKernel === modelData.value ? 2 : 0
+                                    border.color: page.cPrimary
+                                }
+                                contentItem: RowLayout {
+                                    spacing: 8
+                                    Controls.Label { Layout.alignment: Qt.AlignHCenter; text: modelData.emoji; font.pixelSize: 18 }
+                                    Controls.Label { Layout.alignment: Qt.AlignHCenter; text: modelData.label; font.pixelSize: 16; font.weight: Font.Medium; color: page.cFg }
+                                }
+                                onClicked: page.useOpenKernel = modelData.value
+                            }
+                        }
                     }
                 }
             }
 
-            Item { Layout.preferredHeight: 12 }
-
-            Controls.CheckBox {
-                text: qsTr("Remove old configs (Deep Clean)")
-                checked: page.deepClean
-                onToggled: page.deepClean = checked
-                font.pixelSize: 13
+            // ── Deep Clean ──
+            Controls.CheckDelegate {
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720; Layout.fillWidth: true
+                text: "🗑️  " + qsTr("Deep Clean Installation (removes all previous drivers)")
+                checked: page.deepClean; onToggled: page.deepClean = checked
+                background: Rectangle {
+                    radius: 16
+                    color: page.deepClean ? Qt.rgba(page.cWarning.r, page.cWarning.g, page.cWarning.b, 0.1) : page.cCard
+                    border.width: 1
+                    border.color: page.deepClean ? Qt.rgba(page.cWarning.r, page.cWarning.g, page.cWarning.b, 0.3) : page.cBorder
+                }
             }
-
-            Item { Layout.preferredHeight: 16 }
 
             // ── Action Buttons ──
             RowLayout {
-                Layout.fillWidth: true; spacing: 10
+                Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 720; Layout.fillWidth: true
+                spacing: 16
 
-                Controls.Button {
-                    text: page.selectedVersionInstallable
-                        ? qsTr("Install Selected")
-                        : qsTr("Not in Repo")
-                    enabled: page.selectedVersion.length > 0 && page.selectedVersionInstallable
+                GradientButton {
                     Layout.fillWidth: true
-                    font.pixelSize: 14
-                    highlighted: true
-
-                    contentItem: Controls.Label {
-                        text: parent.text
-                        font: parent.font
-                        color: "#ffffff"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    background: Rectangle {
-                        implicitHeight: 40
-                        radius: 10
-                        color: parent.enabled
-                            ? (parent.down ? "#2a8ec4" : "#3daee9")
-                            : (darkMode ? "#313840" : "#d0d7de")
-                    }
-
-                    onClicked: {
-                        page.controller.install_custom(page.selectedVersion, page.useOpenKernel);
-                        page.showProgress();
-                    }
+                    text: page.selectedVersionInstallable ? "📥 " + qsTr("Install Selected Version") : qsTr("Not in Repo")
+                    enabled: page.selectedVersion.length > 0 && page.selectedVersionInstallable
+                    useGradient: true; gradientStart: page.cPrimary; gradientEnd: page.cAccent
+                    darkMode: page.darkMode
+                    onClicked: { page.controller.install_custom(page.selectedVersion, page.useOpenKernel); page.showProgress(); }
                 }
 
-                Controls.Button {
-                    text: qsTr("Remove All")
-                    Layout.fillWidth: true
-                    font.pixelSize: 14
-
-                    contentItem: Controls.Label {
-                        text: parent.text
-                        font: parent.font
-                        color: "#ffffff"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    background: Rectangle {
-                        implicitHeight: 40
-                        radius: 10
-                        color: parent.down
-                            ? (darkMode ? "#c0392b" : "#b91c1c")
-                            : (darkMode ? "#f85149" : "#cf222e")
-                    }
-
-                    onClicked: removeDialog.open()
+                GradientButton {
+                    Layout.preferredWidth: 140
+                    text: "🗑️ " + qsTr("Remove All")
+                    useGradient: true; gradientStart: page.cError; gradientEnd: Qt.darker(page.cError, 1.2)
+                    darkMode: page.darkMode
+                    onClicked: _removeDialog.open()
                 }
             }
 
-            Item { Layout.preferredHeight: 24 }
+            // ── Back Button ──
+            Controls.Button {
+                Layout.alignment: Qt.AlignHCenter
+                text: "← " + qsTr("Back to Install")
+                flat: true; font.pixelSize: 14
+                onClicked: page.goBack()
+            }
+
+            Item { Layout.preferredHeight: 12 }
         }
     }
 
     Controls.Dialog {
-        id: removeDialog
-        title: qsTr("Remove All Drivers?")
-        modal: true; anchors.centerIn: parent
+        id: _removeDialog
+        title: qsTr("Remove All Drivers?"); modal: true; anchors.centerIn: parent
         standardButtons: Controls.Dialog.Ok | Controls.Dialog.Cancel
-
         ColumnLayout {
             spacing: 8
-            Controls.Label {
-                text: qsTr("This will remove all NVIDIA drivers and reset to nouveau.\nA reboot will be required.")
-                wrapMode: Text.WordWrap
-            }
-            Controls.CheckBox {
-                text: qsTr("Also remove configuration files (deep clean)")
-                checked: page.deepClean
-                onToggled: page.deepClean = checked
-            }
+            Controls.Label { text: qsTr("This will remove all NVIDIA drivers.\nA reboot will be required."); wrapMode: Text.WordWrap }
+            Controls.CheckBox { text: qsTr("Also remove config files (deep clean)"); checked: page.deepClean; onToggled: page.deepClean = checked }
         }
-
-        onAccepted: {
-            page.controller.remove_drivers(page.deepClean);
-            page.showProgress();
-        }
+        onAccepted: { page.controller.remove_drivers(page.deepClean); page.showProgress(); }
     }
 }

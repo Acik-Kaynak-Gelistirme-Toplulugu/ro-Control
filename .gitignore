@@ -29,3 +29,6 @@
 # Generated
 .flatpak-builder/
 .repo/
+
+# Legacy frontend design (integrated into src/qml/)
+/frontend/
