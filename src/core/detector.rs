@@ -6,6 +6,35 @@
 use crate::utils::command;
 use regex::Regex;
 use std::collections::HashMap;
+use std::sync::{LazyLock, OnceLock};
+
+/// Cached OS info — read once from /etc/os-release.
+static OS_INFO_CACHE: OnceLock<OsInfo> = OnceLock::new();
+
+/// Cached full system info — populated on first call.
+static SYSTEM_INFO_CACHE: OnceLock<SystemInfo> = OnceLock::new();
+
+/// Pre-compiled regex for akmod-nvidia version parsing.
+static RE_AKMOD_VERSION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"akmod-nvidia[^\s]*\s+(\d+\.\d+[\.\d]*)").unwrap());
+
+/// Pre-compiled regex for changelog version parsing.
+static RE_CHANGELOG_VERSION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(\d{3}\.\d{2}(?:\.\d+)?)|(\d{3})").unwrap());
+
+/// Pre-compiled regex for NVIDIA download page version extraction.
+static RE_NVIDIA_WEB_VERSION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(\d{3}\.\d{2,3}(?:\.\d+)?)").unwrap());
+
+/// Represents a driver version with its source and metadata.
+#[derive(Debug, Clone)]
+pub struct DriverVersion {
+    pub version: String,
+    pub source: String, // "repo", "nvidia-official", "merged"
+    pub release_notes: String,
+    pub is_latest: bool,
+    pub installable: bool, // true if available in local repo
+}
 
 #[derive(Debug, Clone, Default)]
 pub struct GpuInfo {
@@ -116,47 +145,56 @@ pub fn detect_gpu() -> GpuInfo {
     info
 }
 
-/// Get full system information.
+/// Get full system information (cached after first call).
 pub fn get_full_system_info() -> SystemInfo {
-    let gpu = detect_gpu();
+    SYSTEM_INFO_CACHE
+        .get_or_init(|| {
+            let gpu = detect_gpu();
 
-    SystemInfo {
-        gpu,
-        cpu: get_cpu_info(),
-        ram: get_ram_info(),
-        distro: get_distro_info(),
-        kernel: get_kernel_info(),
-        display_server: std::env::var("XDG_SESSION_TYPE").unwrap_or_else(|_| "Unknown".into()),
-    }
+            SystemInfo {
+                gpu,
+                cpu: get_cpu_info(),
+                ram: get_ram_info(),
+                distro: get_distro_info(),
+                kernel: get_kernel_info(),
+                display_server: std::env::var("XDG_SESSION_TYPE")
+                    .unwrap_or_else(|_| "Unknown".into()),
+            }
+        })
+        .clone()
 }
 
-/// Detect OS information from /etc/os-release.
+/// Detect OS information from /etc/os-release (cached).
 pub fn detect_os() -> OsInfo {
-    let mut info = OsInfo {
-        id: "linux".into(),
-        version: "unknown".into(),
-        name: "Linux".into(),
-    };
+    OS_INFO_CACHE
+        .get_or_init(|| {
+            let mut info = OsInfo {
+                id: "linux".into(),
+                version: "unknown".into(),
+                name: "Linux".into(),
+            };
 
-    if let Ok(contents) = std::fs::read_to_string("/etc/os-release") {
-        let mut fields: HashMap<String, String> = HashMap::new();
-        for line in contents.lines() {
-            if let Some((k, v)) = line.split_once('=') {
-                fields.insert(k.to_string(), v.trim_matches('"').to_string());
+            if let Ok(contents) = std::fs::read_to_string("/etc/os-release") {
+                let mut fields: HashMap<String, String> = HashMap::new();
+                for line in contents.lines() {
+                    if let Some((k, v)) = line.split_once('=') {
+                        fields.insert(k.to_string(), v.trim_matches('"').to_string());
+                    }
+                }
+                if let Some(id) = fields.get("ID") {
+                    info.id = id.clone();
+                }
+                if let Some(ver) = fields.get("VERSION_ID") {
+                    info.version = ver.clone();
+                }
+                if let Some(name) = fields.get("PRETTY_NAME") {
+                    info.name = name.clone();
+                }
             }
-        }
-        if let Some(id) = fields.get("ID") {
-            info.id = id.clone();
-        }
-        if let Some(ver) = fields.get("VERSION_ID") {
-            info.version = ver.clone();
-        }
-        if let Some(name) = fields.get("PRETTY_NAME") {
-            info.name = name.clone();
-        }
-    }
 
-    info
+            info
+        })
+        .clone()
 }
 
 /// Determine the package manager based on distro ID.
@@ -219,14 +257,22 @@ pub fn get_available_nvidia_versions() -> Vec<String> {
     // On Fedora, NVIDIA driver is provided via RPM Fusion as "akmod-nvidia"
     // We check available versions from dnf
     if let Some(output) = command::run("dnf list available 'akmod-nvidia*' 2>/dev/null") {
-        let re = Regex::new(r"akmod-nvidia[^\s]*\s+(\d+\.\d+[\.\d]*)").ok();
-        if let Some(re) = re {
-            let mut versions: Vec<String> = re
-                .captures_iter(&output)
-                .filter_map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
-                .collect();
-            versions.sort_by(|a, b| b.cmp(a)); // Descending
-            versions.dedup();
+        let re = &*RE_AKMOD_VERSION;
+        let mut versions: Vec<String> = re
+            .captures_iter(&output)
+            .filter_map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
+            .collect();
+        // Proper numeric semver sort (descending)
+        versions.sort_by(|a, b| {
+            let parse = |v: &str| -> Vec<u32> {
+                v.split('.').filter_map(|s| s.parse::<u32>().ok()).collect()
+            };
+            let pa = parse(b); // reversed for descending
+            let pb = parse(a);
+            pa.cmp(&pb)
+        });
+        versions.dedup();
+        if !versions.is_empty() {
             return versions;
         }
     }
@@ -243,7 +289,7 @@ pub fn get_official_nvidia_versions_with_changes() -> Vec<(String, String)> {
         if let Some(changelog) = command::run(
             "dnf --refresh repoquery --changelog akmod-nvidia 2>/dev/null | head -n 280",
         ) {
-            let version_re = Regex::new(r"(\d{3}\.\d{2}(?:\.\d+)?)|(\d{3})").ok();
+            let version_re = &*RE_CHANGELOG_VERSION;
             let mut current_version = String::new();
             let mut current_lines: Vec<String> = Vec::new();
 
@@ -260,11 +306,9 @@ pub fn get_official_nvidia_versions_with_changes() -> Vec<(String, String)> {
                     current_version.clear();
                     current_lines.clear();
 
-                    if let Some(re) = &version_re {
-                        if let Some(caps) = re.captures(trimmed) {
-                            if let Some(m) = caps.get(1).or_else(|| caps.get(2)) {
-                                current_version = m.as_str().to_string();
-                            }
+                    if let Some(caps) = version_re.captures(trimmed) {
+                        if let Some(m) = caps.get(1).or_else(|| caps.get(2)) {
+                            current_version = m.as_str().to_string();
                         }
                     }
                 } else if !trimmed.is_empty()
@@ -297,6 +341,203 @@ pub fn get_official_nvidia_versions_with_changes() -> Vec<(String, String)> {
             (version, summary)
         })
         .collect()
+}
+
+// ─── Internet-based NVIDIA version fetching ─────────────────────
+
+/// Fetch latest NVIDIA driver versions from the official NVIDIA download API.
+/// Uses the NVIDIA Advanced Driver Search JSON endpoint.
+/// Returns a list of (version, release_date/branch_info) tuples.
+pub fn fetch_nvidia_versions_online() -> Vec<(String, String)> {
+    log::info!("Fetching NVIDIA driver versions from internet...");
+
+    let mut results: Vec<(String, String)> = Vec::new();
+
+    // Strategy 1: NVIDIA official Unix driver page (most reliable)
+    // We query the NVIDIA download API for Linux x86_64 drivers
+    let url = "https://www.nvidia.com/Download/processFind.aspx?psid=107&pfid=815&osid=12&lid=1&whql=&lang=en-us&ctk=0&qnfslb=00&dtcid=1";
+
+    match ureq::get(url).header("User-Agent", "ro-control/1.0").call() {
+        Ok(mut resp) => {
+            if let Ok(body) = resp.body_mut().read_to_string() {
+                let re = &*RE_NVIDIA_WEB_VERSION;
+                let mut seen = std::collections::HashSet::new();
+                for cap in re.captures_iter(&body) {
+                    if let Some(m) = cap.get(1) {
+                        let ver = m.as_str().to_string();
+                        let major: u32 = ver
+                            .split('.')
+                            .next()
+                            .and_then(|s| s.parse().ok())
+                            .unwrap_or(0);
+                        // Only consider modern driver branches (470+)
+                        if major >= 470 && seen.insert(ver.clone()) {
+                            results.push((ver, "NVIDIA Official".to_string()));
+                        }
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            log::warn!("NVIDIA download page fetch failed: {}", e);
+        }
+    }
+
+    // Strategy 2: RPM Fusion Bodhi API (Fedora-specific, more installable info)
+    if results.len() < 3 {
+        let bodhi_url = "https://bodhi.fedoraproject.org/updates/?search=akmod-nvidia&status=stable&rows_per_page=10&content_type=rpm";
+        match ureq::get(bodhi_url)
+            .header("User-Agent", "ro-control/1.0")
+            .call()
+        {
+            Ok(mut resp) => {
+                if let Ok(body) = resp.body_mut().read_to_string() {
+                    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
+                        if let Some(updates) = json.get("updates").and_then(|u| u.as_array()) {
+                            let re = &*RE_NVIDIA_WEB_VERSION;
+                            for update in updates {
+                                let title =
+                                    update.get("title").and_then(|t| t.as_str()).unwrap_or("");
+                                let notes_text = update
+                                    .get("notes")
+                                    .and_then(|n| n.as_str())
+                                    .unwrap_or("Fedora RPM Fusion stable update");
+                                if let Some(cap) = re.captures(title) {
+                                    if let Some(m) = cap.get(1) {
+                                        let ver = m.as_str().to_string();
+                                        // Only add if not already present from Strategy 1
+                                        if !results.iter().any(|(v, _)| v == &ver) {
+                                            let note = if notes_text.len() > 120 {
+                                                format!(
+                                                    "{}...",
+                                                    &notes_text[..notes_text
+                                                        .char_indices()
+                                                        .nth(120)
+                                                        .map(|(i, _)| i)
+                                                        .unwrap_or(notes_text.len())]
+                                                )
+                                            } else {
+                                                notes_text.to_string()
+                                            };
+                                            results.push((ver, note));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                log::warn!("Bodhi API fetch failed: {}", e);
+            }
+        }
+    }
+
+    // Sort descending by version number
+    results.sort_by(|a, b| {
+        let parse =
+            |v: &str| -> Vec<u32> { v.split('.').filter_map(|s| s.parse::<u32>().ok()).collect() };
+        parse(&b.0).cmp(&parse(&a.0))
+    });
+
+    log::info!("Fetched {} NVIDIA versions from internet", results.len());
+    results
+}
+
+/// Get a merged list of driver versions: internet (latest) + local repo (installable).
+/// Returns DriverVersion structs with source tracking.
+pub fn get_merged_nvidia_versions() -> Vec<DriverVersion> {
+    // 1. Get local repo versions
+    let local_versions = get_available_nvidia_versions();
+    let local_changelog = get_official_nvidia_versions_with_changes();
+
+    // Build a map of local versions with their changelogs
+    let mut local_notes: HashMap<String, String> = HashMap::new();
+    for (ver, notes) in &local_changelog {
+        local_notes.insert(ver.clone(), notes.clone());
+    }
+
+    // 2. Get internet versions
+    let online_versions = fetch_nvidia_versions_online();
+
+    // 3. Merge: online versions first (may include newer), then fill local-only
+    let mut merged: Vec<DriverVersion> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+
+    // Add online versions, marking them as installable if also in local repo
+    for (ver, notes) in &online_versions {
+        if seen.insert(ver.clone()) {
+            let in_local = local_versions.iter().any(|lv| {
+                lv == ver
+                    || lv.starts_with(&format!("{}.", ver))
+                    || ver.starts_with(&format!("{}.", lv))
+            });
+            let release_notes = if in_local {
+                // Prefer local changelog if available
+                local_notes
+                    .get(ver)
+                    .or_else(|| {
+                        // Try matching with major version prefix
+                        local_notes
+                            .iter()
+                            .find(|(k, _)| {
+                                ver.starts_with(k.as_str()) || k.starts_with(ver.as_str())
+                            })
+                            .map(|(_, v)| v)
+                    })
+                    .cloned()
+                    .unwrap_or_else(|| notes.clone())
+            } else {
+                notes.clone()
+            };
+
+            merged.push(DriverVersion {
+                version: ver.clone(),
+                source: if in_local {
+                    "merged".to_string()
+                } else {
+                    "nvidia-official".to_string()
+                },
+                release_notes,
+                is_latest: false,
+                installable: in_local,
+            });
+        }
+    }
+
+    // Add local-only versions that weren't in the online list
+    for ver in &local_versions {
+        if seen.insert(ver.clone()) {
+            let notes = local_notes
+                .get(ver)
+                .cloned()
+                .unwrap_or_else(|| "Available in local repository".to_string());
+            merged.push(DriverVersion {
+                version: ver.clone(),
+                source: "repo".to_string(),
+                release_notes: notes,
+                is_latest: false,
+                installable: true,
+            });
+        }
+    }
+
+    // Sort descending by version
+    merged.sort_by(|a, b| {
+        let parse =
+            |v: &str| -> Vec<u32> { v.split('.').filter_map(|s| s.parse::<u32>().ok()).collect() };
+        parse(&b.version).cmp(&parse(&a.version))
+    });
+
+    // Mark first as latest
+    if let Some(first) = merged.first_mut() {
+        first.is_latest = true;
+    }
+
+    // Limit to top 12
+    merged.truncate(12);
+    merged
 }
 
 #[cfg(test)]

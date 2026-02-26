@@ -4,6 +4,10 @@
 
 use crate::utils::command;
 use std::fs;
+use std::sync::OnceLock;
+
+/// Cached CPU core count — read once from /proc/cpuinfo.
+static CPU_COUNT: OnceLock<usize> = OnceLock::new();
 
 /// GPU statistics from nvidia-smi.
 #[derive(Debug, Clone, Default)]
@@ -164,10 +168,18 @@ pub fn repair_flatpak_permissions() -> Result<String, String> {
         log::error!("{}", msg);
         Err(msg)
     } else {
-        let msg = format!(
-            "Flatpak onarımı tamamlandı.\n\nÇıktı:\n{}...",
-            &out[..out.len().min(500)]
-        );
+        // Safe truncation that respects UTF-8 char boundaries
+        let limit = 500;
+        let truncated = if out.len() <= limit {
+            &out
+        } else {
+            let mut end = limit;
+            while end > 0 && !out.is_char_boundary(end) {
+                end -= 1;
+            }
+            &out[..end]
+        };
+        let msg = format!("Flatpak onarımı tamamlandı.\n\nÇıktı:\n{}...", truncated);
         log::info!("Flatpak repair completed.");
         Ok(msg)
     }
@@ -230,13 +242,15 @@ fn parse_meminfo_value(line: &str) -> u64 {
 }
 
 fn num_cpus() -> usize {
-    if let Ok(contents) = fs::read_to_string("/proc/cpuinfo") {
-        contents
-            .lines()
-            .filter(|l| l.starts_with("processor"))
-            .count()
-            .max(1)
-    } else {
-        1
-    }
+    *CPU_COUNT.get_or_init(|| {
+        if let Ok(contents) = fs::read_to_string("/proc/cpuinfo") {
+            contents
+                .lines()
+                .filter(|l| l.starts_with("processor"))
+                .count()
+                .max(1)
+        } else {
+            1
+        }
+    })
 }

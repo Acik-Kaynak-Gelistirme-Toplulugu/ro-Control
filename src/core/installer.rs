@@ -36,6 +36,11 @@ impl DriverInstaller {
 
     /// Install NVIDIA proprietary driver (closed source) via RPM Fusion.
     pub fn install_nvidia_closed(&self) -> bool {
+        self.install_nvidia_closed_versioned(None)
+    }
+
+    /// Install NVIDIA proprietary driver with optional version pinning.
+    pub fn install_nvidia_closed_versioned(&self, version: Option<&str>) -> bool {
         self.log("--- BAŞLATILIYOR: NVIDIA Proprietary (DNF/RPM Fusion) ---");
         let mut commands = self.prepare_install_chain();
 
@@ -45,12 +50,25 @@ impl DriverInstaller {
             Some("dnf") => {
                 // Ensure RPM Fusion is enabled
                 commands.push("dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || true".into());
-                commands.push(
-                    "dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda nvidia-settings".into(),
-                );
+                let pkg = match version {
+                    Some(v) if !v.is_empty() => {
+                        self.log(&format!("Sürüm sabitlendi: {}", v));
+                        format!("dnf install -y akmod-nvidia-{v}* xorg-x11-drv-nvidia-cuda-{v}* nvidia-settings", v = v)
+                    }
+                    _ => "dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda nvidia-settings"
+                        .into(),
+                };
+                commands.push(pkg);
             }
             Some("apt") => {
-                commands.push("apt-get install -y nvidia-driver nvidia-settings".into());
+                let pkg = match version {
+                    Some(v) if !v.is_empty() => format!(
+                        "apt-get install -y nvidia-driver-{}  nvidia-settings",
+                        v.split('.').next().unwrap_or(v)
+                    ),
+                    _ => "apt-get install -y nvidia-driver nvidia-settings".into(),
+                };
+                commands.push(pkg);
             }
             Some("pacman") => {
                 commands.push("pacman -Sy --noconfirm nvidia nvidia-utils nvidia-settings".into());
@@ -67,16 +85,38 @@ impl DriverInstaller {
 
     /// Install NVIDIA open kernel driver.
     pub fn install_nvidia_open(&self) -> bool {
+        self.install_nvidia_open_versioned(None)
+    }
+
+    /// Install NVIDIA open kernel driver with optional version pinning.
+    pub fn install_nvidia_open_versioned(&self, version: Option<&str>) -> bool {
         self.log("--- BAŞLATILIYOR: NVIDIA Open Kernel ---");
         let mut commands = self.prepare_install_chain();
 
         match self.pkg_manager {
             Some("dnf") => {
                 commands.push("dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || true".into());
-                commands.push("dnf install -y akmod-nvidia-open nvidia-settings".into());
+                let pkg = match version {
+                    Some(v) if !v.is_empty() => {
+                        self.log(&format!("Sürüm sabitlendi: {}", v));
+                        format!(
+                            "dnf install -y akmod-nvidia-open-{v}* nvidia-settings",
+                            v = v
+                        )
+                    }
+                    _ => "dnf install -y akmod-nvidia-open nvidia-settings".into(),
+                };
+                commands.push(pkg);
             }
             Some("apt") => {
-                commands.push("apt-get install -y nvidia-driver-open nvidia-settings".into());
+                let pkg = match version {
+                    Some(v) if !v.is_empty() => format!(
+                        "apt-get install -y nvidia-driver-open-{}  nvidia-settings",
+                        v.split('.').next().unwrap_or(v)
+                    ),
+                    _ => "apt-get install -y nvidia-driver-open nvidia-settings".into(),
+                };
+                commands.push(pkg);
             }
             Some("pacman") => {
                 commands.push("pacman -Sy --noconfirm nvidia-open nvidia-utils".into());

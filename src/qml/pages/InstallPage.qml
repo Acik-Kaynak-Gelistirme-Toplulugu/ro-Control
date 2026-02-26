@@ -5,227 +5,192 @@ import QtQuick.Controls as Controls
 import "../components"
 import io.github.AcikKaynakGelistirmeToplulugu.rocontrol
 
-// Install Page — Express & Custom install options
-// States: default, update available, up to date, no internet, secure boot
-
 Item {
-    id: installPage
+    id: page
 
     required property var controller
     required property bool darkMode
     signal showExpert
     signal showProgress
 
-    readonly property color textColor: installPage.darkMode ? "#eef3f9" : "#2d3136"
-    readonly property color mutedColor: installPage.darkMode ? "#aeb8c4" : "#77818b"
-    readonly property color cardColor: installPage.darkMode ? "#2a333f" : "#f5f6f8"
-    readonly property color borderColor: installPage.darkMode ? "#3b4655" : "#c8ced6"
+    readonly property color cSurface:  darkMode ? "#242b35" : "#ffffff"
+    readonly property color cHover:    darkMode ? "#2c3440" : "#eef1f5"
+    readonly property color cBorder:   darkMode ? "#313840" : "#d0d7de"
+    readonly property color cText:     darkMode ? "#e6edf3" : "#1f2328"
+    readonly property color cTextSub:  darkMode ? "#8b949e" : "#656d76"
+    readonly property color cPrimary:  "#3daee9"
+    readonly property color cSuccess:  darkMode ? "#3fb950" : "#1a7f37"
+    readonly property color cSuccessBg:darkMode ? "#162d1f" : "#dafbe1"
 
     Controls.ScrollView {
         anchors.fill: parent
 
         ColumnLayout {
-            width: Math.min(parent.width, 660)
+            width: Math.min(parent.width - 48, 640)
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 16
+            spacing: 0
 
-            Item {
-                Layout.preferredHeight: 24
+            Item { Layout.preferredHeight: 32 }
+
+            // ── Page Title ──
+            Controls.Label {
+                text: qsTr("Driver Installation")
+                font.pixelSize: 20
+                font.weight: Font.DemiBold
+                color: page.cText
             }
 
-            // ─── Hero Section ───
-            ColumnLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 10
+            Item { Layout.preferredHeight: 4 }
 
-                Rectangle {
-                    width: 58
-                    height: 58
-                    radius: 29
-                    color: installPage.darkMode ? "#173447" : "#d8edf7"
-                    Layout.alignment: Qt.AlignHCenter
-
-                    Controls.Label {
-                        anchors.centerIn: parent
-                        text: "~"
-                        font.pixelSize: 30
-                        color: "#30a6e0"
-                    }
-                }
-
-                Controls.Label {
-                    text: qsTr("Select Installation Type")
-                    font.pixelSize: 40
-                    font.weight: Font.DemiBold
-                    Layout.alignment: Qt.AlignHCenter
-                    color: installPage.textColor
-                }
-
-                Controls.Label {
-                    text: qsTr("Optimized options for your hardware")
-                    opacity: 0.8
-                    font.pixelSize: 16
-                    color: installPage.mutedColor
-                    Layout.alignment: Qt.AlignHCenter
-                }
+            Controls.Label {
+                text: qsTr("Choose an installation method for your %1").arg(
+                    page.controller.gpu_model.length > 0
+                        ? page.controller.gpu_model
+                        : (page.controller.is_detecting ? qsTr("detected GPU") : qsTr("GPU")))
+                font.pixelSize: 14
+                color: page.cTextSub
             }
 
-            Item {
-                Layout.preferredHeight: 14
-            }
+            Item { Layout.preferredHeight: 20 }
 
-            // ─── No Internet Warning ───
+            // ── Warnings ──
             WarningBanner {
-                visible: !installPage.controller.has_internet
+                visible: !page.controller.has_internet
                 type: "warning"
-                text: qsTr("Internet connection required for driver download")
+                text: qsTr("Internet connection required for driver download.")
+                darkMode: page.darkMode
                 Layout.fillWidth: true
             }
+            Item { visible: !page.controller.has_internet; Layout.preferredHeight: 8 }
 
-            // ─── Secure Boot Warning ───
             WarningBanner {
-                visible: installPage.controller.secure_boot
+                visible: page.controller.secure_boot
                 type: "error"
-                text: qsTr("Secure Boot is enabled — unsigned drivers may not work. Disable it in UEFI to proceed.")
+                text: qsTr("Secure Boot is enabled \u2014 unsigned drivers may not load. Consider disabling it in UEFI settings.")
+                darkMode: page.darkMode
                 Layout.fillWidth: true
             }
+            Item { visible: page.controller.secure_boot; Layout.preferredHeight: 8 }
 
-            // ─── Express Install Card ───
+            // ── Express Install Card ──
             Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: 116
-                radius: 8
-                color: installPage.cardColor
+                implicitHeight: expressRow.implicitHeight + 32
+                radius: 10
+                color: expressMA.containsMouse && page.controller.has_internet
+                    ? page.cHover : page.cSurface
                 border.width: 1
-                border.color: installPage.borderColor
+                border.color: page.cBorder
+                Behavior on color { ColorAnimation { duration: 120 } }
 
                 MouseArea {
+                    id: expressMA
                     anchors.fill: parent
-                    enabled: installPage.controller.has_internet
-                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: installPage.showProgress()
+                    hoverEnabled: page.controller.has_internet && !page.controller.is_installing
+                    cursorShape: hoverEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    enabled: page.controller.has_internet && !page.controller.is_installing
+                    onClicked: {
+                        page.controller.install_express();
+                        page.showProgress();
+                    }
                 }
 
                 RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 18
-                    spacing: 14
+                    id: expressRow
+                    anchors.left: parent.left; anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.margins: 16; spacing: 14
 
-                    Controls.Label {
-                        text: "✓"
-                        color: "#2eb66d"
-                        font.pixelSize: 28
-                        Layout.alignment: Qt.AlignTop
+                    Rectangle {
+                        Layout.preferredWidth: 44; Layout.preferredHeight: 44
+                        radius: 10
+                        color: Qt.rgba(page.cSuccess.r, page.cSuccess.g, page.cSuccess.b, 0.12)
+                        Controls.Label {
+                            anchors.centerIn: parent; text: "\u2713"
+                            font.pixelSize: 20; color: page.cSuccess
+                        }
                     }
 
                     ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 6
-
+                        Layout.fillWidth: true; spacing: 2
                         Controls.Label {
-                            text: qsTr("Express Install (Recommended)")
-                            font.pixelSize: 16
-                            font.weight: Font.DemiBold
-                            color: installPage.textColor
+                            text: qsTr("Express Install")
+                            font.pixelSize: 15; font.weight: Font.DemiBold; color: page.cText
                         }
-
                         Controls.Label {
-                            text: qsTr("Installs nvidia-%1").arg(installPage.controller.best_version.length > 0 ? installPage.controller.best_version : "560.35.03")
-                            color: installPage.mutedColor
-                            font.pixelSize: 14
-                        }
-
-                        Controls.Label {
-                            text: qsTr("Compatible: Verified")
-                            color: "#2eb66d"
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
+                            text: page.controller.best_version.length > 0
+                                ? qsTr("nvidia-%1 \u00B7 Recommended").arg(page.controller.best_version)
+                                : qsTr("Latest stable version \u00B7 Recommended")
+                            font.pixelSize: 13; color: page.cTextSub
                         }
                     }
+
+                    Rectangle {
+                        visible: page.controller.has_internet
+                        implicitWidth: recLbl.implicitWidth + 16
+                        implicitHeight: 22; radius: 11
+                        color: page.cSuccessBg
+                        Controls.Label {
+                            id: recLbl; anchors.centerIn: parent
+                            text: qsTr("Recommended")
+                            font.pixelSize: 11; font.weight: Font.DemiBold; color: page.cSuccess
+                        }
+                    }
+
+                    Controls.Label { text: "\u203A"; font.pixelSize: 20; color: page.cTextSub }
                 }
             }
 
-            // ─── Custom Install Card ───
+            Item { Layout.preferredHeight: 10 }
+
+            // ── Custom Install Card ──
             Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: 98
-                radius: 8
-                color: installPage.cardColor
-                border.width: 1
-                border.color: installPage.borderColor
+                implicitHeight: customRow.implicitHeight + 32
+                radius: 10
+                color: customMA.containsMouse ? page.cHover : page.cSurface
+                border.width: 1; border.color: page.cBorder
+                Behavior on color { ColorAnimation { duration: 120 } }
 
                 MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: installPage.showExpert()
+                    id: customMA; anchors.fill: parent
+                    hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: page.showExpert()
                 }
 
                 RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 18
-                    spacing: 14
+                    id: customRow
+                    anchors.left: parent.left; anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.margins: 16; spacing: 14
 
-                    Controls.Label {
-                        text: "⚙"
-                        color: "#35a3df"
-                        font.pixelSize: 25
-                        Layout.alignment: Qt.AlignTop
+                    Rectangle {
+                        Layout.preferredWidth: 44; Layout.preferredHeight: 44
+                        radius: 10
+                        color: Qt.rgba(page.cPrimary.r, page.cPrimary.g, page.cPrimary.b, 0.12)
+                        Controls.Label {
+                            anchors.centerIn: parent; text: "\u2699"
+                            font.pixelSize: 20; color: page.cPrimary
+                        }
                     }
 
                     ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 6
-
+                        Layout.fillWidth: true; spacing: 2
                         Controls.Label {
-                            text: qsTr("Custom Install (Expert)")
-                            font.pixelSize: 16
-                            font.weight: Font.DemiBold
-                            color: installPage.textColor
+                            text: qsTr("Custom Install")
+                            font.pixelSize: 15; font.weight: Font.DemiBold; color: page.cText
                         }
-
                         Controls.Label {
-                            text: qsTr("Choose version, kernel module")
-                            color: installPage.mutedColor
-                            font.pixelSize: 14
+                            text: qsTr("Choose version, kernel module, and options")
+                            font.pixelSize: 13; color: page.cTextSub
                         }
                     }
+
+                    Controls.Label { text: "\u203A"; font.pixelSize: 20; color: page.cTextSub }
                 }
             }
 
-            Rectangle {
-                visible: installPage.controller.secure_boot
-                Layout.fillWidth: true
-                implicitHeight: 96
-                radius: 8
-                color: installPage.darkMode ? "#3a2e1f" : "#fef4e8"
-                border.width: 1
-                border.color: "#f59f23"
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 6
-
-                    Controls.Label {
-                        text: qsTr("Secure Boot Warning")
-                        color: "#f59f23"
-                        font.pixelSize: 16
-                        font.weight: Font.DemiBold
-                    }
-
-                    Controls.Label {
-                        text: qsTr("Secure Boot is currently enabled. You may need to sign the kernel modules or disable Secure Boot to use NVIDIA drivers.")
-                        color: installPage.mutedColor
-                        wrapMode: Text.WordWrap
-                        font.pixelSize: 14
-                        Layout.fillWidth: true
-                    }
-                }
-            }
-
-            Item {
-                Layout.preferredHeight: 12
-            }
+            Item { Layout.preferredHeight: 32 }
         }
     }
 }

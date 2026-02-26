@@ -2,8 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as Controls
 
-// StatRow — Reusable metric row with label, progress bar, and value
-
 RowLayout {
     id: statRow
     spacing: 12
@@ -11,49 +9,53 @@ RowLayout {
 
     property string label: ""
     property string value: ""
-    property real fraction: 0.0  // 0.0 to 1.0
+    property real fraction: 0.0
     property bool darkMode: false
 
-    readonly property color barColor: "#2eb66d"
+    readonly property color barColor: {
+        if (fraction > 0.85) return darkMode ? "#f85149" : "#cf222e";
+        if (fraction > 0.65) return darkMode ? "#d29922" : "#bf8700";
+        return "#3daee9";
+    }
 
     Controls.Label {
         text: statRow.label
-        opacity: 0.95
-        color: statRow.darkMode ? "#eef3f9" : "#2d3136"
-        font.pixelSize: 16
-        Layout.preferredWidth: 90
+        color: statRow.darkMode ? "#8b949e" : "#656d76"
+        font.pixelSize: 13
+        Layout.preferredWidth: 100
     }
 
-    Controls.ProgressBar {
+    Item {
         Layout.fillWidth: true
-        from: 0.0
-        to: 1.0
-        value: statRow.fraction
+        implicitHeight: 6
 
-        background: Rectangle {
-            implicitHeight: 8
-            radius: 4
-            color: statRow.darkMode ? "#18212b" : "#dfe3e8"
+        Rectangle {
+            anchors.fill: parent
+            radius: 3
+            color: statRow.darkMode ? "#1b2028" : "#e8ebef"
         }
 
-        contentItem: Item {
-            implicitHeight: 8
+        Rectangle {
+            width: Math.max(0, Math.min(1, statRow.fraction)) * parent.width
+            height: parent.height
+            radius: 3
+            color: statRow.barColor
 
-            Rectangle {
-                width: statRow.fraction * parent.width
-                height: parent.height
-                radius: 4
-                color: statRow.barColor
+            Behavior on width {
+                NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+            }
+            Behavior on color {
+                ColorAnimation { duration: 300 }
             }
         }
     }
 
     Controls.Label {
         text: statRow.value
-        font.pixelSize: 16
-        opacity: 0.95
-        color: statRow.darkMode ? "#aeb8c4" : "#77818b"
-        Layout.preferredWidth: 80
+        font.pixelSize: 13
+        font.weight: Font.Medium
+        color: statRow.darkMode ? "#e6edf3" : "#1f2328"
+        Layout.preferredWidth: 100
         horizontalAlignment: Text.AlignRight
     }
 }

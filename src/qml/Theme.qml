@@ -1,82 +1,46 @@
 pragma Singleton
 import QtQuick
-import QtQuick.Controls
 
 QtObject {
     id: theme
 
-    // Stable default theme mode
     property bool isDark: false
 
-    // ─── Font Settings ───
-    property int fontSize: 16
-    property int fontWeightNormal: 400
-    property int fontWeightMedium: 500
-
-    property font fontH1: Qt.font({
-        pixelSize: 24,
-        weight: fontWeightMedium
-    }) // text-2xl
-    property font fontH2: Qt.font({
-        pixelSize: 20,
-        weight: fontWeightMedium
-    }) // text-xl
-    property font fontH3: Qt.font({
-        pixelSize: 18,
-        weight: fontWeightMedium
-    }) // text-lg
-    property font fontBody: Qt.font({
-        pixelSize: fontSize,
-        weight: fontWeightNormal
-    })
-
-    // ─── Colors (Dynamic based on differs) ───
-
     // Backgrounds
-    property color background: isDark ? "#131920" : "#eef0f2"
-    property color card: isDark ? "#262d36" : "#f5f6f8"
-    property color popover: isDark ? "#262d36" : "#ffffff"
-    property color sidebar: isDark ? "#141a21" : "#e9ecef"
-    property color header: isDark ? "#222933" : "#f4f5f7"
-    property color subHeader: isDark ? "#252c35" : "#eff1f3"
-    property color navActive: isDark ? "#2b3340" : "#f8f9fb"
-    property color overlay: isDark ? "#000000" : "#ffffff"  // Custom extra
+    readonly property color bg:           isDark ? "#1b2028" : "#f5f7f9"
+    readonly property color surface:      isDark ? "#242b35" : "#ffffff"
+    readonly property color surfaceAlt:   isDark ? "#1e252e" : "#f0f3f6"
+    readonly property color surfaceHover: isDark ? "#2c3440" : "#eef1f5"
+    readonly property color header:       isDark ? "#1e252e" : "#ffffff"
+    readonly property color sidebar:      isDark ? "#181e25" : "#f0f2f5"
 
-    // Foregrounds (Text)
-    property color foreground: isDark ? "#f2f4f7" : "#2d3136"
-    property color cardForeground: isDark ? "#eff0f1" : "#232629"
-    property color popoverForeground: isDark ? "#eff0f1" : "#232629"
-    property color sidebarForeground: isDark ? "#eff0f1" : "#232629"
-    property color mutedForeground: isDark ? "#aeb6c0" : "#77818b"
+    // Text
+    readonly property color text:         isDark ? "#e6edf3" : "#1f2328"
+    readonly property color textSub:      isDark ? "#8b949e" : "#656d76"
+    readonly property color textMuted:    isDark ? "#6e7681" : "#8c959f"
 
-    // Brand / Primary
-    property color primary: isDark ? "#3ca9df" : "#3490c9"
-    property color primaryForeground: isDark ? "#1b1e20" : "#ffffff"
+    // Borders
+    readonly property color border:       isDark ? "#313840" : "#d0d7de"
+    readonly property color borderSub:    isDark ? "#282f38" : "#e1e4e8"
 
-    property color accent: isDark ? "#3daee9" : "#2980b9"
-    property color accentForeground: isDark ? "#1b1e20" : "#ffffff"
+    // Accent (KDE Breeze Blue)
+    readonly property color primary:      isDark ? "#3daee9" : "#2980b9"
+    readonly property color primaryBg:    isDark ? "#1a3a52" : "#deeffe"
 
-    // Functional
-    property color destructive: isDark ? "#ed1515" : "#da4453"
-    property color destructiveForeground: "#ffffff"
+    // Status
+    readonly property color success:      isDark ? "#3fb950" : "#1a7f37"
+    readonly property color successBg:    isDark ? "#162d1f" : "#dafbe1"
+    readonly property color warning:      isDark ? "#d29922" : "#bf8700"
+    readonly property color warningBg:    isDark ? "#2d2310" : "#fff8c5"
+    readonly property color error:        isDark ? "#f85149" : "#cf222e"
+    readonly property color errorBg:      isDark ? "#3d1418" : "#ffebe9"
 
-    property color success: "#2eb66d"
-    property color warning: isDark ? "#f08b21" : "#f59f23"
-    property color error: isDark ? "#ff3c3c" : "#e44d4d"
+    // Dimensions
+    readonly property int radius:   10
+    readonly property int radiusSm: 6
+    readonly property int radiusLg: 14
 
-    // UI Elements
-    property color border: isDark ? "#384252" : "#c8ced6"
-    property color input: isDark ? "#2a2e32" : "transparent"
-    property color inputBackground: isDark ? "#2a2e32" : "#fcfcfc"
-    property color ring: isDark ? "#3daee9" : "#2980b9"
-
-    // ─── Dimensions ───
-    property int radius: 8 // 0.5rem approx
-    property int radiusSm: 4
-    property int radiusLg: 12
-
-    // ─── Helper Functions ───
-    function alpha(colorVal, alphaVal) {
-        return Qt.rgba(colorVal.r, colorVal.g, colorVal.b, alphaVal);
+    function alpha(c, a) {
+        return Qt.rgba(c.r, c.g, c.b, a);
     }
 }

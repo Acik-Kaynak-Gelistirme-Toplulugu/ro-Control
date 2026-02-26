@@ -5,6 +5,7 @@
 
 use cxx_qt::Threading;
 use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[cxx_qt::bridge]
 pub mod ffi {
@@ -30,9 +31,17 @@ pub mod ffi {
         #[qproperty(QString, current_status)]
         #[qproperty(i32, install_progress)]
         #[qproperty(QString, install_log)]
+        #[qproperty(bool, is_detecting)]
+        #[qproperty(QString, available_versions)]
+        #[qproperty(QString, official_versions_json)]
+        #[qproperty(QString, app_version)]
+        #[qproperty(bool, app_update_available)]
+        #[qproperty(QString, app_latest_version)]
+        #[qproperty(QString, app_download_url)]
+        #[qproperty(QString, app_release_notes)]
         type GpuController = super::GpuControllerRust;
 
-        /// Detect GPU and populate properties
+        /// Detect GPU and populate properties (async — runs in background thread)
         #[qinvokable]
         fn detect_gpu(self: Pin<&mut GpuController>);
 
@@ -40,9 +49,13 @@ pub mod ffi {
         #[qinvokable]
         fn get_available_versions(self: Pin<&mut GpuController>) -> QString;
 
-        /// Get official version list with short changelog notes as JSON array
+        /// Get official version list with short changelog notes as JSON array (returns cached)
         #[qinvokable]
         fn get_official_versions_with_changes(self: Pin<&mut GpuController>) -> QString;
+
+        /// Load official version list with changelog (async, populates official_versions_json property)
+        #[qinvokable]
+        fn load_official_versions(self: Pin<&mut GpuController>);
 
         /// Check if a specific version is compatible with the current kernel
         #[qinvokable]
@@ -63,9 +76,22 @@ pub mod ffi {
         /// Check network connectivity
         #[qinvokable]
         fn check_network(self: Pin<&mut GpuController>);
+
+        /// Reboot the system
+        #[qinvokable]
+        fn reboot_system(self: Pin<&mut GpuController>);
+
+        /// Check for application updates on GitHub
+        #[qinvokable]
+        fn check_app_update(self: Pin<&mut GpuController>);
+
+        /// Download and install the application update
+        #[qinvokable]
+        fn install_app_update(self: Pin<&mut GpuController>);
     }
 
     impl cxx_qt::Threading for GpuController {}
+    impl cxx_qt::Threading for PerfMonitor {}
 
     // ─── PerfMonitor ────────────────────────────────────────────
 
@@ -114,65 +140,107 @@ pub struct GpuControllerRust {
     is_installing: bool,
     has_internet: bool,
     is_up_to_date: bool,
+    is_detecting: bool,
     best_version: QString,
     current_status: QString,
     install_progress: i32,
     install_log: QString,
+    available_versions: QString,
+    official_versions_json: QString,
+    app_version: QString,
+    app_update_available: bool,
+    app_latest_version: QString,
+    app_download_url: QString,
+    app_release_notes: QString,
 }
 
 impl ffi::GpuController {
     fn detect_gpu(mut self: Pin<&mut Self>) {
-        use crate::core::detector;
-        let info = detector::detect_gpu();
+        if *self.is_detecting() {
+            return;
+        }
+        self.as_mut().set_is_detecting(true);
+        self.as_mut().set_current_status(QString::from("detecting"));
+        // Set app version from Cargo.toml on first run
+        if self.as_ref().app_version().is_empty() {
+            self.as_mut()
+                .set_app_version(QString::from(crate::config::VERSION));
+        }
 
-        self.as_mut().set_gpu_vendor(QString::from(&info.vendor));
-        self.as_mut().set_gpu_model(QString::from(&info.model));
-        self.as_mut()
-            .set_driver_in_use(QString::from(&info.driver_in_use));
-        self.as_mut().set_secure_boot(info.secure_boot);
+        let qt_thread = self.as_ref().qt_thread();
 
-        let versions = detector::get_available_nvidia_versions();
-        let best = versions.first().cloned().unwrap_or_default();
-        self.as_mut().set_best_version(QString::from(&best));
+        std::thread::spawn(move || {
+            use crate::core::detector;
 
-        let current_installed = &info.driver_in_use;
-        let up_to_date = !best.is_empty() && current_installed.contains(&best);
-        self.as_mut().set_is_up_to_date(up_to_date);
+            let info = detector::detect_gpu();
+            let versions = detector::get_available_nvidia_versions();
+            let best = versions.first().cloned().unwrap_or_default();
+            let up_to_date = !best.is_empty() && info.driver_in_use.contains(&best);
+            let versions_str = versions.join(",");
 
-        self.as_mut().set_current_status(QString::from("ready"));
-        log::info!(
-            "GPU detected: {} {} (driver: {})",
-            info.vendor,
-            info.model,
-            info.driver_in_use
-        );
+            log::info!(
+                "GPU detected: {} {} (driver: {})",
+                info.vendor,
+                info.model,
+                info.driver_in_use
+            );
+
+            let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
+                qobject.as_mut().set_gpu_vendor(QString::from(&info.vendor));
+                qobject.as_mut().set_gpu_model(QString::from(&info.model));
+                qobject
+                    .as_mut()
+                    .set_driver_in_use(QString::from(&info.driver_in_use));
+                qobject.as_mut().set_secure_boot(info.secure_boot);
+                qobject.as_mut().set_best_version(QString::from(&best));
+                qobject.as_mut().set_is_up_to_date(up_to_date);
+                qobject
+                    .as_mut()
+                    .set_available_versions(QString::from(&versions_str));
+                qobject.as_mut().set_current_status(QString::from("ready"));
+                qobject.as_mut().set_is_detecting(false);
+            });
+        });
     }
 
     fn get_available_versions(self: Pin<&mut Self>) -> QString {
-        use crate::core::detector;
-        let versions = detector::get_available_nvidia_versions();
-        QString::from(&versions.join(","))
+        self.available_versions().clone()
     }
 
     fn get_official_versions_with_changes(self: Pin<&mut Self>) -> QString {
-        use crate::core::detector;
+        self.official_versions_json().clone()
+    }
 
-        let rows = detector::get_official_nvidia_versions_with_changes();
-        let payload: Vec<serde_json::Value> = rows
-            .into_iter()
-            .enumerate()
-            .map(|(index, (version, changes))| {
-                serde_json::json!({
-                    "version": version,
-                    "changes": changes,
-                    "is_latest": index == 0,
-                    "source": "dnf-rpmfusion"
+    fn load_official_versions(self: Pin<&mut Self>) {
+        let qt_thread = self.as_ref().qt_thread();
+
+        std::thread::spawn(move || {
+            use crate::core::detector;
+
+            // Fetch merged versions: internet (latest official) + local repo (installable)
+            let merged = detector::get_merged_nvidia_versions();
+
+            let payload: Vec<serde_json::Value> = merged
+                .into_iter()
+                .map(|dv| {
+                    serde_json::json!({
+                        "version": dv.version,
+                        "changes": dv.release_notes,
+                        "is_latest": dv.is_latest,
+                        "source": dv.source,
+                        "installable": dv.installable
+                    })
                 })
-            })
-            .collect();
+                .collect();
 
-        let json = serde_json::to_string(&payload).unwrap_or_else(|_| "[]".to_string());
-        QString::from(&json)
+            let json = serde_json::to_string(&payload).unwrap_or_else(|_| "[]".to_string());
+
+            let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
+                qobject
+                    .as_mut()
+                    .set_official_versions_json(QString::from(&json));
+            });
+        });
     }
 
     fn is_version_compatible(self: Pin<&mut Self>, version: &QString) -> bool {
@@ -180,7 +248,10 @@ impl ffi::GpuController {
         // NVIDIA 545+ requires kernel ≥ 6.0
         // NVIDIA 525+ requires kernel ≥ 5.10
         // Older versions are broadly compatible
-        if let Some(kernel_str) = crate::utils::command::run("uname -r") {
+        let kernel_str = std::fs::read_to_string("/proc/version")
+            .ok()
+            .or_else(|| crate::utils::command::run("uname -r"));
+        if let Some(kernel_str) = kernel_str {
             let kernel_parts: Vec<u32> = kernel_str
                 .split(|c: char| !c.is_ascii_digit())
                 .take(2)
@@ -263,6 +334,9 @@ impl ffi::GpuController {
                 qobject
                     .as_mut()
                     .set_install_progress(if success { 100 } else { 0 });
+                qobject
+                    .as_mut()
+                    .set_current_status(QString::from(if success { "complete" } else { "failed" }));
                 let status_msg = if success {
                     "Installation completed successfully.\nPlease REBOOT your system."
                 } else {
@@ -317,12 +391,16 @@ impl ffi::GpuController {
                 });
             }));
 
-            // Logic: if use_open_kernel -> install_nvidia_open, else -> install_nvidia_closed
-            // Ideally core::installer handles version pinning. For now using available methods.
-            let success = if use_open_kernel {
-                installer.install_nvidia_open()
+            // Pin to selected version via versioned installer methods
+            let ver = if version_str.is_empty() {
+                None
             } else {
-                installer.install_nvidia_closed()
+                Some(version_str.as_str())
+            };
+            let success = if use_open_kernel {
+                installer.install_nvidia_open_versioned(ver)
+            } else {
+                installer.install_nvidia_closed_versioned(ver)
             };
 
             let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
@@ -330,6 +408,9 @@ impl ffi::GpuController {
                 qobject
                     .as_mut()
                     .set_install_progress(if success { 100 } else { 0 });
+                qobject
+                    .as_mut()
+                    .set_current_status(QString::from(if success { "complete" } else { "failed" }));
 
                 let result_msg = if success {
                     format!("v{} installation complete. REBOOT required.", version_str)
@@ -391,6 +472,9 @@ impl ffi::GpuController {
                 qobject
                     .as_mut()
                     .set_install_progress(if success { 100 } else { 0 });
+                qobject
+                    .as_mut()
+                    .set_current_status(QString::from(if success { "complete" } else { "failed" }));
                 let status_msg = if success {
                     "Removal complete. Reboot to nouveau."
                 } else {
@@ -406,14 +490,92 @@ impl ffi::GpuController {
         log::info!("Remove drivers thread started (deep_clean: {})", deep_clean);
     }
 
-    fn check_network(mut self: Pin<&mut Self>) {
-        use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
-        use std::time::Duration;
+    fn check_network(self: Pin<&mut Self>) {
+        let qt_thread = self.as_ref().qt_thread();
 
-        let dns_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8)), 53);
-        let connected = TcpStream::connect_timeout(&dns_addr, Duration::from_secs(3)).is_ok();
+        std::thread::spawn(move || {
+            use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
+            use std::time::Duration;
 
-        self.as_mut().set_has_internet(connected);
+            let dns_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8)), 53);
+            let connected = TcpStream::connect_timeout(&dns_addr, Duration::from_secs(3)).is_ok();
+
+            let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
+                qobject.as_mut().set_has_internet(connected);
+            });
+        });
+    }
+
+    fn reboot_system(self: Pin<&mut Self>) {
+        log::info!("Reboot requested by user");
+        std::thread::spawn(move || {
+            // systemctl reboot does not need pkexec; it uses logind
+            let _ = std::process::Command::new("systemctl")
+                .arg("reboot")
+                .spawn();
+        });
+    }
+
+    fn check_app_update(self: Pin<&mut Self>) {
+        let qt_thread = self.as_ref().qt_thread();
+
+        std::thread::spawn(move || {
+            use crate::core::updater;
+
+            log::info!("Checking for application updates...");
+            let info = updater::check_for_updates();
+
+            let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
+                qobject.as_mut().set_app_update_available(info.has_update);
+                qobject
+                    .as_mut()
+                    .set_app_latest_version(QString::from(&info.version));
+                qobject
+                    .as_mut()
+                    .set_app_download_url(QString::from(&info.download_url.unwrap_or_default()));
+                qobject
+                    .as_mut()
+                    .set_app_release_notes(QString::from(&info.release_notes));
+                if info.has_update {
+                    log::info!("Update available: v{}", info.version);
+                } else {
+                    log::info!("Application is up to date.");
+                }
+            });
+        });
+    }
+
+    fn install_app_update(mut self: Pin<&mut Self>) {
+        let url = self.as_ref().app_download_url().to_string();
+        if url.is_empty() {
+            log::warn!("No download URL for app update");
+            return;
+        }
+
+        self.as_mut()
+            .set_current_status(QString::from("updating_app"));
+        let qt_thread = self.as_ref().qt_thread();
+
+        std::thread::spawn(move || {
+            use crate::core::updater;
+
+            log::info!("Installing application update from: {}", url);
+            let success = updater::download_and_install(&url);
+
+            let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
+                if success {
+                    qobject
+                        .as_mut()
+                        .set_current_status(QString::from("update_installed"));
+                    log::info!("App update installed. Restart required.");
+                } else {
+                    qobject
+                        .as_mut()
+                        .set_current_status(QString::from("update_failed"));
+                    log::error!("App update failed.");
+                }
+            });
+        });
     }
 }
 
@@ -439,37 +601,58 @@ pub struct PerfMonitorRust {
     display_server: QString,
 }
 
+/// Guard to prevent overlapping refresh calls from piling up threads
+static REFRESH_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
+
 impl ffi::PerfMonitor {
-    fn refresh(mut self: Pin<&mut Self>) {
-        use crate::core::tweaks;
+    fn refresh(self: Pin<&mut Self>) {
+        // Skip if previous refresh is still in-flight
+        if REFRESH_IN_PROGRESS.swap(true, Ordering::SeqCst) {
+            return;
+        }
 
-        let gpu = tweaks::get_gpu_stats();
-        self.as_mut().set_gpu_temp(gpu.temp);
-        self.as_mut().set_gpu_load(gpu.load);
-        self.as_mut().set_gpu_mem_used(gpu.mem_used);
-        self.as_mut().set_gpu_mem_total(gpu.mem_total);
+        let qt_thread = self.as_ref().qt_thread();
 
-        let sys = tweaks::get_system_stats();
-        self.as_mut().set_cpu_load(sys.cpu_load);
-        self.as_mut().set_cpu_temp(sys.cpu_temp);
-        self.as_mut().set_ram_used(sys.ram_used);
-        self.as_mut().set_ram_total(sys.ram_total);
-        self.as_mut().set_ram_percent(sys.ram_percent);
+        std::thread::spawn(move || {
+            use crate::core::tweaks;
+
+            let gpu = tweaks::get_gpu_stats();
+            let sys = tweaks::get_system_stats();
+
+            let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::PerfMonitor>| {
+                qobject.as_mut().set_gpu_temp(gpu.temp);
+                qobject.as_mut().set_gpu_load(gpu.load);
+                qobject.as_mut().set_gpu_mem_used(gpu.mem_used);
+                qobject.as_mut().set_gpu_mem_total(gpu.mem_total);
+                qobject.as_mut().set_cpu_load(sys.cpu_load);
+                qobject.as_mut().set_cpu_temp(sys.cpu_temp);
+                qobject.as_mut().set_ram_used(sys.ram_used);
+                qobject.as_mut().set_ram_total(sys.ram_total);
+                qobject.as_mut().set_ram_percent(sys.ram_percent);
+                REFRESH_IN_PROGRESS.store(false, Ordering::SeqCst);
+            });
+        });
     }
 
-    fn load_system_info(mut self: Pin<&mut Self>) {
-        use crate::core::detector;
+    fn load_system_info(self: Pin<&mut Self>) {
+        let qt_thread = self.as_ref().qt_thread();
 
-        let info = detector::get_full_system_info();
-        self.as_mut().set_distro(QString::from(&info.distro));
-        self.as_mut().set_kernel(QString::from(&info.kernel));
-        self.as_mut().set_cpu_name(QString::from(&info.cpu));
-        self.as_mut().set_ram_info(QString::from(&info.ram));
-        self.as_mut().set_gpu_full_name(QString::from(&format!(
-            "{} {}",
-            info.gpu.vendor, info.gpu.model
-        )));
-        self.as_mut()
-            .set_display_server(QString::from(&info.display_server));
+        std::thread::spawn(move || {
+            use crate::core::detector;
+
+            let info = detector::get_full_system_info();
+            let gpu_name = format!("{} {}", info.gpu.vendor, info.gpu.model);
+
+            let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::PerfMonitor>| {
+                qobject.as_mut().set_distro(QString::from(&info.distro));
+                qobject.as_mut().set_kernel(QString::from(&info.kernel));
+                qobject.as_mut().set_cpu_name(QString::from(&info.cpu));
+                qobject.as_mut().set_ram_info(QString::from(&info.ram));
+                qobject.as_mut().set_gpu_full_name(QString::from(&gpu_name));
+                qobject
+                    .as_mut()
+                    .set_display_server(QString::from(&info.display_server));
+            });
+        });
     }
 }
