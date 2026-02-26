@@ -574,10 +574,10 @@ mod tests {
     }
 
     #[test]
-    fn system_info_has_display_server() {
-        // When XDG_SESSION_TYPE is not set, should return "Unknown"
-        std::env::remove_var("XDG_SESSION_TYPE");
-        let ds = std::env::var("XDG_SESSION_TYPE").unwrap_or_else(|_| "Unknown".into());
+    fn display_server_fallback() {
+        // Test the fallback logic directly without mutating environment
+        let ds =
+            std::env::var("XDG_SESSION_TYPE_NONEXISTENT_KEY").unwrap_or_else(|_| "Unknown".into());
         assert_eq!(ds, "Unknown");
     }
 }

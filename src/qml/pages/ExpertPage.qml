@@ -72,7 +72,7 @@ Item {
                 spacing: 12
 
                 Controls.Label { text: qsTr("Expert Driver Management"); font.pixelSize: 24; font.weight: Font.Bold; color: page.cFg }
-                Controls.Label { text: "🦀"; font.pixelSize: 24 }
+                Controls.Label { text: "Rust Edition"; font.pixelSize: 14; font.weight: Font.Bold; color: page.cPrimary }
             }
 
             // ── Current Driver Info ──

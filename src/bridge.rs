@@ -63,7 +63,7 @@ pub mod ffi {
 
         /// Express install (best compatible version)
         #[qinvokable]
-        fn install_express(self: Pin<&mut GpuController>);
+        fn install_express(self: Pin<&mut GpuController>, use_open_kernel: bool);
 
         /// Custom install (specific version + kernel module type)
         #[qinvokable]
@@ -289,15 +289,22 @@ impl ffi::GpuController {
         true
     }
 
-    fn install_express(mut self: Pin<&mut Self>) {
+    fn install_express(mut self: Pin<&mut Self>, use_open_kernel: bool) {
         if *self.is_installing() {
             return;
         }
 
+        let kernel_type = if use_open_kernel {
+            "Open Kernel"
+        } else {
+            "Proprietary"
+        };
         self.as_mut().set_is_installing(true);
         self.as_mut().set_install_progress(0);
-        self.as_mut()
-            .set_install_log(QString::from("Starting express installation...\n"));
+        self.as_mut().set_install_log(QString::from(&format!(
+            "Starting express installation ({})...\n",
+            kernel_type
+        )));
         self.as_mut()
             .set_current_status(QString::from("installing"));
 
@@ -326,7 +333,11 @@ impl ffi::GpuController {
                 });
             }));
 
-            let success = installer.install_nvidia_closed();
+            let success = if use_open_kernel {
+                installer.install_nvidia_open()
+            } else {
+                installer.install_nvidia_closed()
+            };
 
             // Final UI update
             let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {

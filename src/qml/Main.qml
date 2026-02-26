@@ -64,10 +64,10 @@ Controls.ApplicationWindow {
                 Rectangle {
                     width: 40; height: 40; radius: 12
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: "#EF4444" }
-                        GradientStop { position: 1.0; color: "#DC2626" }
+                        GradientStop { position: 0.0; color: root.cPrimary }
+                        GradientStop { position: 1.0; color: root.cAccent }
                     }
-                    Controls.Label { anchors.centerIn: parent; text: "🦀"; font.pixelSize: 20 }
+                    Controls.Label { anchors.centerIn: parent; text: "🛡️"; font.pixelSize: 20 }
                     SequentialAnimation on rotation {
                         running: true; loops: Animation.Infinite
                         NumberAnimation { from: 0; to: 5; duration: 1000 }
@@ -87,12 +87,11 @@ Controls.ApplicationWindow {
             // Rust badge
             Rectangle {
                 implicitHeight: 32; implicitWidth: _rustBadge.implicitWidth + 16
-                radius: 8; color: Qt.rgba(0.937, 0.267, 0.267, 0.1)
-                border.width: 1; border.color: Qt.rgba(0.937, 0.267, 0.267, 0.3)
+                radius: 8; color: Qt.rgba(root.cPrimary.r, root.cPrimary.g, root.cPrimary.b, 0.1)
+                border.width: 1; border.color: Qt.rgba(root.cPrimary.r, root.cPrimary.g, root.cPrimary.b, 0.3)
                 RowLayout {
                     id: _rustBadge; anchors.centerIn: parent; spacing: 8
-                    Controls.Label { text: "🦀"; font.pixelSize: 16 }
-                    Controls.Label { text: "Powered by Rust"; font.pixelSize: 14; font.weight: Font.Bold; color: "#EF4444" }
+                    Controls.Label { text: "Rust Edition"; font.pixelSize: 14; font.weight: Font.Bold; color: root.cPrimary }
                 }
             }
 
@@ -191,8 +190,8 @@ Controls.ApplicationWindow {
                 // Rust version badge
                 Rectangle {
                     Layout.fillWidth: true; implicitHeight: 60; radius: 12
-                    color: Qt.rgba(0.937, 0.267, 0.267, 0.1)
-                    border.width: 1; border.color: Qt.rgba(0.937, 0.267, 0.267, 0.3)
+                    color: Qt.rgba(root.cPrimary.r, root.cPrimary.g, root.cPrimary.b, 0.1)
+                    border.width: 1; border.color: Qt.rgba(root.cPrimary.r, root.cPrimary.g, root.cPrimary.b, 0.3)
 
                     MouseArea {
                         anchors.fill: parent; cursorShape: Qt.PointingHandCursor
@@ -204,10 +203,10 @@ Controls.ApplicationWindow {
                         Rectangle {
                             Layout.preferredWidth: 36; Layout.preferredHeight: 36; radius: 8
                             gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#EF4444" }
-                                GradientStop { position: 1.0; color: "#DC2626" }
+                                GradientStop { position: 0.0; color: root.cPrimary }
+                                GradientStop { position: 1.0; color: root.cAccent }
                             }
-                            Controls.Label { anchors.centerIn: parent; text: "🦀"; font.pixelSize: 18 }
+                            Controls.Label { anchors.centerIn: parent; text: "🛡️"; font.pixelSize: 18 }
                             SequentialAnimation on scale {
                                 running: true; loops: Animation.Infinite
                                 NumberAnimation { from: 1.0; to: 1.1; duration: 2000 }
@@ -219,7 +218,7 @@ Controls.ApplicationWindow {
                             Controls.Label { text: "Rust Edition"; font.pixelSize: 12; color: root.cMutedFg }
                             Controls.Label {
                                 text: "v" + (gpuController.app_version.length > 0 ? gpuController.app_version : "…")
-                                font.pixelSize: 14; font.weight: Font.Bold; color: "#EF4444"
+                                font.pixelSize: 14; font.weight: Font.Bold; color: root.cPrimary
                             }
                         }
                     }
@@ -273,7 +272,7 @@ Controls.ApplicationWindow {
         ColumnLayout {
             spacing: 12
             Controls.Label {
-                text: "🦀 " + qsTr("ro-Control v%1 is available!").arg(gpuController.app_latest_version)
+                text: qsTr("ro-Control v%1 is available!").arg(gpuController.app_latest_version)
                 font.pixelSize: 16; font.weight: Font.Bold
             }
             Controls.Label {
@@ -299,28 +298,108 @@ Controls.ApplicationWindow {
         title: qsTr("About ro-Control")
         modal: true; anchors.centerIn: parent
         standardButtons: Controls.Dialog.Ok
+        width: Math.min(500, root.width - 40)
+
+        property int activeTab: 0
 
         ColumnLayout {
-            spacing: 12
+            width: parent.width; spacing: 16
+
+            // Logo + Title
             RowLayout {
                 spacing: 12
                 Rectangle {
-                    width: 48; height: 48; radius: 12
+                    width: 56; height: 56; radius: 14
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: "#EF4444" }
-                        GradientStop { position: 1.0; color: "#DC2626" }
+                        GradientStop { position: 0.0; color: root.cPrimary }
+                        GradientStop { position: 1.0; color: root.cAccent }
                     }
-                    Controls.Label { anchors.centerIn: parent; text: "🦀"; font.pixelSize: 24 }
+                    Controls.Label { anchors.centerIn: parent; text: "🛡️"; font.pixelSize: 28 }
                 }
                 ColumnLayout {
                     spacing: 2
-                    Controls.Label { text: "ro-Control"; font.pixelSize: 18; font.weight: Font.Bold }
-                    Controls.Label { text: qsTr("NVIDIA Driver Manager · Rust Edition"); font.pixelSize: 12; color: root.cMutedFg }
+                    Controls.Label { text: "ro-Control"; font.pixelSize: 20; font.weight: Font.Bold; color: root.cFg }
+                    Controls.Label { text: "v" + gpuController.app_version + " — Rust Edition"; font.pixelSize: 13; color: root.cPrimary; font.weight: Font.Medium }
+                    Controls.Label { text: qsTr("Smart GPU driver manager for Linux."); font.pixelSize: 12; color: root.cMutedFg }
                 }
             }
-            Controls.Label { text: qsTr("Version: %1").arg(gpuController.app_version); font.pixelSize: 14 }
-            Controls.Label { text: "© 2024-2025 Açık Kaynak Geliştirme Topluluğu"; font.pixelSize: 12; color: root.cMutedFg }
-            Controls.Label { text: qsTr("Licensed under GPL-3.0"); font.pixelSize: 12; color: root.cMutedFg }
+
+            // Organization
+            Controls.Label {
+                text: "ro-ASD"
+                font.pixelSize: 16; font.weight: Font.Bold; color: root.cAccent
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            Rectangle { Layout.fillWidth: true; height: 1; color: root.cBorder }
+
+            // Tech info
+            Controls.Label {
+                text: qsTr("Built with Rust + Qt6/QML (CXX-Qt)")
+                font.pixelSize: 12; color: root.cMutedFg; Layout.alignment: Qt.AlignHCenter
+            }
+
+            // Changelog tabs
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter; spacing: 8
+
+                Controls.Button {
+                    text: "v1.1.0"; flat: aboutDialog.activeTab !== 0; highlighted: aboutDialog.activeTab === 0
+                    onClicked: aboutDialog.activeTab = 0
+                }
+                Controls.Button {
+                    text: "v1.0.0"; flat: aboutDialog.activeTab !== 1; highlighted: aboutDialog.activeTab === 1
+                    onClicked: aboutDialog.activeTab = 1
+                }
+            }
+
+            // v1.1.0 changelog
+            Rectangle {
+                visible: aboutDialog.activeTab === 0
+                Layout.fillWidth: true; implicitHeight: _cl110.implicitHeight + 24
+                radius: 12; color: root.darkMode ? "#1e293b" : "#f8fafc"
+                border.width: 1; border.color: root.cBorder
+
+                ColumnLayout {
+                    id: _cl110; anchors.fill: parent; anchors.margins: 12; spacing: 6
+                    Controls.Label { text: qsTr("v1.1.0 — Rust Edition UI Redesign"); font.pixelSize: 14; font.weight: Font.Bold; color: root.cFg }
+                    Controls.Label { text: "• " + qsTr("Premium Rust Edition visual identity"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("Modern color palette (blue / purple / emerald)"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("Express Install confirmation with kernel type selection"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("Secure Boot status banner with explanations"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("Security: root-task script hardened against command injection"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("49 unit tests (+113% increase)"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("Shared version parsing module"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("All log messages standardized to English"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                }
+            }
+
+            // v1.0.0 changelog
+            Rectangle {
+                visible: aboutDialog.activeTab === 1
+                Layout.fillWidth: true; implicitHeight: _cl100.implicitHeight + 24
+                radius: 12; color: root.darkMode ? "#1e293b" : "#f8fafc"
+                border.width: 1; border.color: root.cBorder
+
+                ColumnLayout {
+                    id: _cl100; anchors.fill: parent; anchors.margins: 12; spacing: 6
+                    Controls.Label { text: qsTr("v1.0.0 — Initial Rust Release"); font.pixelSize: 14; font.weight: Font.Bold; color: root.cFg }
+                    Controls.Label { text: "• " + qsTr("NVIDIA proprietary driver install via RPM Fusion"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("NVIDIA Open Kernel module install"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("Live GPU/CPU/RAM performance dashboard"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("Feral GameMode integration"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("Flatpak/Steam permission repair"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("NVIDIA Wayland fix (nvidia-drm.modeset=1)"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("Auto-update via GitHub Releases"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                    Controls.Label { text: "• " + qsTr("PolicyKit integration for secure privilege escalation"); font.pixelSize: 12; color: root.cMutedFg; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                }
+            }
+
+            // License
+            Controls.Label {
+                text: "© 2024-2025 ro-ASD — " + qsTr("Licensed under GPL-3.0")
+                font.pixelSize: 11; color: root.cMutedFg; Layout.alignment: Qt.AlignHCenter
+            }
         }
     }
 }

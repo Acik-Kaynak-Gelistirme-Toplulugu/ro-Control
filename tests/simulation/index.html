@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ro-Control — macOS Simulation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app" class="app-window">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <img src="logo.svg" alt="ro-Control" class="app-logo" width="28" height="28">
+                <span class="app-title">ro-Control</span>
+                <span class="edition-badge">Rust Edition</span>
+            </div>
+            <div class="header-right">
+                <button class="theme-toggle" id="themeToggle" title="Toggle Theme">🌙</button>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <nav class="sidebar">
+                <button class="nav-btn active" data-page="install">
+                    <span class="nav-icon">📦</span>
+                    <span class="nav-label">Install</span>
+                </button>
+                <button class="nav-btn" data-page="expert">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Expert</span>
+                </button>
+                <button class="nav-btn" data-page="perf">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Monitor</span>
+                </button>
+
+                <div class="sidebar-spacer"></div>
+
+                <div class="sidebar-version" id="aboutBtn">
+                    <img src="logo.svg" alt="" class="sidebar-logo" width="22" height="22">
+                    <span>v1.1.0</span>
+                </div>
+            </nav>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <div class="status-pill driver">
+                        <span class="pill-icon">🟢</span>
+                        <span class="pill-label" id="statusDriver">nvidia (<span
+                                id="statusDriverVer">scanning...</span>)</span>
+                    </div>
+                    <div class="status-pill gpu">
+                        <span class="pill-icon">🎮</span>
+                        <span class="pill-label">NVIDIA GeForce RTX 4070 (Simülasyon)</span>
+                    </div>
+                    <div class="status-pill secboot" id="secbootPill">
+                        <span class="pill-icon" id="secbootIcon">🔍</span>
+                        <span class="pill-label" id="secbootLabel">Scanning...</span>
+                    </div>
+                </div>
+
+                <!-- Secure Boot Info Banner -->
+                <div class="secboot-banner" id="secbootBanner" style="display: none;">
+                    <div class="secboot-banner-header">
+                        <span class="secboot-banner-icon" id="secbootBannerIcon"></span>
+                        <strong id="secbootBannerTitle"></strong>
+                    </div>
+                    <p id="secbootBannerDesc"></p>
+                </div>
+
+                <!-- Install Page -->
+                <div class="page active" id="page-install">
+                    <h2 class="page-title">Select Installation Type</h2>
+                    <p class="page-desc">Optimized options for your hardware.</p>
+
+                    <div class="cards-grid">
+                        <button class="action-card primary" id="btnExpress">
+                            <div class="card-header">
+                                <span class="card-icon">🚀</span>
+                                <h3>Express Install</h3>
+                                <span class="card-badge">Recommended</span>
+                            </div>
+                            <p class="card-desc">Automatically installs the latest stable NVIDIA driver (<strong
+                                    id="expressVersion">loading...</strong>).</p>
+                            <div class="card-shimmer"></div>
+                        </button>
+
+                        <button class="action-card" id="btnCustom">
+                            <div class="card-header">
+                                <span class="card-icon">🔧</span>
+                                <h3>Custom Install (Expert)</h3>
+                            </div>
+                            <p class="card-desc">Manually configure version, kernel type, and cleanup settings.</p>
+                            <div class="card-shimmer"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Express Confirm Dialog (inline page) -->
+                <div class="page" id="page-express-confirm">
+                    <div class="page-header-row">
+                        <button class="back-btn" id="btnBackFromExpress">← Back</button>
+                        <h2 class="page-title">Express Install — Confirm Options</h2>
+                    </div>
+
+                    <div class="confirm-card">
+                        <div class="confirm-row">
+                            <span class="confirm-label">Driver Version:</span>
+                            <span class="confirm-value" id="confirmVersion">—</span>
+                        </div>
+                        <div class="confirm-row">
+                            <span class="confirm-label">GPU:</span>
+                            <span class="confirm-value">NVIDIA GeForce RTX 4070 (Simülasyon)</span>
+                        </div>
+                        <div class="confirm-row">
+                            <span class="confirm-label">Secure Boot:</span>
+                            <span class="confirm-value" id="confirmSecboot">—</span>
+                        </div>
+
+                        <hr class="confirm-divider">
+
+                        <h3 class="confirm-section-title">Kernel Module Type</h3>
+                        <div class="radio-group">
+                            <label class="radio-row">
+                                <input type="radio" name="expressKernel" value="proprietary" checked>
+                                <div>
+                                    <strong>Proprietary (Closed Source)</strong>
+                                    <p class="radio-desc">Official NVIDIA binary driver. Best compatibility and
+                                        performance.</p>
+                                </div>
+                            </label>
+                            <label class="radio-row">
+                                <input type="radio" name="expressKernel" value="open">
+                                <div>
+                                    <strong>Open Kernel Module</strong>
+                                    <p class="radio-desc">NVIDIA open source kernel module. Requires Turing+ GPU (RTX
+                                        20xx/30xx/40xx). Experimental.</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="eula-notice" id="eulaNotice">
+                            <span>⚠️</span>
+                            <span>By installing the NVIDIA Proprietary driver, you agree to the <a
+                                    href="https://www.nvidia.com/en-us/drivers/nvidia-license/" target="_blank">NVIDIA
+                                    EULA</a>.</span>
+                        </div>
+
+                        <div class="confirm-actions">
+                            <button class="gradient-btn primary" id="btnConfirmExpress">Accept and Install</button>
+                            <button class="gradient-btn secondary" id="btnCancelExpress">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expert Page -->
+                <div class="page" id="page-expert">
+                    <div class="page-header-row">
+                        <button class="back-btn" id="btnBack">← Back</button>
+                        <h2 class="page-title">Expert Driver Management</h2>
+                    </div>
+
+                    <div class="version-selector">
+                        <h3>Select Driver Version</h3>
+                        <div class="version-list" id="versionList"></div>
+                    </div>
+
+                    <div class="expert-options">
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="openKernel">
+                            <span>Use Open Kernel Module</span>
+                        </label>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="deepClean">
+                            <span>Deep Clean (Remove previous configs)</span>
+                        </label>
+                    </div>
+
+                    <div class="expert-actions">
+                        <button class="gradient-btn primary" id="btnInstallSelected">Install Selected</button>
+                        <button class="gradient-btn danger" id="btnRemoveAll">Remove All Drivers</button>
+                    </div>
+                </div>
+
+                <!-- Performance Page -->
+                <div class="page" id="page-perf">
+                    <h2 class="page-title">Performance Monitor</h2>
+
+                    <div class="info-grid">
+                        <div class="info-card"><span class="info-icon">💻</span>
+                            <div>
+                                <div class="info-label">OS</div>
+                                <div class="info-value">Fedora 40 Workstation</div>
+                            </div>
+                        </div>
+                        <div class="info-card"><span class="info-icon">🔧</span>
+                            <div>
+                                <div class="info-label">Kernel</div>
+                                <div class="info-value">6.8.11-300.fc40</div>
+                            </div>
+                        </div>
+                        <div class="info-card"><span class="info-icon">⚙️</span>
+                            <div>
+                                <div class="info-label">CPU</div>
+                                <div class="info-value">AMD Ryzen 7 5800X</div>
+                            </div>
+                        </div>
+                        <div class="info-card"><span class="info-icon">🧠</span>
+                            <div>
+                                <div class="info-label">RAM</div>
+                                <div class="info-value">32 GB</div>
+                            </div>
+                        </div>
+                        <div class="info-card"><span class="info-icon">🎮</span>
+                            <div>
+                                <div class="info-label">GPU</div>
+                                <div class="info-value">NVIDIA RTX 4070 (Simülasyon)</div>
+                            </div>
+                        </div>
+                        <div class="info-card"><span class="info-icon">📊</span>
+                            <div>
+                                <div class="info-label">Display</div>
+                                <div class="info-value">Wayland</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="monitor-grid">
+                        <div class="monitor-section">
+                            <h3>🎮 Live GPU Status</h3>
+                            <div class="stat-row"><span class="stat-label">🌡 Temp</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill gpu-temp" id="gpuTemp"></div>
+                                </div><span class="stat-value" id="gpuTempVal">—</span>
+                            </div>
+                            <div class="stat-row"><span class="stat-label">⚡ Load</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill gpu-load" id="gpuLoad"></div>
+                                </div><span class="stat-value" id="gpuLoadVal">—</span>
+                            </div>
+                            <div class="stat-row"><span class="stat-label">💾 VRAM</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill vram" id="vramBar"></div>
+                                </div><span class="stat-value" id="vramBarVal">—</span>
+                            </div>
+                        </div>
+                        <div class="monitor-section">
+                            <h3>🖥 Live System Usage</h3>
+                            <div class="stat-row"><span class="stat-label">⚡ CPU</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill cpu-load" id="cpuLoad"></div>
+                                </div><span class="stat-value" id="cpuLoadVal">—</span>
+                            </div>
+                            <div class="stat-row"><span class="stat-label">🌡 CPU Temp</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill cpu-temp" id="cpuTemp"></div>
+                                </div><span class="stat-value" id="cpuTempVal">—</span>
+                            </div>
+                            <div class="stat-row"><span class="stat-label">🧠 RAM</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill ram" id="ramBar"></div>
+                                </div><span class="stat-value" id="ramBarVal">—</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="monitor-footer" id="monitorFooter">
+                        <span class="monitor-status-dot"></span>
+                        <span id="monitorStatusText">Waiting for data...</span>
+                    </div>
+                </div>
+
+                <!-- Progress Page -->
+                <div class="page" id="page-progress">
+                    <h2 class="page-title" id="progressTitle">Installation Progress</h2>
+
+                    <div class="progress-container">
+                        <div class="progress-bar-large">
+                            <div class="progress-fill-large" id="installProgress" style="width: 0%">
+                                <div class="progress-shimmer"></div>
+                            </div>
+                        </div>
+                        <div class="progress-percent" id="installPercent">0%</div>
+                    </div>
+
+                    <div class="steps-container" id="stepsContainer"></div>
+                    <div class="log-panel" id="logPanel">
+                        <pre id="logOutput"></pre>
+                    </div>
+
+                    <div class="progress-actions" id="progressActions" style="display: none;">
+                        <button class="gradient-btn primary" id="btnDone">Done</button>
+                        <button class="gradient-btn warning" id="btnReboot">Reboot Now</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- About Dialog -->
+        <div class="dialog-overlay" id="aboutDialog" style="display: none;">
+            <div class="dialog">
+                <img src="logo.svg" alt="ro-Control" class="dialog-logo" width="64" height="64">
+                <h2>ro-Control</h2>
+                <p class="dialog-version">v1.1.0 — Rust Edition</p>
+                <p class="dialog-desc">Smart GPU driver manager for Linux.<br>Built with Rust + Qt6/QML (CXX-Qt)</p>
+                <p class="dialog-org">ro-ASD</p>
+
+                <div class="dialog-changelog">
+                    <div class="changelog-tabs">
+                        <button class="changelog-tab active" data-ver="1.1.0">v1.1.0</button>
+                        <button class="changelog-tab" data-ver="1.0.0">v1.0.0</button>
+                    </div>
+                    <div class="changelog-content" id="changelog-1.1.0">
+                        <h4>v1.1.0 — Rust Edition UI Redesign</h4>
+                        <ul>
+                            <li>Premium Rust Edition visual identity</li>
+                            <li>Modern color palette (blue / purple / emerald)</li>
+                            <li>Express Install confirmation with kernel type selection</li>
+                            <li>Secure Boot status banner with explanations</li>
+                            <li>Security: root-task script hardened against command injection</li>
+                            <li>49 unit tests (+113% increase)</li>
+                            <li>Shared version parsing module</li>
+                            <li>All log messages standardized to English</li>
+                        </ul>
+                    </div>
+                    <div class="changelog-content" id="changelog-1.0.0" style="display: none;">
+                        <h4>v1.0.0 — Initial Rust Release</h4>
+                        <ul>
+                            <li>NVIDIA proprietary driver install via RPM Fusion (akmod-nvidia)</li>
+                            <li>NVIDIA Open Kernel module install</li>
+                            <li>Live GPU/CPU/RAM performance dashboard</li>
+                            <li>Feral GameMode integration</li>
+                            <li>Flatpak/Steam permission repair</li>
+                            <li>NVIDIA Wayland fix (nvidia-drm.modeset=1)</li>
+                            <li>Hybrid graphics switching</li>
+                            <li>Auto-update via GitHub Releases</li>
+                            <li>Turkish / English bilingual UI</li>
+                            <li>PolicyKit integration for secure privilege escalation</li>
+                            <li>Timeshift snapshot creation before driver operations</li>
+                        </ul>
+                    </div>
+                </div>
+                <button class="gradient-btn primary" id="closeAbout">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

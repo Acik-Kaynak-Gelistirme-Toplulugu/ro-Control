@@ -56,10 +56,10 @@ Item {
                     Layout.alignment: Qt.AlignHCenter
                     width: 96; height: 96; radius: 20
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: "#EF4444" }
-                        GradientStop { position: 1.0; color: "#DC2626" }
+                        GradientStop { position: 0.0; color: page.cPrimary }
+                        GradientStop { position: 1.0; color: page.cAccent }
                     }
-                    Controls.Label { anchors.centerIn: parent; text: "🦀"; font.pixelSize: 48 }
+                    Controls.Label { anchors.centerIn: parent; text: "🛡️"; font.pixelSize: 48 }
 
                     RotationAnimator on rotation { running: page.controller.is_installing; from: 0; to: 360; duration: 3000; loops: Animation.Infinite }
                     SequentialAnimation on scale {
@@ -79,7 +79,7 @@ Item {
                 RowLayout {
                     Layout.alignment: Qt.AlignHCenter; spacing: 8
                     Controls.Label { text: qsTr("This may take a few minutes •"); font.pixelSize: 16; color: page.cMutedFg }
-                    Controls.Label { text: "🦀 Rust Backend"; font.pixelSize: 16; font.weight: Font.Bold; color: "#EF4444" }
+                    Controls.Label { text: "Rust Edition"; font.pixelSize: 16; font.weight: Font.Bold; color: page.cPrimary }
                 }
             }
 
@@ -131,11 +131,11 @@ Item {
                         }
                         Controls.Label {
                             visible: page.controller.is_installing; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
-                            text: "🦀"; font.pixelSize: 18
-                            SequentialAnimation on scale {
+                            text: "●"; font.pixelSize: 14; color: "white"
+                            SequentialAnimation on opacity {
                                 running: page.controller.is_installing; loops: Animation.Infinite
-                                NumberAnimation { from: 1; to: 1.3; duration: 750 }
-                                NumberAnimation { from: 1.3; to: 1; duration: 750 }
+                                NumberAnimation { from: 1; to: 0.3; duration: 750 }
+                                NumberAnimation { from: 0.3; to: 1; duration: 750 }
                             }
                         }
                     }
@@ -249,8 +249,8 @@ Item {
 
                 GradientButton {
                     visible: !page.controller.is_installing && page.controller.install_progress >= 100
-                    text: "🔄 " + qsTr("Reboot Now"); Layout.fillWidth: true
-                    useGradient: true; gradientStart: "#EF4444"; gradientEnd: "#DC2626"
+                    text: qsTr("Reboot Now"); Layout.fillWidth: true
+                    useGradient: true; gradientStart: page.cWarning; gradientEnd: Qt.darker(page.cWarning, 1.2)
                     darkMode: page.darkMode
                     onClicked: page.controller.reboot_system()
                 }

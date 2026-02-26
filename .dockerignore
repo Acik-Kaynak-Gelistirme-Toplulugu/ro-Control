@@ -10,3 +10,4 @@ Dockerfile
 packaging/
 docs/
 frontend/
+tests/

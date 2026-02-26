@@ -40,7 +40,7 @@ Item {
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 960; spacing: 12
                 Controls.Label { text: qsTr("System Information"); font.pixelSize: 24; font.weight: Font.Bold; color: page.cFg }
-                Controls.Label { text: "🦀"; font.pixelSize: 24 }
+                Controls.Label { text: "Rust Edition"; font.pixelSize: 14; font.weight: Font.Bold; color: page.cPrimary }
             }
 
             // ── Info Grid ──
@@ -171,7 +171,7 @@ Item {
             // ── Update Indicator ──
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter; spacing: 8
-                Controls.Label { text: "🦀"; font.pixelSize: 14 }
+                Controls.Label { text: "●"; font.pixelSize: 14; color: page.cSuccess }
                 Controls.Label {
                     text: qsTr("Rust monitoring engine · Updating every 2 seconds")
                     font.pixelSize: 14; color: page.cMutedFg
