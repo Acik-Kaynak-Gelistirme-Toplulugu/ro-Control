@@ -4,6 +4,7 @@
 // Fedora/Linux native — no macOS simulation
 
 use crate::utils::command;
+use crate::utils::version;
 use regex::Regex;
 use std::collections::HashMap;
 use std::sync::{LazyLock, OnceLock};
@@ -113,8 +114,8 @@ pub fn detect_gpu() -> GpuInfo {
     }
 
     if info.vendor == "Unknown" || info.vendor.is_empty() {
-        info.vendor = "Sistem".into();
-        info.model = "Grafik Bağdaştırıcısı".into();
+        info.vendor = "System".into();
+        info.model = "Graphics Adapter".into();
     }
 
     // 2. Active driver via lspci -k
@@ -263,14 +264,7 @@ pub fn get_available_nvidia_versions() -> Vec<String> {
             .filter_map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
             .collect();
         // Proper numeric semver sort (descending)
-        versions.sort_by(|a, b| {
-            let parse = |v: &str| -> Vec<u32> {
-                v.split('.').filter_map(|s| s.parse::<u32>().ok()).collect()
-            };
-            let pa = parse(b); // reversed for descending
-            let pb = parse(a);
-            pa.cmp(&pb)
-        });
+        version::sort_versions_desc(&mut versions);
         versions.dedup();
         if !versions.is_empty() {
             return versions;
@@ -435,11 +429,7 @@ pub fn fetch_nvidia_versions_online() -> Vec<(String, String)> {
     }
 
     // Sort descending by version number
-    results.sort_by(|a, b| {
-        let parse =
-            |v: &str| -> Vec<u32> { v.split('.').filter_map(|s| s.parse::<u32>().ok()).collect() };
-        parse(&b.0).cmp(&parse(&a.0))
-    });
+    results.sort_by(|a, b| version::parse_version(&b.0).cmp(&version::parse_version(&a.0)));
 
     log::info!("Fetched {} NVIDIA versions from internet", results.len());
     results
@@ -525,9 +515,7 @@ pub fn get_merged_nvidia_versions() -> Vec<DriverVersion> {
 
     // Sort descending by version
     merged.sort_by(|a, b| {
-        let parse =
-            |v: &str| -> Vec<u32> { v.split('.').filter_map(|s| s.parse::<u32>().ok()).collect() };
-        parse(&b.version).cmp(&parse(&a.version))
+        version::parse_version(&b.version).cmp(&version::parse_version(&a.version))
     });
 
     // Mark first as latest

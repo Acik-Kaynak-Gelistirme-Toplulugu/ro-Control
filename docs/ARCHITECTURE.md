@@ -33,15 +33,13 @@ src/
 │       ├── CustomProgressBar.qml  ← Animated progress bar (thresholds, shimmer)
 │       ├── GradientButton.qml     ← Gradient/solid button with shimmer hover
 │       ├── StatusBar.qml          ← Header status pills (driver, GPU, SecBoot)
-│       ├── StepItem.qml           ← Installation step indicator (emoji status)
-│       ├── VersionRow.qml         ← Driver version list item
-│       ├── WarningBanner.qml      ← Alert banner (warning/error/success/info)
-│       └── StatRow.qml            ← Legacy stat display row
+│       └── StepItem.qml           ← Installation step indicator (emoji status)
 │
 └── utils/               ← Cross-cutting concerns
     ├── command.rs       ← Shell command execution wrapper
     ├── i18n.rs          ← TR/EN dictionary-based translation
-    └── logger.rs        ← Logging setup (simplelog with colored terminal output)
+    ├── logger.rs        ← Logging setup (simplelog with colored terminal output)
+    └── version.rs       ← Shared version parsing, comparison, and sorting
 ```
 
 ## Key Design Decisions
@@ -50,6 +48,8 @@ src/
 
 - Uses **PolicyKit** (`pkexec`) for root operations
 - A helper script (`scripts/ro-control-root-task`) wraps privileged commands
+- Shell metacharacters (pipes, semicolons, backticks, subshells) are **rejected** before allowlist check
+- Only whitelisted command prefixes are allowed to execute as root
 - The GUI process itself **never** runs as root
 
 ### 2. Driver Management

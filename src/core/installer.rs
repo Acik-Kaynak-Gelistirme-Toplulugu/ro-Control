@@ -319,3 +319,105 @@ impl DriverInstaller {
         true
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Helper: create a DriverInstaller with a known package manager
+    fn installer_with_pm(pm: Option<&'static str>) -> DriverInstaller {
+        DriverInstaller {
+            pkg_manager: pm,
+            log_callback: None,
+        }
+    }
+
+    #[test]
+    fn new_installer_has_no_log_callback() {
+        let inst = installer_with_pm(Some("dnf"));
+        assert!(inst.log_callback.is_none());
+    }
+
+    #[test]
+    fn update_initramfs_dnf() {
+        let inst = installer_with_pm(Some("dnf"));
+        let cmds = inst.update_initramfs_commands();
+        assert_eq!(cmds, vec!["dracut --force"]);
+    }
+
+    #[test]
+    fn update_initramfs_apt() {
+        let inst = installer_with_pm(Some("apt"));
+        let cmds = inst.update_initramfs_commands();
+        assert_eq!(cmds, vec!["update-initramfs -u"]);
+    }
+
+    #[test]
+    fn update_initramfs_pacman() {
+        let inst = installer_with_pm(Some("pacman"));
+        let cmds = inst.update_initramfs_commands();
+        assert_eq!(cmds, vec!["mkinitcpio -P"]);
+    }
+
+    #[test]
+    fn update_initramfs_zypper() {
+        let inst = installer_with_pm(Some("zypper"));
+        let cmds = inst.update_initramfs_commands();
+        assert_eq!(cmds, vec!["mkinitrd"]);
+    }
+
+    #[test]
+    fn update_initramfs_unknown_returns_empty() {
+        let inst = installer_with_pm(None);
+        let cmds = inst.update_initramfs_commands();
+        assert!(cmds.is_empty());
+    }
+
+    #[test]
+    fn backup_config_commands_format() {
+        let inst = installer_with_pm(Some("dnf"));
+        let cmds = inst.backup_config_commands();
+        assert_eq!(cmds.len(), 1);
+        assert!(cmds[0].contains("xorg.conf"));
+        assert!(cmds[0].contains("|| true"));
+    }
+
+    #[test]
+    fn prepare_install_chain_dnf_has_kernel_headers() {
+        let inst = installer_with_pm(Some("dnf"));
+        let chain = inst.prepare_install_chain();
+        // Should contain: backup, blacklist nouveau, kernel-devel
+        assert!(chain.iter().any(|c| c.contains("blacklist nouveau")));
+        assert!(chain.iter().any(|c| c.contains("kernel-devel")));
+    }
+
+    #[test]
+    fn prepare_install_chain_apt_has_linux_headers() {
+        let inst = installer_with_pm(Some("apt"));
+        let chain = inst.prepare_install_chain();
+        assert!(chain.iter().any(|c| c.contains("linux-headers")));
+    }
+
+    #[test]
+    fn finalize_chain_equals_initramfs() {
+        let inst = installer_with_pm(Some("dnf"));
+        assert_eq!(
+            inst.finalize_installation_chain(),
+            inst.update_initramfs_commands()
+        );
+    }
+
+    #[test]
+    fn set_log_callback_works() {
+        let mut inst = installer_with_pm(Some("dnf"));
+        let captured = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let captured_clone = captured.clone();
+        inst.set_log_callback(Box::new(move |msg| {
+            captured_clone.lock().unwrap().push(msg.to_string());
+        }));
+        inst.log("test message");
+        let logs = captured.lock().unwrap();
+        assert_eq!(logs.len(), 1);
+        assert_eq!(logs[0], "test message");
+    }
+}

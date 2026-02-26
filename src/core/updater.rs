@@ -62,7 +62,7 @@ pub fn check_for_updates() -> UpdateInfo {
     let latest_tag = release.tag_name.trim_start_matches('v').to_string();
     let current_ver = config::VERSION.trim_start_matches('v');
 
-    if compare_versions(&latest_tag, current_ver) > 0 {
+    if crate::utils::version::compare_versions(&latest_tag, current_ver) > 0 {
         // Find RPM asset (Fedora)
         let rpm_url = release
             .assets
@@ -98,7 +98,7 @@ pub fn download_and_install(url: &str) -> bool {
     // Download
     match ureq::get(url).call() {
         Ok(response) => {
-            let mut file = match std::fs::File::create(tmp_path) {
+            let mut file = match std::fs::File::create(&tmp_path) {
                 Ok(f) => f,
                 Err(e) => {
                     log::error!("Failed to create temp file: {}", e);
@@ -126,7 +126,7 @@ pub fn download_and_install(url: &str) -> bool {
     let (code, _, err) = crate::utils::command::run_full(&cmd);
 
     // Cleanup
-    let _ = std::fs::remove_file(tmp_path);
+    let _ = std::fs::remove_file(&tmp_path);
 
     if code == 0 {
         log::info!("Update installed successfully.");
@@ -137,25 +137,9 @@ pub fn download_and_install(url: &str) -> bool {
     }
 }
 
-/// Compare semver strings. Returns positive if v1 > v2.
+/// Compare semver strings. Delegates to shared utility.
 fn compare_versions(v1: &str, v2: &str) -> i32 {
-    let parse =
-        |v: &str| -> Vec<u32> { v.split('.').filter_map(|s| s.parse::<u32>().ok()).collect() };
-
-    let p1 = parse(v1);
-    let p2 = parse(v2);
-
-    for i in 0..p1.len().max(p2.len()) {
-        let a = p1.get(i).copied().unwrap_or(0);
-        let b = p2.get(i).copied().unwrap_or(0);
-        if a > b {
-            return 1;
-        }
-        if a < b {
-            return -1;
-        }
-    }
-    0
+    crate::utils::version::compare_versions(v1, v2)
 }
 
 #[cfg(test)]

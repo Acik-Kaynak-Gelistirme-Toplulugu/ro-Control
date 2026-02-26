@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 // Application-wide constants
 
 /// Reverse-domain App ID (FreeDesktop / Flatpak standard)

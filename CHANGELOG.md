@@ -34,6 +34,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Missing QML files in `build.rs` (CustomProgressBar, GradientButton, StatusBar)
 - `install_log` terminal panel restored in ProgressPage
 - `app_update_available` and `install_app_update()` properly connected in UI
+- **Security:** root-task script hardened against command injection (pipe, semicolon, backtick, subshell bypass)
+- **Security:** Update downloader uses unique temp file path to prevent TOCTOU race condition
+- RPM spec MSRV corrected from 1.70 to 1.82
+- All installer/tweaks log messages standardized to English (were mixed Turkish/English)
+- Hardcoded Turkish GPU fallback string replaced with English
+- `DESIGN_BRIEF.md` marked as v1.0 reference; v1.1 uses different design language
+- Removed stale `CODE_OF_CONDUCT.md` reference from CONTRIBUTING.md and README
+- Removed dangling screenshot TODO comment from README
+
+### Improved
+
+- Shared `utils::version` module — eliminates 4 duplicated version-parsing closures
+- Added 12 unit tests for `installer.rs` (initramfs commands, backup format, install chains)
+- Added 6 unit tests for `tweaks.rs` (meminfo parsing, defaults, UTF-8 truncation)
+- Added 11 unit tests for `utils::version` (parse, compare, sort)
+- Removed blanket `#![allow(dead_code)]` from `config.rs`
 
 [1.1.0]: https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases/tag/v1.1.0
 

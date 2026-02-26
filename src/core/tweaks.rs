@@ -251,3 +251,61 @@ fn num_cpus() -> usize {
         }
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_meminfo_value_normal() {
+        assert_eq!(parse_meminfo_value("MemTotal:       16384000 kB"), 16384000);
+    }
+
+    #[test]
+    fn parse_meminfo_value_empty_line() {
+        assert_eq!(parse_meminfo_value(""), 0);
+    }
+
+    #[test]
+    fn parse_meminfo_value_no_number() {
+        assert_eq!(parse_meminfo_value("MemTotal:"), 0);
+    }
+
+    #[test]
+    fn gpu_stats_default_is_zero() {
+        let stats = GpuStats::default();
+        assert_eq!(stats.temp, 0);
+        assert_eq!(stats.load, 0);
+        assert_eq!(stats.mem_used, 0);
+        assert_eq!(stats.mem_total, 0);
+    }
+
+    #[test]
+    fn system_stats_default_is_zero() {
+        let stats = SystemStats::default();
+        assert_eq!(stats.cpu_load, 0);
+        assert_eq!(stats.cpu_temp, 0);
+        assert_eq!(stats.ram_used, 0);
+        assert_eq!(stats.ram_total, 0);
+        assert_eq!(stats.ram_percent, 0);
+    }
+
+    #[test]
+    fn safe_utf8_truncation() {
+        // Test the truncation logic used in repair_flatpak_permissions
+        let text = "Hello, world! 🦀 Rust is great";
+        let limit = 15;
+        let truncated = if text.len() <= limit {
+            text
+        } else {
+            let mut end = limit;
+            while end > 0 && !text.is_char_boundary(end) {
+                end -= 1;
+            }
+            &text[..end]
+        };
+        assert!(truncated.len() <= limit);
+        // Should not panic on char boundary
+        let _ = truncated.to_string();
+    }
+}
