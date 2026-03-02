@@ -175,14 +175,27 @@ impl ffi::GpuController {
             let info = detector::detect_gpu();
             let versions = detector::get_available_nvidia_versions();
             let best = versions.first().cloned().unwrap_or_default();
-            let up_to_date = !best.is_empty() && info.driver_in_use.contains(&best);
+
+            // Get installed NVIDIA driver version (from modinfo or nvidia-smi)
+            let installed_version = crate::utils::command::run("modinfo -F version nvidia")
+                .or_else(|| {
+                    crate::utils::command::run("nvidia-smi --query-gpu=driver_version --format=csv,noheader")
+                })
+                .unwrap_or_default()
+                .trim()
+                .to_string();
+
+            let up_to_date = !best.is_empty()
+                && !installed_version.is_empty()
+                && installed_version == best;
             let versions_str = versions.join(",");
 
             log::info!(
-                "GPU detected: {} {} (driver: {})",
+                "GPU detected: {} {} (driver: {}, version: {})",
                 info.vendor,
                 info.model,
-                info.driver_in_use
+                info.driver_in_use,
+                if installed_version.is_empty() { "N/A" } else { &installed_version }
             );
 
             let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {
@@ -191,6 +204,9 @@ impl ffi::GpuController {
                 qobject
                     .as_mut()
                     .set_driver_in_use(QString::from(&info.driver_in_use));
+                qobject
+                    .as_mut()
+                    .set_driver_version(QString::from(&installed_version));
                 qobject.as_mut().set_secure_boot(info.secure_boot);
                 qobject.as_mut().set_best_version(QString::from(&best));
                 qobject.as_mut().set_is_up_to_date(up_to_date);
@@ -254,8 +270,8 @@ impl ffi::GpuController {
         if let Some(kernel_str) = kernel_str {
             let kernel_parts: Vec<u32> = kernel_str
                 .split(|c: char| !c.is_ascii_digit())
-                .take(2)
                 .filter_map(|s| s.parse().ok())
+                .take(2)
                 .collect();
             let (kmajor, kminor) = (
                 kernel_parts.first().copied().unwrap_or(0),

@@ -66,8 +66,8 @@ ro-Control, **Rust** ve **Qt6/QML** ([CXX-Qt](https://github.com/KDAB/cxx-qt)) i
 
 ### 🌍 Çoklu Dil Desteği
 
-- İngilizce ve Türkçe arayüz
-- Genişletilebilir çeviri sistemi
+- **17 dil desteği**: İngilizce, Türkçe, Almanca, İspanyolca, Fransızca, İtalyanca, Arapça, Japonca, Korece, Felemenkçe, Lehçe, Portekizce, Brezilya Portekizcesi, Rusça, Ukraynaca, Basitleştirilmiş Çince, Geleneksel Çince
+- Otomatik sistem dili algılama ile sözlük tabanlı çeviri sistemi
 
 ## Kurulum
 
@@ -133,7 +133,7 @@ ro-Control/
 │   │                       #     GradientButton, StatusBar, StepItem
 │   └── utils/              #   Yardımcı modüller
 │       ├── command.rs      #     Kabuk komut çalıştırıcı
-│       ├── i18n.rs         #     TR/EN çeviri sistemi
+│       ├── i18n.rs         #     Çoklu dil çeviri sistemi (17 dil)
 │       └── logger.rs       #     simplelog yapılandırması
 ├── data/                   # FreeDesktop veri dosyaları
 ├── packaging/              # RPM/Flatpak paketleme dosyaları

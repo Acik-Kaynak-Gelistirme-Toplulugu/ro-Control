@@ -19,6 +19,9 @@ BuildRequires:  pkgconfig(Qt6Quick)
 BuildRequires:  pkgconfig(Qt6Qml)
 BuildRequires:  qt6-qtdeclarative-devel
 BuildRequires:  kf6-qqc2-desktop-style
+BuildRequires:  qt6-qtwayland-devel
+
+ExclusiveArch:  x86_64
 
 Requires:       qt6-qtdeclarative%{?_isa}
 Requires:       qt6-qtwayland%{?_isa}
@@ -45,7 +48,7 @@ Flatpak/Steam permission repair, and NVIDIA Wayland support configuration.
 %autosetup -n ro-control-%{version}
 
 %build
-cargo build --release %{?_smp_mflags}
+cargo build --release
 
 %install
 # Binary
@@ -101,6 +104,9 @@ update-desktop-database %{_datadir}/applications &>/dev/null || :
 - Animated backgrounds, shimmer effects, gradient overlays
 - About dialog and app update dialog with release notes
 - Security: root-task script hardened against command injection
+- Theme.qml singleton with centralized color palette
+- 17-language internationalization (100%% coverage)
+- Comprehensive test suite (100+ unit tests)
 - All log messages standardized to English
 
 * Sat Feb 14 2026 Sopwith <sopwith.osdev@gmail.com> - 1.0.0-1
@@ -111,4 +117,4 @@ update-desktop-database %{_datadir}/applications &>/dev/null || :
 - Live GPU/CPU/RAM performance monitoring
 - NVIDIA Wayland nvidia-drm.modeset fix
 - GameMode and Flatpak repair tools
-- 16-language internationalization support
+- 17-language internationalization support

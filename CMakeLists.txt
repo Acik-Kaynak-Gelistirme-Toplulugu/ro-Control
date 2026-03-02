@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(ro-control VERSION 1.0.0)
+project(ro-control VERSION 1.1.0)
 
 # --- KDE Extra CMake Modules ---
 find_package(ECM 6.0 REQUIRED NO_MODULE)

@@ -3,45 +3,41 @@
 # Invoked by PolicyKit (pkexec) to run commands as root.
 # See: data/polkit/io.github.AcikKaynakGelistirmeToplulugu.ro-control.policy
 #
-# Usage: ro-control-root-task "dnf install -y akmod-nvidia"
+# Usage: ro-control-root-task "cmd1" "cmd2" "cmd3"
+#   Each argument is a single command. They are executed sequentially.
+#   If any command fails, execution stops and the exit code is propagated.
 #
-# SECURITY: Only commands starting with an allowed prefix are executed.
-# The allowlist is intentionally strict to prevent arbitrary root execution.
+# SECURITY: Only commands matching the allowlist are executed.
 # Shell metacharacters are rejected BEFORE allowlist matching.
 
-set -euo pipefail
+set -uo pipefail
+export LC_ALL=C
 
 if [ $# -eq 0 ]; then
-    echo "Error: No command provided." >&2
+    printf '%s\n' "Error: No command provided." >&2
     exit 1
 fi
 
 # ─── Dangerous Characters / Patterns ────────────────────────────
-# Reject ANY command containing shell metacharacters that could
+# Reject ANY argument containing shell metacharacters that could
 # bypass the allowlist via subshells, pipes, redirection, etc.
 DANGEROUS_PATTERNS=(
-    '|'       # pipe
+    '&'       # background / chaining (&, &&)
+    '|'       # pipe / or (|, ||)
     ';'       # command separator
     '`'       # backtick subshell
     '$('      # subshell expansion
     '${'      # variable expansion
     '>>'      # append redirect
-    '2>'      # stderr redirect (standalone, we allow '2>/dev/null' via &&)
+    '2>'      # stderr redirect
     '<('      # process substitution
     '>('      # process substitution
+    '>'       # stdout redirect (catch-all)
+    '"'       # double quote injection
+    "'"       # single quote injection
+    '\'       # backslash escape
+    $'\n'     # newline injection
 )
-
-for pattern in "${DANGEROUS_PATTERNS[@]}"; do
-    if [[ "$1" == *"$pattern"* ]]; then
-        echo "SECURITY: Blocked dangerous shell metacharacter: $pattern" >&2
-        exit 126
-    fi
-done
-
-# Allow controlled output redirection only for expected patterns
-# e.g. "2>/dev/null" is safe and used in some dnf commands
-# The above check blocks standalone "2>" but we re-allow "2>/dev/null"
-# by not including it if the full command doesn't match other patterns.
 
 # ─── Command Allowlist ───────────────────────────────────────────
 # Only these command prefixes are permitted to run as root.
@@ -60,52 +56,52 @@ ALLOWED_COMMANDS=(
     "^grubby "
     "^grub2-mkconfig "
     "^update-grub"
-    "^sed "
-    "^cp /etc/"
-    "^rm -f /etc/"
-    "^printf "
-    "^test "
-    "^\[ "
+    "^sed -i .*/etc/modprobe\.d/"
+    "^sed -i .*/etc/default/grub$"
+    "^cp /etc/X11/.* /etc/X11/"
+    "^cp /etc/default/grub /etc/default/grub\.bak"
+    "^cp /tmp/ro-control-.* /etc/"
+    "^rm -f /etc/modprobe\.d/"
+    "^rm -f /etc/X11/"
+    "^rm -f /etc/modules-load\.d/"
+    "^rm -f /etc/vulkan/"
+    "^rm -f /usr/share/vulkan/"
+    "^tee /etc/"
     "^timeshift "
     "^flatpak "
+    "^prime-select (nvidia|intel|on-demand|query)$"
 )
-
-# Validate each command in a '&&'-chained sequence
-validate_command() {
-    local cmd="$1"
-    local parts
-    # Split on ' && ' to handle chained commands
-    while IFS= read -r part; do
-        part="$(echo "$part" | sed 's/^[[:space:]]*//')"
-        [ -z "$part" ] && continue
-
-        # Strip trailing '|| true' which is safe (ignore errors)
-        part="$(echo "$part" | sed 's/ || true$//')"
-
-        local allowed=false
-        for pattern in "${ALLOWED_COMMANDS[@]}"; do
-            if echo "$part" | grep -qE "$pattern"; then
-                allowed=true
-                break
-            fi
-        done
-
-        if [ "$allowed" = false ]; then
-            echo "SECURITY: Blocked disallowed command: $part" >&2
-            return 1
-        fi
-    done <<< "$(echo "$cmd" | sed 's/ && /\n/g')"
-
-    return 0
-}
-
-if ! validate_command "$1"; then
-    echo "Error: Command rejected by security policy." >&2
-    exit 126
-fi
 
 # Non-interactive mode for package managers
 export DEBIAN_FRONTEND=noninteractive
 
-# Execute the validated command
-/bin/sh -c "$1"
+# ─── Validate and execute each argument ──────────────────────────
+for cmd in "$@"; do
+    # Check for dangerous patterns
+    for pattern in "${DANGEROUS_PATTERNS[@]}"; do
+        if [[ "$cmd" == *"$pattern"* ]]; then
+            printf 'SECURITY: Blocked dangerous character in: %s\n' "$cmd" >&2
+            exit 126
+        fi
+    done
+
+    # Check against allowlist
+    cmd_allowed=false
+    for pattern in "${ALLOWED_COMMANDS[@]}"; do
+        if printf '%s\n' "$cmd" | grep -qE "$pattern"; then
+            cmd_allowed=true
+            break
+        fi
+    done
+
+    if [ "$cmd_allowed" = false ]; then
+        printf 'SECURITY: Blocked disallowed command: %s\n' "$cmd" >&2
+        exit 126
+    fi
+
+    # Execute the validated command
+    if ! /bin/sh -c "$cmd"; then
+        printf 'ERROR: Command failed (exit %d): %s\n' "$?" "$cmd" >&2
+        exit 1
+    fi
+done

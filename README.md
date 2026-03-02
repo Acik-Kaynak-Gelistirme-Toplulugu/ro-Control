@@ -66,8 +66,8 @@ ro-Control is a native Linux desktop application built with **Rust** and **Qt6/Q
 
 ### 🌍 Internationalization
 
-- English and Turkish bilingual interface
-- Extensible translation system
+- **17 languages**: English, Türkçe, Deutsch, Español, Français, Italiano, العربية, 日本語, 한국어, Nederlands, Polski, Português, Português (Brasil), Русский, Українська, 简体中文, 繁體中文
+- Dictionary-based translation system with automatic locale detection
 
 ## Installation
 
@@ -133,7 +133,7 @@ ro-Control/
 │   │                       #     GradientButton, StatusBar, StepItem
 │   └── utils/              #   Shared utilities
 │       ├── command.rs      #     Shell command runner
-│       ├── i18n.rs         #     TR/EN translation system
+│       ├── i18n.rs         #     Multi-language translation (17 langs)
 │       └── logger.rs       #     simplelog setup
 ├── data/                   # FreeDesktop data files
 │   ├── icons/              #   Hicolor theme icons (scalable + symbolic SVG)
@@ -182,7 +182,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a technical overview of the
 
 ro-Control supports multiple languages. See the [Contributing Guide](CONTRIBUTING.md#-translations) for instructions on adding new translations.
 
-Currently supported: **English**, **Türkçe**
+Currently supported: **English**, **Türkçe**, **Deutsch**, **Español**, **Français**, **Italiano**, **العربية**, **日本語**, **한국어**, **Nederlands**, **Polski**, **Português**, **Português (Brasil)**, **Русский**, **Українська**, **简体中文**, **繁體中文**
 
 ## License
 

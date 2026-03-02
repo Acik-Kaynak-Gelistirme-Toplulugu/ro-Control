@@ -63,3 +63,65 @@ v1.0.0  — Initial Rust release
   • Auto-update via GitHub Releases
   • Turkish / English bilingual UI
 ";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn version_is_set() {
+        assert!(!VERSION.is_empty(), "VERSION must not be empty");
+        // Should look like semver: at least one digit and one dot
+        assert!(
+            VERSION.contains('.'),
+            "VERSION should be semver: {}",
+            VERSION
+        );
+    }
+
+    #[test]
+    fn app_id_is_reverse_domain() {
+        assert!(
+            APP_ID.chars().filter(|&c| c == '.').count() >= 2,
+            "APP_ID must be reverse-domain notation"
+        );
+        assert!(APP_ID.starts_with("io.github."));
+    }
+
+    #[test]
+    fn github_repo_has_owner_and_name() {
+        assert!(GITHUB_REPO.contains('/'), "GITHUB_REPO must be owner/repo");
+        let parts: Vec<&str> = GITHUB_REPO.split('/').collect();
+        assert_eq!(parts.len(), 2);
+        assert!(!parts[0].is_empty());
+        assert!(!parts[1].is_empty());
+    }
+
+    #[test]
+    fn urls_are_https() {
+        assert!(HOMEPAGE.starts_with("https://"));
+        assert!(ISSUE_URL.starts_with("https://"));
+    }
+
+    #[test]
+    fn window_dimensions_sane() {
+        assert!(DEFAULT_WIDTH > 0 && DEFAULT_WIDTH < 10000);
+        assert!(DEFAULT_HEIGHT > 0 && DEFAULT_HEIGHT < 10000);
+    }
+
+    #[test]
+    fn changelog_is_not_empty() {
+        assert!(!CHANGELOG.is_empty());
+        assert!(CHANGELOG.contains("v1."));
+    }
+
+    #[test]
+    fn names_are_set() {
+        assert!(!APP_NAME.is_empty());
+        assert!(!PRETTY_NAME.is_empty());
+        assert!(!DEVELOPER_NAME.is_empty());
+        assert!(!MAINTAINER.is_empty());
+        assert!(!DESCRIPTION.is_empty());
+        assert!(!DESCRIPTION_TR.is_empty());
+    }
+}

@@ -8,6 +8,15 @@ use crate::utils::version;
 use regex::Regex;
 use std::collections::HashMap;
 use std::sync::{LazyLock, OnceLock};
+use std::time::Duration;
+
+/// HTTP agent with a 30-second global timeout.
+fn http_agent() -> ureq::Agent {
+    let config = ureq::Agent::config_builder()
+        .timeout_global(Some(Duration::from_secs(30)))
+        .build();
+    config.into()
+}
 
 /// Cached OS info — read once from /etc/os-release.
 static OS_INFO_CACHE: OnceLock<OsInfo> = OnceLock::new();
@@ -62,6 +71,126 @@ pub struct OsInfo {
     pub name: String,
 }
 
+/// Parse `lspci -vmm` output into a `GpuInfo` (vendor + model only).
+///
+/// Extracts VGA / 3D / Display controller devices, prioritising
+/// NVIDIA > AMD > Intel when multiple GPUs are present (e.g. hybrid laptops).
+pub fn parse_lspci_vmm(output: &str) -> GpuInfo {
+    let mut info = GpuInfo {
+        vendor: "Unknown".into(),
+        model: "Unknown".into(),
+        driver_in_use: "Unknown".into(),
+        secure_boot: false,
+    };
+
+    // Collect all GPU devices with their priority (lower = better)
+    // NVIDIA=0, AMD=1, Intel=2, Other=3
+    let mut best_priority: u8 = u8::MAX;
+
+    let devices: Vec<&str> = output.split("\n\n").collect();
+    for device in devices {
+        if device.contains("VGA")
+            || device.contains("3D controller")
+            || device.contains("Display controller")
+        {
+            let mut details: HashMap<&str, &str> = HashMap::new();
+            for line in device.lines() {
+                if let Some((key, val)) = line.split_once(':') {
+                    details.insert(key.trim(), val.trim());
+                }
+            }
+
+            let vendor = details.get("Vendor").copied().unwrap_or("");
+            let device_name = details.get("Device").copied().unwrap_or("");
+
+            let (canonical, priority) = if vendor.contains("NVIDIA") {
+                ("NVIDIA", 0u8)
+            } else if vendor.contains("Advanced Micro Devices") || vendor.contains("AMD") {
+                ("AMD", 1)
+            } else if vendor.contains("Intel") {
+                ("Intel", 2)
+            } else {
+                // Unknown but still a display device — lowest priority
+                if best_priority == u8::MAX {
+                    info.vendor = vendor.to_string();
+                    info.model = device_name.to_string();
+                    best_priority = 3;
+                }
+                continue;
+            };
+
+            if priority < best_priority {
+                best_priority = priority;
+                info.vendor = canonical.into();
+                info.model = device_name.to_string();
+            }
+        }
+    }
+
+    if info.vendor == "Unknown" || info.vendor.is_empty() {
+        info.vendor = "System".into();
+        info.model = "Graphics Adapter".into();
+    }
+
+    info
+}
+
+/// Parse `lspci -k` output to find the kernel driver in use for the
+/// first VGA or 3D controller device.
+pub fn parse_lspci_driver(output: &str) -> Option<String> {
+    let mut capture_next = false;
+    for line in output.lines() {
+        if line.contains("VGA") || line.contains("3D controller") {
+            capture_next = true;
+        }
+        if capture_next && line.contains("Kernel driver in use:") {
+            if let Some((_, driver)) = line.split_once(':') {
+                return Some(driver.trim().to_string());
+            }
+        }
+    }
+    None
+}
+
+/// Parse `/etc/os-release` contents into an `OsInfo`.
+pub fn parse_os_release(contents: &str) -> OsInfo {
+    let mut info = OsInfo {
+        id: "linux".into(),
+        version: "unknown".into(),
+        name: "Linux".into(),
+    };
+
+    let mut fields: HashMap<String, String> = HashMap::new();
+    for line in contents.lines() {
+        if let Some((k, v)) = line.split_once('=') {
+            fields.insert(k.to_string(), v.trim_matches('"').to_string());
+        }
+    }
+    if let Some(id) = fields.get("ID") {
+        info.id = id.clone();
+    }
+    if let Some(ver) = fields.get("VERSION_ID") {
+        info.version = ver.clone();
+    }
+    if let Some(name) = fields.get("PRETTY_NAME") {
+        info.name = name.clone();
+    }
+
+    info
+}
+
+/// Parse DNF `akmod-nvidia` output and return sorted, deduplicated versions.
+pub fn parse_akmod_versions(output: &str) -> Vec<String> {
+    let re = &*RE_AKMOD_VERSION;
+    let mut versions: Vec<String> = re
+        .captures_iter(output)
+        .filter_map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
+        .collect();
+    version::sort_versions_desc(&mut versions);
+    versions.dedup();
+    versions
+}
+
 /// Detect GPU information using lspci.
 pub fn detect_gpu() -> GpuInfo {
     let mut info = GpuInfo {
@@ -74,42 +203,9 @@ pub fn detect_gpu() -> GpuInfo {
     // 1. GPU Detection via lspci -vmm
     if command::which("lspci") {
         if let Some(output) = command::run("lspci -vmm") {
-            let devices: Vec<&str> = output.split("\n\n").collect();
-            for device in devices {
-                if device.contains("VGA")
-                    || device.contains("3D controller")
-                    || device.contains("Display controller")
-                {
-                    let mut details: HashMap<&str, &str> = HashMap::new();
-                    for line in device.lines() {
-                        if let Some((key, val)) = line.split_once(':') {
-                            details.insert(key.trim(), val.trim());
-                        }
-                    }
-
-                    let vendor = details.get("Vendor").copied().unwrap_or("");
-                    let device_name = details.get("Device").copied().unwrap_or("");
-
-                    if info.vendor == "Unknown" {
-                        info.vendor = vendor.to_string();
-                        info.model = device_name.to_string();
-                    }
-
-                    if vendor.contains("NVIDIA") {
-                        info.vendor = "NVIDIA".into();
-                        info.model = device_name.to_string();
-                        break;
-                    } else if vendor.contains("Advanced Micro Devices") || vendor.contains("AMD") {
-                        info.vendor = "AMD".into();
-                        info.model = device_name.to_string();
-                        break;
-                    } else if vendor.contains("Intel") {
-                        info.vendor = "Intel".into();
-                        info.model = device_name.to_string();
-                        break;
-                    }
-                }
-            }
+            let parsed = parse_lspci_vmm(&output);
+            info.vendor = parsed.vendor;
+            info.model = parsed.model;
         }
     }
 
@@ -121,17 +217,8 @@ pub fn detect_gpu() -> GpuInfo {
     // 2. Active driver via lspci -k
     if command::which("lspci") {
         if let Some(output) = command::run("lspci -k") {
-            let mut capture_next = false;
-            for line in output.lines() {
-                if line.contains("VGA") || line.contains("3D controller") {
-                    capture_next = true;
-                }
-                if capture_next && line.contains("Kernel driver in use:") {
-                    if let Some((_, driver)) = line.split_once(':') {
-                        info.driver_in_use = driver.trim().to_string();
-                        break;
-                    }
-                }
+            if let Some(driver) = parse_lspci_driver(&output) {
+                info.driver_in_use = driver;
             }
         }
     }
@@ -169,31 +256,15 @@ pub fn get_full_system_info() -> SystemInfo {
 pub fn detect_os() -> OsInfo {
     OS_INFO_CACHE
         .get_or_init(|| {
-            let mut info = OsInfo {
-                id: "linux".into(),
-                version: "unknown".into(),
-                name: "Linux".into(),
-            };
-
             if let Ok(contents) = std::fs::read_to_string("/etc/os-release") {
-                let mut fields: HashMap<String, String> = HashMap::new();
-                for line in contents.lines() {
-                    if let Some((k, v)) = line.split_once('=') {
-                        fields.insert(k.to_string(), v.trim_matches('"').to_string());
-                    }
-                }
-                if let Some(id) = fields.get("ID") {
-                    info.id = id.clone();
-                }
-                if let Some(ver) = fields.get("VERSION_ID") {
-                    info.version = ver.clone();
-                }
-                if let Some(name) = fields.get("PRETTY_NAME") {
-                    info.name = name.clone();
+                parse_os_release(&contents)
+            } else {
+                OsInfo {
+                    id: "linux".into(),
+                    version: "unknown".into(),
+                    name: "Linux".into(),
                 }
             }
-
-            info
         })
         .clone()
 }
@@ -255,17 +326,8 @@ pub fn is_rpmfusion_nvidia_enabled() -> bool {
 
 /// Get available NVIDIA driver versions from DNF.
 pub fn get_available_nvidia_versions() -> Vec<String> {
-    // On Fedora, NVIDIA driver is provided via RPM Fusion as "akmod-nvidia"
-    // We check available versions from dnf
     if let Some(output) = command::run("dnf list available 'akmod-nvidia*' 2>/dev/null") {
-        let re = &*RE_AKMOD_VERSION;
-        let mut versions: Vec<String> = re
-            .captures_iter(&output)
-            .filter_map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
-            .collect();
-        // Proper numeric semver sort (descending)
-        version::sort_versions_desc(&mut versions);
-        versions.dedup();
+        let versions = parse_akmod_versions(&output);
         if !versions.is_empty() {
             return versions;
         }
@@ -351,7 +413,11 @@ pub fn fetch_nvidia_versions_online() -> Vec<(String, String)> {
     // We query the NVIDIA download API for Linux x86_64 drivers
     let url = "https://www.nvidia.com/Download/processFind.aspx?psid=107&pfid=815&osid=12&lid=1&whql=&lang=en-us&ctk=0&qnfslb=00&dtcid=1";
 
-    match ureq::get(url).header("User-Agent", "ro-control/1.0").call() {
+    match http_agent()
+        .get(url)
+        .header("User-Agent", "ro-control/1.0")
+        .call()
+    {
         Ok(mut resp) => {
             if let Ok(body) = resp.body_mut().read_to_string() {
                 let re = &*RE_NVIDIA_WEB_VERSION;
@@ -380,7 +446,8 @@ pub fn fetch_nvidia_versions_online() -> Vec<(String, String)> {
     // Strategy 2: RPM Fusion Bodhi API (Fedora-specific, more installable info)
     if results.len() < 3 {
         let bodhi_url = "https://bodhi.fedoraproject.org/updates/?search=akmod-nvidia&status=stable&rows_per_page=10&content_type=rpm";
-        match ureq::get(bodhi_url)
+        match http_agent()
+            .get(bodhi_url)
             .header("User-Agent", "ro-control/1.0")
             .call()
         {
@@ -532,6 +599,8 @@ pub fn get_merged_nvidia_versions() -> Vec<DriverVersion> {
 mod tests {
     use super::*;
 
+    // ── GpuInfo / OsInfo defaults ───────────────────────────────────
+
     #[test]
     fn gpu_info_default_is_unknown() {
         let info = GpuInfo::default();
@@ -548,16 +617,248 @@ mod tests {
         assert!(info.name.is_empty());
     }
 
+    // ── parse_lspci_vmm ─────────────────────────────────────────────
+
+    #[test]
+    fn parse_lspci_vmm_nvidia() {
+        let output = "\
+Slot:\t01:00.0
+Class:\tVGA compatible controller
+Vendor:\tNVIDIA Corporation
+Device:\tGA106 [GeForce RTX 3060 Lite Hash Rate]
+SVendor:\tMicro-Star International Co., Ltd.
+SDevice:\tGA106 [GeForce RTX 3060 Lite Hash Rate]
+Rev:\ta1";
+        let info = parse_lspci_vmm(output);
+        assert_eq!(info.vendor, "NVIDIA");
+        assert_eq!(info.model, "GA106 [GeForce RTX 3060 Lite Hash Rate]");
+    }
+
+    #[test]
+    fn parse_lspci_vmm_amd() {
+        let output = "\
+Slot:\t06:00.0
+Class:\tVGA compatible controller
+Vendor:\tAdvanced Micro Devices, Inc. [AMD/ATI]
+Device:\tEllesmere [Radeon RX 470/480/570/580]
+Rev:\te7";
+        let info = parse_lspci_vmm(output);
+        assert_eq!(info.vendor, "AMD");
+        assert!(info.model.contains("Ellesmere"));
+    }
+
+    #[test]
+    fn parse_lspci_vmm_intel() {
+        let output = "\
+Slot:\t00:02.0
+Class:\tVGA compatible controller
+Vendor:\tIntel Corporation
+Device:\tUHD Graphics 630
+Rev:\t00";
+        let info = parse_lspci_vmm(output);
+        assert_eq!(info.vendor, "Intel");
+        assert_eq!(info.model, "UHD Graphics 630");
+    }
+
+    #[test]
+    fn parse_lspci_vmm_prefers_nvidia_over_intel() {
+        let output = "\
+Slot:\t00:02.0
+Class:\tVGA compatible controller
+Vendor:\tIntel Corporation
+Device:\tUHD Graphics 630
+Rev:\t00
+
+Slot:\t01:00.0
+Class:\t3D controller
+Vendor:\tNVIDIA Corporation
+Device:\tGV100GL [Tesla V100]
+Rev:\ta1";
+        let info = parse_lspci_vmm(output);
+        assert_eq!(info.vendor, "NVIDIA");
+        assert!(info.model.contains("Tesla V100"));
+    }
+
+    #[test]
+    fn parse_lspci_vmm_no_gpu() {
+        let output = "\
+Slot:\t00:1f.3
+Class:\tAudio device
+Vendor:\tIntel Corporation
+Device:\tCannon Lake PCH cAVS";
+        let info = parse_lspci_vmm(output);
+        assert_eq!(info.vendor, "System");
+        assert_eq!(info.model, "Graphics Adapter");
+    }
+
+    #[test]
+    fn parse_lspci_vmm_empty() {
+        let info = parse_lspci_vmm("");
+        assert_eq!(info.vendor, "System");
+        assert_eq!(info.model, "Graphics Adapter");
+    }
+
+    // ── parse_lspci_driver ──────────────────────────────────────────
+
+    #[test]
+    fn parse_lspci_driver_nvidia() {
+        let output = "\
+01:00.0 VGA compatible controller: NVIDIA Corporation GA106
+\tSubsystem: Micro-Star International
+\tKernel driver in use: nvidia
+\tKernel modules: nvidia";
+        assert_eq!(parse_lspci_driver(output), Some("nvidia".into()));
+    }
+
+    #[test]
+    fn parse_lspci_driver_nouveau() {
+        let output = "\
+01:00.0 VGA compatible controller: NVIDIA Corporation
+\tKernel driver in use: nouveau";
+        assert_eq!(parse_lspci_driver(output), Some("nouveau".into()));
+    }
+
+    #[test]
+    fn parse_lspci_driver_none() {
+        let output = "\
+00:1f.3 Audio device: Intel Corporation Cannon Lake PCH cAVS
+\tKernel driver in use: snd_hda_intel";
+        assert_eq!(parse_lspci_driver(output), None);
+    }
+
+    // ── parse_os_release ────────────────────────────────────────────
+
+    #[test]
+    fn parse_os_release_fedora() {
+        let contents = r#"NAME="Fedora Linux"
+VERSION="41 (Workstation Edition)"
+ID=fedora
+VERSION_ID=41
+PRETTY_NAME="Fedora Linux 41 (Workstation Edition)"
+HOME_URL="https://fedoraproject.org/"
+"#;
+        let info = parse_os_release(contents);
+        assert_eq!(info.id, "fedora");
+        assert_eq!(info.version, "41");
+        assert_eq!(info.name, "Fedora Linux 41 (Workstation Edition)");
+    }
+
+    #[test]
+    fn parse_os_release_ubuntu() {
+        let contents = r#"PRETTY_NAME="Ubuntu 24.04.1 LTS"
+NAME="Ubuntu"
+VERSION_ID="24.04"
+ID=ubuntu
+"#;
+        let info = parse_os_release(contents);
+        assert_eq!(info.id, "ubuntu");
+        assert_eq!(info.version, "24.04");
+    }
+
+    #[test]
+    fn parse_os_release_arch() {
+        let contents = "NAME=\"Arch Linux\"\nID=arch\n";
+        let info = parse_os_release(contents);
+        assert_eq!(info.id, "arch");
+        assert_eq!(info.version, "unknown"); // Arch has no VERSION_ID
+        assert_eq!(info.name, "Linux"); // No PRETTY_NAME in this snippet
+    }
+
+    #[test]
+    fn parse_os_release_empty() {
+        let info = parse_os_release("");
+        assert_eq!(info.id, "linux");
+        assert_eq!(info.version, "unknown");
+        assert_eq!(info.name, "Linux");
+    }
+
+    // ── parse_akmod_versions ────────────────────────────────────────
+
+    #[test]
+    fn parse_akmod_versions_typical() {
+        let output = "\
+Last metadata expiration check: 0:12:34 ago.
+Available Packages
+akmod-nvidia.x86_64              3:565.57.01-1.fc41    rpmfusion-nonfree-nvidia-driver
+akmod-nvidia.x86_64              3:550.120-1.fc41      rpmfusion-nonfree-nvidia-driver
+akmod-nvidia.x86_64              3:535.183.01-1.fc41   rpmfusion-nonfree-nvidia-driver
+";
+        let versions = parse_akmod_versions(output);
+        assert_eq!(versions.len(), 3);
+        assert_eq!(versions[0], "565.57.01");
+        assert_eq!(versions[1], "550.120");
+        assert_eq!(versions[2], "535.183.01");
+    }
+
+    #[test]
+    fn parse_akmod_versions_empty_output() {
+        assert!(parse_akmod_versions("").is_empty());
+        assert!(parse_akmod_versions("No packages found.").is_empty());
+    }
+
+    #[test]
+    fn parse_akmod_versions_dedup() {
+        let output = "\
+akmod-nvidia.x86_64  3:550.120-1.fc41  repo1
+akmod-nvidia.x86_64  3:550.120-1.fc41  repo2
+";
+        let versions = parse_akmod_versions(output);
+        assert_eq!(versions.len(), 1);
+        assert_eq!(versions[0], "550.120");
+    }
+
+    // ── Regex pattern tests ─────────────────────────────────────────
+
+    #[test]
+    fn re_akmod_version_pattern() {
+        let re = &*RE_AKMOD_VERSION;
+        let input = "akmod-nvidia.x86_64  3:565.57.01-1.fc41  rpmfusion";
+        let caps = re.captures(input).unwrap();
+        assert_eq!(caps.get(1).unwrap().as_str(), "565.57.01");
+    }
+
+    #[test]
+    fn re_changelog_version_pattern() {
+        let re = &*RE_CHANGELOG_VERSION;
+
+        let input1 = "* Sat Nov 16 2024 Leigh Scott - 565.57.01-1";
+        let caps1 = re.captures(input1).unwrap();
+        assert_eq!(caps1.get(1).unwrap().as_str(), "565.57.01");
+
+        let input2 = "Update to 550";
+        let caps2 = re.captures(input2).unwrap();
+        assert_eq!(caps2.get(2).unwrap().as_str(), "550");
+    }
+
+    #[test]
+    fn re_nvidia_web_version_pattern() {
+        let re = &*RE_NVIDIA_WEB_VERSION;
+        let input = "Linux x64 (AMD64/EM64T) Display Driver Version 565.77";
+        let caps = re.captures(input).unwrap();
+        assert_eq!(caps.get(1).unwrap().as_str(), "565.77");
+    }
+
+    // ── Package manager mapping ─────────────────────────────────────
+
     #[test]
     fn package_manager_maps_fedora() {
-        // This test verifies the mapping logic directly
         let test_ids = vec![
             ("fedora", Some("dnf")),
             ("rhel", Some("dnf")),
+            ("centos", Some("dnf")),
+            ("rocky", Some("dnf")),
+            ("almalinux", Some("dnf")),
             ("ubuntu", Some("apt")),
             ("debian", Some("apt")),
+            ("linuxmint", Some("apt")),
+            ("pop", Some("apt")),
             ("arch", Some("pacman")),
+            ("manjaro", Some("pacman")),
+            ("endeavouros", Some("pacman")),
             ("opensuse", Some("zypper")),
+            ("sles", Some("zypper")),
+            ("opensuse-leap", Some("zypper")),
+            ("opensuse-tumbleweed", Some("zypper")),
             ("unknown_distro", None),
         ];
 
@@ -575,9 +876,24 @@ mod tests {
 
     #[test]
     fn display_server_fallback() {
-        // Test the fallback logic directly without mutating environment
         let ds =
             std::env::var("XDG_SESSION_TYPE_NONEXISTENT_KEY").unwrap_or_else(|_| "Unknown".into());
         assert_eq!(ds, "Unknown");
+    }
+
+    // ── DriverVersion construction ──────────────────────────────────
+
+    #[test]
+    fn driver_version_struct() {
+        let dv = DriverVersion {
+            version: "565.57.01".into(),
+            source: "merged".into(),
+            release_notes: "Test notes".into(),
+            is_latest: true,
+            installable: true,
+        };
+        assert!(dv.is_latest);
+        assert!(dv.installable);
+        assert_eq!(dv.source, "merged");
     }
 }

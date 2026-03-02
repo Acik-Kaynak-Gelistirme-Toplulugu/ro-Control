@@ -37,7 +37,7 @@ src/
 │
 └── utils/               ← Cross-cutting concerns
     ├── command.rs       ← Shell command execution wrapper
-    ├── i18n.rs          ← TR/EN dictionary-based translation
+    ├── i18n.rs          ← Multi-language dictionary (17 languages)
     ├── logger.rs        ← Logging setup (simplelog with colored terminal output)
     └── version.rs       ← Shared version parsing, comparison, and sorting
 ```
@@ -67,10 +67,12 @@ src/
 
 ### 4. Translation
 
-- Simple dictionary-based system using `OnceLock<HashMap>`
+- Dictionary-based system using `OnceLock<HashMap>` with 17 languages
 - Detects system language from `LANG` / `LC_ALL` environment variables
-- Fallback: English
-- Future: optional gettext support for community translations
+- Supported: English, Turkish, German, Spanish, French, Italian, Arabic,
+  Japanese, Korean, Dutch, Polish, Portuguese, Brazilian Portuguese,
+  Russian, Ukrainian, Simplified Chinese, Traditional Chinese
+- Fallback chain: user locale → English → `"???"`
 
 ### 5. Packaging
 

@@ -28,6 +28,11 @@ RUN dnf install -y \
     && dnf clean all
 
 COPY --from=builder /app/target/release/ro-control /usr/bin/ro-control
-COPY --from=builder /app/data/ /usr/share/ro-control/data/
+COPY --from=builder /app/scripts/ro-control-root-task /usr/bin/ro-control-root-task
+COPY --from=builder /app/data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.desktop /usr/share/applications/io.github.AcikKaynakGelistirmeToplulugu.ro-control.desktop
+COPY --from=builder /app/data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.metainfo.xml /usr/share/metainfo/io.github.AcikKaynakGelistirmeToplulugu.ro-control.metainfo.xml
+COPY --from=builder /app/data/polkit/io.github.AcikKaynakGelistirmeToplulugu.ro-control.policy /usr/share/polkit-1/actions/io.github.AcikKaynakGelistirmeToplulugu.ro-control.policy
+COPY --from=builder /app/data/io.github.AcikKaynakGelistirmeToplulugu.ro-control.gschema.xml /usr/share/glib-2.0/schemas/io.github.AcikKaynakGelistirmeToplulugu.ro-control.gschema.xml
+COPY --from=builder /app/data/icons/ /usr/share/icons/
 
 ENTRYPOINT ["ro-control"]

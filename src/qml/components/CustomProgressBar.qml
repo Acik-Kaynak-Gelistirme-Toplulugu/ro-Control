@@ -1,6 +1,8 @@
+// qmllint disable unqualified
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as Controls
+import io.github.AcikKaynakGelistirmeToplulugu.rocontrol
 
 Item {
     id: root
@@ -11,14 +13,7 @@ Item {
     property int thresholdYellow: 60
     property int thresholdRed: 85
     property bool animated: true
-    property bool darkMode: false
 
-    readonly property color cFg:      darkMode ? "#e2e8f0" : "#1a1d23"
-    readonly property color cMutedFg: darkMode ? "#94a3b8" : "#64748b"
-    readonly property color cMuted:   darkMode ? "#1e293b" : "#f1f5f9"
-    readonly property color cSuccess: darkMode ? "#34d399" : "#10b981"
-    readonly property color cWarning: darkMode ? "#fbbf24" : "#f59e0b"
-    readonly property color cError:   darkMode ? "#f87171" : "#ef4444"
 
     implicitHeight: label !== "" || showValue ? 60 : 40
 
@@ -32,14 +27,14 @@ Item {
             Controls.Label {
                 visible: root.label !== ""
                 text: root.label
-                font.pixelSize: 14; font.weight: Font.Medium; color: root.cFg
+                font.pixelSize: 14; font.weight: Font.Medium; color: Theme.foreground
             }
             Item { Layout.fillWidth: true }
             Controls.Label {
                 visible: root.showValue
                 text: root.value + "%"
                 font.pixelSize: 14; font.weight: Font.Bold
-                color: root.cMutedFg; font.family: "monospace"
+                color: Theme.mutedForeground; font.family: "monospace"
 
                 scale: _valTimer.running ? 1.2 : 1.0
                 Behavior on scale { NumberAnimation { duration: 150 } }
@@ -48,7 +43,7 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true; Layout.preferredHeight: 10
-            radius: 5; color: root.cMuted
+            radius: 5; color: Theme.muted
 
             Rectangle {
                 id: _fill
@@ -58,13 +53,13 @@ Item {
                 gradient: Gradient {
                     GradientStop {
                         position: 0.0
-                        color: root.value >= root.thresholdRed ? root.cError :
-                               (root.value >= root.thresholdYellow ? root.cWarning : root.cSuccess)
+                        color: root.value >= root.thresholdRed ? Theme.error :
+                               (root.value >= root.thresholdYellow ? Theme.warning : Theme.success)
                     }
                     GradientStop {
                         position: 1.0
-                        color: root.value >= root.thresholdRed ? Qt.darker(root.cError, 1.2) :
-                               (root.value >= root.thresholdYellow ? Qt.darker(root.cWarning, 1.2) : Qt.darker(root.cSuccess, 1.2))
+                        color: root.value >= root.thresholdRed ? Qt.darker(Theme.error, 1.2) :
+                               (root.value >= root.thresholdYellow ? Qt.darker(Theme.warning, 1.2) : Qt.darker(Theme.success, 1.2))
                     }
                     orientation: Gradient.Horizontal
                 }

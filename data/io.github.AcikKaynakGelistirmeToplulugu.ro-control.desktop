@@ -64,4 +64,5 @@ Keywords[ru]=nvidia;gpu;драйвер;графика;игры;производ�
 Keywords[tr]=nvidia;gpu;sürücü;ekran kartı;oyun;performans;
 Keywords[zh_CN]=nvidia;gpu;驱动;显卡;游戏;性能;
 StartupNotify=true
+StartupWMClass=ro-control
 X-GNOME-UsesNotifications=false

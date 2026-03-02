@@ -15,7 +15,7 @@ pub fn init() {
     );
     loggers.push(logger);
 
-    // File logger (Debug level - captures everything)
+    // File logger (Debug level - captures everything, appends across sessions)
     if let Some(data_dir) = dirs::data_local_dir() {
         let log_dir = data_dir.join(config::APP_NAME);
         if !log_dir.exists() {
@@ -23,7 +23,20 @@ pub fn init() {
         }
 
         let log_file_path = log_dir.join("ro-control.log");
-        if let Ok(file) = fs::File::create(&log_file_path) {
+
+        // Rotate log if it exceeds 5 MB
+        if let Ok(meta) = fs::metadata(&log_file_path) {
+            if meta.len() > 5 * 1024 * 1024 {
+                let backup = log_dir.join("ro-control.log.old");
+                let _ = fs::rename(&log_file_path, &backup);
+            }
+        }
+
+        if let Ok(file) = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_file_path)
+        {
             loggers.push(WriteLogger::new(
                 LevelFilter::Debug,
                 Config::default(),

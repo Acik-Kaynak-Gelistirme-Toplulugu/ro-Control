@@ -120,7 +120,7 @@ src/
 │   └── updater.rs   # GitHub Releases update check
 ├── utils/           # Shared utilities
 │   ├── command.rs   # Shell command runner
-│   ├── i18n.rs      # TR/EN translation system
+│   ├── i18n.rs      # Multi-language translation (17 languages)
 │   └── logger.rs    # simplelog setup
 └── qml/             # Qt Quick interface files
     ├── Main.qml     # Application window + sidebar nav

@@ -4,6 +4,15 @@
 
 use crate::config;
 use serde::Deserialize;
+use std::time::Duration;
+
+/// HTTP agent with a 30-second global timeout.
+fn http_agent() -> ureq::Agent {
+    let config = ureq::Agent::config_builder()
+        .timeout_global(Some(Duration::from_secs(30)))
+        .build();
+    config.into()
+}
 
 #[derive(Debug, Deserialize)]
 struct GithubRelease {
@@ -40,7 +49,8 @@ pub fn check_for_updates() -> UpdateInfo {
         config::GITHUB_REPO
     );
 
-    let mut response = match ureq::get(&url)
+    let mut response = match http_agent()
+        .get(&url)
         .header("User-Agent", &format!("{}-Updater", config::APP_NAME))
         .call()
     {
@@ -96,7 +106,7 @@ pub fn download_and_install(url: &str) -> bool {
     );
 
     // Download
-    match ureq::get(url).call() {
+    match http_agent().get(url).call() {
         Ok(response) => {
             let mut file = match std::fs::File::create(&tmp_path) {
                 Ok(f) => f,
@@ -107,6 +117,7 @@ pub fn download_and_install(url: &str) -> bool {
             };
             if let Err(e) = std::io::copy(&mut response.into_body().as_reader(), &mut file) {
                 log::error!("Download failed: {}", e);
+                let _ = std::fs::remove_file(&tmp_path);
                 return false;
             }
         }
@@ -118,22 +129,40 @@ pub fn download_and_install(url: &str) -> bool {
 
     log::info!("Download complete, installing...");
 
-    // Install via dnf
-    let cmd = format!(
-        r#"pkexec ro-control-root-task "dnf install -y {}""#,
-        tmp_path
-    );
-    let (code, _, err) = crate::utils::command::run_full(&cmd);
+    // Validate download URL domain
+    const TRUSTED_DOMAINS: &[&str] = &[
+        "https://github.com/",
+        "https://objects.githubusercontent.com/",
+    ];
+    if !TRUSTED_DOMAINS.iter().any(|d| url.starts_with(d)) {
+        log::error!("Untrusted download URL: {}", url);
+        let _ = std::fs::remove_file(&tmp_path);
+        return false;
+    }
+
+    // Install via dnf using multi-arg pkexec
+    let output = std::process::Command::new("pkexec")
+        .arg("ro-control-root-task")
+        .arg(format!("dnf install -y {}", tmp_path))
+        .output();
 
     // Cleanup
     let _ = std::fs::remove_file(&tmp_path);
 
-    if code == 0 {
-        log::info!("Update installed successfully.");
-        true
-    } else {
-        log::error!("Update installation failed: {}", err);
-        false
+    match output {
+        Ok(o) if o.status.success() => {
+            log::info!("Update installed successfully.");
+            true
+        }
+        Ok(o) => {
+            let err = String::from_utf8_lossy(&o.stderr);
+            log::error!("Update installation failed: {}", err);
+            false
+        }
+        Err(e) => {
+            log::error!("Failed to execute update: {}", e);
+            false
+        }
     }
 }
 

@@ -14,6 +14,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -21,7 +25,7 @@ jobs:
   build:
     name: Build Release
     runs-on: ubuntu-latest
-    container: fedora:40
+    container: fedora:42
     outputs:
       release_tag: ${{ steps.meta.outputs.release_tag }}
       release_version: ${{ steps.meta.outputs.release_version }}
@@ -62,6 +66,15 @@ jobs:
             qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
             kf6-qqc2-desktop-style \
             rpm-build
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-release-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build release binary
         run: cargo build --release
@@ -116,6 +129,16 @@ jobs:
           cp LICENSE README.md "$PKG_DIR/"
           tar czf "ro-control-v${VERSION}-x86_64-linux.tar.gz" "$PKG_DIR/"
 
+      - name: Generate SHA256 checksums
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.meta.outputs.release_version }}"
+          {
+            sha256sum "ro-control-v${VERSION}-x86_64-linux.tar.gz"
+            find rpmbuild/RPMS -name '*.rpm' -exec sha256sum {} +
+            find rpmbuild/SRPMS -name '*.rpm' -exec sha256sum {} +
+          } | tee SHA256SUMS.txt
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -125,6 +148,7 @@ jobs:
             target/release/ro-control
             rpmbuild/RPMS/**/*.x86_64.rpm
             rpmbuild/SRPMS/*.src.rpm
+            SHA256SUMS.txt
 
   release:
     name: Create Release
@@ -150,5 +174,6 @@ jobs:
             ro-control-*.tar.gz
             **/*.src.rpm
             **/*.x86_64.rpm
+            SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

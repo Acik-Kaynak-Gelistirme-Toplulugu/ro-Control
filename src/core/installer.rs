@@ -6,6 +6,27 @@
 use crate::core::detector;
 use crate::utils::command;
 use chrono::Local;
+use regex::Regex;
+use std::sync::LazyLock;
+
+/// Regex for validating version strings (digits and dots only).
+static RE_SAFE_VERSION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^\d+(\.\d+)*$").unwrap());
+
+/// Validate that a version string contains only safe characters (digits, dots).
+fn is_safe_version(v: &str) -> bool {
+    RE_SAFE_VERSION.is_match(v)
+}
+
+/// Resolve the Fedora release version number for RPM Fusion URLs.
+fn fedora_release() -> String {
+    command::run("rpm -E %fedora").unwrap_or_else(|| "40".into())
+}
+
+/// Resolve the running kernel version for linux-headers.
+fn kernel_release() -> String {
+    command::run("uname -r").unwrap_or_else(|| "".into())
+}
 
 /// Log callback type for real-time UI updates.
 pub type LogCallback = Box<dyn Fn(&str) + Send + Sync>;
@@ -42,14 +63,27 @@ impl DriverInstaller {
     /// Install NVIDIA proprietary driver with optional version pinning.
     pub fn install_nvidia_closed_versioned(&self, version: Option<&str>) -> bool {
         self.log("--- STARTING: NVIDIA Proprietary (DNF/RPM Fusion) ---");
+
+        // Validate version for ALL package managers up-front
+        if let Some(v) = version {
+            if !v.is_empty() && !is_safe_version(v) {
+                self.log(&format!("ERROR: Invalid version format: {}", v));
+                return false;
+            }
+        }
+
         let mut commands = self.prepare_install_chain();
 
         self.log("Preparing NVIDIA packages...");
 
         match self.pkg_manager {
             Some("dnf") => {
-                // Ensure RPM Fusion is enabled
-                commands.push("dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || true".into());
+                // Ensure RPM Fusion is enabled (resolve Fedora version in Rust, not shell)
+                let fedora_ver = fedora_release();
+                commands.push(format!(
+                    "dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{fv}.noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{fv}.noarch.rpm",
+                    fv = fedora_ver
+                ));
                 let pkg = match version {
                     Some(v) if !v.is_empty() => {
                         self.log(&format!("Version pinned: {}", v));
@@ -80,7 +114,7 @@ impl DriverInstaller {
         }
 
         commands.extend(self.finalize_installation_chain());
-        self.execute_transaction_bulk(&commands, "NVIDIA Kapalı Kaynak Kurulumu")
+        self.execute_transaction_bulk(&commands, "NVIDIA Proprietary Install")
     }
 
     /// Install NVIDIA open kernel driver.
@@ -91,11 +125,24 @@ impl DriverInstaller {
     /// Install NVIDIA open kernel driver with optional version pinning.
     pub fn install_nvidia_open_versioned(&self, version: Option<&str>) -> bool {
         self.log("--- STARTING: NVIDIA Open Kernel ---");
+
+        // Validate version for ALL package managers up-front
+        if let Some(v) = version {
+            if !v.is_empty() && !is_safe_version(v) {
+                self.log(&format!("ERROR: Invalid version format: {}", v));
+                return false;
+            }
+        }
+
         let mut commands = self.prepare_install_chain();
 
         match self.pkg_manager {
             Some("dnf") => {
-                commands.push("dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || true".into());
+                let fedora_ver = fedora_release();
+                commands.push(format!(
+                    "dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{fv}.noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{fv}.noarch.rpm",
+                    fv = fedora_ver
+                ));
                 let pkg = match version {
                     Some(v) if !v.is_empty() => {
                         self.log(&format!("Version pinned: {}", v));
@@ -122,13 +169,13 @@ impl DriverInstaller {
                 commands.push("pacman -Sy --noconfirm nvidia-open nvidia-utils".into());
             }
             _ => {
-                self.log("HATA: Desteklenmeyen paket yöneticisi!");
+                self.log("ERROR: Unsupported package manager!");
                 return false;
             }
         }
 
         commands.extend(self.finalize_installation_chain());
-        self.execute_transaction_bulk(&commands, "NVIDIA Açık Kaynak Kurulumu")
+        self.execute_transaction_bulk(&commands, "NVIDIA Open Kernel Install")
     }
 
     /// Install AMD open source (Mesa) drivers.
@@ -153,12 +200,12 @@ impl DriverInstaller {
                 commands.push("pacman -Sy --noconfirm xf86-video-amdgpu mesa vulkan-radeon".into());
             }
             _ => {
-                self.log("HATA: Desteklenmeyen paket yöneticisi!");
+                self.log("ERROR: Unsupported package manager!");
                 return false;
             }
         }
 
-        self.execute_transaction_bulk(&commands, "AMD Mesa Kurulumu")
+        self.execute_transaction_bulk(&commands, "AMD Mesa Install")
     }
 
     /// Remove NVIDIA drivers and revert to nouveau.
@@ -180,20 +227,21 @@ impl DriverInstaller {
 
         match self.pkg_manager {
             Some("dnf") => {
-                commands.push("dnf remove -y '*nvidia*' '*kmod-nvidia*' || true".into());
+                // Note: dnf remove returns 0 even when packages are not installed
+                commands.push("dnf remove -y *nvidia* *kmod-nvidia*".into());
             }
             Some("apt") => {
-                commands.push("apt-get remove --purge -y '^nvidia-.*' '^libnvidia-.*'".into());
+                commands.push("apt-get remove --purge -y nvidia-* libnvidia-*".into());
                 commands.push("apt-get autoremove -y".into());
             }
             Some("pacman") => {
-                commands.push("pacman -Rs --noconfirm nvidia nvidia-utils nvidia-settings nvidia-open || true".into());
+                commands.push("pacman -Rs --noconfirm nvidia nvidia-utils nvidia-settings nvidia-open".into());
             }
             _ => {}
         }
 
         commands.extend(self.update_initramfs_commands());
-        self.execute_transaction_bulk(&commands, "Sürücü Kaldırma İşlemi")
+        self.execute_transaction_bulk(&commands, "Driver Removal")
     }
 
     /// Create a Timeshift snapshot before operations.
@@ -203,8 +251,18 @@ impl DriverInstaller {
             return false;
         }
         self.log("Creating Timeshift backup...");
-        let cmd = r#"pkexec timeshift --create --comments "ro-Control Auto Backup" --tags D"#;
-        command::run(cmd).is_some()
+        // Route through ro-control-root-task as a separate argument
+        let output = std::process::Command::new("pkexec")
+            .arg("ro-control-root-task")
+            .arg("timeshift --create --comments ro-Control_Auto_Backup --tags D")
+            .output();
+        match output {
+            Ok(o) => o.status.success(),
+            Err(e) => {
+                self.log(&format!("Timeshift failed: {}", e));
+                false
+            }
+        }
     }
 
     // --- Private helpers ---
@@ -215,7 +273,24 @@ impl DriverInstaller {
         chain.extend(self.backup_config_commands());
 
         self.log("Step 2: Blacklisting nouveau driver...");
-        chain.push("printf 'blacklist nouveau\\noptions nouveau modeset=0' > /etc/modprobe.d/blacklist-nouveau.conf".into());
+        // Write blacklist config: create a temp file in Rust, then cp it via root-task
+        // (shell metacharacters > and | are blocked by security filter)
+        {
+            let content = "blacklist nouveau\noptions nouveau modeset=0\n";
+            let tmp = format!(
+                "/tmp/ro-control-nouveau-{}-{}.conf",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs()
+            );
+            if let Err(e) = std::fs::write(&tmp, content) {
+                self.log(&format!("Failed to write temp blacklist file: {}", e));
+            } else {
+                chain.push(format!("cp {} /etc/modprobe.d/blacklist-nouveau.conf", tmp));
+            }
+        }
 
         match self.pkg_manager {
             Some("dnf") => {
@@ -223,7 +298,11 @@ impl DriverInstaller {
             }
             Some("apt") => {
                 chain.push("apt-get update".into());
-                chain.push("apt-get install -y build-essential linux-headers-$(uname -r)".into());
+                let kr = kernel_release();
+                chain.push(format!(
+                    "apt-get install -y build-essential linux-headers-{}",
+                    kr
+                ));
             }
             Some("pacman") => {
                 chain.push("pacman -Sy --noconfirm base-devel linux-headers".into());
@@ -249,11 +328,17 @@ impl DriverInstaller {
     }
 
     fn backup_config_commands(&self) -> Vec<String> {
+        // Check if xorg.conf exists before asking root to copy it.
+        // The existence check runs as user (readable path); only the copy needs root.
         let timestamp = Local::now().format("%Y%m%d_%H%M%S");
-        vec![format!(
-            "[ -f /etc/X11/xorg.conf ] && cp /etc/X11/xorg.conf /etc/X11/xorg.conf.backup_{} || true",
-            timestamp
-        )]
+        if std::path::Path::new("/etc/X11/xorg.conf").exists() {
+            vec![format!(
+                "cp /etc/X11/xorg.conf /etc/X11/xorg.conf.backup_{}",
+                timestamp
+            )]
+        } else {
+            vec![]
+        }
     }
 
     fn execute_transaction_bulk(&self, commands: &[String], task_name: &str) -> bool {
@@ -261,8 +346,10 @@ impl DriverInstaller {
             return false;
         }
 
-        let full_command = commands.join(" && ");
-        let final_cmd = format!(r#"pkexec ro-control-root-task "{}""#, full_command);
+        // Build pkexec command: each command is a separate argument to ro-control-root-task
+        // This avoids && chaining and keeps the security filter clean.
+        let mut args: Vec<String> = vec!["pkexec".into(), "ro-control-root-task".into()];
+        args.extend(commands.iter().cloned());
 
         let now = Local::now().format("%H:%M:%S");
         self.log(&format!(
@@ -294,7 +381,19 @@ impl DriverInstaller {
         self.log("Waiting for authorization (Root/Admin)...");
         self.log("Please enter your password in the dialog.\n");
 
-        let (ret_code, out, err) = command::run_full(&final_cmd);
+        // Execute: pkexec ro-control-root-task "cmd1" "cmd2" "cmd3" ...
+        let output = std::process::Command::new(&args[0])
+            .args(&args[1..])
+            .output();
+
+        let (ret_code, out, err) = match output {
+            Ok(o) => (
+                o.status.code().unwrap_or(-1),
+                String::from_utf8_lossy(&o.stdout).trim().to_string(),
+                String::from_utf8_lossy(&o.stderr).trim().to_string(),
+            ),
+            Err(e) => (-1, String::new(), e.to_string()),
+        };
 
         if ret_code != 0 {
             self.log("\n[!!! CRITICAL ERROR !!!]");
@@ -377,9 +476,12 @@ mod tests {
     fn backup_config_commands_format() {
         let inst = installer_with_pm(Some("dnf"));
         let cmds = inst.backup_config_commands();
-        assert_eq!(cmds.len(), 1);
-        assert!(cmds[0].contains("xorg.conf"));
-        assert!(cmds[0].contains("|| true"));
+        // Returns empty if /etc/X11/xorg.conf doesn't exist (CI/test environment)
+        // If it existed, it would contain "cp" and "xorg.conf"
+        for cmd in &cmds {
+            assert!(cmd.contains("xorg.conf"));
+            assert!(cmd.starts_with("cp "));
+        }
     }
 
     #[test]

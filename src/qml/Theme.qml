@@ -48,6 +48,9 @@ QtObject {
     readonly property color muted: isDark ? darkMuted : lightMuted
     readonly property color mutedForeground: isDark ? darkMutedForeground : lightMutedForeground
 
+    // Text on primary/accent backgrounds (always white for both themes)
+    readonly property color primaryForeground: "#ffffff"
+
     // Spacing
     readonly property int paddingXs: 8
     readonly property int paddingSm: 12

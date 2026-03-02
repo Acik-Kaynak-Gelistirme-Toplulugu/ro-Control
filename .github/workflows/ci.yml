@@ -6,15 +6,23 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  DNF_DEPS: >-
+    cmake gcc-c++ pkgconf-pkg-config
+    qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel
+    kf6-qqc2-desktop-style
 
 jobs:
   check:
     name: Check
     runs-on: ubuntu-latest
-    container: fedora:40
+    container: fedora:42
     steps:
       - uses: actions/checkout@v4
 
@@ -22,11 +30,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Install dependencies
-        run: |
-          dnf install -y \
-            cmake gcc-c++ pkgconf-pkg-config \
-            qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
-            kf6-qqc2-desktop-style
+        run: dnf install -y $DNF_DEPS
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -43,7 +47,7 @@ jobs:
   msrv:
     name: MSRV (1.82)
     runs-on: ubuntu-latest
-    container: fedora:40
+    container: fedora:42
     steps:
       - uses: actions/checkout@v4
 
@@ -51,11 +55,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.82.0
 
       - name: Install dependencies
-        run: |
-          dnf install -y \
-            cmake gcc-c++ pkgconf-pkg-config \
-            qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
-            kf6-qqc2-desktop-style
+        run: dnf install -y $DNF_DEPS
 
       - name: Check MSRV compatibility
         run: cargo check
@@ -63,7 +63,7 @@ jobs:
   fmt:
     name: Format
     runs-on: ubuntu-latest
-    container: fedora:40
+    container: fedora:42
     steps:
       - uses: actions/checkout@v4
 
@@ -78,7 +78,7 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
-    container: fedora:40
+    container: fedora:42
     steps:
       - uses: actions/checkout@v4
 
@@ -88,11 +88,7 @@ jobs:
           components: clippy
 
       - name: Install dependencies
-        run: |
-          dnf install -y \
-            cmake gcc-c++ pkgconf-pkg-config \
-            qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
-            kf6-qqc2-desktop-style
+        run: dnf install -y $DNF_DEPS
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -109,7 +105,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    container: fedora:40
+    container: fedora:42
     steps:
       - uses: actions/checkout@v4
 
@@ -117,11 +113,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Install dependencies
-        run: |
-          dnf install -y \
-            cmake gcc-c++ pkgconf-pkg-config \
-            qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
-            kf6-qqc2-desktop-style
+        run: dnf install -y $DNF_DEPS
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -138,7 +130,7 @@ jobs:
   build:
     name: Build Release
     runs-on: ubuntu-latest
-    container: fedora:40
+    container: fedora:42
     needs: [check, fmt, clippy, test]
     steps:
       - uses: actions/checkout@v4
@@ -147,11 +139,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Install dependencies
-        run: |
-          dnf install -y \
-            cmake gcc-c++ pkgconf-pkg-config \
-            qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
-            kf6-qqc2-desktop-style
+        run: dnf install -y $DNF_DEPS
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -174,7 +162,7 @@ jobs:
   rpm-package:
     name: Package RPM
     runs-on: ubuntu-latest
-    container: fedora:40
+    container: fedora:42
     needs: [check, fmt, clippy, test]
     steps:
       - uses: actions/checkout@v4
@@ -183,14 +171,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Install dependencies
-        run: |
-          dnf install -y \
-            git \
-            cmake gcc-c++ pkgconf-pkg-config \
-            extra-cmake-modules \
-            qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtwayland-devel \
-            kf6-qqc2-desktop-style \
-            rpm-build
+        run: dnf install -y git extra-cmake-modules rpm-build $DNF_DEPS
 
       - name: Build RPM package
         run: |
