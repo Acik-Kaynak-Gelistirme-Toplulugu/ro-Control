@@ -121,20 +121,20 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${{ steps.meta.outputs.release_version }}"
-          PKG_DIR="ro-control-v${VERSION}"
+          PKG_DIR="ro-control-${VERSION}"
           mkdir -p "$PKG_DIR"
           cp target/release/ro-control "$PKG_DIR/"
           cp -r data/ "$PKG_DIR/"
           cp scripts/ro-control-root-task "$PKG_DIR/"
           cp LICENSE README.md "$PKG_DIR/"
-          tar czf "ro-control-v${VERSION}-x86_64-linux.tar.gz" "$PKG_DIR/"
+          tar czf "ro-control-${VERSION}-linux-x86_64.tar.gz" "$PKG_DIR/"
 
       - name: Generate SHA256 checksums
         run: |
           set -euo pipefail
           VERSION="${{ steps.meta.outputs.release_version }}"
           {
-            sha256sum "ro-control-v${VERSION}-x86_64-linux.tar.gz"
+            sha256sum "ro-control-${VERSION}-linux-x86_64.tar.gz"
             find rpmbuild/RPMS -name '*.rpm' -exec sha256sum {} +
             find rpmbuild/SRPMS -name '*.rpm' -exec sha256sum {} +
           } | tee SHA256SUMS.txt
@@ -162,6 +162,17 @@ jobs:
         with:
           name: release-artifacts
 
+      - name: Rename artifacts for clarity
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.build.outputs.release_version }}"
+          # Rename RPMs: add fedora42 prefix for clarity
+          for f in $(find . -name '*.x86_64.rpm' -o -name '*.src.rpm'); do
+            base=$(basename "$f")
+            # rpm names already contain fc42, just flatten to current dir
+            cp "$f" "$base"
+          done
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -169,11 +180,43 @@ jobs:
           name: ro-control ${{ needs.build.outputs.release_tag }}
           prerelease: ${{ needs.build.outputs.is_prerelease == 'true' }}
           overwrite_files: true
-          generate_release_notes: true
+          generate_release_notes: false
+          body: |
+            ## 🔒 ro-control ${{ needs.build.outputs.release_tag }}
+
+            ### 📦 Kurulum
+
+            **Fedora 42 (Önerilen):**
+            ```bash
+            sudo dnf install ./ro-control-${{ needs.build.outputs.release_version }}-1.fc42.x86_64.rpm
+            ```
+
+            **Manuel Kurulum (Diğer Dağıtımlar):**
+            ```bash
+            tar xzf ro-control-${{ needs.build.outputs.release_version }}-linux-x86_64.tar.gz
+            sudo cp ro-control-${{ needs.build.outputs.release_version }}/ro-control /usr/local/bin/
+            ```
+
+            **Doğrulama:**
+            ```bash
+            sha256sum -c SHA256SUMS.txt
+            ```
+
+            ### 📥 İndirilenler
+
+            | Dosya | Açıklama |
+            |---|---|
+            | `.x86_64.rpm` | Fedora 42 için hazır RPM paketi |
+            | `-linux-x86_64.tar.gz` | Taşınabilir Linux binary |
+            | `SHA256SUMS.txt` | SHA-256 bütünlük doğrulaması |
+            | `.src.rpm` | Kaynak RPM (geliştirici/paketçi) |
+
+            ---
+            **Full Changelog:** https://github.com/${{ github.repository }}/compare/v1.1.0...${{ needs.build.outputs.release_tag }}
           files: |
             ro-control-*.tar.gz
-            **/*.src.rpm
-            **/*.x86_64.rpm
+            *.src.rpm
+            *.x86_64.rpm
             SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
