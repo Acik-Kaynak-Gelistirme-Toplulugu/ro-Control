@@ -96,5 +96,7 @@ QtObject {
     readonly property int iconSizeLg: 24
     readonly property int iconSizeXl: 32
 
-    function alpha(c, a) { return Qt.rgba(c.r, c.g, c.b, a) }
+    function alpha(c, a) {
+        return Qt.rgba(c.r, c.g, c.b, a);
+    }
 }

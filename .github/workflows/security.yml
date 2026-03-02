@@ -19,7 +19,7 @@ jobs:
   cargo-audit:
     name: Cargo Audit
     runs-on: ubuntu-latest
-    container: fedora:40
+    container: fedora:42
     steps:
       - uses: actions/checkout@v4
 

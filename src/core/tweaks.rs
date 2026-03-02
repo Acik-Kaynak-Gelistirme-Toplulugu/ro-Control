@@ -236,8 +236,8 @@ pub fn enable_nvidia_wayland_fix() -> Result<String, String> {
     let grub_file = "/etc/default/grub";
 
     // Check if already applied
-    let grub_content = fs::read_to_string(grub_file)
-        .map_err(|e| format!("Cannot read {}: {}", grub_file, e))?;
+    let grub_content =
+        fs::read_to_string(grub_file).map_err(|e| format!("Cannot read {}: {}", grub_file, e))?;
 
     if grub_content.contains(param) {
         return Ok("Parameter already applied. No action needed.".into());
@@ -254,12 +254,8 @@ pub fn enable_nvidia_wayland_fix() -> Result<String, String> {
         return Err("Could not find GRUB_CMDLINE_LINUX_DEFAULT line to modify.".into());
     }
 
-    let tmp = format!(
-        "/tmp/ro-control-grub-{}.conf",
-        std::process::id()
-    );
-    fs::write(&tmp, &modified)
-        .map_err(|e| format!("Failed to write temp file: {}", e))?;
+    let tmp = format!("/tmp/ro-control-grub-{}.conf", std::process::id());
+    fs::write(&tmp, &modified).map_err(|e| format!("Failed to write temp file: {}", e))?;
 
     // Fedora uses grub2-mkconfig instead of update-grub
     let update_cmd = if command::which("grub2-mkconfig") {
