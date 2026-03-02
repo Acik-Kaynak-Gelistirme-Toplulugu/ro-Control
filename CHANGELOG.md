@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LazyLock for regex compilation (no per-call overhead)
 - Removed all `|| true` patterns from install commands
 
+[1.2.0]: https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases/tag/v1.2.0
+
 ## [1.1.0] - 2026-02-26
 
 ### Added
