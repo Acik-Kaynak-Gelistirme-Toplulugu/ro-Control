@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-03-02
+
+### Security
+
+- Root-task script complete rewrite with multi-arg architecture
+- Blocked all shell metacharacters (`&`, `|`, `;`, `'`, `"`, `\`, etc.)
+- Tightened allowlist to specific file paths
+- All pkexec calls converted from shell strings to `Command::new().args()`
+- Trusted domain validation for update downloads
+- Unique temp file paths with pid+timestamp
+
+### Fixed
+
+- Critical: kernel version parsing (`.filter_map()` before `.take(2)`)
+- Critical: `is_up_to_date` now compares actual installed driver version
+- `driver_version` detection via `modinfo` / `nvidia-smi`
+- NVIDIA Wayland fix rewritten with temp-file approach
+- RPM epoch-aware regex for akmod version parsing
+- POSIX-portable `which()` using `command -v` instead of `which` binary
+- Clippy `assertions_on_constants` resolved with `const {}` blocks
+- All `cargo fmt` formatting issues resolved
+
+### Changed
+
+- CI: all workflows updated to Fedora 42
+- Added RPM Deploy workflow (auto-publish to ro-repo on release)
+- Log rotation at 5MB threshold
+- LazyLock for regex compilation (no per-call overhead)
+- Removed all `|| true` patterns from install commands
+
 ## [1.1.0] - 2026-02-26
 
 ### Added

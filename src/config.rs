@@ -43,6 +43,14 @@ pub const ISSUE_URL: &str = "https://github.com/Acik-Kaynak-Gelistirme-Toplulugu
 
 /// Changelog (shown in about dialog)
 pub const CHANGELOG: &str = "\
+v1.2.0  — Security Hardening & CI
+  • Root-task rewrite: multi-arg architecture blocks injection
+  • Critical fix: kernel version parsing, driver version detection
+  • POSIX-portable which() via command -v
+  • RPM epoch-aware version regex
+  • Log rotation, trusted domain validation
+  • CI: Fedora 42, RPM deploy pipeline
+
 v1.1.0  — Rust Edition UI Redesign
   • Premium 🦀 Rust Edition branding and visual identity
   • Modern color palette (blue/purple/emerald)

@@ -93,6 +93,20 @@
   </supports>
 
   <releases>
+    <release version="1.2.0" date="2026-03-02">
+      <description>
+        <p>Security hardening, critical bug fixes, and CI improvements.</p>
+        <ul>
+          <li>Root-task rewrite with multi-arg architecture blocking command injection</li>
+          <li>Critical fix: kernel version parsing and driver version detection</li>
+          <li>POSIX-portable which() using command -v</li>
+          <li>RPM epoch-aware version regex for akmod parsing</li>
+          <li>Log rotation at 5MB threshold</li>
+          <li>Trusted domain validation for update downloads</li>
+          <li>CI: all workflows on Fedora 42, RPM deploy pipeline</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.1.0" date="2026-02-26">
       <description>
         <p>Premium "Rust Edition" UI redesign with modern aesthetic and enhanced user experience.</p>

@@ -1,5 +1,5 @@
 Name:           ro-control
-Version:        1.1.0
+Version:        1.2.0
 Release:        1%{?dist}
 Summary:        Smart GPU driver manager for Linux
 
@@ -98,6 +98,16 @@ update-desktop-database %{_datadir}/applications &>/dev/null || :
 %{_datadir}/glib-2.0/schemas/io.github.AcikKaynakGelistirmeToplulugu.ro-control.gschema.xml
 
 %changelog
+* Sun Mar 02 2026 Sopwith <sopwith.osdev@gmail.com> - 1.2.0-1
+- Security hardening: root-task rewrite with multi-arg architecture
+- Critical fix: kernel version parsing, driver version detection
+- POSIX-portable which() using command -v
+- RPM epoch-aware version regex
+- Log rotation at 5MB threshold
+- Trusted domain validation for update downloads
+- CI: all workflows on Fedora 42, RPM deploy pipeline
+- Formatting and clippy compliance
+
 * Wed Feb 26 2026 Sopwith <sopwith.osdev@gmail.com> - 1.1.0-1
 - Premium Rust Edition UI redesign with modern aesthetic
 - StatusBar, CustomProgressBar, GradientButton components

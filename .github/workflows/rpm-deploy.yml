@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Tag to deploy (example: v1.1.0)"
+        description: "Tag to deploy (example: v1.2.0)"
         required: true
-        default: "v1.1.0"
+        default: "v1.2.0"
 
 concurrency:
   group: rpm-deploy-${{ github.ref }}
