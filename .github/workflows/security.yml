@@ -27,7 +27,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Install tooling
-        run: dnf install -y git gcc
+        run: dnf install -y --setopt=retries=5 git gcc
 
       - name: Cache cargo-audit binary
         uses: actions/cache@v4

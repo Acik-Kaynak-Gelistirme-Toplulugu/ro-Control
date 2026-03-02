@@ -30,7 +30,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Install dependencies
-        run: dnf install -y $DNF_DEPS
+        run: dnf install -y --setopt=retries=5 $DNF_DEPS
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -55,7 +55,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.82.0
 
       - name: Install dependencies
-        run: dnf install -y $DNF_DEPS
+        run: dnf install -y --setopt=retries=5 $DNF_DEPS
 
       - name: Check MSRV compatibility
         run: cargo check
@@ -88,7 +88,7 @@ jobs:
           components: clippy
 
       - name: Install dependencies
-        run: dnf install -y $DNF_DEPS
+        run: dnf install -y --setopt=retries=5 $DNF_DEPS
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -113,7 +113,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Install dependencies
-        run: dnf install -y $DNF_DEPS
+        run: dnf install -y --setopt=retries=5 $DNF_DEPS
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -139,7 +139,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Install dependencies
-        run: dnf install -y $DNF_DEPS
+        run: dnf install -y --setopt=retries=5 $DNF_DEPS
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -171,7 +171,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Install dependencies
-        run: dnf install -y git extra-cmake-modules rpm-build $DNF_DEPS
+        run: dnf install -y --setopt=retries=5 git extra-cmake-modules rpm-build $DNF_DEPS
 
       - name: Build RPM package
         run: |

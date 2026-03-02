@@ -59,7 +59,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          dnf install -y \
+          dnf install -y --setopt=retries=5 \
             git \
             cmake gcc-c++ pkgconf-pkg-config \
             extra-cmake-modules \

@@ -56,7 +56,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Install build dependencies
-        run: dnf install -y git extra-cmake-modules rpm-build $DNF_DEPS
+        run: dnf install -y --setopt=retries=5 git extra-cmake-modules rpm-build $DNF_DEPS
 
       - name: Cache cargo
         uses: actions/cache@v4
