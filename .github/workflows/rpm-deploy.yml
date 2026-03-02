@@ -22,6 +22,7 @@ env:
     kf6-qqc2-desktop-style
 
 jobs:
+  # ── Stage 1: Build RPM inside Fedora 42 container ──────────────────
   build-rpm:
     name: Build RPM
     runs-on: ubuntu-latest
@@ -39,15 +40,23 @@ jobs:
         run: |
           set -euo pipefail
           VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION"   >> "$GITHUB_OUTPUT"
           echo "rpm_name=ro-control-${VERSION}-1.fc42.x86_64.rpm" >> "$GITHUB_OUTPUT"
-          echo "Building ro-control v${VERSION}"
+          echo "::notice::Building ro-control v${VERSION}"
+
+      # Keep spec Version in sync with Cargo.toml automatically
+      - name: Sync spec version
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.meta.outputs.version }}"
+          sed -i "s/^Version:.*/Version:        ${VERSION}/" packaging/rpm/ro-control.spec
+          grep '^Version:' packaging/rpm/ro-control.spec
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Install build dependencies
-        run: dnf install -y git extra-cmake-modules rpm-build createrepo_c $DNF_DEPS
+        run: dnf install -y git extra-cmake-modules rpm-build $DNF_DEPS
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -55,8 +64,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: ${{ runner.os }}-rpm-deploy-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-rpm-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build RPM package
         run: |
@@ -67,7 +75,7 @@ jobs:
           mkdir -p "$TOPDIR"/{SOURCES,SPECS,RPMS,SRPMS,BUILD,BUILDROOT}
           cp packaging/rpm/ro-control.spec "$TOPDIR/SPECS/"
 
-          # Create source tarball
+          # Source tarball – directory inside must match %autosetup -n
           tar -czf "$TOPDIR/SOURCES/ro-control-${VERSION}.tar.gz" \
             --exclude-vcs \
             --exclude='./target' \
@@ -75,25 +83,24 @@ jobs:
             --transform "s,^\./,ro-control-${VERSION}/," \
             .
 
-          # Build binary + source RPM
           rpmbuild -ba --nodeps "$TOPDIR/SPECS/ro-control.spec" \
             --define "_topdir $TOPDIR" \
             --define "_sourcedir $TOPDIR/SOURCES" \
             --define "_rpmdir $TOPDIR/RPMS" \
             --define "_srcrpmdir $TOPDIR/SRPMS"
 
-      - name: Verify RPM was built
+      - name: Verify RPM
         run: |
           set -euo pipefail
           RPM_FILE=$(find rpmbuild/RPMS -name '*.x86_64.rpm' | head -1)
-          SRPM_FILE=$(find rpmbuild/SRPMS -name '*.src.rpm' | head -1)
           if [ -z "$RPM_FILE" ]; then
-            echo "ERROR: No x86_64 RPM found!"
+            echo "::error::No x86_64 RPM found!"
             exit 1
           fi
-          echo "Built RPM: $RPM_FILE"
-          echo "Built SRPM: $SRPM_FILE"
+          echo "::notice::Built $RPM_FILE ($(du -h "$RPM_FILE" | cut -f1))"
           rpm -qip "$RPM_FILE"
+          echo "--- Included files ---"
+          rpm -qlp "$RPM_FILE"
 
       - name: Upload RPM artifacts
         uses: actions/upload-artifact@v4
@@ -102,19 +109,22 @@ jobs:
           path: |
             rpmbuild/RPMS/**/*.x86_64.rpm
             rpmbuild/SRPMS/*.src.rpm
-          retention-days: 30
+          retention-days: 90
 
+  # ── Stage 2: Publish to DNF repository (ro-repo) ──────────────────
   deploy-repo:
     name: Deploy to ro-repo
     runs-on: ubuntu-latest
     needs: build-rpm
+    permissions:
+      contents: read
     steps:
       - name: Download RPM artifacts
         uses: actions/download-artifact@v4
         with:
           name: rpm-packages
 
-      - name: Find RPM files
+      - name: Locate RPM files
         id: rpms
         run: |
           set -euo pipefail
@@ -122,55 +132,67 @@ jobs:
           find . -name '*.rpm' -type f
           RPM_FILE=$(find . -name '*.x86_64.rpm' -type f | head -1)
           SRPM_FILE=$(find . -name '*.src.rpm' -type f | head -1)
-          echo "rpm_file=$RPM_FILE" >> "$GITHUB_OUTPUT"
-          echo "srpm_file=$SRPM_FILE" >> "$GITHUB_OUTPUT"
+          if [ -z "$RPM_FILE" ]; then
+            echo "::error::No RPM artifact found!"
+            exit 1
+          fi
+          echo "rpm_file=$RPM_FILE"          >> "$GITHUB_OUTPUT"
+          echo "srpm_file=${SRPM_FILE:-}"     >> "$GITHUB_OUTPUT"
+
+      - name: Install createrepo-c
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq createrepo-c
 
       - name: Clone ro-repo
         run: |
-          set -euo pipefail
           git clone "https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-repo.git" ro-repo
 
-      - name: Deploy RPM to repository
+      - name: Deploy RPM packages
         run: |
           set -euo pipefail
+          VERSION="${{ needs.build-rpm.outputs.version }}"
           cd ro-repo
 
-          # Create directory structure if needed
-          mkdir -p packages/ro-control
+          # ── Binary RPMs ──
+          mkdir -p packages
+          # Remove previous versions of ro-control to keep repo lean
+          find packages/ -name 'ro-control-*.rpm' -delete 2>/dev/null || true
+          cp "$GITHUB_WORKSPACE/${{ steps.rpms.outputs.rpm_file }}" packages/
 
-          # Copy RPM(s) into the repo
-          cp "${{ steps.rpms.outputs.rpm_file }}" packages/ro-control/
-          if [ -n "${{ steps.rpms.outputs.srpm_file }}" ]; then
-            mkdir -p source/ro-control
-            cp "${{ steps.rpms.outputs.srpm_file }}" source/ro-control/
+          # ── Source RPMs ──
+          SRPM="${{ steps.rpms.outputs.srpm_file }}"
+          if [ -n "$SRPM" ]; then
+            mkdir -p source
+            find source/ -name 'ro-control-*.rpm' -delete 2>/dev/null || true
+            cp "$GITHUB_WORKSPACE/$SRPM" source/
           fi
 
-      - name: Regenerate repo metadata
-        run: |
-          set -euo pipefail
-          sudo apt-get update -qq && sudo apt-get install -y -qq createrepo-c
-          cd ro-repo
-
-          # Generate/update repodata for binary packages
-          if [ -d packages ]; then
-            createrepo_c --update packages/
-          fi
-
-          # Generate/update repodata for source packages
+          # ── Repo metadata ──
+          createrepo_c --update packages/
           if [ -d source ]; then
             createrepo_c --update source/
           fi
+
+          # ── DNF .repo config (users download this to add the repo) ──
+          cat > ro-control.repo << 'EOF'
+          [ro-control]
+          name=ro-Control - Smart GPU Driver Manager
+          baseurl=https://raw.githubusercontent.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-repo/main/packages
+          enabled=1
+          gpgcheck=0
+          metadata_expire=12h
+          EOF
+          sed -i 's/^          //' ro-control.repo
 
       - name: Commit and push
         run: |
           set -euo pipefail
           cd ro-repo
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add -A
           if git diff --cached --quiet; then
-            echo "No changes to deploy"
+            echo "::notice::No changes to deploy"
             exit 0
           fi
 
