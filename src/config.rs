@@ -105,8 +105,8 @@ mod tests {
 
     #[test]
     fn window_dimensions_sane() {
-        assert!(DEFAULT_WIDTH > 0 && DEFAULT_WIDTH < 10000);
-        assert!(DEFAULT_HEIGHT > 0 && DEFAULT_HEIGHT < 10000);
+        const { assert!(DEFAULT_WIDTH > 0 && DEFAULT_WIDTH < 10000) };
+        const { assert!(DEFAULT_HEIGHT > 0 && DEFAULT_HEIGHT < 10000) };
     }
 
     #[test]

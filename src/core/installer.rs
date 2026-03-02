@@ -10,8 +10,7 @@ use regex::Regex;
 use std::sync::LazyLock;
 
 /// Regex for validating version strings (digits and dots only).
-static RE_SAFE_VERSION: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^\d+(\.\d+)*$").unwrap());
+static RE_SAFE_VERSION: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\d+(\.\d+)*$").unwrap());
 
 /// Validate that a version string contains only safe characters (digits, dots).
 fn is_safe_version(v: &str) -> bool {
@@ -235,7 +234,9 @@ impl DriverInstaller {
                 commands.push("apt-get autoremove -y".into());
             }
             Some("pacman") => {
-                commands.push("pacman -Rs --noconfirm nvidia nvidia-utils nvidia-settings nvidia-open".into());
+                commands.push(
+                    "pacman -Rs --noconfirm nvidia nvidia-utils nvidia-settings nvidia-open".into(),
+                );
             }
             _ => {}
         }
@@ -488,8 +489,8 @@ mod tests {
     fn prepare_install_chain_dnf_has_kernel_headers() {
         let inst = installer_with_pm(Some("dnf"));
         let chain = inst.prepare_install_chain();
-        // Should contain: backup, blacklist nouveau, kernel-devel
-        assert!(chain.iter().any(|c| c.contains("blacklist nouveau")));
+        // Should contain: nouveau blacklist (cp to blacklist-nouveau.conf), kernel-devel
+        assert!(chain.iter().any(|c| c.contains("blacklist-nouveau.conf")));
         assert!(chain.iter().any(|c| c.contains("kernel-devel")));
     }
 

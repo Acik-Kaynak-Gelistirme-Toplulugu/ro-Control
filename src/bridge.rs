@@ -179,15 +179,16 @@ impl ffi::GpuController {
             // Get installed NVIDIA driver version (from modinfo or nvidia-smi)
             let installed_version = crate::utils::command::run("modinfo -F version nvidia")
                 .or_else(|| {
-                    crate::utils::command::run("nvidia-smi --query-gpu=driver_version --format=csv,noheader")
+                    crate::utils::command::run(
+                        "nvidia-smi --query-gpu=driver_version --format=csv,noheader",
+                    )
                 })
                 .unwrap_or_default()
                 .trim()
                 .to_string();
 
-            let up_to_date = !best.is_empty()
-                && !installed_version.is_empty()
-                && installed_version == best;
+            let up_to_date =
+                !best.is_empty() && !installed_version.is_empty() && installed_version == best;
             let versions_str = versions.join(",");
 
             log::info!(
@@ -195,7 +196,11 @@ impl ffi::GpuController {
                 info.vendor,
                 info.model,
                 info.driver_in_use,
-                if installed_version.is_empty() { "N/A" } else { &installed_version }
+                if installed_version.is_empty() {
+                    "N/A"
+                } else {
+                    &installed_version
+                }
             );
 
             let _ = qt_thread.queue(move |mut qobject: Pin<&mut ffi::GpuController>| {

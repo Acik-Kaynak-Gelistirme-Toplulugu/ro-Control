@@ -25,12 +25,14 @@ static OS_INFO_CACHE: OnceLock<OsInfo> = OnceLock::new();
 static SYSTEM_INFO_CACHE: OnceLock<SystemInfo> = OnceLock::new();
 
 /// Pre-compiled regex for akmod-nvidia version parsing.
+/// Handles optional RPM epoch prefix (e.g. `3:565.57.01-1.fc41`).
 static RE_AKMOD_VERSION: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"akmod-nvidia[^\s]*\s+(\d+\.\d+[\.\d]*)").unwrap());
+    LazyLock::new(|| Regex::new(r"akmod-nvidia[^\s]*\s+(?:\d+:)?(\d+\.\d+[\.\d]*)").unwrap());
 
 /// Pre-compiled regex for changelog version parsing.
+/// Uses word boundaries on the 3-digit fallback to avoid matching inside dates like `2024`.
 static RE_CHANGELOG_VERSION: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(\d{3}\.\d{2}(?:\.\d+)?)|(\d{3})").unwrap());
+    LazyLock::new(|| Regex::new(r"(\d{3}\.\d{2}(?:\.\d+)?)|\b(\d{3})\b").unwrap());
 
 /// Pre-compiled regex for NVIDIA download page version extraction.
 static RE_NVIDIA_WEB_VERSION: LazyLock<Regex> =
