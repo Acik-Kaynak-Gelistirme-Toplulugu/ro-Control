@@ -20,7 +20,9 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
     // Ana QML dosyasını yükle
-    const QUrl url(u"qrc:/rocontrol/src/qml/Main.qml"_qs);
+    using namespace Qt::StringLiterals;
+    const QUrl url(u"qrc:/rocontrol/src/qml/Main.qml"_s);
+    
 
     // QML yüklenemezse uygulamayı kapat
     QObject::connect(
