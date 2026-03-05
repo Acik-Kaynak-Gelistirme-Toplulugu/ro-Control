@@ -100,3 +100,4 @@ qmltypes
 *.o
 *.so
 *.a
+.DS_Store
