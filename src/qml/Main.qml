@@ -5,30 +5,70 @@ import QtQuick.Layouts
 ApplicationWindow {
     id: root
     visible: true
-    width: 1000
-    height: 650
-    minimumWidth: 800
-    minimumHeight: 500
+    width: 980
+    height: 640
     title: "ro-Control"
-    color: "#11111b"
 
-    Row {
+    readonly property bool darkMode: Qt.styleHints.colorScheme === Qt.Dark
+    color: darkMode ? "#141822" : "#f3f5fa"
+
+    ColumnLayout {
         anchors.fill: parent
+        spacing: 0
 
-        SidebarMenu {
-            id: sidebar
-            height: parent.height
+        ToolBar {
+            Layout.fillWidth: true
+            background: Rectangle {
+                color: root.darkMode ? "#1b2130" : "#ffffff"
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 8
+
+                Label {
+                    text: "ro-Control"
+                    font.pixelSize: 20
+                    font.bold: true
+                    color: root.darkMode ? "#e9eefc" : "#101520"
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Label {
+                    text: root.darkMode ? "Tema: Sistem (Koyu)" : "Tema: Sistem (Acik)"
+                    color: root.darkMode ? "#c9d1e8" : "#2b364b"
+                }
+            }
+        }
+
+        TabBar {
+            id: tabs
+            Layout.fillWidth: true
+
+            TabButton {
+                text: "Surucu"
+            }
+            TabButton {
+                text: "Izleme"
+            }
+            TabButton {
+                text: "Ayarlar"
+            }
         }
 
         StackLayout {
-            id: stack
-            width: parent.width - sidebar.width
-            height: parent.height
-            currentIndex: sidebar.currentIndex
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            currentIndex: tabs.currentIndex
 
             DriverPage {}
             MonitorPage {}
-            SettingsPage {}
+            SettingsPage {
+                darkMode: root.darkMode
+            }
         }
     }
 }
