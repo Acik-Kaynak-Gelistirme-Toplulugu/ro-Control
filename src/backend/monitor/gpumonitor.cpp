@@ -1,6 +1,5 @@
-// GPU istatistikleri
-
 #include "gpumonitor.h"
+#include "system/commandrunner.h"
 
 #include <QProcess>
 

@@ -1,6 +1,7 @@
 // DNF paket yoneticisi
 
 #include "dnfmanager.h"
+#include "commandrunner.h"
 
 #include <QStandardPaths>
 

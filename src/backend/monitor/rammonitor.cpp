@@ -1,5 +1,3 @@
-// RAM istatistikleri
-
 #include "rammonitor.h"
 
 #include <QFile>
