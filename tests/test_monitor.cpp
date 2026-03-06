@@ -10,20 +10,35 @@ class TestMonitor : public QObject {
 private slots:
   void testCpuConstruction() {
     CpuMonitor cpu;
-    Q_UNUSED(cpu);
-    QVERIFY(true);
+    cpu.refresh();
+    QTest::qWait(25);
+    cpu.refresh();
+
+    QVERIFY(cpu.usagePercent() >= 0.0);
+    QVERIFY(cpu.usagePercent() <= 100.0);
+    QVERIFY(cpu.temperatureC() >= 0);
   }
 
   void testGpuConstruction() {
     GpuMonitor gpu;
-    Q_UNUSED(gpu);
-    QVERIFY(true);
+    gpu.refresh();
+
+    QVERIFY(gpu.temperatureC() >= 0);
+    QVERIFY(gpu.utilizationPercent() >= 0);
+    QVERIFY(gpu.utilizationPercent() <= 100);
+    QVERIFY(gpu.memoryUsagePercent() >= 0);
+    QVERIFY(gpu.memoryUsagePercent() <= 100);
   }
 
   void testRamConstruction() {
     RamMonitor ram;
-    Q_UNUSED(ram);
-    QVERIFY(true);
+    ram.refresh();
+
+    QVERIFY(ram.usagePercent() >= 0);
+    QVERIFY(ram.usagePercent() <= 100);
+    QVERIFY(ram.totalMiB() >= 0);
+    QVERIFY(ram.usedMiB() >= 0);
+    QVERIFY(ram.usedMiB() <= ram.totalMiB() || ram.totalMiB() == 0);
   }
 };
 
