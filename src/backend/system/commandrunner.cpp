@@ -1,4 +1,5 @@
 #include "commandrunner.h"
+
 #include <QProcess>
 
 CommandRunner::CommandRunner(QObject *parent) : QObject(parent) {}
@@ -8,7 +9,7 @@ CommandRunner::Result CommandRunner::run(const QString &program,
   QProcess process;
   QByteArray stdoutBuffer;
 
-  // Stdout'u anlık olarak sinyal olarak ilet
+  // Stdout'u anlik olarak yayinla ve sonucu korumak icin buffer'a biriktir.
   connect(&process, &QProcess::readyReadStandardOutput, this, [&]() {
     const QByteArray chunk = process.readAllStandardOutput();
     stdoutBuffer.append(chunk);
@@ -29,7 +30,6 @@ CommandRunner::Result CommandRunner::run(const QString &program,
   }
 
   process.waitForFinished(-1);
-
   stdoutBuffer.append(process.readAllStandardOutput());
 
   return Result{
@@ -41,7 +41,6 @@ CommandRunner::Result CommandRunner::run(const QString &program,
 
 CommandRunner::Result CommandRunner::runAsRoot(const QString &program,
                                                const QStringList &args) {
-  // pkexec ile privilege escalation — sudo yerine PolicyKit kullanıyoruz
   QStringList pkexecArgs;
   pkexecArgs << program << args;
   return run(QStringLiteral("pkexec"), pkexecArgs);
