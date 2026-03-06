@@ -62,6 +62,7 @@ jobs:
       - name: Install RPM tooling and dependencies
         run: |
           dnf install -y \
+            git \
             rpm-build \
             rpmlint \
             cmake \
