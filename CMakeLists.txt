@@ -35,6 +35,11 @@ find_package(Qt6 QUIET COMPONENTS LinguistTools)
 
 qt_standard_project_setup()
 
+if(COMMAND qt_policy)
+    qt_policy(SET QTP0001 NEW)
+    qt_policy(SET QTP0004 NEW)
+endif()
+
 # ─── Source Files ─────────────────────────────────────────────────────────────
 set(BACKEND_SOURCES
     src/backend/nvidia/detector.cpp
@@ -114,8 +119,8 @@ install(FILES data/icons/ro-control.desktop
     DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
 )
 
-install(DIRECTORY data/icons/
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons
+install(DIRECTORY data/icons/hicolor/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor
 )
 
 install(FILES data/icons/ro-control.metainfo.xml
