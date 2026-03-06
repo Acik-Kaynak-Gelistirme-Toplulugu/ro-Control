@@ -119,8 +119,8 @@ install(FILES data/icons/ro-control.desktop
     DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
 )
 
-install(DIRECTORY data/icons/
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons
+install(DIRECTORY data/icons/hicolor/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor
 )
 
 install(FILES data/icons/ro-control.metainfo.xml
