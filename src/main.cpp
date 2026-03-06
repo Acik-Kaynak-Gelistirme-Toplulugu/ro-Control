@@ -11,10 +11,12 @@
 #include "backend/nvidia/updater.h"
 
 int main(int argc, char *argv[]) {
-  // QApplication: Widgets backend (pencere, sistem tray vb.) için gerekli
+  // TR: QApplication, Qt Widgets tabanli uygulama omurgasini baslatir.
+  // EN: QApplication bootstraps the Qt Widgets application runtime.
   QApplication app(argc, argv);
 
-  // Uygulama meta bilgileri — Q_PROPERTY ve sistem entegrasyonunda kullanılır
+  // TR: Bu meta bilgiler masaustu entegrasyonu ve UI kimligi icin kullanilir.
+  // EN: These metadata values are used for desktop integration and app identity.
   app.setApplicationName("ro-control");
   app.setApplicationDisplayName("ro-Control");
   app.setApplicationVersion("0.1.0");
@@ -29,7 +31,8 @@ int main(int argc, char *argv[]) {
   GpuMonitor gpuMonitor;
   RamMonitor ramMonitor;
 
-  // QML motorunu başlat
+  // TR: QML motoru, arayuz ve bagli context nesnelerini yukler.
+  // EN: The QML engine loads the UI and injected context objects.
   QQmlApplicationEngine engine;
 
   engine.rootContext()->setContextProperty("nvidiaDetector", &detector);
@@ -39,12 +42,14 @@ int main(int argc, char *argv[]) {
   engine.rootContext()->setContextProperty("gpuMonitor", &gpuMonitor);
   engine.rootContext()->setContextProperty("ramMonitor", &ramMonitor);
 
-  // QML yüklenemezse uygulamayı kapat
+  // TR: Ana bileşen olusmazsa uygulamayi kontrollu sekilde sonlandir.
+  // EN: Exit gracefully if the root QML component cannot be created.
   QObject::connect(
       &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
       []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
 
-  // QML modülünden yüklemek, qrc prefix/policy farklarından etkilenmez.
+  // TR: Modulden yukleme, qrc yol/prefix farklarina karsi daha dayaniklidir.
+  // EN: Module-based loading is resilient to qrc path/prefix differences.
   engine.loadFromModule("rocontrol", "Main");
 
   return app.exec();

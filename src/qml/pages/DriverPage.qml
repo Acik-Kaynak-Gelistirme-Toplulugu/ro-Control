@@ -107,6 +107,8 @@ Item {
         RowLayout {
             spacing: 8
 
+            // TR: Manuel kontrol butonu, sonucu log alanina yazar.
+            // EN: Manual check button writes status into the on-screen log.
             Button {
                 text: "Guncelleme Kontrol Et"
                 onClicked: {
@@ -131,6 +133,8 @@ Item {
         RowLayout {
             spacing: 8
 
+            // TR: Yeniden Tara; detector + lisans durumu + update kontrolunu tazeler.
+            // EN: Rescan refreshes detector state, agreement state, and update check.
             Button {
                 text: "Yeniden Tara"
                 onClicked: {
@@ -181,6 +185,8 @@ Item {
 
     Connections {
         target: nvidiaUpdater
+        // TR: Updater backend mesajlarini canli log olarak UI'ye aktar.
+        // EN: Stream updater backend messages into the live UI log.
         function onProgressMessage(message) {
             logArea.append(message);
         }

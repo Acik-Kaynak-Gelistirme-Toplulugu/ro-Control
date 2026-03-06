@@ -12,6 +12,8 @@ NvidiaDetector::NvidiaDetector(QObject *parent) : QObject(parent) {}
 NvidiaDetector::GpuInfo NvidiaDetector::detect() const {
   GpuInfo info;
 
+  // TR: Tespit adimlari olabildigince bagimsiz tutulur; biri fail etse digeri devam eder.
+  // EN: Detection steps are independent so one failure does not block others.
   info.name = detectGpuName();
   info.found = !info.name.isEmpty();
   info.driverVersion = detectDriverVersion();
@@ -42,6 +44,8 @@ QString NvidiaDetector::activeDriver() const {
 }
 
 QString NvidiaDetector::verificationReport() const {
+  // TR: UI icin tek yerde ozet tanilama metni uret.
+  // EN: Produce a single consolidated diagnostic text for the UI.
   const QString gpuText = m_info.found ? m_info.name : QStringLiteral("Yok");
   const QString versionText = m_info.driverVersion.isEmpty()
                                   ? QStringLiteral("Yok")
@@ -105,6 +109,8 @@ QString NvidiaDetector::detectDriverVersion() const {
   if (result.success())
     return result.stdout.trimmed();
 
+  // TR: nvidia-smi yoksa modinfo ile surum fallback'i dene.
+  // EN: If nvidia-smi is unavailable, fall back to modinfo.
   const auto modinfo =
       runner.run(QStringLiteral("modinfo"), {QStringLiteral("nvidia")});
 
@@ -135,6 +141,8 @@ bool NvidiaDetector::isModuleLoaded(const QString &moduleName) const {
 }
 
 bool NvidiaDetector::detectSecureBoot(bool *known) const {
+  // TR: mokutil yoksa "kapali" degil "bilinmiyor" olarak siniflandir.
+  // EN: If mokutil is unavailable, classify as "unknown" rather than "disabled".
   CommandRunner runner;
   const auto result =
       runner.run(QStringLiteral("mokutil"), {QStringLiteral("--sb-state")});

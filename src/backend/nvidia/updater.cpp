@@ -8,6 +8,8 @@
 NvidiaUpdater::NvidiaUpdater(QObject *parent) : QObject(parent) {}
 
 void NvidiaUpdater::checkForUpdate() {
+  // TR: Her kontrol denemesinde UI'ye gorunur bir baslangic mesaji gonder.
+  // EN: Always emit a visible start message for each check request.
   emit progressMessage(
       QStringLiteral("Guncelleme kontrolu baslatildi..."));
 
@@ -31,7 +33,8 @@ void NvidiaUpdater::checkForUpdate() {
     return;
   }
 
-  // DNF'den güncelleme bilgisi al
+  // TR: DNF cikis kodlari: 100=guncelleme var, 0=yok, digeri=hata.
+  // EN: DNF exit codes: 100=updates available, 0=none, others=error.
   CommandRunner runner;
 
   const auto result =
@@ -93,6 +96,8 @@ void NvidiaUpdater::applyUpdate() {
   connect(&runner, &CommandRunner::outputLine, this,
           &NvidiaUpdater::progressMessage);
 
+  // TR: Uzun surebilecek adimlar oncesinde kullaniciya ilerleme bilgisi ver.
+  // EN: Emit progress updates before long-running operations.
   emit progressMessage(QStringLiteral("NVIDIA sürücüsü güncelleniyor..."));
 
   const auto result = runner.runAsRoot(

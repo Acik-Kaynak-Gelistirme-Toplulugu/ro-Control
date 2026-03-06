@@ -28,6 +28,8 @@ int RamMonitor::usagePercent() const { return m_usagePercent; }
 int RamMonitor::updateInterval() const { return m_timer.interval(); }
 
 void RamMonitor::refresh() {
+  // TR: Linux RAM metrikleri /proc/meminfo uzerinden okunur.
+  // EN: Linux memory metrics are read from /proc/meminfo.
   QFile meminfo("/proc/meminfo");
   if (!meminfo.open(QIODevice::ReadOnly | QIODevice::Text)) {
     setAvailable(false);
@@ -43,6 +45,8 @@ void RamMonitor::refresh() {
   qint64 sReclaimableKiB = -1;
   qint64 shmemKiB = -1;
 
+  // TR: "Anahtar: deger" satirlarini guvenli sekilde ayriştir.
+  // EN: Safely parse "Key: value" lines.
   static const QRegularExpression lineRe(
       QStringLiteral(R"(^([A-Za-z_]+):\s+(\d+))"));
 
@@ -79,7 +83,8 @@ void RamMonitor::refresh() {
     }
   }
 
-  // Some kernels/environments may not expose MemAvailable.
+  // TR: Bazi kernel/ortamlarda MemAvailable olmayabilir; yaklasik deger hesapla.
+  // EN: Some kernels/environments do not expose MemAvailable; compute a fallback.
   if (memAvailableKiB < 0 && memFreeKiB >= 0 && buffersKiB >= 0 &&
       cachedKiB >= 0) {
     const qint64 reclaimable = sReclaimableKiB > 0 ? sReclaimableKiB : 0;
@@ -87,6 +92,8 @@ void RamMonitor::refresh() {
     memAvailableKiB = memFreeKiB + buffersKiB + cachedKiB + reclaimable - shmem;
   }
 
+  // TR: Tutarsiz veri geldiyse metrikleri sifirla ve "unavailable" olarak isle.
+  // EN: If metrics are inconsistent, clear values and mark monitor unavailable.
   if (memTotalKiB <= 0 || memAvailableKiB < 0 ||
       memAvailableKiB > memTotalKiB) {
     setAvailable(false);
