@@ -10,8 +10,7 @@ NvidiaUpdater::NvidiaUpdater(QObject *parent) : QObject(parent) {}
 void NvidiaUpdater::checkForUpdate() {
   // TR: Her kontrol denemesinde UI'ye gorunur bir baslangic mesaji gonder.
   // EN: Always emit a visible start message for each check request.
-  emit progressMessage(
-      QStringLiteral("Guncelleme kontrolu baslatildi..."));
+  emit progressMessage(QStringLiteral("Guncelleme kontrolu baslatildi..."));
 
   // Mevcut kurulu sürücü versiyonu
   NvidiaDetector detector;
@@ -28,8 +27,7 @@ void NvidiaUpdater::checkForUpdate() {
       m_updateAvailable = false;
       emit updateAvailableChanged();
     }
-    emit progressMessage(
-        QStringLiteral("Kurulu NVIDIA surucusu bulunamadi."));
+    emit progressMessage(QStringLiteral("Kurulu NVIDIA surucusu bulunamadi."));
     return;
   }
 

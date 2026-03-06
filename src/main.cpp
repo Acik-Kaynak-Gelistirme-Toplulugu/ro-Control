@@ -16,7 +16,8 @@ int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
 
   // TR: Bu meta bilgiler masaustu entegrasyonu ve UI kimligi icin kullanilir.
-  // EN: These metadata values are used for desktop integration and app identity.
+  // EN: These metadata values are used for desktop integration and app
+  // identity.
   app.setApplicationName("ro-control");
   app.setApplicationDisplayName("ro-Control");
   app.setApplicationVersion("0.1.0");

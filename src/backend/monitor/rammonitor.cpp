@@ -83,8 +83,9 @@ void RamMonitor::refresh() {
     }
   }
 
-  // TR: Bazi kernel/ortamlarda MemAvailable olmayabilir; yaklasik deger hesapla.
-  // EN: Some kernels/environments do not expose MemAvailable; compute a fallback.
+  // TR: Bazi kernel/ortamlarda MemAvailable olmayabilir; yaklasik deger
+  // hesapla. EN: Some kernels/environments do not expose MemAvailable; compute
+  // a fallback.
   if (memAvailableKiB < 0 && memFreeKiB >= 0 && buffersKiB >= 0 &&
       cachedKiB >= 0) {
     const qint64 reclaimable = sReclaimableKiB > 0 ? sReclaimableKiB : 0;
