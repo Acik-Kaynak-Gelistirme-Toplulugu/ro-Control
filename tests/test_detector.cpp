@@ -68,6 +68,15 @@ private slots:
       QVERIFY(info.name.isEmpty());
     }
   }
+
+  // verificationReport() her durumda metin döndürmeli
+  void testVerificationReport() {
+    NvidiaDetector detector;
+    detector.refresh();
+    const QString report = detector.verificationReport();
+    QVERIFY(!report.isEmpty());
+    QVERIFY(report.contains(QStringLiteral("Secure Boot")));
+  }
 };
 
 QTEST_MAIN(TestDetector)
