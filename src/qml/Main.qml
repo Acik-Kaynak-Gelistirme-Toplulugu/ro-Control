@@ -26,7 +26,7 @@ ApplicationWindow {
                 anchors.margins: 8
 
                 Image {
-                    source: "qrc:/qt/qml/rocontrol/assets/ro-control-logo.svg"
+                    source: "qrc:/qt/qml/rocontrol/assets/ro-control-logo.png"
                     sourceSize.width: 30
                     sourceSize.height: 30
                     fillMode: Image.PreserveAspectFit

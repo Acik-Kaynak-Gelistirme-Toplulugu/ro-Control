@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![ro-Control Logo](data/icons/hicolor/scalable/apps/ro-control.svg)
+<img src="data/icons/hicolor/256x256/apps/ro-control.png" alt="ro-Control Logo" width="120" height="120"/>
 
 **Linux için Akıllı NVIDIA Sürücü Yöneticisi & Sistem Monitörü**
 
