@@ -52,7 +52,7 @@ ro-Control, **C++20** ve **Qt6/QML** ile geliştirilmiş, Fedora Linux üzerinde
 
 ### Fedora (RPM) — Önerilen
 
-[Releases](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases) sayfasından en son `.rpm` dosyasını indirin:
+[Releases](https://github.com/Project-Ro-ASD/ro-Control/releases) sayfasından en son `.rpm` dosyasını indirin:
 
 ```bash
 sudo dnf install ./ro-control-*.rpm
@@ -73,7 +73,7 @@ sudo dnf install cmake extra-cmake-modules gcc-c++ \
   kf6-qqc2-desktop-style
 
 # Klonla ve derle
-git clone https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control.git
+git clone https://github.com/Project-Ro-ASD/ro-Control.git
 cd ro-Control
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release

@@ -52,7 +52,7 @@ ro-Control is a native KDE Plasma desktop application built with **C++20** and *
 
 ### Fedora (RPM) — Recommended
 
-Download the latest `.rpm` from [Releases](https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control/releases):
+Download the latest `.rpm` from [Releases](https://github.com/Project-Ro-ASD/ro-Control/releases):
 
 ```bash
 sudo dnf install ./ro-control-*.rpm
@@ -73,7 +73,7 @@ sudo dnf install cmake extra-cmake-modules gcc-c++ \
   kf6-qqc2-desktop-style
 
 # Clone and build
-git clone https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control.git
+git clone https://github.com/Project-Ro-ASD/ro-Control.git
 cd ro-Control
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release

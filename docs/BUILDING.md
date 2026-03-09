@@ -36,7 +36,7 @@ sudo dnf install \
 ## Clone the Repository
 
 ```bash
-git clone https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control.git
+git clone https://github.com/Project-Ro-ASD/ro-Control.git
 cd ro-Control
 ```
 
