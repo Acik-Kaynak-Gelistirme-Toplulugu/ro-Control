@@ -1,8 +1,13 @@
-import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 Item {
+    id: page
+    required property var cpuMonitor
+    required property var gpuMonitor
+    required property var ramMonitor
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 20
@@ -34,19 +39,19 @@ Item {
                 }
 
                 Label {
-                    text: cpuMonitor.available ? "Kullanim: " + cpuMonitor.usagePercent.toFixed(1) + "%" : "CPU verisi alinamiyor"
+                    text: page.cpuMonitor.available ? "Kullanim: " + page.cpuMonitor.usagePercent.toFixed(1) + "%" : "CPU verisi alinamiyor"
                 }
 
                 ProgressBar {
                     from: 0
                     to: 100
-                    value: cpuMonitor.usagePercent
+                    value: page.cpuMonitor.usagePercent
                     Layout.fillWidth: true
                 }
 
                 Label {
-                    text: "Sicaklik: " + cpuMonitor.temperatureC + " C"
-                    visible: cpuMonitor.temperatureC > 0
+                    text: "Sicaklik: " + page.cpuMonitor.temperatureC + " C"
+                    visible: page.cpuMonitor.temperatureC > 0
                 }
             }
         }
@@ -71,30 +76,30 @@ Item {
                 }
 
                 Label {
-                    text: gpuMonitor.available ? (gpuMonitor.gpuName.length > 0 ? gpuMonitor.gpuName : "NVIDIA GPU") : "nvidia-smi ile veri alinamadi"
+                    text: page.gpuMonitor.available ? (page.gpuMonitor.gpuName.length > 0 ? page.gpuMonitor.gpuName : "NVIDIA GPU") : "nvidia-smi ile veri alinamadi"
                 }
 
                 Label {
-                    text: "Yuk: " + gpuMonitor.utilizationPercent + "%"
-                    visible: gpuMonitor.available
+                    text: "Yuk: " + page.gpuMonitor.utilizationPercent + "%"
+                    visible: page.gpuMonitor.available
                 }
 
                 ProgressBar {
                     from: 0
                     to: 100
-                    value: gpuMonitor.utilizationPercent
+                    value: page.gpuMonitor.utilizationPercent
                     Layout.fillWidth: true
-                    visible: gpuMonitor.available
+                    visible: page.gpuMonitor.available
                 }
 
                 Label {
-                    text: "VRAM: " + gpuMonitor.memoryUsedMiB + " / " + gpuMonitor.memoryTotalMiB + " MiB (" + gpuMonitor.memoryUsagePercent + "%)"
-                    visible: gpuMonitor.available && gpuMonitor.memoryTotalMiB > 0
+                    text: "VRAM: " + page.gpuMonitor.memoryUsedMiB + " / " + page.gpuMonitor.memoryTotalMiB + " MiB (" + page.gpuMonitor.memoryUsagePercent + "%)"
+                    visible: page.gpuMonitor.available && page.gpuMonitor.memoryTotalMiB > 0
                 }
 
                 Label {
-                    text: "Sicaklik: " + gpuMonitor.temperatureC + " C"
-                    visible: gpuMonitor.available && gpuMonitor.temperatureC > 0
+                    text: "Sicaklik: " + page.gpuMonitor.temperatureC + " C"
+                    visible: page.gpuMonitor.available && page.gpuMonitor.temperatureC > 0
                 }
             }
         }
@@ -119,13 +124,13 @@ Item {
                 }
 
                 Label {
-                    text: ramMonitor.available ? "Kullanim: " + ramMonitor.usedMiB + " / " + ramMonitor.totalMiB + " MiB (" + ramMonitor.usagePercent + "%)" : "RAM verisi alinamiyor"
+                    text: page.ramMonitor.available ? "Kullanim: " + page.ramMonitor.usedMiB + " / " + page.ramMonitor.totalMiB + " MiB (" + page.ramMonitor.usagePercent + "%)" : "RAM verisi alinamiyor"
                 }
 
                 ProgressBar {
                     from: 0
                     to: 100
-                    value: ramMonitor.usagePercent
+                    value: page.ramMonitor.usagePercent
                     Layout.fillWidth: true
                 }
             }
@@ -137,14 +142,14 @@ Item {
             Button {
                 text: "Yenile"
                 onClicked: {
-                    cpuMonitor.refresh();
-                    gpuMonitor.refresh();
-                    ramMonitor.refresh();
+                    page.cpuMonitor.refresh();
+                    page.gpuMonitor.refresh();
+                    page.ramMonitor.refresh();
                 }
             }
 
             Label {
-                text: "Guncelleme araligi: " + cpuMonitor.updateInterval + " ms"
+                text: "Guncelleme araligi: " + page.cpuMonitor.updateInterval + " ms"
                 color: "#6d7384"
             }
         }

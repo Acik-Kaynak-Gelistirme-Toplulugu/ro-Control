@@ -110,7 +110,7 @@ sudo dnf install cmake extra-cmake-modules gcc-c++ \
 ### Build
 
 ```bash
-git clone https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control.git
+git clone https://github.com/Project-Ro-ASD/ro-Control.git
 cd ro-Control
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Debug

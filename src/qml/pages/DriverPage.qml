@@ -1,9 +1,12 @@
-import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 Item {
     id: page
+    required property var nvidiaDetector
+    required property var nvidiaInstaller
+    required property var nvidiaUpdater
 
     ColumnLayout {
         anchors.fill: parent
@@ -17,33 +20,33 @@ Item {
         }
 
         Label {
-            text: "GPU: " + (nvidiaDetector.gpuFound ? nvidiaDetector.gpuName : "Tespit edilmedi")
+            text: "GPU: " + (page.nvidiaDetector.gpuFound ? page.nvidiaDetector.gpuName : "Tespit edilmedi")
             wrapMode: Text.Wrap
             Layout.fillWidth: true
         }
 
         Label {
-            text: "Aktif surucu: " + nvidiaDetector.activeDriver
+            text: "Aktif surucu: " + page.nvidiaDetector.activeDriver
             wrapMode: Text.Wrap
         }
 
         Label {
-            text: "Surucu versiyonu: " + (nvidiaDetector.driverVersion.length > 0 ? nvidiaDetector.driverVersion : "Yok")
+            text: "Surucu versiyonu: " + (page.nvidiaDetector.driverVersion.length > 0 ? page.nvidiaDetector.driverVersion : "Yok")
         }
 
         Label {
-            text: "Secure Boot: " + (nvidiaDetector.secureBootKnown ? (nvidiaDetector.secureBootEnabled ? "Acik" : "Kapali") : "Bilinmiyor")
-            color: !nvidiaDetector.secureBootKnown ? "#8a6500" : (nvidiaDetector.secureBootEnabled ? "#c43a3a" : "#2b8a3e")
+            text: "Secure Boot: " + (page.nvidiaDetector.secureBootKnown ? (page.nvidiaDetector.secureBootEnabled ? "Acik" : "Kapali") : "Bilinmiyor")
+            color: !page.nvidiaDetector.secureBootKnown ? "#8a6500" : (page.nvidiaDetector.secureBootEnabled ? "#c43a3a" : "#2b8a3e")
             font.bold: true
         }
 
         Label {
-            text: "Oturum altyapisi: " + nvidiaDetector.sessionType
+            text: "Oturum altyapisi: " + page.nvidiaDetector.sessionType
             font.bold: true
         }
 
         Label {
-            text: nvidiaDetector.waylandSession ? "Wayland icin nvidia-drm.modeset=1 parametresi otomatik uygulanir." : "X11 icin xorg-x11-drv-nvidia paketi kontrol edilip kurulur."
+            text: page.nvidiaDetector.waylandSession ? "Wayland icin nvidia-drm.modeset=1 parametresi otomatik uygulanir." : "X11 icin xorg-x11-drv-nvidia paketi kontrol edilip kurulur."
             wrapMode: Text.Wrap
             Layout.fillWidth: true
             color: "#6d7384"
@@ -61,14 +64,14 @@ Item {
                 id: verificationText
                 anchors.fill: parent
                 anchors.margins: 10
-                text: nvidiaDetector.verificationReport
+                text: page.nvidiaDetector.verificationReport
                 wrapMode: Text.Wrap
             }
         }
 
         Label {
-            visible: nvidiaInstaller.proprietaryAgreementRequired
-            text: nvidiaInstaller.proprietaryAgreementText
+            visible: page.nvidiaInstaller.proprietaryAgreementRequired
+            text: page.nvidiaInstaller.proprietaryAgreementText
             color: "#8a6500"
             wrapMode: Text.Wrap
             Layout.fillWidth: true
@@ -76,7 +79,7 @@ Item {
 
         CheckBox {
             id: eulaAccept
-            visible: nvidiaInstaller.proprietaryAgreementRequired
+            visible: page.nvidiaInstaller.proprietaryAgreementRequired
             text: "Lisans/sozlesme kosullarini kabul ediyorum"
         }
 
@@ -86,21 +89,21 @@ Item {
 
             Button {
                 text: "Kapali Kaynak Surucu Kur"
-                enabled: !nvidiaInstaller.proprietaryAgreementRequired || eulaAccept.checked
-                onClicked: nvidiaInstaller.installProprietary(eulaAccept.checked)
+                enabled: !page.nvidiaInstaller.proprietaryAgreementRequired || eulaAccept.checked
+                onClicked: page.nvidiaInstaller.installProprietary(eulaAccept.checked)
             }
 
             Button {
                 text: "Nouveau Surucusu Kur"
                 onClicked: {
                     logArea.append("Nouveau surucusu kurulumu baslatildi...");
-                    nvidiaInstaller.installOpenSource();
+                    page.nvidiaInstaller.installOpenSource();
                 }
             }
 
             Button {
                 text: "Deep Clean"
-                onClicked: nvidiaInstaller.deepClean()
+                onClicked: page.nvidiaInstaller.deepClean()
             }
         }
 
@@ -113,19 +116,19 @@ Item {
                 text: "Guncelleme Kontrol Et"
                 onClicked: {
                     logArea.append("Guncelleme kontrolu istendi...");
-                    nvidiaUpdater.checkForUpdate();
+                    page.nvidiaUpdater.checkForUpdate();
                 }
             }
 
             Button {
                 text: "Guncellemeyi Uygula"
-                enabled: nvidiaUpdater.updateAvailable
-                onClicked: nvidiaUpdater.applyUpdate()
+                enabled: page.nvidiaUpdater.updateAvailable
+                onClicked: page.nvidiaUpdater.applyUpdate()
             }
 
             Label {
-                visible: nvidiaUpdater.updateAvailable
-                text: "Yeni surum: " + nvidiaUpdater.latestVersion
+                visible: page.nvidiaUpdater.updateAvailable
+                text: "Yeni surum: " + page.nvidiaUpdater.latestVersion
                 color: "#8a6500"
             }
         }
@@ -139,16 +142,16 @@ Item {
                 text: "Yeniden Tara"
                 onClicked: {
                     logArea.append("Sistem yeniden taraniyor...");
-                    nvidiaDetector.refresh();
-                    nvidiaInstaller.refreshProprietaryAgreement();
-                    nvidiaUpdater.checkForUpdate();
+                    page.nvidiaDetector.refresh();
+                    page.nvidiaInstaller.refreshProprietaryAgreement();
+                    page.nvidiaUpdater.checkForUpdate();
                     logArea.append("Yeniden tarama tamamlandi.");
                 }
             }
 
             Label {
-                text: "Mevcut nvidia surumu: " + nvidiaUpdater.currentVersion
-                visible: nvidiaUpdater.currentVersion.length > 0
+                text: "Mevcut nvidia surumu: " + page.nvidiaUpdater.currentVersion
+                visible: page.nvidiaUpdater.currentVersion.length > 0
             }
         }
 
@@ -166,25 +169,25 @@ Item {
     }
 
     Connections {
-        target: nvidiaInstaller
+        target: page.nvidiaInstaller
         function onProgressMessage(message) {
             logArea.append(message);
         }
         function onInstallFinished(success, message) {
             logArea.append(message);
-            nvidiaDetector.refresh();
-            nvidiaUpdater.checkForUpdate();
-            nvidiaInstaller.refreshProprietaryAgreement();
+            page.nvidiaDetector.refresh();
+            page.nvidiaUpdater.checkForUpdate();
+            page.nvidiaInstaller.refreshProprietaryAgreement();
         }
         function onRemoveFinished(success, message) {
             logArea.append(message);
-            nvidiaDetector.refresh();
-            nvidiaInstaller.refreshProprietaryAgreement();
+            page.nvidiaDetector.refresh();
+            page.nvidiaInstaller.refreshProprietaryAgreement();
         }
     }
 
     Connections {
-        target: nvidiaUpdater
+        target: page.nvidiaUpdater
         // TR: Updater backend mesajlarini canli log olarak UI'ye aktar.
         // EN: Stream updater backend messages into the live UI log.
         function onProgressMessage(message) {
@@ -192,14 +195,14 @@ Item {
         }
         function onUpdateFinished(success, message) {
             logArea.append(message);
-            nvidiaDetector.refresh();
-            nvidiaUpdater.checkForUpdate();
+            page.nvidiaDetector.refresh();
+            page.nvidiaUpdater.checkForUpdate();
         }
     }
 
     Component.onCompleted: {
-        nvidiaDetector.refresh();
-        nvidiaUpdater.checkForUpdate();
-        nvidiaInstaller.refreshProprietaryAgreement();
+        page.nvidiaDetector.refresh();
+        page.nvidiaUpdater.checkForUpdate();
+        page.nvidiaInstaller.refreshProprietaryAgreement();
     }
 }
