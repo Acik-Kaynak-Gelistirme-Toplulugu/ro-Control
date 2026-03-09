@@ -2,6 +2,7 @@
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QVariant>
 
 #include "backend/monitor/cpumonitor.h"
 #include "backend/monitor/gpumonitor.h"
@@ -37,6 +38,17 @@ int main(int argc, char *argv[]) {
   // TR: QML motoru, arayuz ve bagli context nesnelerini yukler.
   // EN: The QML engine loads the UI and injected context objects.
   QQmlApplicationEngine engine;
+
+  // TR: Ana pencerenin gerekli backend baglantilarini baslangicta enjekte et.
+  // EN: Inject required backend bindings into the main QML root object.
+  engine.setInitialProperties({
+      {"nvidiaDetector", QVariant::fromValue(&detector)},
+      {"nvidiaInstaller", QVariant::fromValue(&installer)},
+      {"nvidiaUpdater", QVariant::fromValue(&updater)},
+      {"cpuMonitor", QVariant::fromValue(&cpuMonitor)},
+      {"gpuMonitor", QVariant::fromValue(&gpuMonitor)},
+      {"ramMonitor", QVariant::fromValue(&ramMonitor)},
+  });
 
   engine.rootContext()->setContextProperty("nvidiaDetector", &detector);
   engine.rootContext()->setContextProperty("nvidiaInstaller", &installer);
