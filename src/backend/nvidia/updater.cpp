@@ -67,19 +67,19 @@ void NvidiaUpdater::applyUpdate() {
   connect(&runner, &CommandRunner::outputLine, this,
           &NvidiaUpdater::progressMessage);
 
-  emit progressMessage(QStringLiteral("NVIDIA sürücüsü güncelleniyor..."));
+  emit progressMessage(tr("Updating the NVIDIA driver..."));
 
   const auto result = runner.runAsRoot(
       QStringLiteral("dnf"), {QStringLiteral("update"), QStringLiteral("-y"),
                               QStringLiteral("akmod-nvidia")});
 
   if (!result.success()) {
-    emit updateFinished(false, QStringLiteral("Güncelleme başarısız: ") +
-                                   result.stderr);
+    emit updateFinished(false,
+                        tr("Update failed: ") + result.stderr);
     return;
   }
 
-  emit progressMessage(QStringLiteral("Kernel modülü yeniden derleniyor..."));
+  emit progressMessage(tr("Rebuilding the kernel module..."));
 
   runner.runAsRoot(QStringLiteral("akmods"), {QStringLiteral("--force")});
 
@@ -87,7 +87,7 @@ void NvidiaUpdater::applyUpdate() {
       qEnvironmentVariable("XDG_SESSION_TYPE").trimmed().toLower();
   if (sessionType == QStringLiteral("wayland")) {
     emit progressMessage(QStringLiteral(
-        "Wayland tespit edildi: nvidia-drm.modeset=1 ayari guncelleniyor..."));
+        "Wayland detected: refreshing nvidia-drm.modeset=1..."));
     runner.runAsRoot(QStringLiteral("grubby"),
                      {QStringLiteral("--update-kernel=ALL"),
                       QStringLiteral("--args=nvidia-drm.modeset=1")});
@@ -101,6 +101,5 @@ void NvidiaUpdater::applyUpdate() {
 
   emit updateFinished(
       true,
-      QStringLiteral(
-          "Sürücü başarıyla güncellendi. Lütfen sistemi yeniden başlatın."));
+      tr("Driver updated successfully. Please restart the system."));
 }

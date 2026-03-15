@@ -7,7 +7,7 @@ ApplicationWindow {
     visible: true
     width: 980
     height: 640
-    title: "ro-Control"
+    title: qsTr("ro-Control")
     readonly property bool darkMode: Qt.styleHints.colorScheme === Qt.Dark
     color: darkMode ? "#141822" : "#f4f6fb"
 
@@ -26,7 +26,7 @@ ApplicationWindow {
                 anchors.margins: 8
 
                 Label {
-                    text: "ro-Control"
+                    text: qsTr("ro-Control")
                     font.pixelSize: 20
                     font.bold: true
                     color: root.darkMode ? "#e8edfb" : "#121825"
@@ -37,7 +37,7 @@ ApplicationWindow {
                 }
 
                 Label {
-                    text: root.darkMode ? "Tema: Sistem (Koyu)" : "Tema: Sistem (Acik)"
+                    text: root.darkMode ? qsTr("Theme: System (Dark)") : qsTr("Theme: System (Light)")
                     color: root.darkMode ? "#c8d0e7" : "#36435f"
                 }
             }
@@ -48,13 +48,13 @@ ApplicationWindow {
             Layout.fillWidth: true
 
             TabButton {
-                text: "Surucu"
+                text: qsTr("Driver")
             }
             TabButton {
-                text: "Izleme"
+                text: qsTr("Monitor")
             }
             TabButton {
-                text: "Ayarlar"
+                text: qsTr("Settings")
             }
         }
 

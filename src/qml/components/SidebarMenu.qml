@@ -11,13 +11,13 @@ Rectangle {
     ListModel {
         id: menuModel
         ListElement {
-            label: "Sürücü Yönetimi"
+            label: "Driver Management"
         }
         ListElement {
-            label: "Sistem İzleme"
+            label: "System Monitoring"
         }
         ListElement {
-            label: "Ayarlar"
+            label: "Settings"
         }
     }
 
@@ -32,7 +32,7 @@ Rectangle {
 
             Label {
                 anchors.centerIn: parent
-                text: "ro-Control"
+                text: qsTr("ro-Control")
                 font.pixelSize: 22
                 font.bold: true
                 color: "#cdd6f4"

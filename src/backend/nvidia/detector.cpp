@@ -35,30 +35,27 @@ QString NvidiaDetector::installedDriverVersion() const {
 
 QString NvidiaDetector::activeDriver() const {
   if (m_info.driverLoaded)
-    return QStringLiteral("Kapali Kaynak (NVIDIA)");
+    return tr("Proprietary (NVIDIA)");
   if (m_info.nouveauActive)
-    return QStringLiteral("Acik Kaynak (Nouveau)");
-  return QStringLiteral("Yuklu Degil/Bilinmiyor");
+    return tr("Open Source (Nouveau)");
+  return tr("Not Installed / Unknown");
 }
 
 QString NvidiaDetector::verificationReport() const {
-  const QString gpuText = m_info.found ? m_info.name : QStringLiteral("Yok");
+  const QString gpuText = m_info.found ? m_info.name : tr("None");
   const QString versionText = m_info.driverVersion.isEmpty()
-                                  ? QStringLiteral("Yok")
+                                  ? tr("None")
                                   : m_info.driverVersion;
 
-  return QStringLiteral(
-             "GPU: %1\nSurucu Versiyonu: %2\nSecure Boot: %3\nOturum: %4\n"
-             "NVIDIA Modulu: %5\nNouveau: %6")
+  return tr("GPU: %1\nDriver Version: %2\nSecure Boot: %3\nSession: %4\n"
+            "NVIDIA Module: %5\nNouveau: %6")
       .arg(gpuText, versionText,
-           m_info.secureBootEnabled ? QStringLiteral("Acik")
-                                    : QStringLiteral("Kapali/Bilinmiyor"),
-           m_info.sessionType.isEmpty() ? QStringLiteral("Bilinmiyor")
+           m_info.secureBootEnabled ? tr("Enabled")
+                                    : tr("Disabled / Unknown"),
+           m_info.sessionType.isEmpty() ? tr("Unknown")
                                         : m_info.sessionType,
-           m_info.driverLoaded ? QStringLiteral("Yuklu")
-                               : QStringLiteral("Yuklu degil"),
-           m_info.nouveauActive ? QStringLiteral("Aktif")
-                                : QStringLiteral("Aktif degil"));
+           m_info.driverLoaded ? tr("Loaded") : tr("Not loaded"),
+           m_info.nouveauActive ? tr("Active") : tr("Inactive"));
 }
 
 void NvidiaDetector::refresh() {

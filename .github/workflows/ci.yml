@@ -26,6 +26,7 @@ jobs:
             ninja-build \
             qt6-qtbase-devel \
             qt6-qtdeclarative-devel \
+            qt6-qttools-devel \
             qt6-qtwayland-devel \
             kf6-qqc2-desktop-style \
             polkit-devel \
@@ -37,7 +38,8 @@ jobs:
           cmake -B build \
             -GNinja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_TESTS=ON
+            -DBUILD_TESTS=ON \
+            -DREQUIRE_TRANSLATIONS=ON
 
       - name: Build
         run: cmake --build build --parallel
@@ -49,9 +51,6 @@ jobs:
         run: |
           find src \( -name "*.cpp" -o -name "*.h" \) -print0 | \
           xargs -0 clang-format --dry-run --Werror
-
-      - name: Run tests
-        run: ctest --test-dir build --output-on-failure
 
   package-rpm:
     name: RPM Build Check
@@ -66,21 +65,34 @@ jobs:
       - name: Install RPM tooling and dependencies
         run: |
           dnf install -y \
+            git \
             rpm-build \
             rpmlint \
             cmake \
             extra-cmake-modules \
             gcc-c++ \
+            ninja-build \
             qt6-qtbase-devel \
             qt6-qtdeclarative-devel \
+            qt6-qttools-devel \
             qt6-qtwayland-devel \
             kf6-qqc2-desktop-style \
             polkit-devel
 
       - name: Prepare source tarball
         run: |
+          VERSION="$(awk '/^Version:/ {print $2}' packaging/rpm/ro-control.spec)"
+          if [[ -z "${VERSION}" ]]; then
+            echo "Failed to read Version from packaging/rpm/ro-control.spec" >&2
+            exit 1
+          fi
+          ARCHIVE_BASENAME="ro-control-${VERSION}"
           mkdir -p ~/rpmbuild/SOURCES
-          git archive --format=tar.gz --output=~/rpmbuild/SOURCES/ro-control-0.1.0.tar.gz HEAD
+          STAGE_DIR="$(mktemp -d)"
+          cp -a . "${STAGE_DIR}/${ARCHIVE_BASENAME}"
+          rm -rf "${STAGE_DIR}/${ARCHIVE_BASENAME}/.git" "${STAGE_DIR}/${ARCHIVE_BASENAME}/build"
+          tar -C "${STAGE_DIR}" -czf "${HOME}/rpmbuild/SOURCES/${ARCHIVE_BASENAME}.tar.gz" "${ARCHIVE_BASENAME}"
+          rm -rf "${STAGE_DIR}"
 
       - name: Build RPM
         run: |

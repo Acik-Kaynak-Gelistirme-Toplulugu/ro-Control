@@ -48,11 +48,10 @@ void NvidiaInstaller::refreshProprietaryAgreement() {
 
   if (requiresAgreement) {
     setProprietaryAgreement(
-        true, QStringLiteral(
-                  "Kapali kaynak NVIDIA surucusunu kurmadan once lisans "
-                  "kosullarini kabul etmeniz gerekir. Tespit edilen lisans: %1")
-                  .arg(licenseLine.isEmpty() ? QStringLiteral("Bilinmiyor")
-                                             : licenseLine));
+        true,
+        tr("You must accept the NVIDIA proprietary driver license terms "
+           "before installation. Detected license: %1")
+            .arg(licenseLine.isEmpty() ? tr("Unknown") : licenseLine));
     return;
   }
 
@@ -65,9 +64,9 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
   refreshProprietaryAgreement();
 
   if (m_proprietaryAgreementRequired && !agreementAccepted) {
-    emit installFinished(
-        false,
-        QStringLiteral("Kurulumdan once lisans/sozlesme onayi gereklidir."));
+    emit installFinished(false,
+                         tr("License agreement acceptance is required before "
+                            "installation."));
     return;
   }
 
@@ -76,7 +75,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
   connect(&runner, &CommandRunner::outputLine, this,
           &NvidiaInstaller::progressMessage);
 
-  emit progressMessage(QStringLiteral("RPM Fusion deposu kontrol ediliyor..."));
+  emit progressMessage(tr("Checking RPM Fusion repositories..."));
 
   CommandRunner rpmRunner;
   const auto fedoraResult = rpmRunner.run(
@@ -84,8 +83,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
 
   const QString fedoraVersion = fedoraResult.stdout.trimmed();
   if (fedoraVersion.isEmpty()) {
-    emit installFinished(false,
-                         QStringLiteral("Fedora surumu tespit edilemedi."));
+    emit installFinished(false, tr("Platform version could not be detected."));
     return;
   }
 
@@ -100,13 +98,14 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
            .arg(fedoraVersion)});
 
   if (!result.success()) {
-    emit installFinished(false, QStringLiteral("RPM Fusion repo eklenemedi: ") +
-                                    result.stderr);
+    emit installFinished(false,
+                         tr("Failed to enable RPM Fusion repositories: ") +
+                             result.stderr);
     return;
   }
 
-  emit progressMessage(QStringLiteral(
-      "Kapali kaynak NVIDIA surucusu kuruluyor (akmod-nvidia)..."));
+  emit progressMessage(
+      tr("Installing the proprietary NVIDIA driver (akmod-nvidia)..."));
 
   result = runner.runAsRoot(QStringLiteral("dnf"),
                             {QStringLiteral("install"), QStringLiteral("-y"),
@@ -114,12 +113,11 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
 
   if (!result.success()) {
     emit installFinished(false,
-                         QStringLiteral("Kurulum basarisiz: ") + result.stderr);
+                         tr("Installation failed: ") + result.stderr);
     return;
   }
 
-  emit progressMessage(
-      QStringLiteral("Kernel modulu derleniyor (akmods --force)..."));
+  emit progressMessage(tr("Building the kernel module (akmods --force)..."));
   runner.runAsRoot(QStringLiteral("akmods"), {QStringLiteral("--force")});
 
   const QString sessionType = detectSessionType();
@@ -130,8 +128,9 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
   }
 
   emit installFinished(
-      true, QStringLiteral("Kapali kaynak NVIDIA surucusu basariyla kuruldu. "
-                           "Lutfen sistemi yeniden baslatin."));
+      true,
+      tr("The proprietary NVIDIA driver was installed successfully. Please "
+         "restart the system."));
 }
 
 void NvidiaInstaller::installOpenSource() {
@@ -140,8 +139,7 @@ void NvidiaInstaller::installOpenSource() {
   connect(&runner, &CommandRunner::outputLine, this,
           &NvidiaInstaller::progressMessage);
 
-  emit progressMessage(
-      QStringLiteral("Acik kaynak surucuye gecis baslatiliyor..."));
+  emit progressMessage(tr("Switching to the open-source driver..."));
 
   // Once kapali kaynak paketleri kaldir.
   auto result = runner.runAsRoot(
@@ -151,7 +149,7 @@ void NvidiaInstaller::installOpenSource() {
 
   if (!result.success()) {
     emit installFinished(
-        false, QStringLiteral("Kapali kaynak paket kaldirma basarisiz: ") +
+        false, tr("Failed to remove proprietary packages: ") +
                    result.stderr);
     return;
   }
@@ -164,7 +162,7 @@ void NvidiaInstaller::installOpenSource() {
 
   if (!result.success()) {
     emit installFinished(
-        false, QStringLiteral("Acik kaynak surucu kurulumu basarisiz: ") +
+        false, tr("Open-source driver installation failed: ") +
                    result.stderr);
     return;
   }
@@ -172,8 +170,8 @@ void NvidiaInstaller::installOpenSource() {
   runner.runAsRoot(QStringLiteral("dracut"), {QStringLiteral("--force")});
 
   emit installFinished(true,
-                       QStringLiteral("Acik kaynak surucu (Nouveau) kuruldu. "
-                                      "Lutfen sistemi yeniden baslatin."));
+                       tr("The open-source driver (Nouveau) was installed. "
+                          "Please restart the system."));
 }
 
 void NvidiaInstaller::remove() {
@@ -181,7 +179,7 @@ void NvidiaInstaller::remove() {
   connect(&runner, &CommandRunner::outputLine, this,
           &NvidiaInstaller::progressMessage);
 
-  emit progressMessage(QStringLiteral("NVIDIA surucusu kaldiriliyor..."));
+  emit progressMessage(tr("Removing the NVIDIA driver..."));
 
   const auto result = runner.runAsRoot(
       QStringLiteral("dnf"),
@@ -189,10 +187,9 @@ void NvidiaInstaller::remove() {
        QStringLiteral("akmod-nvidia"), QStringLiteral("xorg-x11-drv-nvidia*")});
 
   emit removeFinished(result.success(),
-                      result.success()
-                          ? QStringLiteral("Surucu basariyla kaldirildi.")
-                          : QStringLiteral("Kaldirma basarisiz: ") +
-                                result.stderr);
+                      result.success() ? tr("Driver removed successfully.")
+                                       : tr("Removal failed: ") +
+                                             result.stderr);
 }
 
 void NvidiaInstaller::deepClean() {
@@ -200,8 +197,7 @@ void NvidiaInstaller::deepClean() {
   connect(&runner, &CommandRunner::outputLine, this,
           &NvidiaInstaller::progressMessage);
 
-  emit progressMessage(
-      QStringLiteral("Eski surucu kalintilari temizleniyor..."));
+  emit progressMessage(tr("Cleaning legacy driver leftovers..."));
 
   runner.runAsRoot(QStringLiteral("dnf"),
                    {QStringLiteral("remove"), QStringLiteral("-y"),
@@ -210,7 +206,7 @@ void NvidiaInstaller::deepClean() {
   runner.runAsRoot(QStringLiteral("dnf"),
                    {QStringLiteral("clean"), QStringLiteral("all")});
 
-  emit progressMessage(QStringLiteral("Deep clean tamamlandi."));
+  emit progressMessage(tr("Deep clean completed."));
 }
 
 QString NvidiaInstaller::detectSessionType() const {
@@ -240,7 +236,7 @@ bool NvidiaInstaller::applySessionSpecificSetup(CommandRunner &runner,
                                                 QString *errorMessage) {
   if (sessionType == QStringLiteral("wayland")) {
     emit progressMessage(QStringLiteral(
-        "Wayland tespit edildi: nvidia-drm.modeset=1 ayari uygulaniyor..."));
+        "Wayland detected: applying nvidia-drm.modeset=1..."));
 
     const auto result =
         runner.runAsRoot(QStringLiteral("grubby"),
@@ -250,7 +246,7 @@ bool NvidiaInstaller::applySessionSpecificSetup(CommandRunner &runner,
     if (!result.success()) {
       if (errorMessage) {
         *errorMessage =
-            QStringLiteral("Wayland icin kernel parametresi uygulanamadi: ") +
+            tr("Failed to apply the Wayland kernel parameter: ") +
             result.stderr;
       }
       return false;
@@ -260,8 +256,7 @@ bool NvidiaInstaller::applySessionSpecificSetup(CommandRunner &runner,
 
   if (sessionType == QStringLiteral("x11")) {
     emit progressMessage(
-        QStringLiteral("X11 tespit edildi: X11 NVIDIA userspace paketleri "
-                       "kontrol ediliyor..."));
+        tr("X11 detected: checking NVIDIA userspace packages..."));
 
     const auto result = runner.runAsRoot(
         QStringLiteral("dnf"), {QStringLiteral("install"), QStringLiteral("-y"),
@@ -269,8 +264,8 @@ bool NvidiaInstaller::applySessionSpecificSetup(CommandRunner &runner,
 
     if (!result.success()) {
       if (errorMessage) {
-        *errorMessage = QStringLiteral("X11 NVIDIA paketi kurulurken hata: ") +
-                        result.stderr;
+        *errorMessage =
+            tr("Failed to install the X11 NVIDIA package: ") + result.stderr;
       }
       return false;
     }

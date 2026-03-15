@@ -11,39 +11,41 @@ Item {
         spacing: 12
 
         Label {
-            text: "Surucu Yonetimi"
+            text: qsTr("Driver Management")
             font.pixelSize: 24
             font.bold: true
         }
 
         Label {
-            text: "GPU: " + (nvidiaDetector.gpuFound ? nvidiaDetector.gpuName : "Tespit edilmedi")
+            text: qsTr("GPU: ") + (nvidiaDetector.gpuFound ? nvidiaDetector.gpuName : qsTr("Not detected"))
             wrapMode: Text.Wrap
             Layout.fillWidth: true
         }
 
         Label {
-            text: "Aktif surucu: " + nvidiaDetector.activeDriver
+            text: qsTr("Active driver: ") + nvidiaDetector.activeDriver
             wrapMode: Text.Wrap
         }
 
         Label {
-            text: "Surucu versiyonu: " + (nvidiaDetector.driverVersion.length > 0 ? nvidiaDetector.driverVersion : "Yok")
+            text: qsTr("Driver version: ") + (nvidiaDetector.driverVersion.length > 0 ? nvidiaDetector.driverVersion : qsTr("None"))
         }
 
         Label {
-            text: "Secure Boot: " + (nvidiaDetector.secureBootEnabled ? "Acik" : "Kapali/Bilinmiyor")
+            text: qsTr("Secure Boot: ") + (nvidiaDetector.secureBootEnabled ? qsTr("Enabled") : qsTr("Disabled / Unknown"))
             color: nvidiaDetector.secureBootEnabled ? "#c43a3a" : "#2b8a3e"
             font.bold: true
         }
 
         Label {
-            text: "Oturum altyapisi: " + nvidiaDetector.sessionType
+            text: qsTr("Session type: ") + nvidiaDetector.sessionType
             font.bold: true
         }
 
         Label {
-            text: nvidiaDetector.waylandSession ? "Wayland icin nvidia-drm.modeset=1 parametresi otomatik uygulanir." : "X11 icin xorg-x11-drv-nvidia paketi kontrol edilip kurulur."
+            text: nvidiaDetector.waylandSession
+                  ? qsTr("For Wayland sessions, nvidia-drm.modeset=1 is applied automatically.")
+                  : qsTr("For X11 sessions, the xorg-x11-drv-nvidia package is verified and installed.")
             wrapMode: Text.Wrap
             Layout.fillWidth: true
             color: "#6d7384"
@@ -77,7 +79,7 @@ Item {
         CheckBox {
             id: eulaAccept
             visible: nvidiaInstaller.proprietaryAgreementRequired
-            text: "Lisans/sozlesme kosullarini kabul ediyorum"
+            text: qsTr("I accept the license / agreement terms")
         }
 
         RowLayout {
@@ -85,18 +87,18 @@ Item {
             spacing: 8
 
             Button {
-                text: "Kapali Kaynak Surucu Kur"
+                text: qsTr("Install Proprietary Driver")
                 enabled: !nvidiaInstaller.proprietaryAgreementRequired || eulaAccept.checked
                 onClicked: nvidiaInstaller.installProprietary(eulaAccept.checked)
             }
 
             Button {
-                text: "Acik Kaynak Surucu Kur (Nouveau)"
+                text: qsTr("Install Open-Source Driver (Nouveau)")
                 onClicked: nvidiaInstaller.installOpenSource()
             }
 
             Button {
-                text: "Deep Clean"
+                text: qsTr("Deep Clean")
                 onClicked: nvidiaInstaller.deepClean()
             }
         }
@@ -105,19 +107,19 @@ Item {
             spacing: 8
 
             Button {
-                text: "Guncelleme Kontrol Et"
+                text: qsTr("Check for Updates")
                 onClicked: nvidiaUpdater.checkForUpdate()
             }
 
             Button {
-                text: "Guncellemeyi Uygula"
+                text: qsTr("Apply Update")
                 enabled: nvidiaUpdater.updateAvailable
                 onClicked: nvidiaUpdater.applyUpdate()
             }
 
             Label {
                 visible: nvidiaUpdater.updateAvailable
-                text: "Yeni surum: " + nvidiaUpdater.latestVersion
+                text: qsTr("Latest version: ") + nvidiaUpdater.latestVersion
                 color: "#8a6500"
             }
         }
@@ -126,7 +128,7 @@ Item {
             spacing: 8
 
             Button {
-                text: "Yeniden Tara"
+                text: qsTr("Rescan")
                 onClicked: {
                     nvidiaDetector.refresh();
                     nvidiaInstaller.refreshProprietaryAgreement();
@@ -134,7 +136,7 @@ Item {
             }
 
             Label {
-                text: "Mevcut nvidia surumu: " + nvidiaUpdater.currentVersion
+                text: qsTr("Installed NVIDIA version: ") + nvidiaUpdater.currentVersion
                 visible: nvidiaUpdater.currentVersion.length > 0
             }
         }

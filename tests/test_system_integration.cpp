@@ -13,6 +13,26 @@ private slots:
     CommandRunner runner;
     const auto result = runner.run(QStringLiteral("true"));
     QCOMPARE(result.exitCode, 0);
+    QVERIFY(result.success());
+  }
+
+  void testCommandRunnerMissingBinary() {
+    CommandRunner runner;
+    const auto result = runner.run(QStringLiteral("ro-control-command-that-does-not-exist"));
+    QCOMPARE(result.exitCode, -1);
+    QVERIFY(result.stderr.contains(QStringLiteral("Failed to start")));
+  }
+
+  void testDnfManagerEmptyPackageListsFailFast() {
+    DnfManager dnf;
+
+    const auto installResult = dnf.installPackages({});
+    QCOMPARE(installResult.exitCode, -1);
+    QVERIFY(installResult.stderr.contains(QStringLiteral("No packages provided")));
+
+    const auto removeResult = dnf.removePackages({});
+    QCOMPARE(removeResult.exitCode, -1);
+    QVERIFY(removeResult.stderr.contains(QStringLiteral("No packages provided")));
   }
 
   void testDnfManagerAvailabilityAndVersion() {
@@ -32,6 +52,9 @@ private slots:
     const bool hasPkexec = polkit.isPkexecAvailable();
 
     if (!hasPkexec) {
+      const auto result = polkit.runPrivileged(QStringLiteral("true"));
+      QCOMPARE(result.exitCode, -1);
+      QVERIFY(result.stderr.contains(QStringLiteral("pkexec not found")));
       QSKIP("pkexec is not available on this host.");
     }
 

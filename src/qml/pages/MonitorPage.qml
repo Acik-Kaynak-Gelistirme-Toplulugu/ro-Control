@@ -9,7 +9,7 @@ Item {
         spacing: 12
 
         Label {
-            text: "Sistem Izleme"
+            text: qsTr("System Monitoring")
             font.pixelSize: 24
             font.bold: true
         }
@@ -29,12 +29,12 @@ Item {
                 spacing: 6
 
                 Label {
-                    text: "CPU"
+                    text: qsTr("CPU")
                     font.bold: true
                 }
 
                 Label {
-                    text: cpuMonitor.available ? "Kullanim: " + cpuMonitor.usagePercent.toFixed(1) + "%" : "CPU verisi alinamiyor"
+                    text: cpuMonitor.available ? qsTr("Usage: ") + cpuMonitor.usagePercent.toFixed(1) + "%" : qsTr("CPU data unavailable")
                 }
 
                 ProgressBar {
@@ -45,7 +45,7 @@ Item {
                 }
 
                 Label {
-                    text: "Sicaklik: " + cpuMonitor.temperatureC + " C"
+                    text: qsTr("Temperature: ") + cpuMonitor.temperatureC + " C"
                     visible: cpuMonitor.temperatureC > 0
                 }
             }
@@ -66,16 +66,16 @@ Item {
                 spacing: 6
 
                 Label {
-                    text: "GPU (NVIDIA)"
+                    text: qsTr("GPU (NVIDIA)")
                     font.bold: true
                 }
 
                 Label {
-                    text: gpuMonitor.available ? (gpuMonitor.gpuName.length > 0 ? gpuMonitor.gpuName : "NVIDIA GPU") : "nvidia-smi ile veri alinamadi"
+                    text: gpuMonitor.available ? (gpuMonitor.gpuName.length > 0 ? gpuMonitor.gpuName : qsTr("NVIDIA GPU")) : qsTr("Failed to read data via nvidia-smi")
                 }
 
                 Label {
-                    text: "Yuk: " + gpuMonitor.utilizationPercent + "%"
+                    text: qsTr("Load: ") + gpuMonitor.utilizationPercent + "%"
                     visible: gpuMonitor.available
                 }
 
@@ -88,12 +88,12 @@ Item {
                 }
 
                 Label {
-                    text: "VRAM: " + gpuMonitor.memoryUsedMiB + " / " + gpuMonitor.memoryTotalMiB + " MiB (" + gpuMonitor.memoryUsagePercent + "%)"
+                    text: qsTr("VRAM: ") + gpuMonitor.memoryUsedMiB + " / " + gpuMonitor.memoryTotalMiB + " MiB (" + gpuMonitor.memoryUsagePercent + "%)"
                     visible: gpuMonitor.available && gpuMonitor.memoryTotalMiB > 0
                 }
 
                 Label {
-                    text: "Sicaklik: " + gpuMonitor.temperatureC + " C"
+                    text: qsTr("Temperature: ") + gpuMonitor.temperatureC + " C"
                     visible: gpuMonitor.available && gpuMonitor.temperatureC > 0
                 }
             }
@@ -114,12 +114,12 @@ Item {
                 spacing: 6
 
                 Label {
-                    text: "RAM"
+                    text: qsTr("RAM")
                     font.bold: true
                 }
 
                 Label {
-                    text: ramMonitor.available ? "Kullanim: " + ramMonitor.usedMiB + " / " + ramMonitor.totalMiB + " MiB (" + ramMonitor.usagePercent + "%)" : "RAM verisi alinamiyor"
+                    text: ramMonitor.available ? qsTr("Usage: ") + ramMonitor.usedMiB + " / " + ramMonitor.totalMiB + " MiB (" + ramMonitor.usagePercent + "%)" : qsTr("RAM data unavailable")
                 }
 
                 ProgressBar {
@@ -135,7 +135,7 @@ Item {
             spacing: 8
 
             Button {
-                text: "Yenile"
+                text: qsTr("Refresh")
                 onClicked: {
                     cpuMonitor.refresh();
                     gpuMonitor.refresh();
@@ -144,7 +144,7 @@ Item {
             }
 
             Label {
-                text: "Guncelleme araligi: " + cpuMonitor.updateInterval + " ms"
+                text: qsTr("Refresh interval: ") + cpuMonitor.updateInterval + " ms"
                 color: "#6d7384"
             }
         }

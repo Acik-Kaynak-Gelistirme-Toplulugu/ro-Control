@@ -80,7 +80,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 ```
 feat: add real-time GPU temperature monitoring
 fix: crash when no NVIDIA GPU is detected
-docs: update build instructions for Fedora 41
+docs: update build instructions
 chore: update CMake minimum version to 3.22
 ```
 
@@ -92,7 +92,6 @@ chore: update CMake minimum version to 3.22
 
 | Component | Minimum |
 |-----------|---------|
-| Fedora    | 40+     |
 | GCC       | 13+     |
 | CMake     | 3.22+   |
 | Qt        | 6.6+    |
@@ -103,14 +102,16 @@ chore: update CMake minimum version to 3.22
 sudo dnf install cmake extra-cmake-modules gcc-c++ \
   qt6-qtbase-devel \
   qt6-qtdeclarative-devel \
+  qt6-qttools-devel \
   qt6-qtwayland-devel \
-  kf6-qqc2-desktop-style
+  kf6-qqc2-desktop-style \
+  polkit-devel
 ```
 
 ### Build
 
 ```bash
-git clone https://github.com/Acik-Kaynak-Gelistirme-Toplulugu/ro-Control.git
+git clone https://github.com/Project-Ro-ASD/ro-Control.git
 cd ro-Control
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Debug
@@ -146,15 +147,32 @@ cd build && ctest --output-on-failure
 
 ## Translations
 
-Current UI strings are maintained directly in QML/C++ and translated manually (Turkish/English).
+ro-Control uses the Qt Linguist pipeline for UI localization.
 
-To add a new language now:
+Translation rules:
 
-1. Add translated strings in relevant QML/C++ files.
-2. Verify layout does not break with longer text.
-3. Submit a PR to `dev` with screenshots for changed pages.
+- Use `qsTr(...)` for QML strings and `tr(...)` for C++ strings
+- Keep English as the source language in code
+- Update `.ts` files under `i18n/`
+- Verify the UI at 980x640 and at a larger desktop size
+- Include screenshots if a translation materially changes layout
 
-A dedicated Qt Linguist (`.ts/.qm`) localization pipeline is planned for a future release.
+Recommended workflow:
+
+```bash
+sudo dnf install qt6-qttools-devel
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+lupdate src -ts i18n/ro-control_en.ts i18n/ro-control_tr.ts
+linguist i18n/ro-control_tr.ts
+cmake --build build
+```
+
+When adding a new language:
+
+1. Copy `i18n/ro-control_en.ts` to `i18n/ro-control_<locale>.ts`
+2. Add the new file to `TS_FILES` in `CMakeLists.txt`
+3. Translate all entries
+4. Verify runtime locale loading and layout integrity
 
 ---
 
@@ -162,9 +180,9 @@ A dedicated Qt Linguist (`.ts/.qm`) localization pipeline is planned for a futur
 
 Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md) and include:
 
-- Fedora version (`cat /etc/fedora-release`)
+- Distribution / platform details
 - GPU model (`lspci | grep -i nvidia`)
 - Current driver version (`nvidia-smi`)
 - Steps to reproduce
 - Expected vs actual behavior
-- Relevant logs (`journalctl -u ro-control`)
+- Relevant terminal output, `coredumpctl info ro-control`, or recent journal entries
