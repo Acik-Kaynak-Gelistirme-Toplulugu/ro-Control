@@ -183,11 +183,13 @@ install(FILES data/icons/ro-control.desktop
     DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
 )
 
-install(DIRECTORY data/icons/hicolor/
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor
+install(FILES
+    data/icons/hicolor/scalable/apps/ro-control.svg
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
 )
 
-install(FILES data/icons/hicolor/256x256/apps/ro-control.png
+install(FILES
+    data/icons/hicolor/256x256/apps/ro-control.png
     DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps
 )
 

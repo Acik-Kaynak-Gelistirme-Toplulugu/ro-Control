@@ -48,10 +48,9 @@ void NvidiaInstaller::refreshProprietaryAgreement() {
 
   if (requiresAgreement) {
     setProprietaryAgreement(
-        true,
-        tr("You must accept the NVIDIA proprietary driver license terms "
-           "before installation. Detected license: %1")
-            .arg(licenseLine.isEmpty() ? tr("Unknown") : licenseLine));
+        true, tr("You must accept the NVIDIA proprietary driver license terms "
+                 "before installation. Detected license: %1")
+                  .arg(licenseLine.isEmpty() ? tr("Unknown") : licenseLine));
     return;
   }
 
@@ -112,8 +111,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
                              QStringLiteral("akmod-nvidia")});
 
   if (!result.success()) {
-    emit installFinished(false,
-                         tr("Installation failed: ") + result.stderr);
+    emit installFinished(false, tr("Installation failed: ") + result.stderr);
     return;
   }
 
@@ -148,9 +146,8 @@ void NvidiaInstaller::installOpenSource() {
        QStringLiteral("akmod-nvidia"), QStringLiteral("xorg-x11-drv-nvidia*")});
 
   if (!result.success()) {
-    emit installFinished(
-        false, tr("Failed to remove proprietary packages: ") +
-                   result.stderr);
+    emit installFinished(false, tr("Failed to remove proprietary packages: ") +
+                                    result.stderr);
     return;
   }
 
@@ -161,9 +158,8 @@ void NvidiaInstaller::installOpenSource() {
                              QStringLiteral("mesa-dri-drivers")});
 
   if (!result.success()) {
-    emit installFinished(
-        false, tr("Open-source driver installation failed: ") +
-                   result.stderr);
+    emit installFinished(false, tr("Open-source driver installation failed: ") +
+                                    result.stderr);
     return;
   }
 
@@ -187,9 +183,9 @@ void NvidiaInstaller::remove() {
        QStringLiteral("akmod-nvidia"), QStringLiteral("xorg-x11-drv-nvidia*")});
 
   emit removeFinished(result.success(),
-                      result.success() ? tr("Driver removed successfully.")
-                                       : tr("Removal failed: ") +
-                                             result.stderr);
+                      result.success()
+                          ? tr("Driver removed successfully.")
+                          : tr("Removal failed: ") + result.stderr);
 }
 
 void NvidiaInstaller::deepClean() {
@@ -235,8 +231,8 @@ bool NvidiaInstaller::applySessionSpecificSetup(CommandRunner &runner,
                                                 const QString &sessionType,
                                                 QString *errorMessage) {
   if (sessionType == QStringLiteral("wayland")) {
-    emit progressMessage(QStringLiteral(
-        "Wayland detected: applying nvidia-drm.modeset=1..."));
+    emit progressMessage(
+        QStringLiteral("Wayland detected: applying nvidia-drm.modeset=1..."));
 
     const auto result =
         runner.runAsRoot(QStringLiteral("grubby"),
@@ -245,9 +241,8 @@ bool NvidiaInstaller::applySessionSpecificSetup(CommandRunner &runner,
 
     if (!result.success()) {
       if (errorMessage) {
-        *errorMessage =
-            tr("Failed to apply the Wayland kernel parameter: ") +
-            result.stderr;
+        *errorMessage = tr("Failed to apply the Wayland kernel parameter: ") +
+                        result.stderr;
       }
       return false;
     }

@@ -10,13 +10,13 @@
 #include <QTranslator>
 #include <QVariant>
 
-#include "cli/cli.h"
 #include "backend/monitor/cpumonitor.h"
 #include "backend/monitor/gpumonitor.h"
 #include "backend/monitor/rammonitor.h"
 #include "backend/nvidia/detector.h"
 #include "backend/nvidia/installer.h"
 #include "backend/nvidia/updater.h"
+#include "cli/cli.h"
 
 namespace {
 
@@ -39,18 +39,16 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
         RoControlCli::collectDiagnostics(applicationName, applicationVersion);
 
     if (command.action == RoControlCli::CommandAction::PrintStatusJson) {
-      result.stdoutText =
-          QString::fromUtf8(
-              QJsonDocument(RoControlCli::renderStatusJsonObject(snapshot))
-                  .toJson(QJsonDocument::Indented));
+      result.stdoutText = QString::fromUtf8(
+          QJsonDocument(RoControlCli::renderStatusJsonObject(snapshot))
+              .toJson(QJsonDocument::Indented));
     } else if (command.action == RoControlCli::CommandAction::PrintStatusText) {
       result.stdoutText = RoControlCli::renderStatusText(snapshot);
     } else if (command.action ==
                RoControlCli::CommandAction::PrintDiagnosticsJson) {
-      result.stdoutText =
-          QString::fromUtf8(
-              QJsonDocument(RoControlCli::renderDiagnosticsJsonObject(snapshot))
-                  .toJson(QJsonDocument::Indented));
+      result.stdoutText = QString::fromUtf8(
+          QJsonDocument(RoControlCli::renderDiagnosticsJsonObject(snapshot))
+              .toJson(QJsonDocument::Indented));
     } else {
       result.stdoutText = RoControlCli::renderDiagnosticsText(snapshot);
     }
@@ -90,7 +88,8 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
                        finalMessage = message;
                      });
 
-    if (command.action == RoControlCli::CommandAction::InstallProprietaryDriver) {
+    if (command.action ==
+        RoControlCli::CommandAction::InstallProprietaryDriver) {
       installer.installProprietary(command.acceptLicense);
     } else if (command.action ==
                RoControlCli::CommandAction::InstallOpenSourceDriver) {
@@ -165,10 +164,9 @@ int main(int argc, char *argv[]) {
     cliApp.setApplicationName(QString::fromLatin1(kApplicationName));
     cliApp.setApplicationVersion(QString::fromLatin1(kApplicationVersion));
 
-    const auto command =
-        RoControlCli::parseArguments(cliApp.arguments(), cliApp.applicationName(),
-                                     cliApp.applicationVersion(),
-                                     applicationDescription);
+    const auto command = RoControlCli::parseArguments(
+        cliApp.arguments(), cliApp.applicationName(),
+        cliApp.applicationVersion(), applicationDescription);
 
     QTextStream out(stdout);
     QTextStream err(stderr);
@@ -222,7 +220,8 @@ int main(int argc, char *argv[]) {
   const QString baseLanguage =
       localeName.section(QLatin1Char('_'), 0, 0).toLower();
 
-  if (translator.load(QStringLiteral(":/i18n/ro-control_%1.qm").arg(localeName)) ||
+  if (translator.load(
+          QStringLiteral(":/i18n/ro-control_%1.qm").arg(localeName)) ||
       translator.load(
           QStringLiteral(":/i18n/ro-control_%1.qm").arg(baseLanguage))) {
     app.installTranslator(&translator);

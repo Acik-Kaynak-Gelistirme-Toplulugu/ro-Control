@@ -31,8 +31,9 @@ QString commandActionToString(CommandAction action) {
   }
 }
 
-QString boolText(bool value) { return value ? QStringLiteral("yes")
-                                            : QStringLiteral("no"); }
+QString boolText(bool value) {
+  return value ? QStringLiteral("yes") : QStringLiteral("no");
+}
 
 QString dashIfEmpty(const QString &value) {
   return value.isEmpty() ? QStringLiteral("-") : value;
@@ -53,21 +54,27 @@ QString buildHelpText(const QString &applicationName,
   stream << "Commands:\n";
   stream << "  help                       Show this help text.\n";
   stream << "  version                    Print the application version.\n";
-  stream << "  status [--json]            Print a concise system and driver status.\n";
+  stream << "  status [--json]            Print a concise system and driver "
+            "status.\n";
   stream << "  diagnostics [--json]       Print a full diagnostics snapshot.\n";
   stream << "  driver install [options]   Install the NVIDIA driver.\n";
   stream << "  driver remove              Remove installed NVIDIA packages.\n";
-  stream << "  driver update              Update the installed NVIDIA driver.\n";
+  stream
+      << "  driver update              Update the installed NVIDIA driver.\n";
   stream << "  driver deep-clean          Remove legacy NVIDIA leftovers.\n\n";
   stream << "Driver install options:\n";
-  stream << "  --proprietary              Install the proprietary akmod-nvidia stack.\n";
-  stream << "  --open-source              Install the open-source Nouveau stack.\n";
-  stream << "  --accept-license           Confirm proprietary driver license acceptance.\n\n";
+  stream << "  --proprietary              Install the proprietary akmod-nvidia "
+            "stack.\n";
+  stream << "  --open-source              Install the open-source Nouveau "
+            "stack.\n";
+  stream << "  --accept-license           Confirm proprietary driver license "
+            "acceptance.\n\n";
   stream << "Global options:\n";
   stream << "  -h, --help                 Show help and exit.\n";
   stream << "  -v, --version              Show version and exit.\n";
   stream << "  -d, --diagnostics          Legacy alias for `diagnostics`.\n";
-  stream << "  --json                     Render `status` or `diagnostics` as JSON.\n\n";
+  stream << "  --json                     Render `status` or `diagnostics` as "
+            "JSON.\n\n";
   stream << "Examples:\n";
   stream << "  " << applicationName << " status\n";
   stream << "  " << applicationName << " diagnostics --json\n";
@@ -78,8 +85,7 @@ QString buildHelpText(const QString &applicationName,
   return help;
 }
 
-void configureParser(QCommandLineParser &parser,
-                     const QString &applicationName,
+void configureParser(QCommandLineParser &parser, const QString &applicationName,
                      const QString &applicationVersion,
                      const QString &applicationDescription) {
   parser.setApplicationDescription(applicationDescription);
@@ -88,15 +94,16 @@ void configureParser(QCommandLineParser &parser,
   QCoreApplication::setApplicationName(applicationName);
   QCoreApplication::setApplicationVersion(applicationVersion);
 
-  parser.addOption(QCommandLineOption({QStringLiteral("h"),
-                                       QStringLiteral("help")},
-                                      QStringLiteral("Display CLI usage information.")));
-  parser.addOption(QCommandLineOption({QStringLiteral("v"),
-                                       QStringLiteral("version")},
-                                      QStringLiteral("Display the application version.")));
+  parser.addOption(
+      QCommandLineOption({QStringLiteral("h"), QStringLiteral("help")},
+                         QStringLiteral("Display CLI usage information.")));
+  parser.addOption(
+      QCommandLineOption({QStringLiteral("v"), QStringLiteral("version")},
+                         QStringLiteral("Display the application version.")));
   parser.addOption(QCommandLineOption(
       {QStringLiteral("d"), QStringLiteral("diagnostics")},
-      QStringLiteral("Print a one-shot system and driver diagnostics snapshot.")));
+      QStringLiteral(
+          "Print a one-shot system and driver diagnostics snapshot.")));
   parser.addOption(QCommandLineOption(
       {QStringLiteral("json")},
       QStringLiteral("Render status or diagnostics output as JSON.")));
@@ -108,12 +115,14 @@ void configureParser(QCommandLineParser &parser,
       QStringLiteral("Use the open-source Nouveau install path.")));
   parser.addOption(QCommandLineOption(
       {QStringLiteral("accept-license")},
-      QStringLiteral("Confirm that the proprietary NVIDIA license was reviewed.")));
+      QStringLiteral(
+          "Confirm that the proprietary NVIDIA license was reviewed.")));
   parser.addPositionalArgument(QStringLiteral("command"),
                                QStringLiteral("CLI command to execute."));
-  parser.addPositionalArgument(QStringLiteral("subcommand"),
-                               QStringLiteral("Optional command scope or action."),
-                               QStringLiteral("[subcommand]"));
+  parser.addPositionalArgument(
+      QStringLiteral("subcommand"),
+      QStringLiteral("Optional command scope or action."),
+      QStringLiteral("[subcommand]"));
 }
 
 ParsedCommand invalidCommand(const QString &message) {
@@ -131,9 +140,9 @@ bool hasConflictingInstallModeOptions(const QCommandLineParser &parser) {
 } // namespace
 
 ParsedCommand parseArguments(const QStringList &arguments,
-                            const QString &applicationName,
-                            const QString &applicationVersion,
-                            const QString &applicationDescription) {
+                             const QString &applicationName,
+                             const QString &applicationVersion,
+                             const QString &applicationDescription) {
   QCommandLineParser parser;
   configureParser(parser, applicationName, applicationVersion,
                   applicationDescription);
@@ -144,9 +153,8 @@ ParsedCommand parseArguments(const QStringList &arguments,
 
   parser.process(arguments);
 
-  const QString helpText =
-      buildHelpText(applicationName, applicationVersion,
-                    applicationDescription);
+  const QString helpText = buildHelpText(applicationName, applicationVersion,
+                                         applicationDescription);
 
   const bool help = parser.isSet(QStringLiteral("help"));
   const bool version = parser.isSet(QStringLiteral("version"));
@@ -158,8 +166,8 @@ ParsedCommand parseArguments(const QStringList &arguments,
   const QStringList positional = parser.positionalArguments();
 
   if (hasConflictingInstallModeOptions(parser)) {
-    return invalidCommand(
-        QStringLiteral("--proprietary and --open-source cannot be used together."));
+    return invalidCommand(QStringLiteral(
+        "--proprietary and --open-source cannot be used together."));
   }
 
   if (help) {
@@ -178,8 +186,8 @@ ParsedCommand parseArguments(const QStringList &arguments,
 
   if (diagnosticsFlag) {
     if (!positional.isEmpty()) {
-      return invalidCommand(
-          QStringLiteral("--diagnostics cannot be combined with positional commands."));
+      return invalidCommand(QStringLiteral(
+          "--diagnostics cannot be combined with positional commands."));
     }
 
     ParsedCommand command;
@@ -189,8 +197,8 @@ ParsedCommand parseArguments(const QStringList &arguments,
   }
 
   if (json && positional.isEmpty()) {
-    return invalidCommand(
-        QStringLiteral("--json can only be used with `status` or `diagnostics`."));
+    return invalidCommand(QStringLiteral(
+        "--json can only be used with `status` or `diagnostics`."));
   }
 
   if (proprietary || openSource || acceptLicense) {
@@ -217,7 +225,8 @@ ParsedCommand parseArguments(const QStringList &arguments,
 
   if (commandName == QStringLiteral("version")) {
     if (positional.size() != 1) {
-      return invalidCommand(QStringLiteral("`version` does not take arguments."));
+      return invalidCommand(
+          QStringLiteral("`version` does not take arguments."));
     }
 
     ParsedCommand command;
@@ -228,12 +237,13 @@ ParsedCommand parseArguments(const QStringList &arguments,
 
   if (commandName == QStringLiteral("status")) {
     if (positional.size() != 1) {
-      return invalidCommand(QStringLiteral("`status` does not take arguments."));
+      return invalidCommand(
+          QStringLiteral("`status` does not take arguments."));
     }
 
     ParsedCommand command;
-    command.action = json ? CommandAction::PrintStatusJson
-                          : CommandAction::PrintStatusText;
+    command.action =
+        json ? CommandAction::PrintStatusJson : CommandAction::PrintStatusText;
     return command;
   }
 
@@ -256,19 +266,20 @@ ParsedCommand parseArguments(const QStringList &arguments,
 
   if (positional.size() < 2) {
     return invalidCommand(
-        QStringLiteral("`driver` requires a subcommand: install, remove, update, deep-clean."));
+        QStringLiteral("`driver` requires a subcommand: install, remove, "
+                       "update, deep-clean."));
   }
 
   if (json) {
-    return invalidCommand(
-        QStringLiteral("--json is only supported by `status` and `diagnostics`."));
+    return invalidCommand(QStringLiteral(
+        "--json is only supported by `status` and `diagnostics`."));
   }
 
   const QString driverAction = positional.at(1).toLower();
   if (driverAction == QStringLiteral("install")) {
     if (positional.size() != 2) {
-      return invalidCommand(
-          QStringLiteral("`driver install` does not take positional arguments."));
+      return invalidCommand(QStringLiteral(
+          "`driver install` does not take positional arguments."));
     }
 
     ParsedCommand command;
@@ -277,16 +288,16 @@ ParsedCommand parseArguments(const QStringList &arguments,
                                 : CommandAction::InstallProprietaryDriver;
 
     if (openSource && acceptLicense) {
-      return invalidCommand(
-          QStringLiteral("--accept-license is only valid with the proprietary install path."));
+      return invalidCommand(QStringLiteral(
+          "--accept-license is only valid with the proprietary install path."));
     }
 
     return command;
   }
 
   if (proprietary || openSource || acceptLicense) {
-    return invalidCommand(
-        QStringLiteral("Install-specific options can only be used with `driver install`."));
+    return invalidCommand(QStringLiteral(
+        "Install-specific options can only be used with `driver install`."));
   }
 
   if (positional.size() != 2) {
@@ -377,8 +388,7 @@ QString renderStatusText(const DiagnosticsSnapshot &snapshot) {
   output += QStringLiteral("application: %1\n").arg(snapshot.applicationName);
   output += QStringLiteral("version: %1\n").arg(snapshot.applicationVersion);
   output += QStringLiteral("gpu_found: %1\n").arg(boolText(snapshot.gpuFound));
-  output += QStringLiteral("gpu_name: %1\n")
-                .arg(dashIfEmpty(snapshot.gpuName));
+  output += QStringLiteral("gpu_name: %1\n").arg(dashIfEmpty(snapshot.gpuName));
   output += QStringLiteral("active_driver: %1\n")
                 .arg(dashIfEmpty(snapshot.activeDriver));
   output += QStringLiteral("driver_version: %1\n")
@@ -402,17 +412,16 @@ QString renderDiagnosticsText(const DiagnosticsSnapshot &snapshot) {
                 .arg(dashIfEmpty(snapshot.currentDriverVersion));
   output += QStringLiteral("cpu_available: %1\n")
                 .arg(boolText(snapshot.cpuAvailable));
+  output += QStringLiteral("cpu_usage_percent: %1\n")
+                .arg(snapshot.cpuUsagePercent, 0, 'f', 1);
   output +=
-      QStringLiteral("cpu_usage_percent: %1\n").arg(snapshot.cpuUsagePercent, 0,
-                                                     'f', 1);
-  output += QStringLiteral("cpu_temperature_c: %1\n")
-                .arg(snapshot.cpuTemperatureC);
+      QStringLiteral("cpu_temperature_c: %1\n").arg(snapshot.cpuTemperatureC);
   output += QStringLiteral("gpu_monitor_available: %1\n")
                 .arg(boolText(snapshot.gpuMonitorAvailable));
   output += QStringLiteral("gpu_monitor_name: %1\n")
                 .arg(dashIfEmpty(snapshot.gpuMonitorName));
-  output += QStringLiteral("gpu_temperature_c: %1\n")
-                .arg(snapshot.gpuTemperatureC);
+  output +=
+      QStringLiteral("gpu_temperature_c: %1\n").arg(snapshot.gpuTemperatureC);
   output += QStringLiteral("gpu_utilization_percent: %1\n")
                 .arg(snapshot.gpuUtilizationPercent);
   output += QStringLiteral("gpu_memory_used_mib: %1\n")
@@ -425,8 +434,8 @@ QString renderDiagnosticsText(const DiagnosticsSnapshot &snapshot) {
                 .arg(boolText(snapshot.ramAvailable));
   output += QStringLiteral("ram_total_mib: %1\n").arg(snapshot.ramTotalMiB);
   output += QStringLiteral("ram_used_mib: %1\n").arg(snapshot.ramUsedMiB);
-  output += QStringLiteral("ram_usage_percent: %1\n")
-                .arg(snapshot.ramUsagePercent);
+  output +=
+      QStringLiteral("ram_usage_percent: %1\n").arg(snapshot.ramUsagePercent);
 
   if (!snapshot.verificationReport.isEmpty()) {
     output += QStringLiteral("verification_report:\n%1\n")
@@ -447,7 +456,8 @@ QJsonObject renderStatusJsonObject(const DiagnosticsSnapshot &snapshot) {
   object.insert(QStringLiteral("activeDriver"), snapshot.activeDriver);
   object.insert(QStringLiteral("driverVersion"), snapshot.driverVersion);
   object.insert(QStringLiteral("sessionType"), snapshot.sessionType);
-  object.insert(QStringLiteral("secureBootEnabled"), snapshot.secureBootEnabled);
+  object.insert(QStringLiteral("secureBootEnabled"),
+                snapshot.secureBootEnabled);
   object.insert(QStringLiteral("updateAvailable"), snapshot.updateAvailable);
   object.insert(QStringLiteral("latestDriverVersion"),
                 snapshot.latestDriverVersion);
@@ -459,7 +469,8 @@ QJsonObject renderDiagnosticsJsonObject(const DiagnosticsSnapshot &snapshot) {
   object.insert(QStringLiteral("command"),
                 commandActionToString(CommandAction::PrintDiagnosticsJson));
   object.insert(QStringLiteral("locale"), snapshot.locale);
-  object.insert(QStringLiteral("verificationReport"), snapshot.verificationReport);
+  object.insert(QStringLiteral("verificationReport"),
+                snapshot.verificationReport);
   object.insert(QStringLiteral("currentDriverVersion"),
                 snapshot.currentDriverVersion);
   object.insert(QStringLiteral("cpuAvailable"), snapshot.cpuAvailable);

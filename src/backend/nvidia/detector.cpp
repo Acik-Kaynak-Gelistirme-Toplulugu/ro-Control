@@ -43,9 +43,8 @@ QString NvidiaDetector::activeDriver() const {
 
 QString NvidiaDetector::verificationReport() const {
   const QString gpuText = m_info.found ? m_info.name : tr("None");
-  const QString versionText = m_info.driverVersion.isEmpty()
-                                  ? tr("None")
-                                  : m_info.driverVersion;
+  const QString versionText =
+      m_info.driverVersion.isEmpty() ? tr("None") : m_info.driverVersion;
 
   return tr("GPU: %1\nDriver Version: %2\nSecure Boot: %3\nSession: %4\n"
             "NVIDIA Module: %5\nNouveau: %6")
@@ -53,8 +52,7 @@ QString NvidiaDetector::verificationReport() const {
            m_info.secureBootKnown
                ? (m_info.secureBootEnabled ? tr("Enabled") : tr("Disabled"))
                : tr("Disabled / Unknown"),
-           m_info.sessionType.isEmpty() ? tr("Unknown")
-                                        : m_info.sessionType,
+           m_info.sessionType.isEmpty() ? tr("Unknown") : m_info.sessionType,
            m_info.driverLoaded ? tr("Loaded") : tr("Not loaded"),
            m_info.nouveauActive ? tr("Active") : tr("Inactive"));
 }

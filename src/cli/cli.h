@@ -65,9 +65,9 @@ struct DiagnosticsSnapshot {
 };
 
 ParsedCommand parseArguments(const QStringList &arguments,
-                            const QString &applicationName,
-                            const QString &applicationVersion,
-                            const QString &applicationDescription);
+                             const QString &applicationName,
+                             const QString &applicationVersion,
+                             const QString &applicationDescription);
 
 DiagnosticsSnapshot collectDiagnostics(const QString &applicationName,
                                        const QString &applicationVersion);

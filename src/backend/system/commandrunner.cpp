@@ -1,7 +1,7 @@
 #include "commandrunner.h"
 
-#include <QFileInfo>
 #include <QElapsedTimer>
+#include <QFileInfo>
 #include <QProcess>
 #include <QStandardPaths>
 #include <QThread>

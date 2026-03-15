@@ -18,7 +18,8 @@ private slots:
 
   void testCommandRunnerMissingBinary() {
     CommandRunner runner;
-    const auto result = runner.run(QStringLiteral("ro-control-command-that-does-not-exist"));
+    const auto result =
+        runner.run(QStringLiteral("ro-control-command-that-does-not-exist"));
     QCOMPARE(result.exitCode, -1);
     QVERIFY(result.stderr.contains(QStringLiteral("Executable not found")));
   }
