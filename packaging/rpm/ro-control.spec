@@ -12,7 +12,9 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRequires:  cmake
 BuildRequires:  gcc-c++
 BuildRequires:  extra-cmake-modules
+BuildRequires:  ninja-build
 BuildRequires:  qt6-qtbase-devel
+BuildRequires:  qt6-qtbase-private-devel
 BuildRequires:  qt6-qtdeclarative-devel
 BuildRequires:  qt6-qttools-devel
 BuildRequires:  qt6-qtwayland-devel
@@ -52,6 +54,7 @@ tar -xzf %{SOURCE0} --strip-components=1
 %{_datadir}/applications/ro-control.desktop
 %{_datadir}/man/man1/ro-control.1*
 %{_datadir}/metainfo/ro-control.metainfo.xml
+%{_datadir}/icons/hicolor/256x256/apps/ro-control.png
 %{_datadir}/icons/hicolor/scalable/apps/ro-control.svg
 %{_datadir}/bash-completion/completions/ro-control
 %{_datadir}/zsh/site-functions/_ro-control

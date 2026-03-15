@@ -63,6 +63,7 @@ set(BACKEND_SOURCES
     src/backend/nvidia/detector.cpp
     src/backend/nvidia/installer.cpp
     src/backend/nvidia/updater.cpp
+    src/backend/nvidia/versionparser.cpp
     src/backend/monitor/gpumonitor.cpp
     src/backend/monitor/cpumonitor.cpp
     src/backend/monitor/rammonitor.cpp
@@ -80,6 +81,14 @@ set(APP_SOURCES
 # ─── QML Resources ────────────────────────────────────────────────────────────
 qt_add_executable(ro-control ${APP_SOURCES})
 
+set_source_files_properties(src/qml/assets/ro-control-logo.svg PROPERTIES
+    QT_RESOURCE_ALIAS "assets/ro-control-logo.svg"
+)
+
+set_source_files_properties(src/qml/assets/ro-control-logo.png PROPERTIES
+    QT_RESOURCE_ALIAS "assets/ro-control-logo.png"
+)
+
 qt_add_qml_module(ro-control
     URI "rocontrol"
     VERSION 1.0
@@ -90,6 +99,9 @@ qt_add_qml_module(ro-control
         src/qml/pages/SettingsPage.qml
         src/qml/components/StatCard.qml
         src/qml/components/SidebarMenu.qml
+    RESOURCES
+        src/qml/assets/ro-control-logo.svg
+        src/qml/assets/ro-control-logo.png
 )
 
 if(Qt6LinguistTools_FOUND)
@@ -173,6 +185,10 @@ install(FILES data/icons/ro-control.desktop
 
 install(DIRECTORY data/icons/hicolor/
     DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor
+)
+
+install(FILES data/icons/hicolor/256x256/apps/ro-control.png
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps
 )
 
 install(FILES data/icons/ro-control.metainfo.xml

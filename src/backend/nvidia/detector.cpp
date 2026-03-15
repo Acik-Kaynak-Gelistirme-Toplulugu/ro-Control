@@ -17,7 +17,7 @@ NvidiaDetector::GpuInfo NvidiaDetector::detect() const {
   info.driverVersion = detectDriverVersion();
   info.driverLoaded = isModuleLoaded(QStringLiteral("nvidia"));
   info.nouveauActive = isModuleLoaded(QStringLiteral("nouveau"));
-  info.secureBootEnabled = detectSecureBoot();
+  info.secureBootEnabled = detectSecureBoot(&info.secureBootKnown);
   info.sessionType = detectSessionType();
 
   return info;
@@ -50,8 +50,9 @@ QString NvidiaDetector::verificationReport() const {
   return tr("GPU: %1\nDriver Version: %2\nSecure Boot: %3\nSession: %4\n"
             "NVIDIA Module: %5\nNouveau: %6")
       .arg(gpuText, versionText,
-           m_info.secureBootEnabled ? tr("Enabled")
-                                    : tr("Disabled / Unknown"),
+           m_info.secureBootKnown
+               ? (m_info.secureBootEnabled ? tr("Enabled") : tr("Disabled"))
+               : tr("Disabled / Unknown"),
            m_info.sessionType.isEmpty() ? tr("Unknown")
                                         : m_info.sessionType,
            m_info.driverLoaded ? tr("Loaded") : tr("Not loaded"),
@@ -75,7 +76,10 @@ QString NvidiaDetector::detectGpuName() const {
   const QStringList lines = result.stdout.split(QLatin1Char('\n'));
   for (const QString &line : lines) {
     if (line.contains(QStringLiteral("NVIDIA"), Qt::CaseInsensitive) &&
-        line.contains(QStringLiteral("VGA"), Qt::CaseInsensitive)) {
+        (line.contains(QStringLiteral("VGA"), Qt::CaseInsensitive) ||
+         line.contains(QStringLiteral("3D controller"), Qt::CaseInsensitive) ||
+         line.contains(QStringLiteral("Display controller"),
+                       Qt::CaseInsensitive))) {
       static const QRegularExpression re(QStringLiteral("\"([^\"]+)\""));
       auto it = re.globalMatch(line);
       QStringList parts;
@@ -129,14 +133,21 @@ bool NvidiaDetector::isModuleLoaded(const QString &moduleName) const {
   return false;
 }
 
-bool NvidiaDetector::detectSecureBoot() const {
+bool NvidiaDetector::detectSecureBoot(bool *known) const {
   CommandRunner runner;
   const auto result =
       runner.run(QStringLiteral("mokutil"), {QStringLiteral("--sb-state")});
 
   if (result.success() || result.exitCode == 1) {
+    if (known != nullptr) {
+      *known = true;
+    }
     return result.stdout.contains(QStringLiteral("enabled"),
                                   Qt::CaseInsensitive);
+  }
+
+  if (known != nullptr) {
+    *known = false;
   }
 
   return false;

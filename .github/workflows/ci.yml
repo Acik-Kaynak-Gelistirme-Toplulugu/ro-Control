@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main, dev]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build & Test
@@ -73,6 +80,7 @@ jobs:
             gcc-c++ \
             ninja-build \
             qt6-qtbase-devel \
+            qt6-qtbase-private-devel \
             qt6-qtdeclarative-devel \
             qt6-qttools-devel \
             qt6-qtwayland-devel \
@@ -87,17 +95,20 @@ jobs:
             exit 1
           fi
           ARCHIVE_BASENAME="ro-control-${VERSION}"
-          mkdir -p ~/rpmbuild/SOURCES
+          mkdir -p ~/rpmbuild/SOURCES ~/rpmbuild/SPECS
           STAGE_DIR="$(mktemp -d)"
           cp -a . "${STAGE_DIR}/${ARCHIVE_BASENAME}"
-          rm -rf "${STAGE_DIR}/${ARCHIVE_BASENAME}/.git" "${STAGE_DIR}/${ARCHIVE_BASENAME}/build"
+          rm -rf "${STAGE_DIR}/${ARCHIVE_BASENAME}/.git" \
+                 "${STAGE_DIR}/${ARCHIVE_BASENAME}/build" \
+                 "${STAGE_DIR}/${ARCHIVE_BASENAME}/build-"*
           tar -C "${STAGE_DIR}" -czf "${HOME}/rpmbuild/SOURCES/${ARCHIVE_BASENAME}.tar.gz" "${ARCHIVE_BASENAME}"
           rm -rf "${STAGE_DIR}"
+          cp packaging/rpm/ro-control.spec "${HOME}/rpmbuild/SPECS/ro-control.spec"
 
       - name: Build RPM
         run: |
-          rpmbuild -ba packaging/rpm/ro-control.spec \
-            --define "_topdir %(echo ~/rpmbuild)"
+          rpmbuild -ba "${HOME}/rpmbuild/SPECS/ro-control.spec" \
+            --define "_topdir ${HOME}/rpmbuild"
 
       - name: Lint built RPMs
         run: |

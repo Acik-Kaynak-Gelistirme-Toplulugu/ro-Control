@@ -6,9 +6,9 @@
 #include <QLocale>
 #include <QObject>
 #include <QQmlApplicationEngine>
-#include <QQmlContext>
 #include <QTextStream>
 #include <QTranslator>
+#include <QVariant>
 
 #include "cli/cli.h"
 #include "backend/monitor/cpumonitor.h"
@@ -207,24 +207,24 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // QApplication: Widgets backend (pencere, sistem tray vb.) için gerekli
   QApplication app(argc, argv);
 
-  // Uygulama meta bilgileri — Q_PROPERTY ve sistem entegrasyonunda kullanılır
   app.setApplicationName(QString::fromLatin1(kApplicationName));
   app.setApplicationDisplayName(QString::fromLatin1(kDisplayName));
   app.setApplicationVersion(QString::fromLatin1(kApplicationVersion));
   app.setOrganizationName("Project-Ro-ASD");
   app.setOrganizationDomain("github.com/Project-Ro-ASD");
-  app.setWindowIcon(QIcon::fromTheme("ro-control"));
+  app.setWindowIcon(QIcon::fromTheme(
+      "ro-control", QIcon(":/qt/qml/rocontrol/assets/ro-control-logo.svg")));
 
   QTranslator translator;
   const QString localeName = QLocale::system().name();
-  const QString baseLanguage = QLocale::system().name().section(QLatin1Char('_'),
-                                                                 0, 0);
+  const QString baseLanguage =
+      localeName.section(QLatin1Char('_'), 0, 0).toLower();
 
   if (translator.load(QStringLiteral(":/i18n/ro-control_%1.qm").arg(localeName)) ||
-      translator.load(QStringLiteral(":/i18n/ro-control_%1.qm").arg(baseLanguage))) {
+      translator.load(
+          QStringLiteral(":/i18n/ro-control_%1.qm").arg(baseLanguage))) {
     app.installTranslator(&translator);
   }
 
@@ -235,22 +235,20 @@ int main(int argc, char *argv[]) {
   GpuMonitor gpuMonitor;
   RamMonitor ramMonitor;
 
-  // QML motorunu başlat
   QQmlApplicationEngine engine;
+  engine.setInitialProperties({
+      {"nvidiaDetector", QVariant::fromValue(&detector)},
+      {"nvidiaInstaller", QVariant::fromValue(&installer)},
+      {"nvidiaUpdater", QVariant::fromValue(&updater)},
+      {"cpuMonitor", QVariant::fromValue(&cpuMonitor)},
+      {"gpuMonitor", QVariant::fromValue(&gpuMonitor)},
+      {"ramMonitor", QVariant::fromValue(&ramMonitor)},
+  });
 
-  engine.rootContext()->setContextProperty("nvidiaDetector", &detector);
-  engine.rootContext()->setContextProperty("nvidiaInstaller", &installer);
-  engine.rootContext()->setContextProperty("nvidiaUpdater", &updater);
-  engine.rootContext()->setContextProperty("cpuMonitor", &cpuMonitor);
-  engine.rootContext()->setContextProperty("gpuMonitor", &gpuMonitor);
-  engine.rootContext()->setContextProperty("ramMonitor", &ramMonitor);
-
-  // QML yüklenemezse uygulamayı kapat
   QObject::connect(
       &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
       []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
 
-  // QML modülünden yüklemek, qrc prefix/policy farklarından etkilenmez.
   engine.loadFromModule("rocontrol", "Main");
 
   return app.exec();
