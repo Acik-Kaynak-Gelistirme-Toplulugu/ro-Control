@@ -93,11 +93,13 @@ jobs:
           fi
           ARCHIVE_BASENAME="ro-control-${VERSION}"
           mkdir -p ~/rpmbuild/SOURCES ~/rpmbuild/SPECS
-          git archive \
-            --format=tar.gz \
-            --prefix="${ARCHIVE_BASENAME}/" \
-            --output="${HOME}/rpmbuild/SOURCES/${ARCHIVE_BASENAME}.tar.gz" \
-            HEAD
+          tar \
+            --exclude-vcs \
+            --exclude='./build' \
+            --exclude='./build-*' \
+            --transform="s,^,${ARCHIVE_BASENAME}/," \
+            -czf "${HOME}/rpmbuild/SOURCES/${ARCHIVE_BASENAME}.tar.gz" \
+            .
           cp packaging/rpm/ro-control.spec "${HOME}/rpmbuild/SPECS/ro-control.spec"
 
       - name: Build RPM
