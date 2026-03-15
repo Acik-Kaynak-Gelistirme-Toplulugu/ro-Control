@@ -1,7 +1,8 @@
 #include <QApplication>
 #include <QIcon>
+#include <QLocale>
 #include <QQmlApplicationEngine>
-#include <QQmlContext>
+#include <QTranslator>
 #include <QVariant>
 
 #include "backend/monitor/cpumonitor.h"
@@ -27,6 +28,16 @@ int main(int argc, char *argv[]) {
   app.setWindowIcon(QIcon::fromTheme(
       "ro-control", QIcon(":/qt/qml/rocontrol/assets/ro-control-logo.svg")));
 
+  QTranslator translator;
+  const QString localeName =
+      QLocale::system().name().startsWith(QStringLiteral("tr"))
+          ? QStringLiteral("tr")
+          : QStringLiteral("en");
+  if (translator.load(
+          QStringLiteral(":/i18n/ro-control_%1.qm").arg(localeName))) {
+    app.installTranslator(&translator);
+  }
+
   NvidiaDetector detector;
   NvidiaInstaller installer;
   NvidiaUpdater updater;
@@ -48,13 +59,6 @@ int main(int argc, char *argv[]) {
       {"gpuMonitor", QVariant::fromValue(&gpuMonitor)},
       {"ramMonitor", QVariant::fromValue(&ramMonitor)},
   });
-
-  engine.rootContext()->setContextProperty("nvidiaDetector", &detector);
-  engine.rootContext()->setContextProperty("nvidiaInstaller", &installer);
-  engine.rootContext()->setContextProperty("nvidiaUpdater", &updater);
-  engine.rootContext()->setContextProperty("cpuMonitor", &cpuMonitor);
-  engine.rootContext()->setContextProperty("gpuMonitor", &gpuMonitor);
-  engine.rootContext()->setContextProperty("ramMonitor", &ramMonitor);
 
   // TR: Ana bileşen olusmazsa uygulamayi kontrollu sekilde sonlandir.
   // EN: Exit gracefully if the root QML component cannot be created.
