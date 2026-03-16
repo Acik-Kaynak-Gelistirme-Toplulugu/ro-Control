@@ -4,22 +4,15 @@ import QtQuick.Controls
 Rectangle {
     id: sidebar
     width: 220
-    color: "#181825"
+    required property var theme
+    color: theme.sidebarBg
 
     property int currentIndex: 0
-
-    ListModel {
-        id: menuModel
-        ListElement {
-            label: "Driver Management"
-        }
-        ListElement {
-            label: "System Monitoring"
-        }
-        ListElement {
-            label: "Settings"
-        }
-    }
+    readonly property var menuItems: [
+        qsTr("Driver Management"),
+        qsTr("System Monitoring"),
+        qsTr("Settings")
+    ]
 
     Column {
         anchors.fill: parent
@@ -35,7 +28,7 @@ Rectangle {
                 text: qsTr("ro-Control")
                 font.pixelSize: 22
                 font.bold: true
-                color: "#cdd6f4"
+                color: theme.sidebarText
             }
         }
 
@@ -43,7 +36,7 @@ Rectangle {
             width: parent.width - 32
             height: 1
             anchors.horizontalCenter: parent.horizontalCenter
-            color: "#313244"
+            color: theme.sidebarBorder
         }
 
         Item {
@@ -52,25 +45,26 @@ Rectangle {
         }
 
         Repeater {
-            model: menuModel
+            model: sidebar.menuItems
 
             delegate: Rectangle {
                 id: menuItem
                 required property int index
-                required property string label
 
                 width: sidebar.width - 16
                 height: 44
                 x: 8
                 radius: 8
-                color: sidebar.currentIndex === menuItem.index ? "#313244" : mouseArea.containsMouse ? "#1e1e2e" : "transparent"
+                color: sidebar.currentIndex === menuItem.index ? theme.sidebarActive
+                                                               : mouseArea.containsMouse ? theme.sidebarHover
+                                                                                         : "transparent"
 
                 Label {
                     anchors.verticalCenter: parent.verticalCenter
                     leftPadding: 16
-                    text: menuItem.label
+                    text: modelData
                     font.pixelSize: 14
-                    color: sidebar.currentIndex === menuItem.index ? "#89b4fa" : "#a6adc8"
+                    color: sidebar.currentIndex === menuItem.index ? theme.sidebarAccent : theme.sidebarMuted
                 }
 
                 MouseArea {
@@ -91,6 +85,6 @@ Rectangle {
         anchors.bottomMargin: 16
         text: "v" + Qt.application.version
         font.pixelSize: 11
-        color: "#585b70"
+        color: theme.sidebarHint
     }
 }

@@ -54,6 +54,9 @@ CMakeLists.txt.user
 *.tar.gz
 *.tar.xz
 *.AppImage
+packaging/rpm/.ccache/
+packaging/rpm/rpmbuild/
+packaging/rpm/rpmbuild-*/
 
 # Logs
 *.log
