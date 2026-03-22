@@ -457,5 +457,4 @@ int main(int argc, char **argv) {
   TestDriverPage testCase;
   return QTest::qExec(&testCase, argc, argv);
 }
-
 #include "test_driver_page.moc"
