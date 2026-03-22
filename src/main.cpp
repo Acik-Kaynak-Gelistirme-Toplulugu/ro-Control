@@ -10,6 +10,7 @@
 #include <QTextStream>
 #include <QTranslator>
 #include <QVariant>
+#include <QStringList>
 
 #include "backend/monitor/cpumonitor.h"
 #include "backend/monitor/gpumonitor.h"
@@ -161,50 +162,54 @@ int main(int argc, char *argv[]) {
   const QString applicationDescription =
       QStringLiteral("ro-Control GPU driver manager and diagnostics CLI.");
 
-  {
+  QStringList arguments;
+  arguments.reserve(argc);
+  for (int i = 0; i < argc; ++i) {
+    arguments << QString::fromLocal8Bit(argv[i]);
+  }
+
+  const auto command = RoControlCli::parseArguments(
+      arguments, QString::fromLatin1(kApplicationName),
+      QString::fromLatin1(kApplicationVersion), applicationDescription);
+
+  QTextStream out(stdout);
+  QTextStream err(stderr);
+
+  if (command.action == RoControlCli::CommandAction::PrintHelp ||
+      command.action == RoControlCli::CommandAction::PrintVersion) {
+    out << command.payload;
+    if (!command.payload.endsWith(QLatin1Char('\n'))) {
+      out << Qt::endl;
+    }
+    return 0;
+  }
+
+  if (command.action == RoControlCli::CommandAction::Invalid) {
+    err << command.payload << Qt::endl;
+    err << "Run `ro-control --help` for usage." << Qt::endl;
+    return 2;
+  }
+
+  if (command.action != RoControlCli::CommandAction::LaunchGui) {
     QCoreApplication cliApp(argc, argv);
     cliApp.setApplicationName(QString::fromLatin1(kApplicationName));
     cliApp.setApplicationVersion(QString::fromLatin1(kApplicationVersion));
 
-    const auto command = RoControlCli::parseArguments(
-        cliApp.arguments(), cliApp.applicationName(),
-        cliApp.applicationVersion(), applicationDescription);
-
-    QTextStream out(stdout);
-    QTextStream err(stderr);
-
-    if (command.action == RoControlCli::CommandAction::PrintHelp ||
-        command.action == RoControlCli::CommandAction::PrintVersion) {
-      out << command.payload;
-      if (!command.payload.endsWith(QLatin1Char('\n'))) {
+    const auto result = executeCliCommand(command, cliApp.applicationName(),
+                                          cliApp.applicationVersion());
+    if (!result.stdoutText.isEmpty()) {
+      out << result.stdoutText;
+      if (!result.stdoutText.endsWith(QLatin1Char('\n'))) {
         out << Qt::endl;
       }
-      return 0;
     }
-
-    if (command.action == RoControlCli::CommandAction::Invalid) {
-      err << command.payload << Qt::endl;
-      err << "Run `ro-control --help` for usage." << Qt::endl;
-      return 2;
-    }
-
-    if (command.action != RoControlCli::CommandAction::LaunchGui) {
-      const auto result = executeCliCommand(command, cliApp.applicationName(),
-                                            cliApp.applicationVersion());
-      if (!result.stdoutText.isEmpty()) {
-        out << result.stdoutText;
-        if (!result.stdoutText.endsWith(QLatin1Char('\n'))) {
-          out << Qt::endl;
-        }
+    if (!result.stderrText.isEmpty()) {
+      err << result.stderrText;
+      if (!result.stderrText.endsWith(QLatin1Char('\n'))) {
+        err << Qt::endl;
       }
-      if (!result.stderrText.isEmpty()) {
-        err << result.stderrText;
-        if (!result.stderrText.endsWith(QLatin1Char('\n'))) {
-          err << Qt::endl;
-        }
-      }
-      return result.exitCode;
     }
+    return result.exitCode;
   }
 
   QApplication app(argc, argv);

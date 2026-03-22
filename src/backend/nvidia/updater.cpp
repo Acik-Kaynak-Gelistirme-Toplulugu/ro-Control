@@ -216,6 +216,37 @@ NvidiaUpdater::buildDriverTargets(const QString &version,
   return targets;
 }
 
+QStringList NvidiaUpdater::buildTransactionArguments(
+    const QString &requestedVersion, const QString &installedVersion,
+    const QString &sessionType) const {
+  const QString normalizedRequestedVersion = requestedVersion.trimmed();
+  const QString normalizedInstalledVersion = installedVersion.trimmed();
+  const QString targetVersion =
+      normalizedRequestedVersion.isEmpty() ? m_latestVersion.trimmed()
+                                           : normalizedRequestedVersion;
+
+  QStringList args;
+  if (normalizedInstalledVersion.isEmpty()) {
+    args << QStringLiteral("install");
+  } else if (!targetVersion.isEmpty()) {
+    args << QStringLiteral("distro-sync");
+  } else {
+    // Installing the named NVIDIA package set keeps the transaction scoped to
+    // the driver stack instead of invoking a broad system update.
+    args << QStringLiteral("install");
+  }
+
+  args << QStringLiteral("-y") << QStringLiteral("--refresh")
+       << QStringLiteral("--best");
+
+  if (!normalizedInstalledVersion.isEmpty()) {
+    args << QStringLiteral("--allowerasing");
+  }
+
+  args << buildDriverTargets(targetVersion, sessionType);
+  return args;
+}
+
 bool NvidiaUpdater::finalizeDriverChange(CommandRunner &runner,
                                          const QString &sessionType,
                                          QString *errorMessage) {
@@ -387,16 +418,9 @@ void NvidiaUpdater::applyVersion(const QString &version) {
         },
         Qt::QueuedConnection);
 
-    const QStringList packageTargets =
-        guard->buildDriverTargets(trimmedVersion, sessionType);
-    auto args = QStringList{
-        trimmedVersion.isEmpty()
-            ? (installedVersion.isEmpty() ? QStringLiteral("install")
-                                          : QStringLiteral("update"))
-            : (installedVersion.isEmpty() ? QStringLiteral("install")
-                                          : QStringLiteral("distro-sync")),
-        QStringLiteral("-y"), QStringLiteral("--allowerasing")};
-    args << packageTargets;
+    const QStringList args =
+        guard->buildTransactionArguments(trimmedVersion, installedVersion,
+                                         sessionType);
 
     auto result = runner.runAsRoot(QStringLiteral("dnf"), args);
     if (!result.success()) {

@@ -1,5 +1,8 @@
 #include <QTest>
 
+#define private public
+#include "nvidia/updater.h"
+#undef private
 #include "nvidia/versionparser.h"
 
 class TestUpdater : public QObject {
@@ -50,6 +53,37 @@ private slots:
     QCOMPARE(specs.at(0), QStringLiteral("akmod-nvidia-3:570.153.02-1.fc42"));
     QCOMPARE(specs.at(1),
              QStringLiteral("xorg-x11-drv-nvidia-3:570.153.02-1.fc42"));
+  }
+
+  void testBuildTransactionArgumentsForFreshInstallStaysScoped() {
+    NvidiaUpdater updater;
+    updater.m_latestVersion = QStringLiteral("3:570.153.02-1.fc42");
+
+    const QStringList args =
+        updater.buildTransactionArguments(QString(), QString(), QString());
+
+    QCOMPARE(args.value(0), QStringLiteral("install"));
+    QVERIFY(args.contains(QStringLiteral("--refresh")));
+    QVERIFY(args.contains(QStringLiteral("--best")));
+    QVERIFY(!args.contains(QStringLiteral("update")));
+    QVERIFY(!args.contains(QStringLiteral("upgrade")));
+    QVERIFY(!args.contains(QStringLiteral("system-upgrade")));
+    QVERIFY(args.contains(QStringLiteral("akmod-nvidia-3:570.153.02-1.fc42")));
+  }
+
+  void testBuildTransactionArgumentsForInstalledDriverAvoidsBroadUpdate() {
+    NvidiaUpdater updater;
+    updater.m_latestVersion = QStringLiteral("3:570.153.02-1.fc42");
+
+    const QStringList args = updater.buildTransactionArguments(
+        QString(), QStringLiteral("3:565.77-1.fc42"), QString());
+
+    QCOMPARE(args.value(0), QStringLiteral("distro-sync"));
+    QVERIFY(args.contains(QStringLiteral("--allowerasing")));
+    QVERIFY(!args.contains(QStringLiteral("update")));
+    QVERIFY(!args.contains(QStringLiteral("upgrade")));
+    QVERIFY(!args.contains(QStringLiteral("system-upgrade")));
+    QVERIFY(args.contains(QStringLiteral("akmod-nvidia-3:570.153.02-1.fc42")));
   }
 };
 

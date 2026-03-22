@@ -49,6 +49,9 @@ private:
   void runAsyncTask(const std::function<void()> &task);
   void setLatestVersion(const QString &version);
   void setAvailableVersions(const QStringList &versions);
+  QStringList buildTransactionArguments(const QString &requestedVersion,
+                                        const QString &installedVersion,
+                                        const QString &sessionType) const;
   QStringList buildDriverTargets(const QString &version,
                                  const QString &sessionType) const;
   bool finalizeDriverChange(CommandRunner &runner, const QString &sessionType,
