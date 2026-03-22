@@ -1,6 +1,7 @@
 #include "installer.h"
 
 #include "system/commandrunner.h"
+#include "system/sessionutil.h"
 
 #include <QMetaObject>
 #include <QPointer>
@@ -212,7 +213,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
         Qt::QueuedConnection);
     runner.runAsRoot(QStringLiteral("akmods"), {QStringLiteral("--force")});
 
-    const QString sessionType = guard->detectSessionType();
+    const QString sessionType = SessionUtil::detectSessionType();
     QString sessionError;
     if (!guard->applySessionSpecificSetup(runner, sessionType, &sessionError)) {
       QMetaObject::invokeMethod(
@@ -466,27 +467,7 @@ void NvidiaInstaller::deepClean() {
   });
 }
 
-QString NvidiaInstaller::detectSessionType() const {
-  const QString envType =
-      qEnvironmentVariable("XDG_SESSION_TYPE").trimmed().toLower();
-  if (!envType.isEmpty())
-    return envType;
 
-  CommandRunner runner;
-  const auto loginctl =
-      runner.run(QStringLiteral("loginctl"),
-                 {QStringLiteral("show-session"),
-                  qEnvironmentVariable("XDG_SESSION_ID"), QStringLiteral("-p"),
-                  QStringLiteral("Type"), QStringLiteral("--value")});
-
-  if (loginctl.success()) {
-    const QString type = loginctl.stdout.trimmed().toLower();
-    if (!type.isEmpty())
-      return type;
-  }
-
-  return QStringLiteral("unknown");
-}
 
 bool NvidiaInstaller::applySessionSpecificSetup(CommandRunner &runner,
                                                 const QString &sessionType,

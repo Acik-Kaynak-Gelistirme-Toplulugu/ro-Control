@@ -70,6 +70,7 @@ set(BACKEND_SOURCES
     src/backend/system/polkit.cpp
     src/backend/system/dnfmanager.cpp
     src/backend/system/commandrunner.cpp
+    src/backend/system/sessionutil.cpp
 )
 
 set(APP_SOURCES

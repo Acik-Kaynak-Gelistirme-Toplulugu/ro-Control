@@ -65,7 +65,6 @@ private:
   QString detectDriverVersion() const;
   bool isModuleLoaded(const QString &moduleName) const;
   bool detectSecureBoot(bool *known = nullptr) const;
-  QString detectSessionType() const;
 
   GpuInfo m_info;
 };
