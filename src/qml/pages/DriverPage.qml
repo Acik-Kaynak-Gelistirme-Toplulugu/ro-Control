@@ -15,10 +15,12 @@ Item {
     property string operationSource: ""
     property string operationPhase: ""
     property string operationDetail: ""
-    property bool operationRunning: nvidiaInstaller.busy || nvidiaUpdater.busy
+    property bool operationActive: false
     property double operationStartedAt: 0
     property double lastLogAt: 0
     property int operationElapsedSeconds: 0
+    readonly property bool backendBusy: nvidiaInstaller.busy || nvidiaUpdater.busy
+    readonly property bool operationRunning: page.operationActive || page.backendBusy
 
     function classifyOperationPhase(message) {
         const lowered = message.toLowerCase();
@@ -43,7 +45,7 @@ Item {
         operationSource = source;
         operationDetail = message;
         operationPhase = classifyOperationPhase(message);
-        operationRunning = running;
+        operationActive = running;
         operationElapsedSeconds = operationRunning && operationStartedAt > 0
                                   ? Math.max(0, Math.floor((Date.now() - operationStartedAt) / 1000))
                                   : 0;
@@ -177,7 +179,8 @@ Item {
 
     readonly property bool remoteDriverCatalogAvailable: nvidiaUpdater.availableVersions.length > 0
     readonly property bool canInstallLatestRemoteDriver: nvidiaDetector.gpuFound && remoteDriverCatalogAvailable
-    readonly property bool driverInstalledLocally: nvidiaUpdater.currentVersion.length > 0
+    readonly property bool driverInstalledLocally: nvidiaDetector.driverVersion.length > 0 || nvidiaUpdater.currentVersion.length > 0
+    readonly property string installedVersionLabel: nvidiaDetector.driverVersion.length > 0 ? nvidiaDetector.driverVersion : nvidiaUpdater.currentVersion
     readonly property string latestVersionLabel: cleanVersionLabel(nvidiaUpdater.latestVersion)
     readonly property var availableVersionOptions: buildAvailableVersionOptions(nvidiaUpdater.availableVersions)
 
@@ -227,7 +230,7 @@ Item {
                     Layout.fillWidth: true
                     theme: page.theme
                     title: qsTr("Installed Version")
-                    value: nvidiaDetector.driverVersion.length > 0 ? nvidiaDetector.driverVersion : qsTr("None")
+                    value: page.installedVersionLabel.length > 0 ? page.installedVersionLabel : qsTr("None")
                     subtitle: page.driverInstalledLocally
                               ? (nvidiaUpdater.updateAvailable
                                  ? qsTr("Latest available online: ") + page.latestVersionLabel
@@ -462,7 +465,7 @@ Item {
                         spacing: 8
 
                         InfoBadge {
-                            text: qsTr("Installed: ") + (nvidiaUpdater.currentVersion.length > 0 ? nvidiaUpdater.currentVersion : qsTr("None"))
+                            text: qsTr("Installed: ") + (page.installedVersionLabel.length > 0 ? page.installedVersionLabel : qsTr("None"))
                             backgroundColor: page.theme.cardStrong
                             foregroundColor: page.theme.text
                         }

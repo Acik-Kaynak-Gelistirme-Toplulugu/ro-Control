@@ -239,7 +239,22 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
     emitProgressAsync(
         guard,
         NvidiaInstaller::tr("Building the kernel module (akmods --force)..."));
-    runner.runAsRoot(QStringLiteral("akmods"), {QStringLiteral("--force")});
+    result = runner.runAsRoot(QStringLiteral("akmods"), {QStringLiteral("--force")});
+    if (!result.success()) {
+      const QString error =
+          NvidiaInstaller::tr("Kernel module build failed: ") +
+          (result.stderr.trimmed().isEmpty() ? result.stdout.trimmed()
+                                             : result.stderr.trimmed());
+      QMetaObject::invokeMethod(
+          guard,
+          [guard, error]() {
+            if (guard) {
+              emit guard->installFinished(false, error);
+            }
+          },
+          Qt::QueuedConnection);
+      return;
+    }
 
     const QString sessionType = SessionUtil::detectSessionType();
     QString sessionError;

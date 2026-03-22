@@ -46,26 +46,31 @@ void RamMonitor::refresh() {
   qint64 shmemKiB = -1;
 
   // TR: "Anahtar: deger" satirlarini guvenli sekilde ayriştir.
-  // EN: Safely parse "Key: value" lines.
-  static const QRegularExpression lineRe(
-      QStringLiteral(R"(^([A-Za-z_]+):\s+(\d+))"));
-
   QTextStream stream(&meminfo);
   while (!stream.atEnd()) {
-    const QString line = stream.readLine();
-
-    const auto match = lineRe.match(line);
-    if (!match.hasMatch()) {
+    const QString line = stream.readLine().trimmed();
+    if (line.isEmpty()) {
       continue;
     }
 
+    const int colonIdx = line.indexOf(QLatin1Char(':'));
+    if (colonIdx <= 0) {
+      continue;
+    }
+
+    const QString key = line.left(colonIdx).trimmed();
+    const QString valueStr = line.mid(colonIdx + 1).trimmed();
+
+    // The value might be "19842104 kB". We just need the number. 
+    const int spaceIdx = valueStr.indexOf(QLatin1Char(' '));
+    const QString numStr = spaceIdx > 0 ? valueStr.left(spaceIdx) : valueStr;
+
     bool ok = false;
-    const qint64 value = match.captured(2).toLongLong(&ok);
+    const qint64 value = numStr.toLongLong(&ok);
     if (!ok) {
       continue;
     }
 
-    const QString key = match.captured(1);
     if (key == QStringLiteral("MemTotal")) {
       memTotalKiB = value;
     } else if (key == QStringLiteral("MemAvailable")) {
