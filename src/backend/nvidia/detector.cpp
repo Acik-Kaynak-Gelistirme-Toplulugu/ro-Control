@@ -1,5 +1,6 @@
 #include "detector.h"
 
+#include "system/capabilityprobe.h"
 #include "system/commandrunner.h"
 #include "system/sessionutil.h"
 
@@ -64,6 +65,10 @@ void NvidiaDetector::refresh() {
 }
 
 QString NvidiaDetector::detectGpuName() const {
+  if (!CapabilityProbe::isToolAvailable(QStringLiteral("lspci"))) {
+    return {};
+  }
+
   CommandRunner runner;
 
   const auto result =
@@ -96,12 +101,19 @@ QString NvidiaDetector::detectGpuName() const {
 QString NvidiaDetector::detectDriverVersion() const {
   CommandRunner runner;
 
-  const auto result = runner.run(QStringLiteral("nvidia-smi"),
-                                 {QStringLiteral("--query-gpu=driver_version"),
-                                  QStringLiteral("--format=csv,noheader")});
+  if (CapabilityProbe::isToolAvailable(QStringLiteral("nvidia-smi"))) {
+    const auto result =
+        runner.run(QStringLiteral("nvidia-smi"),
+                   {QStringLiteral("--query-gpu=driver_version"),
+                    QStringLiteral("--format=csv,noheader")});
 
-  if (result.success())
-    return result.stdout.trimmed();
+    if (result.success())
+      return result.stdout.trimmed();
+  }
+
+  if (!CapabilityProbe::isToolAvailable(QStringLiteral("modinfo"))) {
+    return {};
+  }
 
   const auto modinfo =
       runner.run(QStringLiteral("modinfo"), {QStringLiteral("nvidia")});
@@ -133,6 +145,13 @@ bool NvidiaDetector::isModuleLoaded(const QString &moduleName) const {
 }
 
 bool NvidiaDetector::detectSecureBoot(bool *known) const {
+  if (!CapabilityProbe::isToolAvailable(QStringLiteral("mokutil"))) {
+    if (known != nullptr) {
+      *known = false;
+    }
+    return false;
+  }
+
   CommandRunner runner;
   const auto result =
       runner.run(QStringLiteral("mokutil"), {QStringLiteral("--sb-state")});
@@ -151,5 +170,4 @@ bool NvidiaDetector::detectSecureBoot(bool *known) const {
 
   return false;
 }
-
 

@@ -218,8 +218,8 @@ void NvidiaUpdater::refreshAvailableVersions() {
           guard->setAvailableVersions(snapshot.availableVersions);
           emit guard->progressMessage(
               snapshot.availableVersions.isEmpty()
-                  ? guard->tr("No available versions found.")
-                  : guard->tr("Available versions: %1")
+                  ? NvidiaUpdater::tr("No available versions found.")
+                  : NvidiaUpdater::tr("Available versions: %1")
                         .arg(snapshot.availableVersions.size()));
         },
         Qt::QueuedConnection);
@@ -297,7 +297,7 @@ void NvidiaUpdater::applyVersion(const QString &version) {
           [guard]() {
             if (guard) {
               emit guard->updateFinished(false,
-                                         guard->tr("dnf not found."));
+                                         NvidiaUpdater::tr("dnf not found."));
             }
           },
           Qt::QueuedConnection);
@@ -315,7 +315,7 @@ void NvidiaUpdater::applyVersion(const QString &version) {
             if (guard) {
               emit guard->updateFinished(
                   false,
-                  guard->tr("Selected version not found in the repository."));
+                  NvidiaUpdater::tr("Selected version not found in the repository."));
             }
           },
           Qt::QueuedConnection);
@@ -331,9 +331,9 @@ void NvidiaUpdater::applyVersion(const QString &version) {
 
           emit guard->progressMessage(
               trimmedVersion.isEmpty()
-                  ? guard->tr(
+                  ? NvidiaUpdater::tr(
                         "Updating NVIDIA driver to the latest version...")
-                  : guard->tr(
+                  : NvidiaUpdater::tr(
                         "Switching NVIDIA driver to selected version: %1")
                         .arg(trimmedVersion));
         },
@@ -353,8 +353,8 @@ void NvidiaUpdater::applyVersion(const QString &version) {
     auto result = runner.runAsRoot(QStringLiteral("dnf"), args);
     if (!result.success()) {
       const QString error =
-          guard->tr("Update failed: ") +
-          commandError(result, guard->tr("unknown error"));
+          NvidiaUpdater::tr("Update failed: ") +
+          commandError(result, NvidiaUpdater::tr("unknown error"));
       QMetaObject::invokeMethod(
           guard,
           [guard, error]() {
@@ -371,7 +371,7 @@ void NvidiaUpdater::applyVersion(const QString &version) {
         [guard]() {
           if (guard) {
             emit guard->progressMessage(
-                guard->tr("Rebuilding kernel module..."));
+                NvidiaUpdater::tr("Rebuilding kernel module..."));
           }
         },
         Qt::QueuedConnection);
@@ -393,11 +393,11 @@ void NvidiaUpdater::applyVersion(const QString &version) {
     const QString successMessage =
         trimmedVersion.isEmpty()
             ? (installedVersion.isEmpty()
-                   ? guard->tr("Latest version installed successfully. "
+                   ? NvidiaUpdater::tr("Latest version installed successfully. "
                                "Please restart the system.")
-                   : guard->tr("Driver updated successfully. "
+                   : NvidiaUpdater::tr("Driver updated successfully. "
                                "Please restart the system."))
-            : guard->tr(
+            : NvidiaUpdater::tr(
                   "Selected version applied successfully. "
                   "Please restart the system.");
 

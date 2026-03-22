@@ -71,15 +71,41 @@ set(BACKEND_SOURCES
     src/backend/system/dnfmanager.cpp
     src/backend/system/commandrunner.cpp
     src/backend/system/sessionutil.cpp
+    src/backend/system/capabilityprobe.cpp
 )
 
 set(APP_SOURCES
     src/main.cpp
     src/cli/cli.cpp
-    ${BACKEND_SOURCES}
 )
 
 # ─── QML Resources ────────────────────────────────────────────────────────────
+add_library(ro-control-backend STATIC ${BACKEND_SOURCES})
+
+target_link_libraries(ro-control-backend PUBLIC
+    Qt6::Core
+    Qt6::DBus
+)
+
+target_compile_options(ro-control-backend PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+    $<$<CONFIG:Debug>:-g -O0>
+    $<$<CONFIG:Release>:-O2>
+)
+
+target_include_directories(ro-control-backend PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/backend
+)
+
+target_compile_definitions(ro-control-backend PUBLIC
+    RO_CONTROL_POLICY_ID="${RO_CONTROL_POLICY_ID}"
+    RO_CONTROL_HELPER_BUILD_PATH="${RO_CONTROL_HELPER_BUILD_PATH}"
+    RO_CONTROL_HELPER_INSTALL_PATH="${RO_CONTROL_HELPER_INSTALL_PATH}"
+)
+
 qt_add_executable(ro-control ${APP_SOURCES})
 
 set_source_files_properties(src/qml/assets/ro-control-logo.svg PROPERTIES
@@ -122,11 +148,10 @@ endif()
 
 # ─── Link Qt Libraries ────────────────────────────────────────────────────────
 target_link_libraries(ro-control PRIVATE
-    Qt6::Core
     Qt6::Quick
     Qt6::QuickControls2
     Qt6::Widgets
-    Qt6::DBus
+    ro-control-backend
 )
 
 # ─── Compiler Warnings ────────────────────────────────────────────────────────
@@ -156,8 +181,6 @@ target_include_directories(ro-control PRIVATE
 
 target_compile_definitions(ro-control PRIVATE
     RO_CONTROL_POLICY_ID="${RO_CONTROL_POLICY_ID}"
-    RO_CONTROL_HELPER_BUILD_PATH="${RO_CONTROL_HELPER_BUILD_PATH}"
-    RO_CONTROL_HELPER_INSTALL_PATH="${RO_CONTROL_HELPER_INSTALL_PATH}"
 )
 
 configure_file(

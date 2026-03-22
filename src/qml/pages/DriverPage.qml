@@ -12,6 +12,38 @@ Item {
 
     property string bannerText: ""
     property string bannerTone: "info"
+    property string operationSource: ""
+    property string operationPhase: ""
+    property string operationDetail: ""
+    property bool operationRunning: nvidiaInstaller.busy || nvidiaUpdater.busy
+
+    function classifyOperationPhase(message) {
+        const lowered = message.toLowerCase();
+        if (lowered.indexOf("rpm fusion") >= 0 || lowered.indexOf("repository") >= 0)
+            return qsTr("Repository Setup");
+        if (lowered.indexOf("install") >= 0 || lowered.indexOf("remove") >= 0 || lowered.indexOf("deep clean") >= 0)
+            return qsTr("Package Transaction");
+        if (lowered.indexOf("kernel") >= 0 || lowered.indexOf("akmods") >= 0 || lowered.indexOf("dracut") >= 0)
+            return qsTr("Kernel Integration");
+        if (lowered.indexOf("wayland") >= 0 || lowered.indexOf("x11") >= 0 || lowered.indexOf("session") >= 0)
+            return qsTr("Session Finalization");
+        if (lowered.indexOf("update") >= 0 || lowered.indexOf("version") >= 0)
+            return qsTr("Update Check");
+        return qsTr("General");
+    }
+
+    function setOperationState(source, message, tone, running) {
+        operationSource = source;
+        operationDetail = message;
+        operationPhase = classifyOperationPhase(message);
+        operationRunning = running;
+        bannerText = (operationPhase.length > 0 ? operationPhase + ": " : "") + message;
+        bannerTone = tone;
+    }
+
+    function finishOperation(source, success, message) {
+        setOperationState(source, message, success ? "success" : "error", false);
+    }
 
     ScrollView {
         id: pageScroll
@@ -62,6 +94,7 @@ Item {
                     value: nvidiaDetector.driverVersion.length > 0 ? nvidiaDetector.driverVersion : qsTr("None")
                     subtitle: nvidiaUpdater.updateAvailable ? qsTr("Latest available: ") + nvidiaUpdater.latestVersion : qsTr("No pending package update detected.")
                     accentColor: page.theme.accentC
+                    busy: page.operationRunning
                 }
 
                 StatCard {
@@ -154,6 +187,30 @@ Item {
                     title: qsTr("Driver Actions")
                     subtitle: qsTr("Use guided actions to install, switch or remove the current stack.")
 
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 8
+                        visible: page.operationDetail.length > 0
+
+                        InfoBadge {
+                            text: qsTr("Source: ") + (page.operationSource.length > 0 ? page.operationSource : qsTr("Idle"))
+                            backgroundColor: page.theme.cardStrong
+                            foregroundColor: page.theme.text
+                        }
+
+                        InfoBadge {
+                            text: qsTr("Phase: ") + (page.operationPhase.length > 0 ? page.operationPhase : qsTr("Idle"))
+                            backgroundColor: page.operationRunning ? page.theme.infoBg : page.theme.cardStrong
+                            foregroundColor: page.theme.text
+                        }
+
+                        InfoBadge {
+                            text: page.operationRunning ? qsTr("Running") : qsTr("Idle")
+                            backgroundColor: page.operationRunning ? page.theme.warningBg : page.theme.successBg
+                            foregroundColor: page.theme.text
+                        }
+                    }
+
                     StatusBanner {
                         Layout.fillWidth: true
                         theme: page.theme
@@ -177,28 +234,40 @@ Item {
                             Layout.fillWidth: true
                             text: qsTr("Install Proprietary")
                             enabled: !nvidiaInstaller.busy && (!nvidiaInstaller.proprietaryAgreementRequired || eulaAccept.checked)
-                            onClicked: nvidiaInstaller.installProprietary(eulaAccept.checked)
+                            onClicked: {
+                                page.setOperationState(qsTr("Installer"), qsTr("Installing the proprietary NVIDIA driver (akmod-nvidia)..."), "info", true);
+                                nvidiaInstaller.installProprietary(eulaAccept.checked);
+                            }
                         }
 
                         Button {
                             Layout.fillWidth: true
                             text: qsTr("Install Nouveau")
                             enabled: !nvidiaInstaller.busy
-                            onClicked: nvidiaInstaller.installOpenSource()
+                            onClicked: {
+                                page.setOperationState(qsTr("Installer"), qsTr("Switching to the open-source driver..."), "info", true);
+                                nvidiaInstaller.installOpenSource();
+                            }
                         }
 
                         Button {
                             Layout.fillWidth: true
                             text: qsTr("Remove Driver")
                             enabled: !nvidiaInstaller.busy
-                            onClicked: nvidiaInstaller.remove()
+                            onClicked: {
+                                page.setOperationState(qsTr("Installer"), qsTr("Removing the NVIDIA driver..."), "info", true);
+                                nvidiaInstaller.remove();
+                            }
                         }
 
                         Button {
                             Layout.fillWidth: true
                             text: qsTr("Deep Clean")
                             enabled: !nvidiaInstaller.busy
-                            onClicked: nvidiaInstaller.deepClean()
+                            onClicked: {
+                                page.setOperationState(qsTr("Installer"), qsTr("Cleaning legacy driver leftovers..."), "info", true);
+                                nvidiaInstaller.deepClean();
+                            }
                         }
                     }
 
@@ -256,13 +325,19 @@ Item {
                         Button {
                             text: qsTr("Check for Updates")
                             enabled: !nvidiaUpdater.busy && !nvidiaInstaller.busy
-                            onClicked: nvidiaUpdater.checkForUpdate()
+                            onClicked: {
+                                page.setOperationState(qsTr("Updater"), qsTr("Starting update check..."), "info", true);
+                                nvidiaUpdater.checkForUpdate();
+                            }
                         }
 
                         Button {
                             text: qsTr("Apply Latest")
                             enabled: !nvidiaUpdater.busy && !nvidiaInstaller.busy && nvidiaUpdater.updateAvailable
-                            onClicked: nvidiaUpdater.applyUpdate()
+                            onClicked: {
+                                page.setOperationState(qsTr("Updater"), qsTr("Updating NVIDIA driver to the latest version..."), "info", true);
+                                nvidiaUpdater.applyUpdate();
+                            }
                         }
                     }
 
@@ -280,7 +355,10 @@ Item {
                         Button {
                             text: qsTr("Apply Selected")
                             enabled: !nvidiaUpdater.busy && !nvidiaInstaller.busy && versionPicker.currentIndex >= 0
-                            onClicked: nvidiaUpdater.applyVersion(versionPicker.currentText)
+                            onClicked: {
+                                page.setOperationState(qsTr("Updater"), qsTr("Switching NVIDIA driver to selected version: ") + versionPicker.currentText, "info", true);
+                                nvidiaUpdater.applyVersion(versionPicker.currentText);
+                            }
                         }
                     }
 
@@ -331,14 +409,12 @@ Item {
 
         function onProgressMessage(message) {
             logArea.append(message);
-            page.bannerText = message;
-            page.bannerTone = "info";
+            page.setOperationState(qsTr("Installer"), message, "info", true);
         }
 
         function onInstallFinished(success, message) {
             logArea.append(message);
-            page.bannerText = message;
-            page.bannerTone = success ? "success" : "error";
+            page.finishOperation(qsTr("Installer"), success, message);
             nvidiaDetector.refresh();
             nvidiaUpdater.checkForUpdate();
             nvidiaInstaller.refreshProprietaryAgreement();
@@ -347,8 +423,7 @@ Item {
 
         function onRemoveFinished(success, message) {
             logArea.append(message);
-            page.bannerText = message;
-            page.bannerTone = success ? "success" : "error";
+            page.finishOperation(qsTr("Installer"), success, message);
             nvidiaDetector.refresh();
             nvidiaUpdater.checkForUpdate();
             nvidiaInstaller.refreshProprietaryAgreement();
@@ -360,14 +435,12 @@ Item {
 
         function onProgressMessage(message) {
             logArea.append(message);
-            page.bannerText = message;
-            page.bannerTone = "info";
+            page.setOperationState(qsTr("Updater"), message, "info", true);
         }
 
         function onUpdateFinished(success, message) {
             logArea.append(message);
-            page.bannerText = message;
-            page.bannerTone = success ? "success" : "error";
+            page.finishOperation(qsTr("Updater"), success, message);
             nvidiaDetector.refresh();
             nvidiaUpdater.checkForUpdate();
         }

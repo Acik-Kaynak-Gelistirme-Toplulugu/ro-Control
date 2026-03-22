@@ -125,7 +125,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
         [guard]() {
           if (guard) {
             emit guard->progressMessage(
-                guard->tr("Checking RPM Fusion repositories..."));
+                NvidiaInstaller::tr("Checking RPM Fusion repositories..."));
           }
         },
         Qt::QueuedConnection);
@@ -142,7 +142,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
           [guard]() {
             if (guard) {
               emit guard->installFinished(
-                  false, guard->tr("Platform version could not be detected."));
+                  false, NvidiaInstaller::tr("Platform version could not be detected."));
             }
           },
           Qt::QueuedConnection);
@@ -161,7 +161,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
 
     if (!result.success()) {
       const QString error =
-          guard->tr("Failed to enable RPM Fusion repositories: ") +
+          NvidiaInstaller::tr("Failed to enable RPM Fusion repositories: ") +
           result.stderr.trimmed();
       QMetaObject::invokeMethod(
           guard,
@@ -178,7 +178,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
         guard,
         [guard]() {
           if (guard) {
-            emit guard->progressMessage(guard->tr(
+            emit guard->progressMessage(NvidiaInstaller::tr(
                 "Installing the proprietary NVIDIA driver (akmod-nvidia)..."));
           }
         },
@@ -190,7 +190,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
 
     if (!result.success()) {
       const QString error =
-          guard->tr("Installation failed: ") + result.stderr.trimmed();
+          NvidiaInstaller::tr("Installation failed: ") + result.stderr.trimmed();
       QMetaObject::invokeMethod(
           guard,
           [guard, error]() {
@@ -207,7 +207,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
         [guard]() {
           if (guard) {
             emit guard->progressMessage(
-                guard->tr("Building the kernel module (akmods --force)..."));
+                NvidiaInstaller::tr("Building the kernel module (akmods --force)..."));
           }
         },
         Qt::QueuedConnection);
@@ -233,7 +233,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
           if (guard) {
             emit guard->installFinished(
                 true,
-                guard->tr("The proprietary NVIDIA driver was installed "
+                NvidiaInstaller::tr("The proprietary NVIDIA driver was installed "
                           "successfully. Please restart the system."));
           }
         },
@@ -269,7 +269,7 @@ void NvidiaInstaller::installOpenSource() {
         [guard]() {
           if (guard) {
             emit guard->progressMessage(
-                guard->tr("Switching to the open-source driver..."));
+                NvidiaInstaller::tr("Switching to the open-source driver..."));
           }
         },
         Qt::QueuedConnection);
@@ -282,7 +282,7 @@ void NvidiaInstaller::installOpenSource() {
 
     if (!result.success()) {
       const QString error =
-          guard->tr("Failed to remove proprietary packages: ") +
+          NvidiaInstaller::tr("Failed to remove proprietary packages: ") +
           result.stderr.trimmed();
       QMetaObject::invokeMethod(
           guard,
@@ -302,7 +302,7 @@ void NvidiaInstaller::installOpenSource() {
 
     if (!result.success()) {
       const QString error =
-          guard->tr("Open-source driver installation failed: ") +
+          NvidiaInstaller::tr("Open-source driver installation failed: ") +
           result.stderr.trimmed();
       QMetaObject::invokeMethod(
           guard,
@@ -323,7 +323,7 @@ void NvidiaInstaller::installOpenSource() {
           if (guard) {
             emit guard->installFinished(
                 true,
-                guard->tr("The open-source driver (Nouveau) was installed. "
+                NvidiaInstaller::tr("The open-source driver (Nouveau) was installed. "
                           "Please restart the system."));
           }
         },
@@ -359,7 +359,7 @@ void NvidiaInstaller::remove() {
         [guard]() {
           if (guard) {
             emit guard->progressMessage(
-                guard->tr("Removing the NVIDIA driver..."));
+                NvidiaInstaller::tr("Removing the NVIDIA driver..."));
           }
         },
         Qt::QueuedConnection);
@@ -372,8 +372,8 @@ void NvidiaInstaller::remove() {
 
     const bool success = result.success();
     const QString message =
-        success ? guard->tr("Driver removed successfully.")
-                : guard->tr("Removal failed: ") + result.stderr.trimmed();
+        success ? NvidiaInstaller::tr("Driver removed successfully.")
+                : NvidiaInstaller::tr("Removal failed: ") + result.stderr.trimmed();
     QMetaObject::invokeMethod(
         guard,
         [guard, success, message]() {
@@ -413,7 +413,7 @@ void NvidiaInstaller::deepClean() {
         [guard]() {
           if (guard) {
             emit guard->progressMessage(
-                guard->tr("Cleaning legacy driver leftovers..."));
+                NvidiaInstaller::tr("Cleaning legacy driver leftovers..."));
           }
         },
         Qt::QueuedConnection);
@@ -425,7 +425,7 @@ void NvidiaInstaller::deepClean() {
 
     if (!removeResult.success()) {
       const QString error =
-          guard->tr("Deep clean failed: ") + removeResult.stderr.trimmed();
+          NvidiaInstaller::tr("Deep clean failed: ") + removeResult.stderr.trimmed();
       QMetaObject::invokeMethod(
           guard,
           [guard, error]() {
@@ -441,7 +441,7 @@ void NvidiaInstaller::deepClean() {
         runner.runAsRoot(QStringLiteral("dnf"),
                          {QStringLiteral("clean"), QStringLiteral("all")});
     if (!cleanResult.success()) {
-      const QString error = guard->tr("DNF cache cleanup failed: ") +
+      const QString error = NvidiaInstaller::tr("DNF cache cleanup failed: ") +
                             cleanResult.stderr.trimmed();
       QMetaObject::invokeMethod(
           guard,
@@ -458,9 +458,9 @@ void NvidiaInstaller::deepClean() {
         guard,
         [guard]() {
           if (guard) {
-            emit guard->progressMessage(guard->tr("Deep clean completed."));
+            emit guard->progressMessage(NvidiaInstaller::tr("Deep clean completed."));
             emit guard->removeFinished(
-                true, guard->tr("Legacy NVIDIA cleanup completed."));
+                true, NvidiaInstaller::tr("Legacy NVIDIA cleanup completed."));
           }
         },
         Qt::QueuedConnection);
