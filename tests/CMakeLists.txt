@@ -1,10 +1,5 @@
 find_package(Qt6 REQUIRED COMPONENTS Test)
 
-set(RO_CONTROL_TEST_COMPILE_DEFINITIONS
-    RO_CONTROL_POLICY_ID="${RO_CONTROL_POLICY_ID}"
-    RO_CONTROL_HELPER_BUILD_PATH="${RO_CONTROL_HELPER_BUILD_PATH}"
-    RO_CONTROL_HELPER_INSTALL_PATH="${RO_CONTROL_HELPER_INSTALL_PATH}"
-)
 
 # ─── Detector Tests ──────────────────────────────────────────────────────────
 qt_add_executable(test_detector
@@ -20,7 +15,9 @@ target_include_directories(test_detector PRIVATE
 )
 
 target_compile_definitions(test_detector PRIVATE
-    ${RO_CONTROL_TEST_COMPILE_DEFINITIONS}
+    "RO_CONTROL_POLICY_ID=\"${RO_CONTROL_POLICY_ID}\""
+    "RO_CONTROL_HELPER_BUILD_PATH=\"${RO_CONTROL_HELPER_BUILD_PATH}\""
+    "RO_CONTROL_HELPER_INSTALL_PATH=\"${RO_CONTROL_HELPER_INSTALL_PATH}\""
 )
 
 target_link_libraries(test_detector PRIVATE
@@ -43,6 +40,12 @@ qt_add_executable(test_updater
 target_include_directories(test_updater PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/backend
+)
+
+target_compile_definitions(test_updater PRIVATE
+    "RO_CONTROL_POLICY_ID=\"${RO_CONTROL_POLICY_ID}\""
+    "RO_CONTROL_HELPER_BUILD_PATH=\"${RO_CONTROL_HELPER_BUILD_PATH}\""
+    "RO_CONTROL_HELPER_INSTALL_PATH=\"${RO_CONTROL_HELPER_INSTALL_PATH}\""
 )
 
 target_link_libraries(test_updater PRIVATE
@@ -68,7 +71,9 @@ target_include_directories(test_monitor PRIVATE
 )
 
 target_compile_definitions(test_monitor PRIVATE
-    ${RO_CONTROL_TEST_COMPILE_DEFINITIONS}
+    "RO_CONTROL_POLICY_ID=\"${RO_CONTROL_POLICY_ID}\""
+    "RO_CONTROL_HELPER_BUILD_PATH=\"${RO_CONTROL_HELPER_BUILD_PATH}\""
+    "RO_CONTROL_HELPER_INSTALL_PATH=\"${RO_CONTROL_HELPER_INSTALL_PATH}\""
 )
 
 target_link_libraries(test_monitor PRIVATE
@@ -92,7 +97,9 @@ target_include_directories(test_system_integration PRIVATE
 )
 
 target_compile_definitions(test_system_integration PRIVATE
-    ${RO_CONTROL_TEST_COMPILE_DEFINITIONS}
+    "RO_CONTROL_POLICY_ID=\"${RO_CONTROL_POLICY_ID}\""
+    "RO_CONTROL_HELPER_BUILD_PATH=\"${RO_CONTROL_HELPER_BUILD_PATH}\""
+    "RO_CONTROL_HELPER_INSTALL_PATH=\"${RO_CONTROL_HELPER_INSTALL_PATH}\""
 )
 
 target_link_libraries(test_system_integration PRIVATE
@@ -108,8 +115,10 @@ qt_add_executable(test_metadata
 )
 
 target_compile_definitions(test_metadata PRIVATE
-    ${RO_CONTROL_TEST_COMPILE_DEFINITIONS}
-    RO_CONTROL_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    "RO_CONTROL_POLICY_ID=\"${RO_CONTROL_POLICY_ID}\""
+    "RO_CONTROL_HELPER_BUILD_PATH=\"${RO_CONTROL_HELPER_BUILD_PATH}\""
+    "RO_CONTROL_HELPER_INSTALL_PATH=\"${RO_CONTROL_HELPER_INSTALL_PATH}\""
+    "RO_CONTROL_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\""
 )
 
 target_link_libraries(test_metadata PRIVATE
@@ -139,7 +148,9 @@ target_include_directories(test_cli PRIVATE
 )
 
 target_compile_definitions(test_cli PRIVATE
-    ${RO_CONTROL_TEST_COMPILE_DEFINITIONS}
+    "RO_CONTROL_POLICY_ID=\"${RO_CONTROL_POLICY_ID}\""
+    "RO_CONTROL_HELPER_BUILD_PATH=\"${RO_CONTROL_HELPER_BUILD_PATH}\""
+    "RO_CONTROL_HELPER_INSTALL_PATH=\"${RO_CONTROL_HELPER_INSTALL_PATH}\""
 )
 
 target_link_libraries(test_cli PRIVATE
