@@ -31,6 +31,7 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS
     Core
+    Qml
     Quick          # Qt Quick / QML engine
     QuickControls2 # QML controls (Button, Slider, etc.)
     Widgets        # QApplication base
@@ -72,6 +73,7 @@ set(BACKEND_SOURCES
     src/backend/system/commandrunner.cpp
     src/backend/system/sessionutil.cpp
     src/backend/system/capabilityprobe.cpp
+    src/backend/system/languagemanager.cpp
 )
 
 set(APP_SOURCES
@@ -85,6 +87,7 @@ add_library(ro-control-backend STATIC ${BACKEND_SOURCES})
 target_link_libraries(ro-control-backend PUBLIC
     Qt6::Core
     Qt6::DBus
+    Qt6::Qml
 )
 
 target_compile_options(ro-control-backend PRIVATE
@@ -189,6 +192,7 @@ configure_file(
     @ONLY
     NEWLINE_STYLE UNIX
 )
+execute_process(COMMAND chmod +x ${RO_CONTROL_HELPER_BUILD_PATH})
 
 configure_file(
     data/polkit/io.github.ProjectRoASD.rocontrol.policy.in

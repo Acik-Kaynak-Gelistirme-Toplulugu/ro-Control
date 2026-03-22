@@ -17,6 +17,7 @@
 #include "backend/nvidia/detector.h"
 #include "backend/nvidia/installer.h"
 #include "backend/nvidia/updater.h"
+#include "backend/system/languagemanager.h"
 #include "cli/cli.h"
 
 namespace {
@@ -217,17 +218,6 @@ int main(int argc, char *argv[]) {
       "ro-control", QIcon(":/qt/qml/rocontrol/assets/ro-control-logo.svg")));
 
   QTranslator translator;
-  const QString localeName = QLocale::system().name();
-  const QString baseLanguage =
-      localeName.section(QLatin1Char('_'), 0, 0).toLower();
-
-  if (translator.load(
-          QStringLiteral(":/i18n/ro-control_%1.qm").arg(localeName)) ||
-      translator.load(
-          QStringLiteral(":/i18n/ro-control_%1.qm").arg(baseLanguage))) {
-    app.installTranslator(&translator);
-  }
-
   NvidiaDetector detector;
   NvidiaInstaller installer;
   NvidiaUpdater updater;
@@ -236,6 +226,7 @@ int main(int argc, char *argv[]) {
   RamMonitor ramMonitor;
 
   QQmlApplicationEngine engine;
+  LanguageManager languageManager(&app, &engine, &translator);
 
   // Backend nesnelerini tüm QML dosyalarına global olarak aç
   engine.rootContext()->setContextProperty("nvidiaDetector", &detector);
@@ -244,6 +235,7 @@ int main(int argc, char *argv[]) {
   engine.rootContext()->setContextProperty("cpuMonitor", &cpuMonitor);
   engine.rootContext()->setContextProperty("gpuMonitor", &gpuMonitor);
   engine.rootContext()->setContextProperty("ramMonitor", &ramMonitor);
+  engine.rootContext()->setContextProperty("languageManager", &languageManager);
 
   QObject::connect(
       &engine, &QQmlApplicationEngine::objectCreationFailed, &app,

@@ -34,6 +34,52 @@ Item {
 
                     RowLayout {
                         Layout.fillWidth: true
+                        spacing: 12
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+
+                            Label {
+                                text: qsTr("Language")
+                                font.bold: true
+                                color: settingsPage.theme.text
+                            }
+
+                            Label {
+                                text: qsTr("Changes the application language immediately and keeps the selection for the next launch.")
+                                wrapMode: Text.Wrap
+                                color: settingsPage.theme.textSoft
+                                Layout.fillWidth: true
+                            }
+                        }
+
+                        ComboBox {
+                            id: languagePicker
+                            Layout.preferredWidth: 220
+                            model: languageManager.availableLanguages
+                            textRole: "label"
+
+                            Component.onCompleted: {
+                                for (let i = 0; i < model.length; ++i) {
+                                    if (model[i].code === languageManager.currentLanguage) {
+                                        currentIndex = i;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            onActivated: {
+                                const selected = model[currentIndex];
+                                if (selected && selected.code) {
+                                    languageManager.setCurrentLanguage(selected.code);
+                                }
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
 
                         ColumnLayout {
                             Layout.fillWidth: true
@@ -89,6 +135,12 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 8
+
+                        InfoBadge {
+                            text: qsTr("Language: ") + languageManager.currentLanguageLabel
+                            backgroundColor: settingsPage.theme.cardStrong
+                            foregroundColor: settingsPage.theme.text
+                        }
 
                         InfoBadge {
                             text: settingsPage.darkMode ? qsTr("System Dark Theme") : qsTr("System Light Theme")
@@ -213,6 +265,19 @@ Item {
                         text: qsTr("Advanced diagnostics: ") + (settingsPage.showAdvancedInfo ? qsTr("Visible") : qsTr("Hidden"))
                         color: settingsPage.theme.text
                     }
+                }
+            }
+        }
+    }
+
+    Connections {
+        target: languageManager
+
+        function onCurrentLanguageChanged() {
+            for (let i = 0; i < languagePicker.model.length; ++i) {
+                if (languagePicker.model[i].code === languageManager.currentLanguage) {
+                    languagePicker.currentIndex = i;
+                    break;
                 }
             }
         }
