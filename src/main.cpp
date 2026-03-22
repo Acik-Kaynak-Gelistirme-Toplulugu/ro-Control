@@ -7,6 +7,8 @@
 #include <QObject>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickWindow>
+#include <QSGRendererInterface>
 #include <QTextStream>
 #include <QTranslator>
 #include <QVariant>
@@ -153,6 +155,25 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
   return result;
 }
 
+void configureGuiGraphicsEnvironment() {
+#if defined(Q_OS_LINUX)
+  const QByteArray sessionType =
+      qgetenv("XDG_SESSION_TYPE").trimmed().toLower();
+
+  // NVIDIA on Fedora/X11 is generally more stable through the GLX path than
+  // the EGL/DRI2 integration that can emit startup errors.
+  if (sessionType == "x11" && qEnvironmentVariableIsEmpty("QT_XCB_GL_INTEGRATION")) {
+    qputenv("QT_XCB_GL_INTEGRATION", QByteArrayLiteral("glx"));
+  }
+
+  // Keep an explicit escape hatch for hosts that still need software rendering.
+  if (!qEnvironmentVariableIsEmpty("RO_CONTROL_FORCE_SOFTWARE_RENDER")) {
+    qputenv("QT_QUICK_BACKEND", QByteArrayLiteral("software"));
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
+  }
+#endif
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -211,6 +232,8 @@ int main(int argc, char *argv[]) {
     }
     return result.exitCode;
   }
+
+  configureGuiGraphicsEnvironment();
 
   QApplication app(argc, argv);
 

@@ -42,6 +42,10 @@ QString commandError(const CommandRunner::Result &result,
   return fallback;
 }
 
+QString normalizedTransactionOutput(const CommandRunner::Result &result) {
+  return (result.stdout + QLatin1Char('\n') + result.stderr).toLower();
+}
+
 struct UpdateStatusSnapshot {
   QString currentVersion;
   QString latestVersion;
@@ -152,6 +156,62 @@ UpdateStatusSnapshot collectUpdateStatus() {
   return snapshot;
 }
 
+void emitProgressAsync(const QPointer<NvidiaUpdater> &guard,
+                       const QString &message) {
+  QMetaObject::invokeMethod(
+      guard,
+      [guard, message]() {
+        if (guard) {
+          emit guard->progressMessage(message);
+        }
+      },
+      Qt::QueuedConnection);
+}
+
+void attachRunnerLogging(CommandRunner &runner,
+                         const QPointer<NvidiaUpdater> &guard) {
+  QObject::connect(&runner, &CommandRunner::outputLine, guard,
+                   [guard](const QString &message) {
+                     emitProgressAsync(guard, message);
+                   });
+
+  QObject::connect(&runner, &CommandRunner::errorLine, guard,
+                   [guard](const QString &message) {
+                     emitProgressAsync(guard, message);
+                   });
+
+  QObject::connect(
+      &runner, &CommandRunner::commandStarted, guard,
+      [guard](const QString &program, const QStringList &args, int attempt) {
+        QStringList visibleArgs = args;
+        if (!visibleArgs.isEmpty() &&
+            visibleArgs.constFirst().contains(QStringLiteral("ro-control-helper"))) {
+          visibleArgs.removeFirst();
+        }
+
+        const QString commandLine =
+            QStringLiteral("$ %1 %2")
+                .arg(program, visibleArgs.join(QLatin1Char(' ')).trimmed());
+        emitProgressAsync(
+            guard, NvidiaUpdater::tr("Starting command (attempt %1): %2")
+                       .arg(attempt)
+                       .arg(commandLine.trimmed()));
+      });
+
+  QObject::connect(&runner, &CommandRunner::commandFinished, guard,
+                   [guard](const QString &program, int exitCode, int attempt,
+                           int elapsedMs) {
+                     emitProgressAsync(
+                         guard,
+                         NvidiaUpdater::tr(
+                             "Command finished (attempt %1, exit %2, %3 ms): %4")
+                             .arg(attempt)
+                             .arg(exitCode)
+                             .arg(elapsedMs)
+                             .arg(program));
+                   });
+}
+
 } // namespace
 
 NvidiaUpdater::NvidiaUpdater(QObject *parent) : QObject(parent) {}
@@ -198,6 +258,21 @@ void NvidiaUpdater::setAvailableVersions(const QStringList &versions) {
 
   m_availableVersions = versions;
   emit availableVersionsChanged();
+}
+
+bool NvidiaUpdater::transactionChanged(const CommandRunner::Result &result) const {
+  const QString output = normalizedTransactionOutput(result);
+
+  if (output.contains(QStringLiteral("nothing to do")) ||
+      output.contains(QStringLiteral("nothing to do.")) ||
+      output.contains(QStringLiteral("no packages marked for upgrade")) ||
+      output.contains(QStringLiteral("no packages marked for update")) ||
+      output.contains(QStringLiteral("no packages marked for reinstall")) ||
+      output.contains(QStringLiteral("package is already installed"))) {
+    return false;
+  }
+
+  return true;
 }
 
 QString NvidiaUpdater::detectSessionType() const {
@@ -355,20 +430,7 @@ void NvidiaUpdater::applyVersion(const QString &version) {
     }
 
     CommandRunner runner;
-    QObject::connect(&runner, &CommandRunner::outputLine, guard,
-                     [guard](const QString &message) {
-                       if (!guard) {
-                         return;
-                       }
-                       QMetaObject::invokeMethod(
-                           guard,
-                           [guard, message]() {
-                             if (guard) {
-                               emit guard->progressMessage(message);
-                             }
-                           },
-                           Qt::QueuedConnection);
-                     });
+    attachRunnerLogging(runner, guard);
 
     if (QStandardPaths::findExecutable(QStringLiteral("dnf")).isEmpty()) {
       QMetaObject::invokeMethod(
@@ -401,22 +463,13 @@ void NvidiaUpdater::applyVersion(const QString &version) {
       return;
     }
 
-    QMetaObject::invokeMethod(
-        guard,
-        [guard, trimmedVersion]() {
-          if (!guard) {
-            return;
-          }
-
-          emit guard->progressMessage(
-              trimmedVersion.isEmpty()
-                  ? NvidiaUpdater::tr(
-                        "Updating NVIDIA driver to the latest version...")
-                  : NvidiaUpdater::tr(
-                        "Switching NVIDIA driver to selected version: %1")
-                        .arg(trimmedVersion));
-        },
-        Qt::QueuedConnection);
+    emitProgressAsync(
+        guard, trimmedVersion.isEmpty()
+                   ? NvidiaUpdater::tr(
+                         "Updating NVIDIA driver to the latest version...")
+                   : NvidiaUpdater::tr(
+                         "Switching NVIDIA driver to selected version: %1")
+                         .arg(trimmedVersion));
 
     const QStringList args =
         guard->buildTransactionArguments(trimmedVersion, installedVersion,
@@ -438,15 +491,40 @@ void NvidiaUpdater::applyVersion(const QString &version) {
       return;
     }
 
-    QMetaObject::invokeMethod(
-        guard,
-        [guard]() {
-          if (guard) {
-            emit guard->progressMessage(
-                NvidiaUpdater::tr("Rebuilding kernel module..."));
-          }
-        },
-        Qt::QueuedConnection);
+    if (!guard->transactionChanged(result)) {
+      const UpdateStatusSnapshot snapshot = collectUpdateStatus();
+      const QString noChangeMessage =
+          trimmedVersion.isEmpty()
+              ? NvidiaUpdater::tr(
+                    "Driver is already at the latest available version.")
+              : NvidiaUpdater::tr(
+                    "Selected driver version is already installed.");
+
+      QMetaObject::invokeMethod(
+          guard,
+          [guard, snapshot, noChangeMessage]() {
+            if (!guard) {
+              return;
+            }
+
+            if (guard->m_currentVersion != snapshot.currentVersion) {
+              guard->m_currentVersion = snapshot.currentVersion;
+              emit guard->currentVersionChanged();
+            }
+            if (guard->m_updateAvailable != snapshot.updateAvailable) {
+              guard->m_updateAvailable = snapshot.updateAvailable;
+              emit guard->updateAvailableChanged();
+            }
+            guard->setLatestVersion(snapshot.latestVersion);
+            guard->setAvailableVersions(snapshot.availableVersions);
+            emit guard->progressMessage(noChangeMessage);
+            emit guard->updateFinished(true, noChangeMessage);
+          },
+          Qt::QueuedConnection);
+      return;
+    }
+
+    emitProgressAsync(guard, NvidiaUpdater::tr("Rebuilding kernel module..."));
 
     QString finalizeError;
     if (!guard->finalizeDriverChange(runner, sessionType, &finalizeError)) {

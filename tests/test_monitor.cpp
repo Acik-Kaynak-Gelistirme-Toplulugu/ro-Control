@@ -1,4 +1,8 @@
 #include <QTest>
+#include <QDir>
+#include <QFile>
+#include <QTemporaryDir>
+#include <QTextStream>
 
 #include "monitor/cpumonitor.h"
 #include "monitor/gpumonitor.h"
@@ -69,6 +73,38 @@ private slots:
 
     gpu.start();
     QVERIFY(gpu.running());
+  }
+
+  void testGpuPartialTelemetryKeepsMonitorAvailable() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString scriptPath = tempDir.filePath(QStringLiteral("fake-nvidia-smi.sh"));
+    QFile script(scriptPath);
+    QVERIFY(script.open(QIODevice::WriteOnly | QIODevice::Text));
+
+    QTextStream stream(&script);
+    stream << "#!/bin/sh\n";
+    stream << "printf 'NVIDIA GeForce RTX 4080, 61, N/A, 2048, 16384\\n'\n";
+    script.close();
+    QVERIFY(QFile::setPermissions(scriptPath, QFileDevice::ReadOwner |
+                                                  QFileDevice::WriteOwner |
+                                                  QFileDevice::ExeOwner));
+
+    qputenv("RO_CONTROL_COMMAND_NVIDIA_SMI", scriptPath.toUtf8());
+    GpuMonitor gpu;
+    gpu.stop();
+    gpu.refresh();
+
+    QVERIFY(gpu.available());
+    QCOMPARE(gpu.gpuName(), QStringLiteral("NVIDIA GeForce RTX 4080"));
+    QCOMPARE(gpu.temperatureC(), 61);
+    QCOMPARE(gpu.utilizationPercent(), 0);
+    QCOMPARE(gpu.memoryUsedMiB(), 2048);
+    QCOMPARE(gpu.memoryTotalMiB(), 16384);
+    QCOMPARE(gpu.memoryUsagePercent(), 12);
+
+    qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SMI");
   }
 
   void testRamConstruction() {

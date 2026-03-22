@@ -16,6 +16,9 @@ Item {
     property string operationPhase: ""
     property string operationDetail: ""
     property bool operationRunning: nvidiaInstaller.busy || nvidiaUpdater.busy
+    property double operationStartedAt: 0
+    property double lastLogAt: 0
+    property int operationElapsedSeconds: 0
 
     function classifyOperationPhase(message) {
         const lowered = message.toLowerCase();
@@ -33,10 +36,17 @@ Item {
     }
 
     function setOperationState(source, message, tone, running) {
+        if (running && !operationRunning)
+            operationStartedAt = Date.now();
+        if (!running)
+            operationStartedAt = 0;
         operationSource = source;
         operationDetail = message;
         operationPhase = classifyOperationPhase(message);
         operationRunning = running;
+        operationElapsedSeconds = operationRunning && operationStartedAt > 0
+                                  ? Math.max(0, Math.floor((Date.now() - operationStartedAt) / 1000))
+                                  : 0;
         bannerText = (operationPhase.length > 0 ? operationPhase + ": " : "") + message;
         bannerTone = tone;
     }
@@ -45,9 +55,131 @@ Item {
         setOperationState(source, message, success ? "success" : "error", false);
     }
 
+    function formatTimestamp(epochMs) {
+        if (epochMs <= 0)
+            return "--:--:--";
+        const stamp = new Date(epochMs);
+        return Qt.formatTime(stamp, "HH:mm:ss");
+    }
+
+    function formatDuration(totalSeconds) {
+        const seconds = Math.max(0, totalSeconds);
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+
+        function pad(value) {
+            return value < 10 ? "0" + value : value.toString();
+        }
+
+        if (hours > 0)
+            return hours + ":" + pad(minutes) + ":" + pad(remainingSeconds);
+        return minutes + ":" + pad(remainingSeconds);
+    }
+
+    function cleanVersionLabel(rawVersion) {
+        let normalized = (rawVersion || "").trim();
+        if (normalized.length === 0)
+            return "";
+
+        const epochIndex = normalized.indexOf(":");
+        if (epochIndex >= 0)
+            normalized = normalized.substring(epochIndex + 1);
+
+        const releaseMatch = normalized.match(/^([0-9]+(?:\.[0-9]+)+)/);
+        if (releaseMatch && releaseMatch.length > 1)
+            return releaseMatch[1];
+
+        const hyphenIndex = normalized.indexOf("-");
+        if (hyphenIndex > 0)
+            return normalized.substring(0, hyphenIndex);
+
+        return normalized;
+    }
+
+    function compareVersionLabels(leftVersion, rightVersion) {
+        const leftParts = cleanVersionLabel(leftVersion).split(".");
+        const rightParts = cleanVersionLabel(rightVersion).split(".");
+        const maxLength = Math.max(leftParts.length, rightParts.length);
+
+        for (let i = 0; i < maxLength; ++i) {
+            const leftValue = i < leftParts.length ? parseInt(leftParts[i], 10) : 0;
+            const rightValue = i < rightParts.length ? parseInt(rightParts[i], 10) : 0;
+
+            if (leftValue > rightValue)
+                return -1;
+            if (leftValue < rightValue)
+                return 1;
+        }
+
+        return 0;
+    }
+
+    function buildVersionTitle(displayVersion, isInstalled, isLatest) {
+        const tags = [];
+        if (isInstalled)
+            tags.push(qsTr("Installed"));
+        if (isLatest)
+            tags.push(qsTr("Latest"));
+
+        return tags.length > 0
+                ? displayVersion + " (" + tags.join(", ") + ")"
+                : displayVersion;
+    }
+
+    function buildAvailableVersionOptions(rawVersions) {
+        const options = [];
+        const seenLabels = {};
+        const installedVersionLabel = cleanVersionLabel(nvidiaUpdater.currentVersion);
+        const latestVersionLabel = cleanVersionLabel(nvidiaUpdater.latestVersion);
+
+        for (let i = 0; i < rawVersions.length; ++i) {
+            const rawVersion = rawVersions[i];
+            const displayVersion = cleanVersionLabel(rawVersion);
+            if (displayVersion.length === 0 || seenLabels[displayVersion])
+                continue;
+
+            seenLabels[displayVersion] = true;
+            const isInstalled = installedVersionLabel.length > 0 && displayVersion === installedVersionLabel;
+            const isLatest = latestVersionLabel.length > 0 && displayVersion === latestVersionLabel;
+            options.push({
+                rawVersion: rawVersion,
+                displayVersion: displayVersion,
+                versionTitle: buildVersionTitle(displayVersion, isInstalled, isLatest),
+                isInstalled: isInstalled,
+                isLatest: isLatest
+            });
+        }
+
+        options.sort(function(left, right) {
+            return compareVersionLabels(left.displayVersion, right.displayVersion);
+        });
+
+        return options;
+    }
+
+    function appendLog(source, message) {
+        const now = Date.now();
+        lastLogAt = now;
+        logArea.append("[" + formatTimestamp(now) + "] " + source + ": " + message);
+        logArea.cursorPosition = logArea.length;
+    }
+
+    Timer {
+        interval: 1000
+        repeat: true
+        running: page.operationRunning
+        onTriggered: {
+            if (page.operationStartedAt > 0)
+                page.operationElapsedSeconds = Math.max(0, Math.floor((Date.now() - page.operationStartedAt) / 1000));
+        }
+    }
+
     readonly property bool remoteDriverCatalogAvailable: nvidiaUpdater.availableVersions.length > 0
     readonly property bool canInstallLatestRemoteDriver: nvidiaDetector.gpuFound && remoteDriverCatalogAvailable
     readonly property bool driverInstalledLocally: nvidiaUpdater.currentVersion.length > 0
+    readonly property string latestVersionLabel: cleanVersionLabel(nvidiaUpdater.latestVersion)
+    readonly property var availableVersionOptions: buildAvailableVersionOptions(nvidiaUpdater.availableVersions)
 
     ScrollView {
         id: pageScroll
@@ -98,10 +230,10 @@ Item {
                     value: nvidiaDetector.driverVersion.length > 0 ? nvidiaDetector.driverVersion : qsTr("None")
                     subtitle: page.driverInstalledLocally
                               ? (nvidiaUpdater.updateAvailable
-                                 ? qsTr("Latest available online: ") + nvidiaUpdater.latestVersion
+                                 ? qsTr("Latest available online: ") + page.latestVersionLabel
                                  : qsTr("No pending online package update detected."))
                               : (page.remoteDriverCatalogAvailable
-                                 ? qsTr("Latest driver found online: ") + nvidiaUpdater.latestVersion
+                                 ? qsTr("Latest driver found online: ") + page.latestVersionLabel
                                  : qsTr("No online driver catalog has been loaded yet."))
                     accentColor: page.theme.accentC
                     busy: page.operationRunning
@@ -218,6 +350,20 @@ Item {
                             text: page.operationRunning ? qsTr("Running") : qsTr("Idle")
                             backgroundColor: page.operationRunning ? page.theme.warningBg : page.theme.successBg
                             foregroundColor: page.theme.text
+                        }
+
+                        InfoBadge {
+                            text: qsTr("Elapsed: ") + page.formatDuration(page.operationElapsedSeconds)
+                            backgroundColor: page.theme.cardStrong
+                            foregroundColor: page.theme.text
+                            visible: page.operationRunning || page.operationElapsedSeconds > 0
+                        }
+
+                        InfoBadge {
+                            text: qsTr("Last Log: ") + page.formatTimestamp(page.lastLogAt)
+                            backgroundColor: page.theme.cardStrong
+                            foregroundColor: page.theme.text
+                            visible: page.lastLogAt > 0
                         }
                     }
 
@@ -361,12 +507,13 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 10
-                        visible: nvidiaUpdater.availableVersions.length > 0
+                        visible: page.availableVersionOptions.length > 0
 
                         ComboBox {
                             id: versionPicker
                             Layout.fillWidth: true
-                            model: nvidiaUpdater.availableVersions
+                            model: page.availableVersionOptions
+                            textRole: "versionTitle"
                         }
 
                         Button {
@@ -377,7 +524,7 @@ Item {
                                                        ? qsTr("Switching NVIDIA driver to selected online version: ") + versionPicker.currentText
                                                        : qsTr("Downloading and installing selected NVIDIA driver version: ") + versionPicker.currentText,
                                                        "info", true);
-                                nvidiaUpdater.applyVersion(versionPicker.currentText);
+                                nvidiaUpdater.applyVersion(page.availableVersionOptions[versionPicker.currentIndex].rawVersion);
                             }
                         }
                     }
@@ -417,7 +564,10 @@ Item {
 
                     Button {
                         text: qsTr("Clear Log")
-                        onClicked: logArea.text = ""
+                        onClicked: {
+                            logArea.text = ""
+                            page.lastLogAt = 0
+                        }
                     }
                 }
             }
@@ -428,12 +578,12 @@ Item {
         target: nvidiaInstaller
 
         function onProgressMessage(message) {
-            logArea.append(message);
+            page.appendLog(qsTr("Installer"), message);
             page.setOperationState(qsTr("Installer"), message, "info", true);
         }
 
         function onInstallFinished(success, message) {
-            logArea.append(message);
+            page.appendLog(qsTr("Installer"), message);
             page.finishOperation(qsTr("Installer"), success, message);
             nvidiaDetector.refresh();
             nvidiaUpdater.checkForUpdate();
@@ -442,7 +592,7 @@ Item {
         }
 
         function onRemoveFinished(success, message) {
-            logArea.append(message);
+            page.appendLog(qsTr("Installer"), message);
             page.finishOperation(qsTr("Installer"), success, message);
             nvidiaDetector.refresh();
             nvidiaUpdater.checkForUpdate();
@@ -454,12 +604,12 @@ Item {
         target: nvidiaUpdater
 
         function onProgressMessage(message) {
-            logArea.append(message);
+            page.appendLog(qsTr("Updater"), message);
             page.setOperationState(qsTr("Updater"), message, "info", true);
         }
 
         function onUpdateFinished(success, message) {
-            logArea.append(message);
+            page.appendLog(qsTr("Updater"), message);
             page.finishOperation(qsTr("Updater"), success, message);
             nvidiaDetector.refresh();
             nvidiaUpdater.checkForUpdate();

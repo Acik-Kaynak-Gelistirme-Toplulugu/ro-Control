@@ -9,6 +9,19 @@ Item {
     property bool darkMode: false
     property bool compactMode: false
     property bool showAdvancedInfo: true
+    readonly property bool cpuTemperatureAvailable: cpuMonitor.temperatureC > 0
+    readonly property bool gpuTelemetryAvailable: gpuMonitor.available || gpuMonitor.gpuName.length > 0
+    readonly property bool gpuTemperatureAvailable: gpuMonitor.temperatureC > 0
+    readonly property bool gpuMemoryAvailable: gpuMonitor.memoryTotalMiB > 0
+    readonly property bool ramTelemetryAvailable: ramMonitor.available || ramMonitor.totalMiB > 0
+
+    function formatTemperature(value) {
+        return value > 0 ? value + " C" : qsTr("Unavailable");
+    }
+
+    function formatMemoryUsage(usedMiB, totalMiB) {
+        return totalMiB > 0 ? usedMiB + " / " + totalMiB + " MiB" : qsTr("Unavailable");
+    }
 
     ScrollView {
         id: pageScroll
@@ -32,7 +45,7 @@ Item {
                     title: qsTr("CPU Load")
                     value: cpuMonitor.available ? cpuMonitor.usagePercent.toFixed(1) + "%" : qsTr("Unavailable")
                     subtitle: cpuMonitor.available
-                              ? qsTr("Temperature: ") + cpuMonitor.temperatureC + " C"
+                              ? qsTr("Temperature: ") + page.formatTemperature(cpuMonitor.temperatureC)
                               : qsTr("CPU telemetry is currently unavailable.")
                     accentColor: page.theme.accentA
                     emphasized: cpuMonitor.available && cpuMonitor.usagePercent >= 85
@@ -42,24 +55,24 @@ Item {
                     Layout.fillWidth: true
                     theme: page.theme
                     title: qsTr("GPU Load")
-                    value: gpuMonitor.available ? gpuMonitor.utilizationPercent + "%" : qsTr("Unavailable")
-                    subtitle: gpuMonitor.available
+                    value: page.gpuTelemetryAvailable ? gpuMonitor.utilizationPercent + "%" : qsTr("Unavailable")
+                    subtitle: page.gpuTelemetryAvailable
                               ? (gpuMonitor.gpuName.length > 0 ? gpuMonitor.gpuName : qsTr("NVIDIA GPU"))
                               : qsTr("nvidia-smi did not return live GPU telemetry.")
                     accentColor: page.theme.accentB
-                    emphasized: gpuMonitor.available && gpuMonitor.temperatureC >= 80
+                    emphasized: page.gpuTemperatureAvailable && gpuMonitor.temperatureC >= 80
                 }
 
                 StatCard {
                     Layout.fillWidth: true
                     theme: page.theme
                     title: qsTr("Memory Usage")
-                    value: ramMonitor.available ? ramMonitor.usagePercent + "%" : qsTr("Unavailable")
-                    subtitle: ramMonitor.available
-                              ? qsTr("Used: ") + ramMonitor.usedMiB + " / " + ramMonitor.totalMiB + " MiB"
+                    value: page.ramTelemetryAvailable ? ramMonitor.usagePercent + "%" : qsTr("Unavailable")
+                    subtitle: page.ramTelemetryAvailable
+                              ? qsTr("Used: ") + page.formatMemoryUsage(ramMonitor.usedMiB, ramMonitor.totalMiB)
                               : qsTr("RAM telemetry is currently unavailable.")
                     accentColor: page.theme.accentC
-                    emphasized: ramMonitor.available && ramMonitor.usagePercent >= 85
+                    emphasized: page.ramTelemetryAvailable && ramMonitor.usagePercent >= 85
                 }
             }
 
@@ -103,7 +116,6 @@ Item {
                             from: 0
                             to: 100
                             value: gpuMonitor.utilizationPercent
-                            visible: gpuMonitor.available
                         }
 
                         Label {
@@ -138,14 +150,14 @@ Item {
                         }
 
                         InfoBadge {
-                            text: gpuMonitor.available ? qsTr("GPU Online") : qsTr("GPU Telemetry Missing")
-                            backgroundColor: gpuMonitor.available ? page.theme.successBg : page.theme.warningBg
+                            text: page.gpuTelemetryAvailable ? qsTr("GPU Online") : qsTr("GPU Telemetry Missing")
+                            backgroundColor: page.gpuTelemetryAvailable ? page.theme.successBg : page.theme.warningBg
                             foregroundColor: page.theme.text
                         }
 
                         InfoBadge {
-                            text: ramMonitor.available && ramMonitor.usagePercent >= 85 ? qsTr("Memory Pressure") : qsTr("Memory Stable")
-                            backgroundColor: ramMonitor.available && ramMonitor.usagePercent >= 85 ? page.theme.warningBg : page.theme.successBg
+                            text: page.ramTelemetryAvailable && ramMonitor.usagePercent >= 85 ? qsTr("Memory Pressure") : qsTr("Memory Stable")
+                            backgroundColor: page.ramTelemetryAvailable && ramMonitor.usagePercent >= 85 ? page.theme.warningBg : page.theme.successBg
                             foregroundColor: page.theme.text
                         }
                     }
@@ -154,8 +166,8 @@ Item {
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         color: page.theme.textSoft
-                        text: gpuMonitor.available
-                              ? qsTr("GPU temperature: ") + gpuMonitor.temperatureC + " C, VRAM " + gpuMonitor.memoryUsedMiB + " / " + gpuMonitor.memoryTotalMiB + " MiB."
+                        text: page.gpuTelemetryAvailable
+                              ? qsTr("GPU temperature: ") + page.formatTemperature(gpuMonitor.temperatureC) + qsTr(", VRAM ") + page.formatMemoryUsage(gpuMonitor.memoryUsedMiB, gpuMonitor.memoryTotalMiB) + "."
                               : qsTr("GPU metrics are unavailable. Check driver installation and nvidia-smi accessibility.")
                     }
 
@@ -187,7 +199,7 @@ Item {
                         }
 
                         Label {
-                            text: cpuMonitor.temperatureC > 0 ? cpuMonitor.temperatureC + " C" : qsTr("Unknown")
+                            text: page.formatTemperature(cpuMonitor.temperatureC)
                             color: page.theme.text
                         }
 
@@ -197,7 +209,7 @@ Item {
                         }
 
                         Label {
-                            text: gpuMonitor.available && gpuMonitor.temperatureC > 0 ? gpuMonitor.temperatureC + " C" : qsTr("Unknown")
+                            text: page.gpuTelemetryAvailable ? page.formatTemperature(gpuMonitor.temperatureC) : qsTr("Unknown")
                             color: page.theme.text
                         }
 
@@ -207,7 +219,7 @@ Item {
                         }
 
                         Label {
-                            text: gpuMonitor.available ? gpuMonitor.memoryUsedMiB + " / " + gpuMonitor.memoryTotalMiB + " MiB" : qsTr("Unknown")
+                            text: page.gpuTelemetryAvailable ? page.formatMemoryUsage(gpuMonitor.memoryUsedMiB, gpuMonitor.memoryTotalMiB) : qsTr("Unknown")
                             color: page.theme.text
                         }
 
@@ -217,7 +229,7 @@ Item {
                         }
 
                         Label {
-                            text: ramMonitor.available ? ramMonitor.usedMiB + " / " + ramMonitor.totalMiB + " MiB" : qsTr("Unknown")
+                            text: page.ramTelemetryAvailable ? page.formatMemoryUsage(ramMonitor.usedMiB, ramMonitor.totalMiB) : qsTr("Unknown")
                             color: page.theme.text
                         }
                     }
@@ -247,13 +259,22 @@ Item {
                         }
 
                         InfoBadge {
-                            text: gpuMonitor.available ? qsTr("NVIDIA Path OK") : qsTr("Check NVIDIA Path")
-                            backgroundColor: gpuMonitor.available ? page.theme.successBg : page.theme.warningBg
+                            text: page.gpuTelemetryAvailable ? qsTr("NVIDIA Path OK") : qsTr("Check NVIDIA Path")
+                            backgroundColor: page.gpuTelemetryAvailable ? page.theme.successBg : page.theme.warningBg
                             foregroundColor: page.theme.text
                         }
                     }
                 }
             }
         }
+    }
+
+    Component.onCompleted: {
+        cpuMonitor.start();
+        gpuMonitor.start();
+        ramMonitor.start();
+        cpuMonitor.refresh();
+        gpuMonitor.refresh();
+        ramMonitor.refresh();
     }
 }

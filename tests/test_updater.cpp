@@ -85,6 +85,30 @@ private slots:
     QVERIFY(!args.contains(QStringLiteral("system-upgrade")));
     QVERIFY(args.contains(QStringLiteral("akmod-nvidia-3:570.153.02-1.fc42")));
   }
+
+  void testTransactionChangedReturnsFalseForNoopOutput() {
+    NvidiaUpdater updater;
+    CommandRunner::Result result{
+        .exitCode = 0,
+        .stdout = QStringLiteral("Last metadata expiration check: 0:00:12 ago.\nNothing to do.\n"),
+        .stderr = QString(),
+        .attempt = 1,
+    };
+
+    QVERIFY(!updater.transactionChanged(result));
+  }
+
+  void testTransactionChangedReturnsTrueForRealPackageTransaction() {
+    NvidiaUpdater updater;
+    CommandRunner::Result result{
+        .exitCode = 0,
+        .stdout = QStringLiteral("Installing:\nakmod-nvidia.x86_64 3:570.153.02-1.fc42\nComplete!\n"),
+        .stderr = QString(),
+        .attempt = 1,
+    };
+
+    QVERIFY(updater.transactionChanged(result));
+  }
 };
 
 QTEST_MAIN(TestUpdater)

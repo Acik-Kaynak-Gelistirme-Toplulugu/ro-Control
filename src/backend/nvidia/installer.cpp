@@ -8,6 +8,66 @@
 #include <QThread>
 #include <QtGlobal>
 
+namespace {
+
+void emitProgressAsync(const QPointer<NvidiaInstaller> &guard,
+                       const QString &message) {
+  QMetaObject::invokeMethod(
+      guard,
+      [guard, message]() {
+        if (guard) {
+          emit guard->progressMessage(message);
+        }
+      },
+      Qt::QueuedConnection);
+}
+
+void attachRunnerLogging(CommandRunner &runner,
+                         const QPointer<NvidiaInstaller> &guard) {
+  QObject::connect(&runner, &CommandRunner::outputLine, guard,
+                   [guard](const QString &message) {
+                     emitProgressAsync(guard, message);
+                   });
+
+  QObject::connect(&runner, &CommandRunner::errorLine, guard,
+                   [guard](const QString &message) {
+                     emitProgressAsync(guard, message);
+                   });
+
+  QObject::connect(
+      &runner, &CommandRunner::commandStarted, guard,
+      [guard](const QString &program, const QStringList &args, int attempt) {
+        QStringList visibleArgs = args;
+        if (!visibleArgs.isEmpty() &&
+            visibleArgs.constFirst().contains(QStringLiteral("ro-control-helper"))) {
+          visibleArgs.removeFirst();
+        }
+
+        const QString commandLine =
+            QStringLiteral("$ %1 %2")
+                .arg(program, visibleArgs.join(QLatin1Char(' ')).trimmed());
+        emitProgressAsync(
+            guard, NvidiaInstaller::tr("Starting command (attempt %1): %2")
+                       .arg(attempt)
+                       .arg(commandLine.trimmed()));
+      });
+
+  QObject::connect(&runner, &CommandRunner::commandFinished, guard,
+                   [guard](const QString &program, int exitCode, int attempt,
+                           int elapsedMs) {
+                     emitProgressAsync(
+                         guard,
+                         NvidiaInstaller::tr(
+                             "Command finished (attempt %1, exit %2, %3 ms): %4")
+                             .arg(attempt)
+                             .arg(exitCode)
+                             .arg(elapsedMs)
+                             .arg(program));
+                   });
+}
+
+} // namespace
+
 NvidiaInstaller::NvidiaInstaller(QObject *parent) : QObject(parent) {
   refreshProprietaryAgreement();
 }
@@ -105,30 +165,10 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
     }
 
     CommandRunner runner;
-    QObject::connect(&runner, &CommandRunner::outputLine, guard,
-                     [guard](const QString &message) {
-                       if (!guard) {
-                         return;
-                       }
-                       QMetaObject::invokeMethod(
-                           guard,
-                           [guard, message]() {
-                             if (guard) {
-                               emit guard->progressMessage(message);
-                             }
-                           },
-                           Qt::QueuedConnection);
-                     });
+    attachRunnerLogging(runner, guard);
 
-    QMetaObject::invokeMethod(
-        guard,
-        [guard]() {
-          if (guard) {
-            emit guard->progressMessage(
-                NvidiaInstaller::tr("Checking RPM Fusion repositories..."));
-          }
-        },
-        Qt::QueuedConnection);
+    emitProgressAsync(guard,
+                      NvidiaInstaller::tr("Checking RPM Fusion repositories..."));
 
     CommandRunner rpmRunner;
     const auto fedoraResult =
@@ -174,15 +214,9 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
       return;
     }
 
-    QMetaObject::invokeMethod(
-        guard,
-        [guard]() {
-          if (guard) {
-            emit guard->progressMessage(NvidiaInstaller::tr(
-                "Installing the proprietary NVIDIA driver (akmod-nvidia)..."));
-          }
-        },
-        Qt::QueuedConnection);
+    emitProgressAsync(
+        guard, NvidiaInstaller::tr(
+                   "Installing the proprietary NVIDIA driver (akmod-nvidia)..."));
 
     result = runner.runAsRoot(QStringLiteral("dnf"),
                               {QStringLiteral("install"), QStringLiteral("-y"),
@@ -202,15 +236,9 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
       return;
     }
 
-    QMetaObject::invokeMethod(
+    emitProgressAsync(
         guard,
-        [guard]() {
-          if (guard) {
-            emit guard->progressMessage(
-                NvidiaInstaller::tr("Building the kernel module (akmods --force)..."));
-          }
-        },
-        Qt::QueuedConnection);
+        NvidiaInstaller::tr("Building the kernel module (akmods --force)..."));
     runner.runAsRoot(QStringLiteral("akmods"), {QStringLiteral("--force")});
 
     const QString sessionType = SessionUtil::detectSessionType();
@@ -249,30 +277,10 @@ void NvidiaInstaller::installOpenSource() {
     }
 
     CommandRunner runner;
-    QObject::connect(&runner, &CommandRunner::outputLine, guard,
-                     [guard](const QString &message) {
-                       if (!guard) {
-                         return;
-                       }
-                       QMetaObject::invokeMethod(
-                           guard,
-                           [guard, message]() {
-                             if (guard) {
-                               emit guard->progressMessage(message);
-                             }
-                           },
-                           Qt::QueuedConnection);
-                     });
+    attachRunnerLogging(runner, guard);
 
-    QMetaObject::invokeMethod(
-        guard,
-        [guard]() {
-          if (guard) {
-            emit guard->progressMessage(
-                NvidiaInstaller::tr("Switching to the open-source driver..."));
-          }
-        },
-        Qt::QueuedConnection);
+    emitProgressAsync(guard,
+                      NvidiaInstaller::tr("Switching to the open-source driver..."));
 
     auto result = runner.runAsRoot(
         QStringLiteral("dnf"),
@@ -339,30 +347,10 @@ void NvidiaInstaller::remove() {
     }
 
     CommandRunner runner;
-    QObject::connect(&runner, &CommandRunner::outputLine, guard,
-                     [guard](const QString &message) {
-                       if (!guard) {
-                         return;
-                       }
-                       QMetaObject::invokeMethod(
-                           guard,
-                           [guard, message]() {
-                             if (guard) {
-                               emit guard->progressMessage(message);
-                             }
-                           },
-                           Qt::QueuedConnection);
-                     });
+    attachRunnerLogging(runner, guard);
 
-    QMetaObject::invokeMethod(
-        guard,
-        [guard]() {
-          if (guard) {
-            emit guard->progressMessage(
-                NvidiaInstaller::tr("Removing the NVIDIA driver..."));
-          }
-        },
-        Qt::QueuedConnection);
+    emitProgressAsync(guard,
+                      NvidiaInstaller::tr("Removing the NVIDIA driver..."));
 
     const auto result = runner.runAsRoot(
         QStringLiteral("dnf"),
@@ -393,30 +381,10 @@ void NvidiaInstaller::deepClean() {
     }
 
     CommandRunner runner;
-    QObject::connect(&runner, &CommandRunner::outputLine, guard,
-                     [guard](const QString &message) {
-                       if (!guard) {
-                         return;
-                       }
-                       QMetaObject::invokeMethod(
-                           guard,
-                           [guard, message]() {
-                             if (guard) {
-                               emit guard->progressMessage(message);
-                             }
-                           },
-                           Qt::QueuedConnection);
-                     });
+    attachRunnerLogging(runner, guard);
 
-    QMetaObject::invokeMethod(
-        guard,
-        [guard]() {
-          if (guard) {
-            emit guard->progressMessage(
-                NvidiaInstaller::tr("Cleaning legacy driver leftovers..."));
-          }
-        },
-        Qt::QueuedConnection);
+    emitProgressAsync(guard,
+                      NvidiaInstaller::tr("Cleaning legacy driver leftovers..."));
 
     const auto removeResult = runner.runAsRoot(
         QStringLiteral("dnf"),
