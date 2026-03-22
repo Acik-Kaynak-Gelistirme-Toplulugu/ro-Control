@@ -457,4 +457,8 @@ int main(int argc, char **argv) {
   TestDriverPage testCase;
   return QTest::qExec(&testCase, argc, argv);
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8d652ae (fix: stabilize driver page CI test)
 #include "test_driver_page.moc"
