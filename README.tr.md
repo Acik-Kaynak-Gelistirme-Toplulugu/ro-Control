@@ -71,6 +71,14 @@ sudo dnf install ./ro-control-*.rpm
 
 Tam talimatlar için [docs/BUILDING.md](docs/BUILDING.md) dosyasına bakın.
 
+Fedora hızlı kurulum:
+
+```bash
+./scripts/fedora-bootstrap.sh
+```
+
+Fedora çalışma notları için [docs/FEDORA.md](docs/FEDORA.md) dosyasına bakın.
+
 ### CLI Hızlı Örnekler
 
 ```bash

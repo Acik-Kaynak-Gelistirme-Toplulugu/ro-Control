@@ -26,6 +26,9 @@ Requires:       kf6-qqc2-desktop-style
 Requires:       polkit
 Requires:       dnf
 Requires:       /usr/bin/pkexec
+Requires:       pciutils
+Recommends:     mokutil
+Recommends:     kmod
 
 %description
 ro-Control is a Qt6/KDE Plasma desktop application that helps users

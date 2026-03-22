@@ -71,6 +71,14 @@ sudo dnf install ./ro-control-*.rpm
 
 See [docs/BUILDING.md](docs/BUILDING.md) for full instructions.
 
+Fedora quick bootstrap:
+
+```bash
+./scripts/fedora-bootstrap.sh
+```
+
+For Fedora-specific runtime notes, see [docs/FEDORA.md](docs/FEDORA.md).
+
 ### CLI Quick Examples
 
 ```bash
