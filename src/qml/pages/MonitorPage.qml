@@ -64,8 +64,12 @@ Item {
         if (page.gpuTelemetryAvailable)
             return gpuMonitor.utilizationPercent + "%";
         if (page.gpuHardwarePresent)
-            return qsTr("Unsupported");
+            return qsTr("Not exposed");
         return qsTr("Unavailable");
+    }
+
+    function gpuMetricFallbackText() {
+        return page.gpuHardwarePresent ? qsTr("Not exposed") : qsTr("Unavailable");
     }
 
     function gpuSummaryText() {
@@ -385,7 +389,7 @@ Item {
                             title: qsTr("VRAM Usage")
                             subtitle: qsTr("Real-time monitoring")
                             valueText: page.gpuMemoryAvailable ? page.formatMemoryUsage(gpuMonitor.memoryUsedMiB, gpuMonitor.memoryTotalMiB)
-                                                               : (page.gpuHardwarePresent ? qsTr("Unsupported") : qsTr("Unavailable"))
+                                                               : page.gpuMetricFallbackText()
                             markerText: "V"
                             markerColor: "#d84ef0"
                             progress: page.progressValue(page.gpuMemoryAvailable ? gpuMonitor.memoryUsagePercent : 0)
