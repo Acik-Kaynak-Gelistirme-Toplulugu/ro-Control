@@ -18,37 +18,37 @@ ApplicationWindow {
     readonly property bool compactMode: uiPreferences.compactMode
     readonly property bool showAdvancedInfo: uiPreferences.showAdvancedInfo
     readonly property var theme: darkMode ? ({
-        window: "#0f1420",
-        shell: "#111827",
-        card: "#151d2d",
-        cardStrong: "#1b263a",
-        border: "#2c3952",
-        text: "#edf3ff",
-        textMuted: "#b6c2d9",
-        textSoft: "#93a3bd",
-        accentA: "#6178ff",
-        accentB: "#22c55e",
-        accentC: "#ff9f43",
-        success: "#34d399",
-        warning: "#f59e0b",
-        danger: "#ef4444",
-        successBg: "#133526",
-        warningBg: "#39290a",
-        dangerBg: "#36161a",
-        infoBg: "#14233a",
-        sidebarBg: "#0d1421",
-        sidebarText: "#f4f7ff",
-        sidebarMuted: "#9badc7",
-        sidebarAccent: "#7f90ff",
-        sidebarActive: "#172235",
-        sidebarHover: "#111a2a",
-        sidebarBorder: "#24324b",
-        sidebarHint: "#73839b",
-        topbarBg: "#101826",
-        topbarChip: "#172235",
-        topbarValue: "#f4f7ff",
-        contentBg: "#111827",
-        contentGlow: "#1a2540"
+        window: "#0f141b",
+        shell: "#121821",
+        card: "#1b2432",
+        cardStrong: "#212c3d",
+        border: "#2a3647",
+        text: "#e7edf6",
+        textMuted: "#c8d0dd",
+        textSoft: "#98a6bb",
+        accentA: "#7b8fff",
+        accentB: "#2ed0a0",
+        accentC: "#ffb020",
+        success: "#32d39c",
+        warning: "#f0b540",
+        danger: "#f06d6d",
+        successBg: "#14392f",
+        warningBg: "#332a17",
+        dangerBg: "#391c22",
+        infoBg: "#26364a",
+        sidebarBg: "#11161d",
+        sidebarText: "#eef2f8",
+        sidebarMuted: "#95a4ba",
+        sidebarAccent: "#90a1ff",
+        sidebarActive: "#243146",
+        sidebarHover: "#1a2330",
+        sidebarBorder: "#273242",
+        sidebarHint: "#77879d",
+        topbarBg: "#1a2330",
+        topbarChip: "#222d3d",
+        topbarValue: "#eef2f8",
+        contentBg: "#11161d",
+        contentGlow: "#1a2431"
     }) : ({
         window: "#f3f6fb",
         shell: "#edf2f8",
@@ -84,7 +84,6 @@ ApplicationWindow {
     })
 
     color: theme.window
-    property bool infoDialogOpen: false
     property bool languageDialogOpen: false
 
     function topBarValue(fallback, preferred) {
@@ -96,14 +95,6 @@ ApplicationWindow {
             uiPreferences.setThemeMode("light");
         } else {
             uiPreferences.setThemeMode("dark");
-        }
-    }
-
-    onInfoDialogOpenChanged: {
-        if (infoDialogOpen) {
-            infoPopup.open();
-        } else {
-            infoPopup.close();
         }
     }
 
@@ -239,28 +230,6 @@ ApplicationWindow {
                     }
                 }
 
-                Rectangle {
-                    width: 42
-                    height: 42
-                    radius: 21
-                    color: root.theme.cardStrong
-                    border.width: 1
-                    border.color: root.theme.border
-
-                    Label {
-                        anchors.centerIn: parent
-                        text: "\u2139"
-                        color: root.theme.text
-                        font.pixelSize: 20
-                        font.weight: Font.Bold
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.infoDialogOpen = !root.infoDialogOpen
-                    }
-                }
             }
         }
 
@@ -323,75 +292,6 @@ ApplicationWindow {
                         showAdvancedInfo: root.showAdvancedInfo
                     }
                 }
-            }
-        }
-    }
-
-    Popup {
-        id: infoPopup
-        modal: false
-        focus: true
-        x: root.width - width - 28
-        y: 72
-        width: 360
-        height: contentColumn.implicitHeight + 32
-        padding: 0
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        onClosed: root.infoDialogOpen = false
-
-        background: Rectangle {
-            radius: 22
-            color: root.theme.card
-            border.width: 1
-            border.color: root.theme.border
-        }
-
-        ColumnLayout {
-            id: contentColumn
-            anchors.fill: parent
-            anchors.margins: 16
-            spacing: 10
-
-            Label {
-                text: qsTr("Application Info")
-                color: root.theme.text
-                font.pixelSize: 20
-                font.weight: Font.Bold
-            }
-
-            DetailRow {
-                Layout.fillWidth: true
-                theme: root.theme
-                label: qsTr("Application")
-                value: Qt.application.name + " " + Qt.application.version
-            }
-
-            DetailRow {
-                Layout.fillWidth: true
-                theme: root.theme
-                label: qsTr("OS")
-                value: systemInfo.desktopEnvironment.length > 0
-                       ? systemInfo.osName + " (" + systemInfo.desktopEnvironment + ")"
-                       : systemInfo.osName
-            }
-
-            DetailRow {
-                Layout.fillWidth: true
-                theme: root.theme
-                label: qsTr("GPU")
-                value: root.topBarValue(qsTr("Unavailable"), nvidiaDetector.gpuName.length > 0 ? nvidiaDetector.gpuName : nvidiaDetector.displayAdapterName)
-            }
-
-            DetailRow {
-                Layout.fillWidth: true
-                theme: root.theme
-                label: qsTr("Driver")
-                value: root.topBarValue(qsTr("not installed"),
-                                        nvidiaDetector.driverVersion.length > 0
-                                        ? "nvidia-" + nvidiaDetector.driverVersion
-                                        : nvidiaUpdater.currentVersion.length > 0
-                                          ? "nvidia-" + nvidiaUpdater.currentVersion
-                                          : "")
             }
         }
     }
