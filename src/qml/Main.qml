@@ -5,10 +5,10 @@ import QtQuick.Layouts
 ApplicationWindow {
     id: root
     visible: true
-    width: 1220
-    height: 760
-    minimumWidth: 980
-    minimumHeight: 680
+    width: 1360
+    height: 860
+    minimumWidth: 1120
+    minimumHeight: 760
     title: qsTr("ro-Control")
 
     readonly property string themeMode: uiPreferences.themeMode
@@ -17,185 +17,312 @@ ApplicationWindow {
                                          && Qt.styleHints.colorScheme === Qt.Dark)
     readonly property bool compactMode: uiPreferences.compactMode
     readonly property bool showAdvancedInfo: uiPreferences.showAdvancedInfo
-
-    readonly property var pageTitles: [
-        qsTr("Driver Control Center"),
-        qsTr("System Monitor"),
-        qsTr("Preferences")
-    ]
-    readonly property var pageSubtitles: [
-        qsTr("Install, verify and update NVIDIA drivers with guided system checks."),
-        qsTr("Track live CPU, GPU and memory telemetry in one place."),
-        qsTr("Tune the interface and review diagnostic context before support work.")
-    ]
     readonly property var theme: darkMode ? ({
         window: "#0f1420",
-        shell: "#121927",
-        card: "#182131",
-        cardStrong: "#223049",
+        shell: "#111827",
+        card: "#151d2d",
+        cardStrong: "#1b263a",
         border: "#2c3952",
         text: "#edf3ff",
         textMuted: "#b6c2d9",
         textSoft: "#93a3bd",
-        accentA: "#4f8cff",
-        accentB: "#0ea5a3",
+        accentA: "#6178ff",
+        accentB: "#22c55e",
         accentC: "#ff9f43",
-        success: "#2eb67d",
-        warning: "#f2a93b",
-        danger: "#ef5d68",
-        successBg: "#152a21",
-        warningBg: "#34280e",
-        dangerBg: "#35171b",
-        infoBg: "#152338",
-        heroStart: "#172238",
-        heroEnd: "#0f1726",
-        sidebarBg: "#0b1120",
-        sidebarText: "#edf3ff",
-        sidebarMuted: "#97a6be",
-        sidebarAccent: "#8ab4ff",
-        sidebarActive: "#1b2840",
-        sidebarHover: "#141c2e",
-        sidebarBorder: "#23314b",
-        sidebarHint: "#6f7d95"
+        success: "#34d399",
+        warning: "#f59e0b",
+        danger: "#ef4444",
+        successBg: "#133526",
+        warningBg: "#39290a",
+        dangerBg: "#36161a",
+        infoBg: "#14233a",
+        sidebarBg: "#0d1421",
+        sidebarText: "#f4f7ff",
+        sidebarMuted: "#9badc7",
+        sidebarAccent: "#7f90ff",
+        sidebarActive: "#172235",
+        sidebarHover: "#111a2a",
+        sidebarBorder: "#24324b",
+        sidebarHint: "#73839b",
+        topbarBg: "#101826",
+        topbarChip: "#172235",
+        topbarValue: "#f4f7ff",
+        contentBg: "#111827",
+        contentGlow: "#1a2540"
     }) : ({
-        window: "#f4f7fb",
-        shell: "#eef3f9",
+        window: "#f3f6fb",
+        shell: "#edf2f8",
         card: "#ffffff",
-        cardStrong: "#f5f9ff",
-        border: "#d7e0ec",
-        text: "#132033",
-        textMuted: "#4f6178",
-        textSoft: "#6f7f96",
-        accentA: "#2563eb",
-        accentB: "#0f766e",
-        accentC: "#ea580c",
-        success: "#198754",
-        warning: "#b7791f",
-        danger: "#dc3545",
-        successBg: "#e8f6ee",
-        warningBg: "#fff4df",
-        dangerBg: "#fde9eb",
-        infoBg: "#eaf2ff",
-        heroStart: "#ffffff",
-        heroEnd: "#edf4ff",
-        sidebarBg: "#122033",
-        sidebarText: "#edf3ff",
-        sidebarMuted: "#aebcd2",
-        sidebarAccent: "#8ab4ff",
-        sidebarActive: "#223651",
-        sidebarHover: "#1a2a42",
-        sidebarBorder: "#2e4566",
-        sidebarHint: "#7d8ba0"
+        cardStrong: "#f5f8fe",
+        border: "#d9e2ef",
+        text: "#1f2430",
+        textMuted: "#56657d",
+        textSoft: "#71809b",
+        accentA: "#6674ff",
+        accentB: "#2bbf97",
+        accentC: "#ffad32",
+        success: "#21b37f",
+        warning: "#f59e0b",
+        danger: "#e15a5a",
+        successBg: "#e7faf2",
+        warningBg: "#fff3dd",
+        dangerBg: "#fdeceb",
+        infoBg: "#ecf3ff",
+        sidebarBg: "#fcfdff",
+        sidebarText: "#232936",
+        sidebarMuted: "#728199",
+        sidebarAccent: "#6674ff",
+        sidebarActive: "#edf3ff",
+        sidebarHover: "#f5f8fd",
+        sidebarBorder: "#dde5f0",
+        sidebarHint: "#7c8ba2",
+        topbarBg: "#ffffff",
+        topbarChip: "#f4f7fc",
+        topbarValue: "#202531",
+        contentBg: "#f5f7fb",
+        contentGlow: "#ebeff8"
     })
 
     color: theme.window
+    property bool infoDialogOpen: false
 
-    Rectangle {
-        anchors.fill: parent
-        gradient: Gradient {
-            GradientStop {
-                position: 0.0
-                color: root.theme.heroStart
-            }
-            GradientStop {
-                position: 1.0
-                color: root.theme.shell
-            }
+    function topBarValue(fallback, preferred) {
+        return preferred && preferred.length > 0 ? preferred : fallback;
+    }
+
+    function toggleThemeMode() {
+        if (uiPreferences.themeMode === "dark") {
+            uiPreferences.setThemeMode("light");
+        } else {
+            uiPreferences.setThemeMode("dark");
         }
     }
 
-    RowLayout {
+    onInfoDialogOpenChanged: {
+        if (infoDialogOpen) {
+            infoPopup.open();
+        } else {
+            infoPopup.close();
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: root.theme.window
+    }
+
+    ColumnLayout {
         anchors.fill: parent
         spacing: 0
 
-        SidebarMenu {
-            id: sidebar
-            theme: root.theme
-            Layout.fillHeight: true
-            currentIndex: 0
-            onCurrentIndexChanged: stack.currentIndex = currentIndex
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 104
+            color: root.theme.topbarBg
+            border.width: 1
+            border.color: root.theme.border
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 32
+                anchors.rightMargin: 32
+                spacing: 18
+
+                Rectangle {
+                    width: 56
+                    height: 56
+                    radius: 20
+                    color: root.theme.accentA
+
+                    Label {
+                        anchors.centerIn: parent
+                        text: "RO"
+                        color: "#ffffff"
+                        font.pixelSize: 20
+                        font.weight: Font.Bold
+                    }
+                }
+
+                ColumnLayout {
+                    spacing: 2
+
+                    Label {
+                        text: qsTr("ro-Control")
+                        color: root.theme.text
+                        font.pixelSize: 24
+                        font.weight: Font.Bold
+                    }
+
+                    Label {
+                        text: qsTr("NVIDIA Driver Manager")
+                        color: root.theme.textSoft
+                        font.pixelSize: 14
+                        font.weight: Font.Medium
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Rectangle {
+                    id: themeButton
+                    width: 42
+                    height: 42
+                    radius: 21
+                    color: root.theme.cardStrong
+                    border.width: 1
+                    border.color: root.theme.border
+
+                    Label {
+                        anchors.centerIn: parent
+                        text: "\u263e"
+                        color: root.theme.text
+                        font.pixelSize: 19
+                        font.weight: Font.Bold
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.toggleThemeMode()
+                    }
+                }
+
+                Rectangle {
+                    id: infoButton
+                    width: 42
+                    height: 42
+                    radius: 21
+                    color: root.theme.cardStrong
+                    border.width: 1
+                    border.color: root.theme.border
+
+                    Label {
+                        anchors.centerIn: parent
+                        text: "\u2139"
+                        color: root.theme.text
+                        font.pixelSize: 20
+                        font.weight: Font.Bold
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.infoDialogOpen = !root.infoDialogOpen
+                    }
+                }
+            }
         }
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            color: "transparent"
+            Layout.preferredHeight: 78
+            color: root.theme.topbarBg
+            border.width: 1
+            border.color: root.theme.border
 
-            ColumnLayout {
+            RowLayout {
                 anchors.fill: parent
-                anchors.margins: root.compactMode ? 18 : 28
-                spacing: root.compactMode ? 14 : 20
+                anchors.leftMargin: 32
+                anchors.rightMargin: 32
+                spacing: 28
 
-                Rectangle {
-                    Layout.fillWidth: true
-                    radius: 30
-                    color: root.theme.card
-                    border.width: 1
-                    border.color: root.theme.border
-                    implicitHeight: heroLayout.implicitHeight + 44
+                Repeater {
+                    model: [
+                        {
+                            label: qsTr("Driver"),
+                            value: root.topBarValue(qsTr("not installed"),
+                                                    nvidiaDetector.driverVersion.length > 0
+                                                    ? "nvidia-" + nvidiaDetector.driverVersion
+                                                    : nvidiaUpdater.currentVersion.length > 0
+                                                      ? "nvidia-" + nvidiaUpdater.currentVersion
+                                                      : "")
+                        },
+                        {
+                            label: qsTr("Secure Boot"),
+                            value: nvidiaDetector.secureBootEnabled ? qsTr("ON") : qsTr("OFF")
+                        },
+                        {
+                            label: qsTr("GPU"),
+                            value: root.topBarValue(qsTr("Not detected"), nvidiaDetector.gpuName)
+                        }
+                    ]
 
-                    RowLayout {
-                        id: heroLayout
-                        x: 24
-                        y: 22
-                        width: parent.width - 48
-                        spacing: 20
+                    delegate: RowLayout {
+                        required property var modelData
+                        spacing: 12
 
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            Label {
-                                text: root.pageTitles[sidebar.currentIndex]
-                                font.pixelSize: 30
-                                font.weight: Font.Bold
-                                color: root.theme.text
-                            }
-
-                            Label {
-                                text: root.pageSubtitles[sidebar.currentIndex]
-                                wrapMode: Text.Wrap
-                                color: root.theme.textSoft
-                                Layout.fillWidth: true
-                            }
+                        Label {
+                            text: modelData.label + ":"
+                            color: root.theme.textSoft
+                            font.pixelSize: 14
+                            font.weight: Font.DemiBold
                         }
 
-                        Flow {
-                            Layout.alignment: Qt.AlignTop
-                            spacing: 10
+                        Rectangle {
+                            radius: 16
+                            color: root.theme.topbarChip
+                            implicitHeight: 38
+                            implicitWidth: valueLabel.implicitWidth + 28
 
-                            InfoBadge {
-                                text: root.themeMode === "system"
-                                      ? qsTr("Follow System")
-                                      : root.darkMode ? qsTr("Dark Theme")
-                                                      : qsTr("Light Theme")
-                                backgroundColor: root.theme.infoBg
-                                foregroundColor: root.theme.text
-                            }
-
-                            InfoBadge {
-                                text: root.compactMode ? qsTr("Compact Layout") : qsTr("Comfort Layout")
-                                backgroundColor: root.theme.cardStrong
-                                foregroundColor: root.theme.text
+                            Label {
+                                id: valueLabel
+                                anchors.centerIn: parent
+                                text: modelData.value
+                                color: root.theme.topbarValue
+                                font.pixelSize: 14
+                                font.weight: Font.Bold
                             }
                         }
                     }
                 }
 
+                Item {
+                    Layout.fillWidth: true
+                }
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 0
+
+            SidebarMenu {
+                id: sidebar
+                theme: root.theme
+                Layout.fillHeight: true
+                currentIndex: 0
+                onCurrentIndexChanged: stack.currentIndex = currentIndex
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                color: root.theme.contentBg
+                clip: true
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: "transparent"
+                    opacity: root.darkMode ? 0.22 : 1.0
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: root.theme.contentGlow }
+                        GradientStop { position: 0.22; color: Qt.rgba(0, 0, 0, 0) }
+                        GradientStop { position: 0.78; color: Qt.rgba(0, 0, 0, 0) }
+                        GradientStop { position: 1.0; color: root.theme.contentGlow }
+                    }
+                }
+
                 StackLayout {
                     id: stack
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+                    anchors.fill: parent
+                    anchors.margins: root.compactMode ? 20 : 28
                     currentIndex: sidebar.currentIndex
 
                     DriverPage {
-                        theme: root.theme
-                        darkMode: root.darkMode
-                        compactMode: root.compactMode
-                        showAdvancedInfo: root.showAdvancedInfo
-                    }
-
-                    MonitorPage {
                         theme: root.theme
                         darkMode: root.darkMode
                         compactMode: root.compactMode
@@ -208,7 +335,83 @@ ApplicationWindow {
                         compactMode: root.compactMode
                         showAdvancedInfo: root.showAdvancedInfo
                     }
+
+                    MonitorPage {
+                        theme: root.theme
+                        darkMode: root.darkMode
+                        compactMode: root.compactMode
+                        showAdvancedInfo: root.showAdvancedInfo
+                    }
                 }
+            }
+        }
+    }
+
+    Popup {
+        id: infoPopup
+        modal: false
+        focus: true
+        x: root.width - width - 28
+        y: 92
+        width: 360
+        height: contentColumn.implicitHeight + 32
+        padding: 0
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        onClosed: root.infoDialogOpen = false
+
+        background: Rectangle {
+            radius: 22
+            color: root.theme.card
+            border.width: 1
+            border.color: root.theme.border
+        }
+
+        ColumnLayout {
+            id: contentColumn
+            anchors.fill: parent
+            anchors.margins: 16
+            spacing: 10
+
+            Label {
+                text: qsTr("Application Info")
+                color: root.theme.text
+                font.pixelSize: 20
+                font.weight: Font.Bold
+            }
+
+            DetailRow {
+                Layout.fillWidth: true
+                theme: root.theme
+                label: qsTr("Application")
+                value: Qt.application.name + " " + Qt.application.version
+            }
+
+            DetailRow {
+                Layout.fillWidth: true
+                theme: root.theme
+                label: qsTr("OS")
+                value: systemInfo.desktopEnvironment.length > 0
+                       ? systemInfo.osName + " (" + systemInfo.desktopEnvironment + ")"
+                       : systemInfo.osName
+            }
+
+            DetailRow {
+                Layout.fillWidth: true
+                theme: root.theme
+                label: qsTr("GPU")
+                value: root.topBarValue(qsTr("Not detected"), nvidiaDetector.gpuName)
+            }
+
+            DetailRow {
+                Layout.fillWidth: true
+                theme: root.theme
+                label: qsTr("Driver")
+                value: root.topBarValue(qsTr("not installed"),
+                                        nvidiaDetector.driverVersion.length > 0
+                                        ? "nvidia-" + nvidiaDetector.driverVersion
+                                        : nvidiaUpdater.currentVersion.length > 0
+                                          ? "nvidia-" + nvidiaUpdater.currentVersion
+                                          : "")
             }
         }
     }
