@@ -306,6 +306,8 @@ Item {
             spacing: page.compactMode ? 16 : 22
 
             Label {
+                Layout.maximumWidth: 980
+                Layout.alignment: Qt.AlignHCenter
                 Layout.leftMargin: 16
                 text: qsTr("Expert Driver Management")
                 color: page.theme.text
@@ -315,6 +317,8 @@ Item {
 
             SectionPanel {
                 Layout.fillWidth: true
+                Layout.maximumWidth: 980
+                Layout.alignment: Qt.AlignHCenter
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
                 theme: page.theme
@@ -337,6 +341,8 @@ Item {
             }
 
             Label {
+                Layout.maximumWidth: 980
+                Layout.alignment: Qt.AlignHCenter
                 Layout.leftMargin: 16
                 text: qsTr("Available Versions")
                 color: page.theme.text
@@ -346,6 +352,8 @@ Item {
 
             SectionPanel {
                 Layout.fillWidth: true
+                Layout.maximumWidth: 980
+                Layout.alignment: Qt.AlignHCenter
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
                 theme: page.theme
@@ -353,12 +361,12 @@ Item {
                 subtitle: ""
 
                 Repeater {
-                    model: page.availableVersionOptions
+                    model: page.availableVersionOptions.length
 
                     delegate: VersionRow {
                         Layout.fillWidth: true
                         itemIndex: index
-                        optionData: modelData
+                        optionData: page.availableVersionOptions[index]
                     }
                 }
 
@@ -372,6 +380,8 @@ Item {
             }
 
             Label {
+                Layout.maximumWidth: 980
+                Layout.alignment: Qt.AlignHCenter
                 Layout.leftMargin: 16
                 text: qsTr("Configuration")
                 color: page.theme.text
@@ -381,6 +391,8 @@ Item {
 
             SectionPanel {
                 Layout.fillWidth: true
+                Layout.maximumWidth: 980
+                Layout.alignment: Qt.AlignHCenter
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
                 theme: page.theme
@@ -467,6 +479,8 @@ Item {
 
             Rectangle {
                 Layout.fillWidth: true
+                Layout.maximumWidth: 980
+                Layout.alignment: Qt.AlignHCenter
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
                 radius: 22
@@ -527,6 +541,8 @@ Item {
 
             RowLayout {
                 Layout.fillWidth: true
+                Layout.maximumWidth: 980
+                Layout.alignment: Qt.AlignHCenter
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
                 spacing: 18
@@ -592,6 +608,8 @@ Item {
 
             RowLayout {
                 Layout.fillWidth: true
+                Layout.maximumWidth: 980
+                Layout.alignment: Qt.AlignHCenter
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
 

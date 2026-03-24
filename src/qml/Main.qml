@@ -11,45 +11,11 @@ ApplicationWindow {
     minimumHeight: 760
     title: qsTr("ro-Control")
 
-    readonly property string themeMode: uiPreferences.themeMode
-    readonly property bool darkMode: themeMode === "dark"
-                                     || (themeMode === "system"
-                                         && Qt.styleHints.colorScheme === Qt.Dark)
+    readonly property string themeMode: "light"
+    readonly property bool darkMode: false
     readonly property bool compactMode: uiPreferences.compactMode
     readonly property bool showAdvancedInfo: uiPreferences.showAdvancedInfo
-    readonly property var theme: darkMode ? ({
-        window: "#0f141b",
-        shell: "#121821",
-        card: "#1b2432",
-        cardStrong: "#212c3d",
-        border: "#2a3647",
-        text: "#e7edf6",
-        textMuted: "#c8d0dd",
-        textSoft: "#98a6bb",
-        accentA: "#7b8fff",
-        accentB: "#2ed0a0",
-        accentC: "#ffb020",
-        success: "#32d39c",
-        warning: "#f0b540",
-        danger: "#f06d6d",
-        successBg: "#14392f",
-        warningBg: "#332a17",
-        dangerBg: "#391c22",
-        infoBg: "#26364a",
-        sidebarBg: "#11161d",
-        sidebarText: "#eef2f8",
-        sidebarMuted: "#95a4ba",
-        sidebarAccent: "#90a1ff",
-        sidebarActive: "#243146",
-        sidebarHover: "#1a2330",
-        sidebarBorder: "#273242",
-        sidebarHint: "#77879d",
-        topbarBg: "#1a2330",
-        topbarChip: "#222d3d",
-        topbarValue: "#eef2f8",
-        contentBg: "#11161d",
-        contentGlow: "#1a2431"
-    }) : ({
+    readonly property var theme: ({
         window: "#f3f6fb",
         shell: "#edf2f8",
         card: "#ffffff",
@@ -88,14 +54,6 @@ ApplicationWindow {
 
     function topBarValue(fallback, preferred) {
         return preferred && preferred.length > 0 ? preferred : fallback;
-    }
-
-    function toggleThemeMode() {
-        if (uiPreferences.themeMode === "dark") {
-            uiPreferences.setThemeMode("light");
-        } else {
-            uiPreferences.setThemeMode("dark");
-        }
     }
 
     onLanguageDialogOpenChanged: {
@@ -194,29 +152,6 @@ ApplicationWindow {
 
                     Label {
                         anchors.centerIn: parent
-                        text: "\u263e"
-                        color: root.theme.text
-                        font.pixelSize: 19
-                        font.weight: Font.Bold
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.toggleThemeMode()
-                    }
-                }
-
-                Rectangle {
-                    width: 42
-                    height: 42
-                    radius: 21
-                    color: root.theme.cardStrong
-                    border.width: 1
-                    border.color: root.theme.border
-
-                    Label {
-                        anchors.centerIn: parent
                         text: "\uD83C\uDF10"
                         color: root.theme.text
                         font.pixelSize: 17
@@ -255,7 +190,7 @@ ApplicationWindow {
                 Rectangle {
                     anchors.fill: parent
                     color: "transparent"
-                    opacity: root.darkMode ? 0.22 : 1.0
+                    opacity: 1.0
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
                         GradientStop { position: 0.0; color: root.theme.contentGlow }
