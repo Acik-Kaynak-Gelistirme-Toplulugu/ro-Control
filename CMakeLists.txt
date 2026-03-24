@@ -75,6 +75,7 @@ set(BACKEND_SOURCES
     src/backend/system/capabilityprobe.cpp
     src/backend/system/languagemanager.cpp
     src/backend/system/uipreferencesmanager.cpp
+    src/backend/system/systeminfoprovider.cpp
 )
 
 set(APP_SOURCES
