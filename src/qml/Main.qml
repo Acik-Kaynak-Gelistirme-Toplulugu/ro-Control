@@ -53,6 +53,11 @@ ApplicationWindow {
     color: theme.window
     property bool languageDialogOpen: false
 
+    function navigateToPage(index) {
+        sidebar.currentIndex = index;
+        stack.currentIndex = index;
+    }
+
     function topBarValue(fallback, preferred) {
         return preferred && preferred.length > 0 ? preferred : fallback;
     }
@@ -212,6 +217,7 @@ ApplicationWindow {
                         darkMode: root.darkMode
                         compactMode: root.compactMode
                         showAdvancedInfo: root.showAdvancedInfo
+                        navigateToPage: function(index) { root.navigateToPage(index); }
                     }
 
                     SettingsPage {

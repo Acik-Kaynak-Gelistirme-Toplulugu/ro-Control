@@ -15,12 +15,15 @@ Item {
     readonly property bool gpuMemoryAvailable: gpuMonitor.memoryTotalMiB > 0
     readonly property bool ramTelemetryAvailable: ramMonitor.available || ramMonitor.totalMiB > 0
     readonly property bool gpuDetected: nvidiaDetector.gpuFound
+    readonly property bool gpuHardwarePresent: nvidiaDetector.gpuFound || nvidiaDetector.displayAdapterName.length > 0
     readonly property bool gpuDriverActive: nvidiaDetector.driverLoaded || nvidiaDetector.nouveauActive
     readonly property color monitorBarColor: "#34c99a"
     readonly property bool wideLayout: width >= 1180
 
-    function formatTemperature(value) {
-        return value > 0 ? value + "\u00b0C" : qsTr("Unavailable");
+    function formatTemperature(value, hasHardware) {
+        if (value > 0)
+            return value + "\u00b0C";
+        return hasHardware ? qsTr("Unsupported") : qsTr("Unavailable");
     }
 
     function formatMemoryUsage(usedMiB, totalMiB) {
@@ -47,11 +50,21 @@ Item {
         return qsTr("Not installed");
     }
 
+    function osDisplayLabel() {
+        if (systemInfo.osName.length === 0)
+            return qsTr("Unavailable");
+        if (systemInfo.desktopEnvironment.length === 0)
+            return systemInfo.osName;
+        if (systemInfo.osName.toLowerCase().indexOf(systemInfo.desktopEnvironment.toLowerCase()) >= 0)
+            return systemInfo.osName;
+        return systemInfo.osName + " (" + systemInfo.desktopEnvironment + ")";
+    }
+
     function gpuLoadValueText() {
         if (page.gpuTelemetryAvailable)
             return gpuMonitor.utilizationPercent + "%";
-        if (page.gpuDetected)
-            return qsTr("No Live Data");
+        if (page.gpuHardwarePresent)
+            return qsTr("Unsupported");
         return qsTr("Unavailable");
     }
 
@@ -240,9 +253,7 @@ Item {
                 InfoTile {
                     Layout.fillWidth: true
                     title: qsTr("OS")
-                    value: systemInfo.desktopEnvironment.length > 0
-                           ? systemInfo.osName + " (" + systemInfo.desktopEnvironment + ")"
-                           : (systemInfo.osName.length > 0 ? systemInfo.osName : qsTr("Unavailable"))
+                    value: page.osDisplayLabel()
                     markerText: "OS"
                     markerColor: "#1da1f2"
                 }
@@ -258,7 +269,7 @@ Item {
                 InfoTile {
                     Layout.fillWidth: true
                     title: qsTr("CPU")
-                    value: systemInfo.cpuModel.length > 0 ? systemInfo.cpuModel : qsTr("CPU telemetry unavailable")
+                    value: systemInfo.cpuModel.length > 0 ? systemInfo.cpuModel : qsTr("CPU model unavailable")
                     markerText: "CPU"
                     markerColor: "#ff6a13"
                 }
@@ -266,7 +277,7 @@ Item {
                 InfoTile {
                     Layout.fillWidth: true
                     title: qsTr("RAM")
-                    value: page.ramTelemetryAvailable ? page.formatMemoryTotal(ramMonitor.totalMiB) : qsTr("RAM unavailable")
+                    value: ramMonitor.totalMiB > 0 ? page.formatMemoryTotal(ramMonitor.totalMiB) : qsTr("Memory info unavailable")
                     markerText: "RAM"
                     markerColor: "#16c65f"
                 }
@@ -353,7 +364,7 @@ Item {
                             Layout.fillWidth: true
                             title: qsTr("Temperature")
                             subtitle: qsTr("Real-time monitoring")
-                            valueText: page.formatTemperature(gpuMonitor.temperatureC)
+                            valueText: page.formatTemperature(gpuMonitor.temperatureC, page.gpuHardwarePresent)
                             markerText: "T"
                             markerColor: "#1da1f2"
                             progress: page.progressValue(page.gpuTemperatureAvailable ? gpuMonitor.temperatureC : 0)
@@ -373,7 +384,8 @@ Item {
                             Layout.fillWidth: true
                             title: qsTr("VRAM Usage")
                             subtitle: qsTr("Real-time monitoring")
-                            valueText: page.gpuMemoryAvailable ? page.formatMemoryUsage(gpuMonitor.memoryUsedMiB, gpuMonitor.memoryTotalMiB) : qsTr("Unavailable")
+                            valueText: page.gpuMemoryAvailable ? page.formatMemoryUsage(gpuMonitor.memoryUsedMiB, gpuMonitor.memoryTotalMiB)
+                                                               : (page.gpuHardwarePresent ? qsTr("Unsupported") : qsTr("Unavailable"))
                             markerText: "V"
                             markerColor: "#d84ef0"
                             progress: page.progressValue(page.gpuMemoryAvailable ? gpuMonitor.memoryUsagePercent : 0)
@@ -412,7 +424,8 @@ Item {
                             Layout.fillWidth: true
                             title: qsTr("RAM Usage")
                             subtitle: qsTr("Real-time monitoring")
-                            valueText: page.ramTelemetryAvailable ? page.formatMemoryUsage(ramMonitor.usedMiB, ramMonitor.totalMiB) : qsTr("Unavailable")
+                            valueText: page.ramTelemetryAvailable ? page.formatMemoryUsage(ramMonitor.usedMiB, ramMonitor.totalMiB)
+                                                                  : qsTr("Memory info unavailable")
                             markerText: "R"
                             markerColor: "#9247f6"
                             progress: page.progressValue(page.ramTelemetryAvailable ? ramMonitor.usagePercent : 0)

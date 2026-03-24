@@ -9,6 +9,7 @@ Item {
     property bool darkMode: false
     property bool compactMode: false
     property bool showAdvancedInfo: true
+    property var navigateToPage
 
     property string bannerText: ""
     property string bannerTone: "info"
@@ -108,7 +109,7 @@ Item {
         if (epochIndex >= 0)
             normalized = normalized.substring(epochIndex + 1);
 
-        const releaseMatch = normalized.match(/^([0-9]+(?:\.[0-9]+)+)/);
+        const releaseMatch = normalized.match(/([0-9]+(?:\.[0-9]+)+)/);
         if (releaseMatch && releaseMatch.length > 1)
             return releaseMatch[1];
 
@@ -319,44 +320,15 @@ Item {
                                 }
                             }
                         }
+                    }
 
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 12
-
-                            ActionButton {
-                                Layout.preferredWidth: 210
-                                theme: page.theme
-                                tone: "primary"
-                                text: page.driverInstalledLocally ? qsTr("Reinstall Recommended") : qsTr("Install Recommended")
-                                enabled: !page.backendBusy
-                                         && (page.remoteDriverCatalogAvailable || page.driverInstalledLocally)
-                                onClicked: {
-                                    page.setOperationState(qsTr("Installer"), qsTr("Installing the proprietary NVIDIA driver (akmod-nvidia)..."), "info", true);
-                                    nvidiaInstaller.installProprietary(true);
-                                }
-                            }
-
-                            ActionButton {
-                                theme: page.theme
-                                text: qsTr("Rescan System")
-                                enabled: !page.backendBusy
-                                onClicked: {
-                                    nvidiaDetector.refresh();
-                                    nvidiaInstaller.refreshProprietaryAgreement();
-                                    nvidiaUpdater.refreshAvailableVersions();
-                                    nvidiaUpdater.checkForUpdate();
-                                }
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                            }
-
-                            BusyIndicator {
-                                running: page.backendBusy
-                                visible: running
-                            }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: page.backendBusy ? Qt.ArrowCursor : Qt.PointingHandCursor
+                        enabled: !page.backendBusy
+                        onClicked: {
+                            page.setOperationState(qsTr("Installer"), qsTr("Installing the proprietary NVIDIA driver (akmod-nvidia)..."), "info", true);
+                            nvidiaInstaller.installProprietary(true);
                         }
                     }
                 }
@@ -411,7 +383,7 @@ Item {
                                     wrapMode: Text.Wrap
                                     color: page.theme.textSoft
                                     font.pixelSize: 14
-                                    text: qsTr("Advanced options to choose specific driver version and kernel module type")
+                                    text: qsTr("Open the expert page to choose a specific driver version and kernel module type")
                                 }
                             }
                         }
@@ -433,85 +405,19 @@ Item {
                             }
 
                             InfoBadge {
-                                text: page.driverInstalledLocally
-                                      ? (nvidiaUpdater.updateAvailable ? qsTr("Update Available") : qsTr("Up to Date"))
-                                      : (page.remoteDriverCatalogAvailable ? qsTr("Catalog Ready") : qsTr("Catalog Loading"))
-                                backgroundColor: page.driverInstalledLocally
-                                                 ? (nvidiaUpdater.updateAvailable ? page.theme.warningBg : page.theme.successBg)
-                                                 : page.theme.infoBg
+                                text: qsTr("Choose version, module type and cleanup options")
+                                backgroundColor: page.theme.infoBg
                                 foregroundColor: page.theme.text
                             }
                         }
+                    }
 
-                        GridLayout {
-                            Layout.fillWidth: true
-                            columns: 1
-                            columnSpacing: 10
-                            rowSpacing: 10
-
-                            ActionButton {
-                                Layout.fillWidth: true
-                                theme: page.theme
-                                text: qsTr("Install Open Modules")
-                                enabled: !nvidiaInstaller.busy
-                                onClicked: {
-                                    page.setOperationState(qsTr("Installer"), qsTr("Switching to NVIDIA open kernel modules..."), "info", true);
-                                    nvidiaInstaller.installOpenSource();
-                                }
-                            }
-
-                            ActionButton {
-                                Layout.fillWidth: true
-                                theme: page.theme
-                                tone: "primary"
-                                text: page.driverInstalledLocally ? qsTr("Apply Latest") : qsTr("Install Latest")
-                                enabled: !nvidiaUpdater.busy && !nvidiaInstaller.busy && (nvidiaUpdater.updateAvailable || page.canInstallLatestRemoteDriver)
-                                onClicked: {
-                                    page.setOperationState(qsTr("Updater"), page.driverInstalledLocally
-                                                           ? qsTr("Updating NVIDIA driver to the latest online version...")
-                                                           : qsTr("Downloading and installing the latest online NVIDIA driver..."),
-                                                           "info", true);
-                                    nvidiaUpdater.applyUpdate();
-                                }
-                            }
-
-                            ActionButton {
-                                Layout.fillWidth: true
-                                theme: page.theme
-                                tone: "danger"
-                                text: qsTr("Remove Driver")
-                                enabled: !nvidiaInstaller.busy
-                                onClicked: {
-                                    page.setOperationState(qsTr("Installer"), qsTr("Removing the NVIDIA driver..."), "info", true);
-                                    nvidiaInstaller.remove();
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 12
-                            visible: page.availableVersionOptions.length > 0
-
-                            ComboBox {
-                                id: versionPicker
-                                Layout.fillWidth: true
-                                model: page.availableVersionOptions
-                                textRole: "versionTitle"
-                            }
-
-                            ActionButton {
-                                theme: page.theme
-                                text: qsTr("Apply Selected")
-                                enabled: !nvidiaUpdater.busy && !nvidiaInstaller.busy && versionPicker.currentIndex >= 0 && page.remoteDriverCatalogAvailable
-                                onClicked: {
-                                    page.setOperationState(qsTr("Updater"), page.driverInstalledLocally
-                                                           ? qsTr("Switching NVIDIA driver to selected online version: ") + versionPicker.currentText
-                                                           : qsTr("Downloading and installing selected NVIDIA driver version: ") + versionPicker.currentText,
-                                                           "info", true);
-                                    nvidiaUpdater.applyVersion(page.availableVersionOptions[versionPicker.currentIndex].rawVersion);
-                                }
-                            }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (page.navigateToPage)
+                                page.navigateToPage(1);
                         }
                     }
                 }

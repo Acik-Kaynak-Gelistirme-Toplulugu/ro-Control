@@ -40,7 +40,7 @@ Item {
         if (epochIndex >= 0)
             normalized = normalized.substring(epochIndex + 1);
 
-        const releaseMatch = normalized.match(/^([0-9]+(?:\.[0-9]+)+)/);
+        const releaseMatch = normalized.match(/([0-9]+(?:\.[0-9]+)+)/);
         if (releaseMatch && releaseMatch.length > 1)
             return releaseMatch[1];
 
@@ -248,10 +248,11 @@ Item {
             }
 
             Label {
-                text: optionData.displayVersion
+                text: optionData.displayVersion.length > 0 ? optionData.displayVersion : qsTr("Unknown version")
                 color: page.theme.text
                 font.pixelSize: 18
                 font.weight: Font.DemiBold
+                elide: Text.ElideRight
             }
 
             Rectangle {

@@ -3,6 +3,7 @@
 #include "commandrunner.h"
 
 #include <QFile>
+#include <QStringList>
 #include <QRegularExpression>
 #include <QSysInfo>
 #include <QTextStream>
@@ -12,6 +13,21 @@
 #endif
 
 namespace {
+
+QString simplifiedDesktopName(const QString &desktop) {
+  const QString trimmed = desktop.trimmed();
+  if (trimmed.compare(QStringLiteral("KDE"), Qt::CaseInsensitive) == 0 ||
+      trimmed.compare(QStringLiteral("KDE Plasma"), Qt::CaseInsensitive) == 0 ||
+      trimmed.compare(QStringLiteral("Plasma"), Qt::CaseInsensitive) == 0) {
+    return QStringLiteral("KDE Plasma");
+  }
+
+  if (trimmed.compare(QStringLiteral("GNOME"), Qt::CaseInsensitive) == 0) {
+    return QStringLiteral("GNOME");
+  }
+
+  return trimmed;
+}
 
 QString valueFromOsRelease(const QString &key) {
   QFile file(QStringLiteral("/etc/os-release"));
@@ -88,15 +104,44 @@ QString SystemInfoProvider::detectKernelVersion() const {
 
 QString SystemInfoProvider::detectCpuModel() const {
 #if defined(Q_OS_LINUX)
+  CommandRunner runner;
+  const auto lscpuResult = runner.run(QStringLiteral("lscpu"));
+  if (lscpuResult.success()) {
+    const QStringList lines =
+        lscpuResult.stdout.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    for (const QString &line : lines) {
+      if (line.startsWith(QStringLiteral("Model name:")) ||
+          line.startsWith(QStringLiteral("Hardware:")) ||
+          line.startsWith(QStringLiteral("Processor:"))) {
+        const int separatorIndex = line.indexOf(QLatin1Char(':'));
+        if (separatorIndex >= 0) {
+          const QString value = line.mid(separatorIndex + 1).trimmed();
+          if (!value.isEmpty() &&
+              value.compare(QSysInfo::currentCpuArchitecture(),
+                            Qt::CaseInsensitive) != 0) {
+            return value;
+          }
+        }
+      }
+    }
+  }
+
   QFile cpuInfo(QStringLiteral("/proc/cpuinfo"));
   if (cpuInfo.open(QIODevice::ReadOnly | QIODevice::Text)) {
     QTextStream stream(&cpuInfo);
     while (!stream.atEnd()) {
       const QString line = stream.readLine();
-      if (line.startsWith(QStringLiteral("model name"))) {
+      if (line.startsWith(QStringLiteral("model name")) ||
+          line.startsWith(QStringLiteral("Hardware")) ||
+          line.startsWith(QStringLiteral("Processor"))) {
         const int separatorIndex = line.indexOf(QLatin1Char(':'));
         if (separatorIndex >= 0) {
-          return line.mid(separatorIndex + 1).trimmed();
+          const QString value = line.mid(separatorIndex + 1).trimmed();
+          if (!value.isEmpty() &&
+              value.compare(QSysInfo::currentCpuArchitecture(),
+                            Qt::CaseInsensitive) != 0) {
+            return value;
+          }
         }
       }
     }
@@ -132,16 +177,12 @@ QString SystemInfoProvider::detectDesktopEnvironment() const {
   const QStringList parts = desktop.split(QLatin1Char('/'), Qt::SkipEmptyParts);
   QStringList normalizedParts;
   for (const QString &part : parts) {
-    const QString trimmed = part.trimmed();
+    const QString trimmed = simplifiedDesktopName(part);
     if (trimmed.isEmpty()) {
       continue;
     }
 
-    if (trimmed.compare(QStringLiteral("KDE"), Qt::CaseInsensitive) == 0) {
-      normalizedParts << QStringLiteral("KDE Plasma");
-    } else if (trimmed.compare(QStringLiteral("GNOME"), Qt::CaseInsensitive) == 0) {
-      normalizedParts << QStringLiteral("GNOME");
-    } else {
+    if (!normalizedParts.contains(trimmed, Qt::CaseInsensitive)) {
       normalizedParts << trimmed;
     }
   }
