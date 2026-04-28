@@ -19,10 +19,20 @@ struct LanguageEntry {
 constexpr LanguageEntry kSupportedLanguages[] = {
     {"system", "System Default", "System Default", true},
     {"en", "English", "English", true},
-    {"de", "German", "Deutsch", true},
-    {"es", "Spanish", "Espanol", true},
+    {"de", "German", "Deutsch", false},
+    {"es", "Spanish", "Espanol", false},
     {"tr", "Turkish", "Turkce", true},
 };
+
+bool isShippedLanguage(const QString &languageCode) {
+  for (const auto &entry : kSupportedLanguages) {
+    if (QString::fromLatin1(entry.code) == languageCode) {
+      return entry.shipped;
+    }
+  }
+
+  return false;
+}
 
 } // namespace
 
@@ -56,6 +66,10 @@ QString LanguageManager::currentLanguageLabel() const {
 QVariantList LanguageManager::availableLanguages() const {
   QVariantList languages;
   for (const auto &entry : kSupportedLanguages) {
+    if (!entry.shipped) {
+      continue;
+    }
+
     QVariantMap language;
     language.insert(QStringLiteral("code"), QString::fromLatin1(entry.code));
     language.insert(QStringLiteral("label"), QString::fromLatin1(entry.label));
@@ -116,8 +130,15 @@ QString LanguageManager::systemLanguageCode() const {
 
 QString LanguageManager::effectiveLanguageCode(const QString &languageCode) const {
   const QString normalizedLanguage = normalizeLanguageCode(languageCode);
-  return normalizedLanguage == QStringLiteral("system") ? systemLanguageCode()
-                                                        : normalizedLanguage;
+  const QString effective = normalizedLanguage == QStringLiteral("system")
+                                ? systemLanguageCode()
+                                : normalizedLanguage;
+
+  if (effective == QStringLiteral("en")) {
+    return effective;
+  }
+
+  return isShippedLanguage(effective) ? effective : QStringLiteral("en");
 }
 
 bool LanguageManager::loadLanguage(const QString &languageCode) {

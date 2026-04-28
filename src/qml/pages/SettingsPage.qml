@@ -5,11 +5,19 @@ import QtQuick.Layouts
 Item {
     id: settingsPage
 
-    required property var theme
+    property var theme: ({})
     property bool darkMode: false
-    property bool compactMode: false
     property bool showAdvancedInfo: true
-    readonly property string themeMode: uiPreferences.themeMode
+    property real uiScale: 1.0
+    readonly property bool hasUiPreferences: typeof uiPreferences !== "undefined" && uiPreferences !== null
+    readonly property bool hasLanguageManager: typeof languageManager !== "undefined" && languageManager !== null
+    readonly property string themeMode: hasUiPreferences ? uiPreferences.themeMode : "system"
+    property string lastDiagnosticsRefresh: ""
+
+    readonly property color cardColor: theme && theme.cardStrong ? theme.cardStrong : "#f5f8ff"
+    readonly property color borderColor: theme && theme.border ? theme.border : "#d9e1f0"
+    readonly property color textColor: theme && theme.text ? theme.text : "#12213a"
+    readonly property color softTextColor: theme && theme.textSoft ? theme.textSoft : "#6f829e"
 
     ScrollView {
         id: pageScroll
@@ -19,319 +27,154 @@ Item {
 
         ColumnLayout {
             width: pageScroll.availableWidth
-            spacing: settingsPage.compactMode ? 12 : 16
+            spacing: 10
 
-            GridLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                columns: width > 980 ? 2 : 1
-                columnSpacing: 16
-                rowSpacing: 16
+                radius: 14
+                color: settingsPage.cardColor
+                border.width: 1
+                border.color: settingsPage.borderColor
+                implicitHeight: preferencesLayout.implicitHeight + 24
 
-                SectionPanel {
-                    Layout.fillWidth: true
-                    theme: settingsPage.theme
-                    title: qsTr("Appearance & Behavior")
-                    subtitle: qsTr("Control theme, density and operator-focused interface behavior.")
+                ColumnLayout {
+                    id: preferencesLayout
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 10
+
+                    Label {
+                        text: qsTr("Appearance")
+                        color: settingsPage.textColor
+                        font.pixelSize: Math.round(18 * settingsPage.uiScale)
+                        font.bold: true
+                    }
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 12
 
-                        ColumnLayout {
+                        Label {
                             Layout.fillWidth: true
-                            spacing: 4
-
-                            Label {
-                                text: qsTr("Theme mode")
-                                font.bold: true
-                                color: settingsPage.theme.text
-                            }
-
-                            Label {
-                                text: qsTr("Choose whether the application follows the OS theme or uses an explicit light or dark shell.")
-                                wrapMode: Text.Wrap
-                                color: settingsPage.theme.textSoft
-                                Layout.fillWidth: true
-                            }
+                            text: qsTr("Theme mode")
+                            color: settingsPage.textColor
                         }
 
                         ComboBox {
                             id: themePicker
-                            Layout.preferredWidth: 220
-                            model: uiPreferences.availableThemeModes
+                            Layout.preferredWidth: Math.round(220 * settingsPage.uiScale)
+                            model: hasUiPreferences ? uiPreferences.availableThemeModes : []
                             textRole: "label"
 
                             Component.onCompleted: settingsPage.syncThemePicker()
 
                             onActivated: {
                                 const selected = model[currentIndex];
-                                if (selected && selected.code) {
+                                if (hasUiPreferences && selected && selected.code)
                                     uiPreferences.setThemeMode(selected.code);
-                                }
                             }
                         }
                     }
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 12
 
-                        ColumnLayout {
+                        Label {
                             Layout.fillWidth: true
-                            spacing: 4
-
-                            Label {
-                                text: qsTr("Language")
-                                font.bold: true
-                                color: settingsPage.theme.text
-                            }
-
-                            Label {
-                                text: qsTr("Changes the application language immediately and keeps the selection for the next launch.")
-                                wrapMode: Text.Wrap
-                                color: settingsPage.theme.textSoft
-                                Layout.fillWidth: true
-                            }
+                            text: qsTr("Language")
+                            color: settingsPage.textColor
                         }
 
                         ComboBox {
                             id: languagePicker
-                            Layout.preferredWidth: 220
-                            model: languageManager.availableLanguages
+                            Layout.preferredWidth: Math.round(220 * settingsPage.uiScale)
+                            model: hasLanguageManager ? languageManager.availableLanguages : []
                             textRole: "nativeLabel"
 
                             Component.onCompleted: settingsPage.syncLanguagePicker()
 
                             onActivated: {
                                 const selected = model[currentIndex];
-                                if (selected && selected.code) {
+                                if (hasLanguageManager && selected && selected.code)
                                     languageManager.setCurrentLanguage(selected.code);
-                                }
                             }
                         }
                     }
 
                     RowLayout {
                         Layout.fillWidth: true
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
-
-                            Label {
-                                text: qsTr("Compact layout")
-                                font.bold: true
-                                color: settingsPage.theme.text
-                            }
-
-                            Label {
-                                text: qsTr("Reduces spacing to fit more information on screen.")
-                                wrapMode: Text.Wrap
-                                color: settingsPage.theme.textSoft
-                                Layout.fillWidth: true
-                            }
-                        }
-
-                        Switch {
-                            checked: uiPreferences.compactMode
-                            onToggled: uiPreferences.setCompactMode(checked)
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
-
-                            Label {
-                                text: qsTr("Show advanced diagnostics")
-                                font.bold: true
-                                color: settingsPage.theme.text
-                            }
-
-                            Label {
-                                text: qsTr("Shows verification reports and expanded monitor metrics.")
-                                wrapMode: Text.Wrap
-                                color: settingsPage.theme.textSoft
-                                Layout.fillWidth: true
-                            }
-                        }
-
-                        Switch {
-                            checked: uiPreferences.showAdvancedInfo
-                            onToggled: uiPreferences.setShowAdvancedInfo(checked)
-                        }
-                    }
-
-                    Flow {
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        InfoBadge {
-                            text: qsTr("Language: ") + languageManager.currentLanguageLabel
-                            backgroundColor: settingsPage.theme.cardStrong
-                            foregroundColor: settingsPage.theme.text
-                        }
-
-                        InfoBadge {
-                            text: settingsPage.themeMode === "system"
-                                  ? qsTr("Theme: Follow System")
-                                  : settingsPage.darkMode ? qsTr("Theme: Dark")
-                                                          : qsTr("Theme: Light")
-                            backgroundColor: settingsPage.theme.infoBg
-                            foregroundColor: settingsPage.theme.text
-                        }
-
-                        InfoBadge {
-                            text: uiPreferences.compactMode ? qsTr("Compact Active") : qsTr("Comfort Active")
-                            backgroundColor: settingsPage.theme.cardStrong
-                            foregroundColor: settingsPage.theme.text
-                        }
-
-                        InfoBadge {
-                            text: uiPreferences.showAdvancedInfo ? qsTr("Advanced Visible") : qsTr("Advanced Hidden")
-                            backgroundColor: settingsPage.theme.cardStrong
-                            foregroundColor: settingsPage.theme.text
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 12
 
                         Label {
                             Layout.fillWidth: true
-                            text: qsTr("Restore the recommended interface defaults if the shell starts to feel cluttered.")
-                            wrapMode: Text.Wrap
-                            color: settingsPage.theme.textSoft
+                            text: qsTr("Show advanced diagnostics")
+                            color: settingsPage.textColor
                         }
 
-                        ActionButton {
-                            theme: settingsPage.theme
-                            text: qsTr("Reset Interface Defaults")
-                            onClicked: uiPreferences.resetToDefaults()
+                        Switch {
+                            checked: hasUiPreferences ? uiPreferences.showAdvancedInfo : false
+                            enabled: hasUiPreferences
+                            onToggled: if (hasUiPreferences) uiPreferences.setShowAdvancedInfo(checked)
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Button {
+                            text: qsTr("Reset Defaults")
+                            enabled: hasUiPreferences
+                            onClicked: if (hasUiPreferences) uiPreferences.resetToDefaults()
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        Label {
+                            text: settingsPage.themeMode === "system" ? qsTr("Following system")
+                                                                       : (settingsPage.darkMode ? qsTr("Dark mode") : qsTr("Light mode"))
+                            color: settingsPage.softTextColor
                         }
                     }
                 }
+            }
 
-                SectionPanel {
-                    Layout.fillWidth: true
-                    theme: settingsPage.theme
-                    title: qsTr("Diagnostics")
-                    subtitle: qsTr("Useful runtime context before filing issues or performing support work.")
+            Rectangle {
+                Layout.fillWidth: true
+                radius: 14
+                color: settingsPage.cardColor
+                border.width: 1
+                border.color: settingsPage.borderColor
+                implicitHeight: aboutLayout.implicitHeight + 24
 
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        DetailRow {
-                            Layout.fillWidth: true
-                            theme: settingsPage.theme
-                            label: qsTr("Application")
-                            value: Qt.application.name + " " + Qt.application.version
-                        }
-
-                        DetailRow {
-                            Layout.fillWidth: true
-                            theme: settingsPage.theme
-                            label: qsTr("GPU")
-                            value: nvidiaDetector.gpuFound ? nvidiaDetector.gpuName : qsTr("Not detected")
-                        }
-
-                        DetailRow {
-                            Layout.fillWidth: true
-                            theme: settingsPage.theme
-                            label: qsTr("Driver")
-                            value: nvidiaDetector.activeDriver
-                        }
-
-                        DetailRow {
-                            Layout.fillWidth: true
-                            theme: settingsPage.theme
-                            label: qsTr("Session")
-                            value: nvidiaDetector.sessionType.length > 0 ? nvidiaDetector.sessionType : qsTr("Unknown")
-                        }
-                    }
+                ColumnLayout {
+                    id: aboutLayout
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
 
                     Label {
-                        Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        color: settingsPage.theme.textSoft
-                        text: qsTr("Use the Driver page to refresh detection before copying any diagnostic context.")
-                    }
-                }
-
-                SectionPanel {
-                    Layout.fillWidth: true
-                    theme: settingsPage.theme
-                    title: qsTr("Workflow Guidance")
-                    subtitle: qsTr("Recommended order of operations when changing drivers.")
-
-                    Label {
-                        Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        color: settingsPage.theme.text
-                        text: qsTr("1. Verify GPU detection and session type.\n2. Install or switch the driver stack.\n3. Check repository updates.\n4. Restart after successful package operations.")
+                        text: qsTr("Diagnostics Snapshot")
+                        color: settingsPage.textColor
+                        font.pixelSize: Math.round(18 * settingsPage.uiScale)
+                        font.bold: true
                     }
 
-                    StatusBanner {
-                        Layout.fillWidth: true
-                        theme: settingsPage.theme
-                        tone: nvidiaDetector.secureBootEnabled ? "warning" : "info"
-                        text: nvidiaDetector.secureBootEnabled
-                              ? qsTr("Secure Boot is enabled. Kernel module signing may still be required after package installation.")
-                              : qsTr("No Secure Boot blocker is currently reported by the detector.")
-                    }
-                }
+                    Label { text: qsTr("Application: %1 %2").arg(Qt.application.name).arg(Qt.application.version); color: settingsPage.softTextColor }
+                    Label { text: qsTr("GPU: %1").arg(nvidiaDetector.gpuFound ? nvidiaDetector.gpuName : qsTr("Not detected")); color: settingsPage.softTextColor }
+                    Label { text: qsTr("Driver: %1").arg(nvidiaDetector.activeDriver); color: settingsPage.softTextColor }
+                    Label { text: qsTr("Session: %1").arg(nvidiaDetector.sessionType.length > 0 ? nvidiaDetector.sessionType : qsTr("Unknown")); color: settingsPage.softTextColor }
+                    Label { text: qsTr("Language: %1").arg(hasLanguageManager ? languageManager.currentLanguageLabel : qsTr("Unknown")); color: settingsPage.softTextColor }
+                    Label { text: qsTr("CPU Temp: %1 C").arg(cpuMonitor.temperatureC); color: settingsPage.softTextColor }
+                    Label { text: qsTr("GPU Temp: %1 C").arg(gpuMonitor.temperatureC); color: settingsPage.softTextColor }
+                    Label { text: qsTr("RAM Used: %1 / %2 MiB").arg(ramMonitor.usedMiB).arg(ramMonitor.totalMiB); color: settingsPage.softTextColor }
+                    Label { text: qsTr("Last refresh: %1").arg(settingsPage.lastDiagnosticsRefresh.length > 0 ? settingsPage.lastDiagnosticsRefresh : qsTr("auto")); color: settingsPage.softTextColor }
 
-                SectionPanel {
-                    Layout.fillWidth: true
-                    theme: settingsPage.theme
-                    title: qsTr("About")
-                    subtitle: qsTr("Project identity and current shell mode.")
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        DetailRow {
-                            Layout.fillWidth: true
-                            theme: settingsPage.theme
-                            label: qsTr("Application")
-                            value: Qt.application.name + " (" + Qt.application.version + ")"
-                        }
-
-                        DetailRow {
-                            Layout.fillWidth: true
-                            theme: settingsPage.theme
-                            label: qsTr("Theme")
-                            value: settingsPage.themeMode === "system"
-                                   ? qsTr("Follow System")
-                                   : settingsPage.darkMode ? qsTr("Dark")
-                                                           : qsTr("Light")
-                        }
-
-                        DetailRow {
-                            Layout.fillWidth: true
-                            theme: settingsPage.theme
-                            label: qsTr("Effective language")
-                            value: languageManager.displayNameForLanguage(languageManager.effectiveLanguage)
-                        }
-
-                        DetailRow {
-                            Layout.fillWidth: true
-                            theme: settingsPage.theme
-                            label: qsTr("Layout density")
-                            value: uiPreferences.compactMode ? qsTr("Compact") : qsTr("Comfort")
-                        }
-
-                        DetailRow {
-                            Layout.fillWidth: true
-                            theme: settingsPage.theme
-                            label: qsTr("Advanced diagnostics")
-                            value: uiPreferences.showAdvancedInfo ? qsTr("Visible") : qsTr("Hidden")
+                    Button {
+                        text: qsTr("Refresh Diagnostics")
+                        onClicked: {
+                            nvidiaDetector.refresh()
+                            cpuMonitor.refresh()
+                            gpuMonitor.refresh()
+                            ramMonitor.refresh()
+                            settingsPage.lastDiagnosticsRefresh = Qt.formatDateTime(new Date(), "yyyy-MM-dd HH:mm:ss")
                         }
                     }
                 }
@@ -340,6 +183,8 @@ Item {
     }
 
     function syncLanguagePicker() {
+        if (!hasLanguageManager)
+            return;
         for (let i = 0; i < languagePicker.model.length; ++i) {
             if (languagePicker.model[i].code === languageManager.currentLanguage) {
                 languagePicker.currentIndex = i;
@@ -349,6 +194,8 @@ Item {
     }
 
     function syncThemePicker() {
+        if (!hasUiPreferences)
+            return;
         for (let i = 0; i < themePicker.model.length; ++i) {
             if (themePicker.model[i].code === uiPreferences.themeMode) {
                 themePicker.currentIndex = i;
@@ -358,7 +205,7 @@ Item {
     }
 
     Connections {
-        target: languageManager
+        target: hasLanguageManager ? languageManager : null
 
         function onCurrentLanguageChanged() {
             settingsPage.syncLanguagePicker()
@@ -366,10 +213,18 @@ Item {
     }
 
     Connections {
-        target: uiPreferences
+        target: hasUiPreferences ? uiPreferences : null
 
         function onThemeModeChanged() {
             settingsPage.syncThemePicker()
         }
+    }
+
+    Component.onCompleted: {
+        nvidiaDetector.refresh()
+        cpuMonitor.refresh()
+        gpuMonitor.refresh()
+        ramMonitor.refresh()
+        settingsPage.lastDiagnosticsRefresh = Qt.formatDateTime(new Date(), "yyyy-MM-dd HH:mm:ss")
     }
 }

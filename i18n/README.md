@@ -7,6 +7,10 @@ This directory contains the Qt Linguist translation sources for ro-Control.
 - `ro-control_en.ts` - English source catalog kept in sync with extracted strings
 - `ro-control_tr.ts` - Turkish translation catalog
 
+Additional catalogs (`ro-control_de.ts`, `ro-control_es.ts`) are maintained in the
+repository, but currently not shipped at runtime until translation coverage is
+completed.
+
 English is the source language used directly in code. Additional locales should be
 added as new `ro-control_<locale>.ts` files.
 
@@ -31,9 +35,9 @@ Example workflow:
 ```bash
 mkdir -p build
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-lupdate src -ts i18n/ro-control_en.ts i18n/ro-control_tr.ts
+lupdate-qt6 -no-obsolete src -ts i18n/ro-control_en.ts i18n/ro-control_de.ts i18n/ro-control_es.ts i18n/ro-control_tr.ts
 linguist i18n/ro-control_tr.ts
-cmake --build build
+cmake --build build --target ro-control_lrelease
 ```
 
 ## Adding a new language
