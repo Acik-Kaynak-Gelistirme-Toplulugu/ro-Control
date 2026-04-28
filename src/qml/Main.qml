@@ -1,14 +1,15 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 
 ApplicationWindow {
     id: root
     visible: true
-    width: 1360
-    height: 860
-    minimumWidth: 1120
-    minimumHeight: 760
+    width: 1320
+    height: 840
+    minimumWidth: 1024
+    minimumHeight: 700
     title: qsTr("ro-Control")
     font.family: "Noto Sans"
 
@@ -21,320 +22,200 @@ ApplicationWindow {
         return ((0.2126 * colorValue.r) + (0.7152 * colorValue.g) + (0.0722 * colorValue.b)) < 0.5;
     }
 
-    readonly property string themeMode: uiPreferences.themeMode
+    readonly property bool hasUiPreferences: typeof uiPreferences !== "undefined" && uiPreferences !== null
+    readonly property string themeMode: (hasUiPreferences && uiPreferences.themeMode)
+                                        ? uiPreferences.themeMode
+                                        : "system"
+    readonly property bool systemDarkMode: Qt.styleHints.colorScheme === Qt.Dark
+                                           || (Qt.styleHints.colorScheme === Qt.Unknown
+                                               && (palette.window.r + palette.window.g + palette.window.b) / 3 < 0.5)
     readonly property bool darkMode: themeMode === "dark"
-                                     || (themeMode === "system" && root.isColorDark(systemPalette.window))
-    readonly property bool compactMode: uiPreferences.compactMode
-    readonly property bool showAdvancedInfo: uiPreferences.showAdvancedInfo
-    readonly property var theme: darkMode ? ({
-        window: "#141922",
-        shell: "#10151d",
-        card: "#1b2330",
-        cardStrong: "#212b3a",
-        border: "#2c3748",
-        text: "#edf3ff",
-        textMuted: "#b2bdd1",
-        textSoft: "#8f9bb1",
-        accentA: "#7e90ff",
-        accentB: "#34c7a1",
-        accentC: "#ffbf47",
-        success: "#36c691",
-        warning: "#f2ae2d",
-        danger: "#f17575",
-        successBg: "#173529",
-        warningBg: "#3a2e12",
-        dangerBg: "#3d2024",
-        infoBg: "#1c2941",
-        sidebarBg: "#111722",
-        sidebarText: "#eef3ff",
-        sidebarMuted: "#95a3bb",
-        sidebarAccent: "#7e90ff",
-        sidebarActive: "#1d2940",
-        sidebarHover: "#182131",
-        sidebarBorder: "#253141",
-        sidebarHint: "#8898b0",
-        topbarBg: "#171e29",
-        topbarChip: "#222c3a",
-        topbarValue: "#eef3ff",
-        contentBg: "#121822",
-        contentGlow: "#182131"
-    }) : ({
-        window: "#f3f6fb",
-        shell: "#edf2f8",
-        card: "#ffffff",
-        cardStrong: "#f5f8fe",
-        border: "#d9e2ef",
-        text: "#1f2430",
-        textMuted: "#56657d",
-        textSoft: "#71809b",
-        accentA: "#6674ff",
-        accentB: "#2bbf97",
-        accentC: "#ffad32",
-        success: "#21b37f",
-        warning: "#f59e0b",
-        danger: "#e15a5a",
-        successBg: "#e7faf2",
-        warningBg: "#fff3dd",
-        dangerBg: "#fdeceb",
-        infoBg: "#ecf3ff",
-        sidebarBg: "#fcfdff",
-        sidebarText: "#232936",
-        sidebarMuted: "#728199",
-        sidebarAccent: "#6674ff",
-        sidebarActive: "#edf3ff",
-        sidebarHover: "#f5f8fd",
-        sidebarBorder: "#dde5f0",
-        sidebarHint: "#7c8ba2",
-        topbarBg: "#ffffff",
-        topbarChip: "#f4f7fc",
-        topbarValue: "#202531",
-        contentBg: "#f5f7fb",
-        contentGlow: "#ebeff8"
-    })
+                                     || (themeMode === "system" && systemDarkMode)
+    readonly property bool showAdvancedInfo: (hasUiPreferences && uiPreferences.showAdvancedInfo !== undefined)
+                                             ? uiPreferences.showAdvancedInfo
+                                             : true
+    readonly property real uiScale: Math.max(0.85, Math.min(width / 1320, 1.15))
 
-    color: theme.window
-    property bool languageDialogOpen: false
-
-    function navigateToPage(index) {
-        sidebar.currentIndex = index;
-        stack.currentIndex = index;
+    QtObject {
+        id: colors
+        // Light palette: #92C7CF #AAD7D9 #FBF9F1 #E5E1DA
+        // Dark palette:  #352F44 #5C5470 #B9B4C7 #FAF0E6
+        readonly property color window: root.darkMode ? "#352F44" : "#FBF9F1"
+        readonly property color shell: root.darkMode ? "#5C5470" : "#E5E1DA"
+        readonly property color shellAlt: root.darkMode ? "#352F44" : "#FBF9F1"
+        readonly property color card: root.darkMode ? "#5C5470" : "#FBF9F1"
+        readonly property color cardStrong: root.darkMode ? "#352F44" : "#AAD7D9"
+        readonly property color border: root.darkMode ? "#B9B4C7" : "#92C7CF"
+        readonly property color text: root.darkMode ? "#FAF0E6" : "#352F44"
+        readonly property color textMuted: root.darkMode ? "#B9B4C7" : "#5C5470"
+        readonly property color textSoft: root.darkMode ? "#B9B4C7" : "#5C5470"
+        readonly property color accentA: root.darkMode ? "#B9B4C7" : "#92C7CF"
+        readonly property color accentB: root.darkMode ? "#FAF0E6" : "#AAD7D9"
+        readonly property color accentC: root.darkMode ? "#5C5470" : "#E5E1DA"
+        readonly property color success: root.darkMode ? "#FAF0E6" : "#352F44"
+        readonly property color warning: root.darkMode ? "#B9B4C7" : "#5C5470"
+        readonly property color danger: root.darkMode ? "#FAF0E6" : "#352F44"
+        readonly property color successBg: root.darkMode ? "#5C5470" : "#AAD7D9"
+        readonly property color warningBg: root.darkMode ? "#352F44" : "#E5E1DA"
+        readonly property color dangerBg: root.darkMode ? "#5C5470" : "#E5E1DA"
+        readonly property color infoBg: root.darkMode ? "#5C5470" : "#AAD7D9"
+        readonly property color heroStart: root.darkMode ? "#352F44" : "#FBF9F1"
+        readonly property color heroEnd: root.darkMode ? "#5C5470" : "#E5E1DA"
     }
 
-    function topBarValue(fallback, preferred) {
-        return preferred && preferred.length > 0 ? preferred : fallback;
-    }
-
-    onLanguageDialogOpenChanged: {
-        if (languageDialogOpen) {
-            languagePopup.open();
-        } else {
-            languagePopup.close();
-        }
-    }
+    color: colors.window
+    font.pixelSize: Math.round(13 * uiScale)
+    Material.theme: darkMode ? Material.Dark : Material.Light
+    Material.accent: colors.accentA
+    Material.primary: colors.accentB
+    Material.background: colors.window
+    Material.foreground: colors.text
 
     Rectangle {
         anchors.fill: parent
-        color: root.theme.window
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: colors.heroStart }
+            GradientStop { position: 1.0; color: colors.shell }
+        }
     }
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 0
+        anchors.margins: Math.round(16 * root.uiScale)
+        spacing: Math.round(10 * root.uiScale)
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 78
-            color: root.theme.topbarBg
+            radius: Math.round(22 * root.uiScale)
+            color: colors.shellAlt
             border.width: 1
-            border.color: root.theme.border
+            border.color: colors.border
+            implicitHeight: topBar.implicitHeight + Math.round(26 * root.uiScale)
 
             RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 32
-                anchors.rightMargin: 32
-                spacing: 22
+                id: topBar
+                x: Math.round(16 * root.uiScale)
+                y: Math.round(13 * root.uiScale)
+                width: parent.width - Math.round(32 * root.uiScale)
+                spacing: Math.round(14 * root.uiScale)
 
-                Repeater {
-                    model: [
-                        {
-                            label: qsTr("Driver"),
-                            value: root.topBarValue(qsTr("not installed"),
-                                                    nvidiaDetector.driverVersion.length > 0
-                                                    ? "nvidia-" + nvidiaDetector.driverVersion
-                                                    : nvidiaUpdater.currentVersion.length > 0
-                                                      ? "nvidia-" + nvidiaUpdater.currentVersion
-                                                      : "")
-                        },
-                        {
-                            label: qsTr("Secure Boot"),
-                            value: nvidiaDetector.secureBootKnown
-                                   ? (nvidiaDetector.secureBootEnabled ? qsTr("ON") : qsTr("OFF"))
-                                   : qsTr("Unknown")
-                        },
-                        {
-                            label: qsTr("GPU"),
-                            value: root.topBarValue(qsTr("Unavailable"), nvidiaDetector.gpuName.length > 0 ? nvidiaDetector.gpuName : nvidiaDetector.displayAdapterName)
-                        }
-                    ]
-
-                    delegate: RowLayout {
-                        required property var modelData
-                        spacing: 12
-
-                        Label {
-                            text: modelData.label + ":"
-                            color: root.theme.textSoft
-                            font.pixelSize: 13
-                            font.weight: Font.Medium
-                        }
-
-                        Rectangle {
-                            radius: 16
-                            color: root.theme.topbarChip
-                            implicitHeight: 38
-                            implicitWidth: valueLabel.implicitWidth + 28
-
-                            Label {
-                                id: valueLabel
-                                anchors.centerIn: parent
-                                text: modelData.value
-                                color: root.theme.topbarValue
-                                font.pixelSize: 13
-                                font.weight: Font.DemiBold
-                            }
-                        }
-                    }
-                }
-
-                Item {
+                ColumnLayout {
                     Layout.fillWidth: true
-                }
-
-                Rectangle {
-                    width: 42
-                    height: 42
-                    radius: 21
-                    color: root.theme.cardStrong
-                    border.width: 1
-                    border.color: root.theme.border
+                    spacing: 2
 
                     Label {
-                        anchors.centerIn: parent
-                        text: "\uD83C\uDF10"
-                        color: root.theme.text
-                        font.pixelSize: 16
-                        font.weight: Font.Medium
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.languageDialogOpen = !root.languageDialogOpen
-                    }
-                }
-
-            }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 0
-
-            SidebarMenu {
-                id: sidebar
-                theme: root.theme
-                Layout.fillHeight: true
-                currentIndex: 0
-                onCurrentIndexChanged: stack.currentIndex = currentIndex
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                color: root.theme.contentBg
-                clip: true
-
-                Rectangle {
-                    anchors.fill: parent
-                    color: "transparent"
-                    opacity: 1.0
-                    gradient: Gradient {
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: root.theme.contentGlow }
-                        GradientStop { position: 0.22; color: Qt.rgba(0, 0, 0, 0) }
-                        GradientStop { position: 0.78; color: Qt.rgba(0, 0, 0, 0) }
-                        GradientStop { position: 1.0; color: root.theme.contentGlow }
-                    }
-                }
-
-                StackLayout {
-                    id: stack
-                    anchors.fill: parent
-                    anchors.margins: root.compactMode ? 20 : 28
-                    currentIndex: sidebar.currentIndex
-
-                    DriverPage {
-                        theme: root.theme
-                        darkMode: root.darkMode
-                        compactMode: root.compactMode
-                        showAdvancedInfo: root.showAdvancedInfo
-                        navigateToPage: function(index) { root.navigateToPage(index); }
-                    }
-
-                    SettingsPage {
-                        theme: root.theme
-                        darkMode: root.darkMode
-                        compactMode: root.compactMode
-                        showAdvancedInfo: root.showAdvancedInfo
-                    }
-
-                    MonitorPage {
-                        theme: root.theme
-                        darkMode: root.darkMode
-                        compactMode: root.compactMode
-                        showAdvancedInfo: root.showAdvancedInfo
-                    }
-                }
-            }
-        }
-    }
-
-    Popup {
-        id: languagePopup
-        modal: false
-        focus: true
-        x: root.width - width - 76
-        y: 72
-        width: 240
-        height: languageColumn.implicitHeight + 24
-        padding: 0
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        onClosed: root.languageDialogOpen = false
-
-        background: Rectangle {
-            radius: 22
-            color: root.theme.card
-            border.width: 1
-            border.color: root.theme.border
-        }
-
-        ColumnLayout {
-            id: languageColumn
-            anchors.fill: parent
-            anchors.margins: 12
-            spacing: 8
-
-            Repeater {
-                model: languageManager.availableLanguages
-
-                delegate: Rectangle {
-                    required property var modelData
-                    Layout.fillWidth: true
-                    implicitHeight: 42
-                    radius: 14
-                    color: languageManager.currentLanguage === modelData.code ? root.theme.infoBg : "transparent"
-                    border.width: languageManager.currentLanguage === modelData.code ? 1 : 0
-                    border.color: root.theme.border
-
-                    Label {
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        text: modelData.nativeLabel
-                        color: root.theme.text
-                        font.pixelSize: 14
+                        text: qsTr("ro-Control")
+                        color: colors.text
+                        font.pixelSize: Math.round(28 * root.uiScale)
                         font.weight: Font.DemiBold
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            languageManager.setCurrentLanguage(modelData.code);
-                            root.languageDialogOpen = false;
-                        }
+                    Label {
+                        text: qsTr("Modern NVIDIA driver operations and live Linux telemetry")
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        color: colors.textSoft
+                        font.pixelSize: Math.round(13 * root.uiScale)
                     }
+                }
+
+            }
+        }
+
+        TabBar {
+            id: tabBar
+            Layout.fillWidth: true
+            spacing: Math.round(8 * root.uiScale)
+
+            background: Rectangle {
+                radius: 16
+                color: colors.shellAlt
+                border.width: 1
+                border.color: colors.border
+            }
+
+            TabButton {
+                id: driverTab
+                text: qsTr("Driver")
+                contentItem: Text {
+                    text: driverTab.text
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    color: tabBar.currentIndex === 0 ? colors.window : colors.textMuted
+                    font.pixelSize: Math.round(14 * root.uiScale)
+                    font.bold: tabBar.currentIndex === 0
+                }
+                background: Rectangle {
+                    radius: Math.round(12 * root.uiScale)
+                    color: tabBar.currentIndex === 0 ? colors.accentA : "transparent"
+                }
+            }
+            TabButton {
+                id: monitorTab
+                text: qsTr("Monitor")
+                contentItem: Text {
+                    text: monitorTab.text
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    color: tabBar.currentIndex === 1 ? colors.window : colors.textMuted
+                    font.pixelSize: Math.round(14 * root.uiScale)
+                    font.bold: tabBar.currentIndex === 1
+                }
+                background: Rectangle {
+                    radius: Math.round(12 * root.uiScale)
+                    color: tabBar.currentIndex === 1 ? colors.accentA : "transparent"
+                }
+            }
+            TabButton {
+                id: settingsTab
+                text: qsTr("Settings")
+                contentItem: Text {
+                    text: settingsTab.text
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    color: tabBar.currentIndex === 2 ? colors.window : colors.textMuted
+                    font.pixelSize: Math.round(14 * root.uiScale)
+                    font.bold: tabBar.currentIndex === 2
+                }
+                background: Rectangle {
+                    radius: Math.round(12 * root.uiScale)
+                    color: tabBar.currentIndex === 2 ? colors.accentA : "transparent"
+                }
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            radius: Math.round(22 * root.uiScale)
+            color: colors.card
+            border.width: 1
+            border.color: colors.border
+
+            StackLayout {
+                anchors.fill: parent
+                anchors.margins: Math.round(10 * root.uiScale)
+                currentIndex: tabBar.currentIndex
+
+                DriverPage {
+                    theme: colors
+                    darkMode: root.darkMode
+                    showAdvancedInfo: root.showAdvancedInfo
+                    uiScale: root.uiScale
+                }
+
+                MonitorPage {
+                    theme: colors
+                    darkMode: root.darkMode
+                    showAdvancedInfo: root.showAdvancedInfo
+                    uiScale: root.uiScale
+                }
+
+                SettingsPage {
+                    theme: colors
+                    darkMode: root.darkMode
+                    showAdvancedInfo: root.showAdvancedInfo
+                    uiScale: root.uiScale
                 }
             }
         }

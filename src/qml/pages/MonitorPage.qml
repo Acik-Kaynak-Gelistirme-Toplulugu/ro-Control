@@ -5,230 +5,23 @@ import QtQuick.Layouts
 Item {
     id: page
 
-    required property var theme
+    property var theme: ({})
     property bool darkMode: false
-    property bool compactMode: false
     property bool showAdvancedInfo: true
-    readonly property bool cpuTemperatureAvailable: cpuMonitor.temperatureC > 0
-    readonly property bool gpuTelemetryAvailable: gpuMonitor.available
-    readonly property bool gpuTemperatureAvailable: gpuMonitor.temperatureC > 0
-    readonly property bool gpuMemoryAvailable: gpuMonitor.memoryTotalMiB > 0
-    readonly property bool ramTelemetryAvailable: ramMonitor.available || ramMonitor.totalMiB > 0
-    readonly property bool gpuDetected: nvidiaDetector.gpuFound
-    readonly property bool gpuHardwarePresent: nvidiaDetector.gpuFound || nvidiaDetector.displayAdapterName.length > 0
-    readonly property bool gpuDriverActive: nvidiaDetector.driverLoaded || nvidiaDetector.nouveauActive
-    readonly property color monitorBarColor: "#34c99a"
-    readonly property bool wideLayout: width >= 1180
+    property real uiScale: 1.0
 
-    function formatTemperature(value, hasHardware) {
-        if (value > 0)
-            return value + "\u00b0C";
-        return hasHardware ? qsTr("Unsupported") : qsTr("Unavailable");
+    readonly property color bgColor: theme && theme.card ? theme.card : "#ffffff"
+    readonly property color cardColor: theme && theme.cardStrong ? theme.cardStrong : "#f5f8ff"
+    readonly property color borderColor: theme && theme.border ? theme.border : "#d9e1f0"
+    readonly property color textColor: theme && theme.text ? theme.text : "#12213a"
+    readonly property color softTextColor: theme && theme.textSoft ? theme.textSoft : "#6f829e"
+
+    function formatTemp(value) {
+        return value > 0 ? value + " C" : qsTr("Unavailable");
     }
 
-    function formatMemoryUsage(usedMiB, totalMiB) {
-        if (totalMiB <= 0)
-            return qsTr("Unavailable");
-
-        const usedGiB = Math.round((usedMiB / 1024.0) * 10) / 10;
-        const totalGiB = Math.round((totalMiB / 1024.0) * 10) / 10;
-        return usedGiB + " / " + totalGiB + " GB";
-    }
-
-    function formatMemoryTotal(totalMiB) {
-        if (totalMiB <= 0)
-            return qsTr("Unavailable");
-        const totalGiB = Math.round(totalMiB / 1024.0);
-        return totalGiB + " GB";
-    }
-
-    function driverLabel() {
-        if (nvidiaDetector.driverVersion.length > 0)
-            return "nvidia-" + nvidiaDetector.driverVersion;
-        if (nvidiaUpdater.currentVersion.length > 0)
-            return "nvidia-" + nvidiaUpdater.currentVersion;
-        return qsTr("Not installed");
-    }
-
-    function osDisplayLabel() {
-        if (systemInfo.osName.length === 0)
-            return qsTr("Unavailable");
-        if (systemInfo.desktopEnvironment.length === 0)
-            return systemInfo.osName;
-        if (systemInfo.osName.toLowerCase().indexOf(systemInfo.desktopEnvironment.toLowerCase()) >= 0)
-            return systemInfo.osName;
-        return systemInfo.osName + " (" + systemInfo.desktopEnvironment + ")";
-    }
-
-    function gpuLoadValueText() {
-        if (page.gpuTelemetryAvailable)
-            return gpuMonitor.utilizationPercent + "%";
-        if (page.gpuHardwarePresent)
-            return qsTr("Not exposed");
-        return qsTr("Unavailable");
-    }
-
-    function gpuMetricFallbackText() {
-        return page.gpuHardwarePresent ? qsTr("Not exposed") : qsTr("Unavailable");
-    }
-
-    function gpuSummaryText() {
-        if (page.gpuTelemetryAvailable)
-            return qsTr("GPU telemetry active");
-        if (!page.gpuDetected)
-            return qsTr("No NVIDIA GPU detected");
-        if (!page.gpuDriverActive)
-            return qsTr("Driver inactive");
-        return qsTr("Telemetry unavailable");
-    }
-
-    function progressValue(percentValue) {
-        return Math.max(0, Math.min(100, percentValue)) / 100.0;
-    }
-
-    component InfoTile: Rectangle {
-        id: infoTile
-        required property string title
-        required property string value
-        required property string markerText
-        required property color markerColor
-
-        radius: 24
-        color: page.theme.card
-        border.width: 1
-        border.color: page.theme.border
-        implicitHeight: 102
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 22
-            anchors.rightMargin: 22
-            spacing: 16
-
-            Rectangle {
-                width: 54
-                height: 54
-                radius: 18
-                color: infoTile.markerColor
-
-                Label {
-                    anchors.centerIn: parent
-                    text: infoTile.markerText
-                    color: "#ffffff"
-                    font.pixelSize: 19
-                    font.weight: Font.DemiBold
-                }
-            }
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 4
-
-                Label {
-                    text: infoTile.title
-                    color: page.theme.textSoft
-                    font.pixelSize: 13
-                    font.weight: Font.Medium
-                }
-
-                Label {
-                    Layout.fillWidth: true
-                    text: infoTile.value
-                    color: page.theme.text
-                    font.pixelSize: 17
-                    font.weight: Font.DemiBold
-                    wrapMode: Text.Wrap
-                    maximumLineCount: 2
-                    elide: Text.ElideRight
-                }
-            }
-        }
-    }
-
-    component MetricRow: Item {
-        id: metricRow
-        required property string title
-        required property string subtitle
-        required property string valueText
-        required property string markerText
-        required property color markerColor
-        required property real progress
-
-        implicitHeight: 84
-
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: 10
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 14
-
-                Rectangle {
-                    width: 48
-                    height: 48
-                    radius: 16
-                    color: metricRow.markerColor
-
-                    Label {
-                        anchors.centerIn: parent
-                        text: metricRow.markerText
-                        color: "#ffffff"
-                        font.pixelSize: 18
-                        font.weight: Font.DemiBold
-                    }
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 2
-
-                    Label {
-                        text: metricRow.title
-                        color: page.theme.text
-                        font.pixelSize: 15
-                        font.weight: Font.DemiBold
-                    }
-
-                    Label {
-                        text: metricRow.subtitle
-                        color: page.theme.textSoft
-                        font.pixelSize: 13
-                        font.weight: Font.Medium
-                    }
-                }
-
-                Rectangle {
-                    radius: 18
-                    color: page.theme.cardStrong
-                    implicitWidth: metricValue.implicitWidth + 28
-                    implicitHeight: 48
-
-                    Label {
-                        id: metricValue
-                        anchors.centerIn: parent
-                        text: metricRow.valueText
-                        color: page.theme.text
-                        font.pixelSize: 16
-                        font.weight: Font.DemiBold
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 10
-                radius: 5
-                color: page.theme.cardStrong
-
-                Rectangle {
-                    width: Math.max(16, parent.width * metricRow.progress)
-                    height: parent.height
-                    radius: 5
-                    color: page.monitorBarColor
-                }
-            }
-        }
+    function formatRam(used, total) {
+        return total > 0 ? used + " / " + total + " MiB" : qsTr("Unavailable");
     }
 
     ScrollView {
@@ -239,222 +32,184 @@ Item {
 
         ColumnLayout {
             width: pageScroll.availableWidth
-            spacing: 16
-
-            Label {
-                text: qsTr("System Information")
-                visible: page.showAdvancedInfo
-                color: page.theme.text
-                font.pixelSize: 28
-                font.weight: Font.DemiBold
-            }
+            spacing: 10
 
             GridLayout {
                 Layout.fillWidth: true
-                visible: page.showAdvancedInfo
-                columns: 2
-                columnSpacing: 16
-                rowSpacing: 16
+                columns: width > 900 ? 3 : 1
+                columnSpacing: 10
+                rowSpacing: 10
 
-                InfoTile {
+                Rectangle {
                     Layout.fillWidth: true
-                    title: qsTr("OS")
-                    value: page.osDisplayLabel()
-                    markerText: "OS"
-                    markerColor: "#1da1f2"
+                    implicitHeight: 126
+                    radius: 14
+                    color: page.cardColor
+                    border.width: 1
+                    border.color: page.borderColor
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 6
+
+                        Label { text: qsTr("CPU"); color: page.softTextColor; font.bold: true }
+                        Label { text: cpuMonitor.usagePercent.toFixed(1) + "%"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
+                        Label { text: qsTr("Temperature: %1").arg(page.formatTemp(cpuMonitor.temperatureC)); color: page.softTextColor }
+                    }
                 }
 
-                InfoTile {
+                Rectangle {
                     Layout.fillWidth: true
-                    title: qsTr("Kernel")
-                    value: systemInfo.kernelVersion.length > 0 ? systemInfo.kernelVersion : qsTr("Kernel info unavailable")
-                    markerText: "K"
-                    markerColor: "#df4be0"
+                    implicitHeight: 126
+                    radius: 14
+                    color: page.cardColor
+                    border.width: 1
+                    border.color: page.borderColor
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 6
+
+                        Label { text: qsTr("GPU"); color: page.softTextColor; font.bold: true }
+                        Label { text: gpuMonitor.utilizationPercent + "%"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
+                        Label { text: qsTr("Temperature: %1").arg(page.formatTemp(gpuMonitor.temperatureC)); color: page.softTextColor }
+                    }
                 }
 
-                InfoTile {
+                Rectangle {
                     Layout.fillWidth: true
-                    title: qsTr("CPU")
-                    value: systemInfo.cpuModel.length > 0 ? systemInfo.cpuModel : qsTr("CPU model unavailable")
-                    markerText: "CPU"
-                    markerColor: "#ff6a13"
-                }
+                    implicitHeight: 126
+                    radius: 14
+                    color: page.cardColor
+                    border.width: 1
+                    border.color: page.borderColor
 
-                InfoTile {
-                    Layout.fillWidth: true
-                    title: qsTr("RAM")
-                    value: ramMonitor.totalMiB > 0 ? page.formatMemoryTotal(ramMonitor.totalMiB) : qsTr("Memory info unavailable")
-                    markerText: "RAM"
-                    markerColor: "#16c65f"
-                }
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 6
 
-                InfoTile {
-                    Layout.fillWidth: true
-                    title: qsTr("GPU")
-                    value: nvidiaDetector.gpuName.length > 0
-                           ? nvidiaDetector.gpuName
-                           : (nvidiaDetector.displayAdapterName.length > 0 ? nvidiaDetector.displayAdapterName : qsTr("Unavailable"))
-                    markerText: "GPU"
-                    markerColor: "#6a6fff"
-                }
-
-                InfoTile {
-                    Layout.fillWidth: true
-                    title: qsTr("Driver")
-                    value: page.driverLabel()
-                    markerText: "DRV"
-                    markerColor: "#ff9800"
+                        Label { text: qsTr("Memory"); color: page.softTextColor; font.bold: true }
+                        Label { text: ramMonitor.usagePercent + "%"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
+                        Label { text: qsTr("Usage: %1").arg(page.formatRam(ramMonitor.usedMiB, ramMonitor.totalMiB)); color: page.softTextColor }
+                    }
                 }
             }
 
-            GridLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                columns: page.wideLayout ? 2 : 1
-                columnSpacing: 16
-                rowSpacing: 16
+                radius: 14
+                color: page.cardColor
+                border.width: 1
+                border.color: page.borderColor
+                implicitHeight: chartArea.implicitHeight + 24
 
                 ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 12
-
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Label {
-                            text: qsTr("GPU Status")
-                            color: page.theme.text
-                            font.pixelSize: 20
-                            font.weight: Font.DemiBold
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
-                        }
-
-                        Rectangle {
-                            radius: 18
-                            color: page.theme.successBg
-                            border.width: 1
-                            border.color: Qt.tint(page.theme.success, "#55ffffff")
-                            implicitWidth: 108
-                            implicitHeight: 40
-
-                            RowLayout {
-                                anchors.centerIn: parent
-                                spacing: 8
-
-                                Rectangle {
-                                    width: 10
-                                    height: 10
-                                    radius: 5
-                                    color: page.theme.success
-                                }
-
-                                Label {
-                                    text: page.gpuTelemetryAvailable ? qsTr("Active") : qsTr("Standby")
-                                    color: page.theme.success
-                                    font.pixelSize: 13
-                                    font.weight: Font.DemiBold
-                                }
-                            }
-                        }
-                    }
-
-                    SectionPanel {
-                        Layout.fillWidth: true
-                        theme: page.theme
-                        title: ""
-                        subtitle: ""
-
-                        MetricRow {
-                            Layout.fillWidth: true
-                            title: qsTr("Temperature")
-                            subtitle: qsTr("Real-time monitoring")
-                            valueText: page.formatTemperature(gpuMonitor.temperatureC, page.gpuHardwarePresent)
-                            markerText: "T"
-                            markerColor: "#1da1f2"
-                            progress: page.progressValue(page.gpuTemperatureAvailable ? gpuMonitor.temperatureC : 0)
-                        }
-
-                        MetricRow {
-                            Layout.fillWidth: true
-                            title: qsTr("GPU Load")
-                            subtitle: qsTr("Real-time monitoring")
-                            valueText: page.gpuLoadValueText()
-                            markerText: "G"
-                            markerColor: "#00c46a"
-                            progress: page.progressValue(page.gpuTelemetryAvailable ? gpuMonitor.utilizationPercent : 0)
-                        }
-
-                        MetricRow {
-                            Layout.fillWidth: true
-                            title: qsTr("VRAM Usage")
-                            subtitle: qsTr("Real-time monitoring")
-                            valueText: page.gpuMemoryAvailable ? page.formatMemoryUsage(gpuMonitor.memoryUsedMiB, gpuMonitor.memoryTotalMiB)
-                                                               : page.gpuMetricFallbackText()
-                            markerText: "V"
-                            markerColor: "#d84ef0"
-                            progress: page.progressValue(page.gpuMemoryAvailable ? gpuMonitor.memoryUsagePercent : 0)
-                        }
-                    }
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 12
+                    id: chartArea
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 10
 
                     Label {
-                        text: qsTr("System Resources")
-                        color: page.theme.text
-                        font.pixelSize: 20
-                        font.weight: Font.DemiBold
+                        text: qsTr("Live Resource Bars")
+                        color: page.textColor
+                        font.pixelSize: Math.round(18 * page.uiScale)
+                        font.bold: true
                     }
 
-                    SectionPanel {
+                    Label { text: qsTr("CPU"); color: page.softTextColor }
+                    ProgressBar {
                         Layout.fillWidth: true
-                        theme: page.theme
-                        title: ""
-                        subtitle: ""
+                        from: 0
+                        to: 100
+                        value: cpuMonitor.usagePercent
+                    }
 
-                        MetricRow {
-                            Layout.fillWidth: true
-                            title: qsTr("CPU Usage")
-                            subtitle: qsTr("Real-time monitoring")
-                            valueText: cpuMonitor.available ? Math.round(cpuMonitor.usagePercent) + "%" : qsTr("Unavailable")
-                            markerText: "C"
-                            markerColor: "#ff6a13"
-                            progress: page.progressValue(cpuMonitor.available ? cpuMonitor.usagePercent : 0)
-                        }
+                    Label { text: qsTr("GPU"); color: page.softTextColor }
+                    ProgressBar {
+                        Layout.fillWidth: true
+                        from: 0
+                        to: 100
+                        value: gpuMonitor.utilizationPercent
+                    }
 
-                        MetricRow {
-                            Layout.fillWidth: true
-                            title: qsTr("RAM Usage")
-                            subtitle: qsTr("Real-time monitoring")
-                            valueText: page.ramTelemetryAvailable ? page.formatMemoryUsage(ramMonitor.usedMiB, ramMonitor.totalMiB)
-                                                                  : qsTr("Memory info unavailable")
-                            markerText: "R"
-                            markerColor: "#9247f6"
-                            progress: page.progressValue(page.ramTelemetryAvailable ? ramMonitor.usagePercent : 0)
-                        }
+                    Label { text: qsTr("RAM"); color: page.softTextColor }
+                    ProgressBar {
+                        Layout.fillWidth: true
+                        from: 0
+                        to: 100
+                        value: ramMonitor.usagePercent
                     }
 
                     RowLayout {
-                        Layout.alignment: Qt.AlignHCenter
-                        spacing: 10
+                        Layout.fillWidth: true
+                        spacing: 8
 
-                        Rectangle {
-                            width: 12
-                            height: 12
-                            radius: 6
-                            color: page.theme.textSoft
+                        Button {
+                            text: qsTr("Refresh")
+                            onClicked: {
+                                cpuMonitor.refresh();
+                                gpuMonitor.refresh();
+                                ramMonitor.refresh();
+                            }
                         }
+
+                        Item { Layout.fillWidth: true }
 
                         Label {
-                            text: qsTr("Updating every %1 seconds").arg(Math.max(1, Math.round(cpuMonitor.updateInterval / 1000)))
-                            color: page.theme.textSoft
-                            font.pixelSize: 13
-                            font.weight: Font.Medium
+                            visible: page.showAdvancedInfo
+                            text: qsTr("Interval: %1 ms").arg(cpuMonitor.updateInterval)
+                            color: page.softTextColor
                         }
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                radius: 14
+                color: page.cardColor
+                border.width: 1
+                border.color: page.borderColor
+                implicitHeight: detailLayout.implicitHeight + 24
+
+                ColumnLayout {
+                    id: detailLayout
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+
+                    Label {
+                        text: qsTr("Detailed Telemetry")
+                        color: page.textColor
+                        font.pixelSize: Math.round(18 * page.uiScale)
+                        font.bold: true
+                    }
+
+                    Label {
+                        text: qsTr("CPU Temperature: %1").arg(page.formatTemp(cpuMonitor.temperatureC))
+                        color: page.softTextColor
+                    }
+
+                    Label {
+                        text: qsTr("GPU Temperature: %1").arg(page.formatTemp(gpuMonitor.temperatureC))
+                        color: page.softTextColor
+                    }
+
+                    Label {
+                        text: qsTr("GPU Memory: %1 / %2 MiB")
+                                  .arg(gpuMonitor.memoryUsedMiB)
+                                  .arg(gpuMonitor.memoryTotalMiB)
+                        color: page.softTextColor
+                    }
+
+                    Label {
+                        text: qsTr("RAM Used: %1 / %2 MiB")
+                                  .arg(ramMonitor.usedMiB)
+                                  .arg(ramMonitor.totalMiB)
+                        color: page.softTextColor
                     }
                 }
             }
