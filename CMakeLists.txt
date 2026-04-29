@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(ro-control
-    VERSION 0.2.1
+    VERSION 1.0.0
     DESCRIPTION "Smart NVIDIA Driver Manager & System Monitor for Linux"
     HOMEPAGE_URL "https://github.com/Project-Ro-ASD/ro-Control"
     LANGUAGES CXX

@@ -40,7 +40,7 @@ macro explicitly:
 
 ```bash
 rpmbuild -ba packaging/rpm/ro-control.spec \
-  --define "upstream_version 0.2.1"
+  --define "upstream_version 1.0.0"
 ```
 
 If you build from a Git checkout instead of a published source archive, create
