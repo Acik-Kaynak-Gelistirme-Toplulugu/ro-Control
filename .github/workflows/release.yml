@@ -31,6 +31,7 @@ jobs:
 
     outputs:
       version: ${{ steps.meta.outputs.version }}
+      raw_tag: ${{ steps.meta.outputs.raw_tag }}
       tag_name: ${{ steps.meta.outputs.tag_name }}
       archive_prefix: ${{ steps.meta.outputs.archive_prefix }}
 
@@ -43,6 +44,7 @@ jobs:
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             VERSION="${{ inputs.version }}"
+            RAW_TAG="v${VERSION}"
           else
             RAW_TAG="${{ github.event.release.tag_name }}"
             if [[ -z "${RAW_TAG}" ]]; then
@@ -76,8 +78,9 @@ jobs:
             exit 1
           fi
 
+          echo "raw_tag=${RAW_TAG}" >> "${GITHUB_OUTPUT}"
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
-          echo "tag_name=v${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "tag_name=${RAW_TAG}" >> "${GITHUB_OUTPUT}"
           echo "archive_prefix=ro-control-${VERSION}" >> "${GITHUB_OUTPUT}"
 
   source-archives:
