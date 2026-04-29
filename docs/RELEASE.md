@@ -36,6 +36,7 @@ Use this checklist for every production release.
 
 - [ ] Create annotated tag: `vX.Y.Z`.
 - [ ] Push tag to trigger release workflow.
+- [ ] If a GitHub Release is created manually, use the same tag name that was pushed. The workflow now attaches artifacts to the exact release tag, whether it is `vX.Y.Z` or `X.Y.Z`.
 - [ ] Verify GitHub Release includes only `x86_64`, `aarch64`, `noarch`, and `src` RPM outputs.
 - [ ] Verify the attached checksum and RPM metadata files are present.
 
