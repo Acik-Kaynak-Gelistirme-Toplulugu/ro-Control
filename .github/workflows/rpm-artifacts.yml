@@ -1,0 +1,134 @@
+name: RPM Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rpm-artifacts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  metadata:
+    name: Resolve RPM Metadata
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      archive_prefix: ${{ steps.meta.outputs.archive_prefix }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: meta
+        run: |
+          VERSION="$(sed -n 's/^[[:space:]]*VERSION[[:space:]]\([0-9.][0-9.]*\)$/\1/p' CMakeLists.txt | head -n1)"
+          if [[ -z "${VERSION}" ]]; then
+            echo "Failed to resolve project version from CMakeLists.txt." >&2
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "archive_prefix=ro-control-${VERSION}" >> "${GITHUB_OUTPUT}"
+
+  source-archive:
+    name: Build Source Archive
+    runs-on: ubuntu-latest
+    needs: metadata
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create source archive
+        env:
+          ARCHIVE_PREFIX: ${{ needs.metadata.outputs.archive_prefix }}
+        run: |
+          git archive --format=tar.gz --prefix="${ARCHIVE_PREFIX}/" --output="${ARCHIVE_PREFIX}.tar.gz" "${GITHUB_SHA}"
+
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ro-control-source-${{ needs.metadata.outputs.version }}
+          path: |
+            ${{ needs.metadata.outputs.archive_prefix }}.tar.gz
+
+  rpm:
+    name: Build RPM (${{ matrix.arch }})
+    runs-on: ${{ matrix.runs_on }}
+    needs: [metadata, source-archive]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runs_on: ubuntu-24.04
+          - arch: aarch64
+            runs_on: ubuntu-24.04-arm
+    container:
+      image: fedora:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download source archive
+        uses: actions/download-artifact@v4
+        with:
+          name: ro-control-source-${{ needs.metadata.outputs.version }}
+          path: dist
+
+      - name: Install RPM tooling and dependencies
+        run: |
+          dnf install -y \
+            git \
+            rpm-build \
+            cmake \
+            extra-cmake-modules \
+            gcc-c++ \
+            ninja-build \
+            qt6-qtbase-devel \
+            qt6-qtbase-private-devel \
+            qt6-qtdeclarative-devel \
+            qt6-qttools-devel \
+            qt6-qtwayland-devel \
+            kf6-qqc2-desktop-style \
+            polkit-devel
+
+      - name: Build RPM artifacts
+        env:
+          VERSION: ${{ needs.metadata.outputs.version }}
+          ARCHIVE_PREFIX: ${{ needs.metadata.outputs.archive_prefix }}
+          RPM_ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p ~/rpmbuild/SOURCES ~/rpmbuild/SPECS dist/rpm
+          cp "dist/${ARCHIVE_PREFIX}.tar.gz" "${HOME}/rpmbuild/SOURCES/"
+          cp packaging/rpm/ro-control.spec "${HOME}/rpmbuild/SPECS/ro-control.spec"
+          FEDORA_VERSION="$(rpm -E %fedora)"
+
+          rpmbuild -ba "${HOME}/rpmbuild/SPECS/ro-control.spec" \
+            --define "_topdir ${HOME}/rpmbuild" \
+            --define "upstream_version ${VERSION}" \
+            --define "dist .fc${FEDORA_VERSION}"
+
+          RPM_FILE="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "ro-control-[0-9]*.${RPM_ARCH}.rpm" | head -n1)"
+          if [[ -z "${RPM_FILE}" ]]; then
+            echo "Failed to find built ${RPM_ARCH} RPM." >&2
+            exit 1
+          fi
+          cp "${RPM_FILE}" "dist/rpm/ro-control-${RPM_ARCH}.rpm"
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ro-control-${{ matrix.arch }}-rpm
+          path: |
+            dist/rpm/ro-control-${{ matrix.arch }}.rpm

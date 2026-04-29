@@ -92,6 +92,14 @@ The GitHub release pipeline publishes only:
 - `noarch` RPM
 - `src` RPM
 
+### GitHub Actions RPM artifact build
+
+For branch builds (without creating a GitHub Release), run the **RPM Artifacts**
+workflow. It uploads `.rpm` artifacts for:
+
+- `x86_64`
+- `aarch64`
+
 ### Refresh translations (recommended before release)
 
 ```bash

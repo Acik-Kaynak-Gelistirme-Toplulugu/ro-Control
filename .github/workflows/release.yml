@@ -99,7 +99,7 @@ jobs:
           - arch: aarch64
             runs_on: ubuntu-24.04-arm
     container:
-      image: fedora:42
+      image: fedora:latest
 
     steps:
       - name: Checkout repository
@@ -139,11 +139,12 @@ jobs:
           mkdir -p ~/rpmbuild/SOURCES ~/rpmbuild/SPECS dist/rpm
           cp "dist/${ARCHIVE_PREFIX}.tar.gz" "${HOME}/rpmbuild/SOURCES/"
           cp packaging/rpm/ro-control.spec "${HOME}/rpmbuild/SPECS/ro-control.spec"
+          FEDORA_VERSION="$(rpm -E %fedora)"
 
           rpmbuild -ba "${HOME}/rpmbuild/SPECS/ro-control.spec" \
             --define "_topdir ${HOME}/rpmbuild" \
             --define "upstream_version ${VERSION}" \
-            --define "dist .fc42"
+            --define "dist .fc${FEDORA_VERSION}"
 
           find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "ro-control-[0-9]*.${RPM_ARCH}.rpm" -exec cp {} dist/rpm/ \;
 

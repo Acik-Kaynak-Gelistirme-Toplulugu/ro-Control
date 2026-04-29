@@ -7,14 +7,26 @@ namespace {
 
 struct ThemeModeEntry {
   const char *code;
-  const char *label;
 };
 
 constexpr ThemeModeEntry kThemeModes[] = {
-    {"system", "Follow System"},
-    {"light", "Light"},
-    {"dark", "Dark"},
+    {"system"},
+    {"light"},
+    {"dark"},
 };
+
+QString themeModeLabel(const QString &code) {
+  if (code == QStringLiteral("system")) {
+    return QCoreApplication::translate("UiPreferencesManager", "Follow System");
+  }
+  if (code == QStringLiteral("light")) {
+    return QCoreApplication::translate("UiPreferencesManager", "Light");
+  }
+  if (code == QStringLiteral("dark")) {
+    return QCoreApplication::translate("UiPreferencesManager", "Dark");
+  }
+  return code;
+}
 
 } // namespace
 
@@ -34,11 +46,10 @@ QString UiPreferencesManager::themeMode() const { return m_themeMode; }
 QVariantList UiPreferencesManager::availableThemeModes() const {
   QVariantList modes;
   for (const auto &entry : kThemeModes) {
+    const QString code = QString::fromLatin1(entry.code);
     QVariantMap mode;
-    mode.insert(QStringLiteral("code"), QString::fromLatin1(entry.code));
-    mode.insert(
-        QStringLiteral("label"),
-        QCoreApplication::translate("UiPreferencesManager", entry.label));
+    mode.insert(QStringLiteral("code"), code);
+    mode.insert(QStringLiteral("label"), themeModeLabel(code));
     modes.append(mode);
   }
   return modes;

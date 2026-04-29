@@ -540,7 +540,7 @@ bool NvidiaInstaller::applySessionSpecificSetup(CommandRunner &runner,
                                                 QString *errorMessage) {
   if (sessionType == QStringLiteral("wayland")) {
     emit progressMessage(
-        QStringLiteral("Wayland detected: applying nvidia-drm.modeset=1..."));
+        tr("Wayland detected: applying nvidia-drm.modeset=1..."));
 
     const auto result =
         runner.runAsRoot(QStringLiteral("grubby"),
