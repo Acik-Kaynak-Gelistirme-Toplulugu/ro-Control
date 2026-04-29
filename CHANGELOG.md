@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-04-29
+
+### Changed
+- Release automation now includes a dedicated Fedora RPM artifacts workflow for `x86_64` and `aarch64`
+- Fedora RPM workflows now use current Fedora images and derive `%dist` dynamically from the build environment
+- Localization coverage and dark-theme readability were improved across driver/settings UI surfaces
+
 ## [0.2.1] - 2026-03-30
 
 ### Changed

@@ -1,4 +1,4 @@
-%global upstream_version %{!?upstream_version:0.2.1}%{?upstream_version}
+%global upstream_version %{!?upstream_version:1.0.0}%{?upstream_version}
 %global debug_package %{nil}
 
 Name:           ro-control
