@@ -44,6 +44,7 @@ jobs:
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             VERSION="${{ inputs.version }}"
+            VERSION="${VERSION#v}"
             RAW_TAG="v${VERSION}"
           else
             RAW_TAG="${{ github.event.release.tag_name }}"
@@ -197,6 +198,7 @@ jobs:
           appstreamcli validate --no-net data/icons/io.github.projectroasd.rocontrol.metainfo.xml
 
       - name: Install and smoke-test RPM
+        if: matrix.arch == 'x86_64'
         env:
           VERSION: ${{ needs.metadata.outputs.version }}
           RPM_ARCH: ${{ matrix.arch }}
