@@ -1,6 +1,6 @@
 name: RPM Artifacts
 
-on:
+"on":
   workflow_dispatch:
   push:
     branches:
@@ -113,13 +113,14 @@ jobs:
           cp "dist/${ARCHIVE_PREFIX}.tar.gz" "${HOME}/rpmbuild/SOURCES/"
           cp packaging/rpm/ro-control.spec "${HOME}/rpmbuild/SPECS/ro-control.spec"
           FEDORA_VERSION="$(rpm -E %fedora)"
+          RPM_PATTERN="ro-control-[0-9]*.${RPM_ARCH}.rpm"
 
           rpmbuild -ba "${HOME}/rpmbuild/SPECS/ro-control.spec" \
             --define "_topdir ${HOME}/rpmbuild" \
             --define "upstream_version ${VERSION}" \
             --define "dist .fc${FEDORA_VERSION}"
 
-          RPM_FILE="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "ro-control-[0-9]*.${RPM_ARCH}.rpm" | head -n1)"
+          RPM_FILE="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${RPM_PATTERN}" | head -n1)"
           if [[ -z "${RPM_FILE}" ]]; then
             echo "Failed to find built ${RPM_ARCH} RPM." >&2
             exit 1

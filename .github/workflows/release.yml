@@ -1,9 +1,12 @@
 name: Release
 
-on:
+"on":
   push:
     tags:
       - "v*"
+  release:
+    types:
+      - published
   workflow_dispatch:
     inputs:
       version:
@@ -37,6 +40,9 @@ jobs:
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             VERSION="${{ inputs.version }}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
           else
             VERSION="${GITHUB_REF_NAME#v}"
           fi
@@ -140,16 +146,18 @@ jobs:
           cp "dist/${ARCHIVE_PREFIX}.tar.gz" "${HOME}/rpmbuild/SOURCES/"
           cp packaging/rpm/ro-control.spec "${HOME}/rpmbuild/SPECS/ro-control.spec"
           FEDORA_VERSION="$(rpm -E %fedora)"
+          MAIN_RPM_PATTERN="ro-control-[0-9]*.${RPM_ARCH}.rpm"
+          COMMON_RPM_PATTERN="ro-control-common-[0-9]*.noarch.rpm"
 
           rpmbuild -ba "${HOME}/rpmbuild/SPECS/ro-control.spec" \
             --define "_topdir ${HOME}/rpmbuild" \
             --define "upstream_version ${VERSION}" \
             --define "dist .fc${FEDORA_VERSION}"
 
-          find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "ro-control-[0-9]*.${RPM_ARCH}.rpm" -exec cp {} dist/rpm/ \;
+          find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${MAIN_RPM_PATTERN}" -exec cp {} dist/rpm/ \;
+          find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${COMMON_RPM_PATTERN}" -exec cp {} dist/rpm/ \;
 
           if [[ "${RPM_ARCH}" == "x86_64" ]]; then
-            find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "ro-control-common-[0-9]*.noarch.rpm" -exec cp {} dist/rpm/ \;
             cp ~/rpmbuild/SRPMS/*.src.rpm dist/rpm/
           fi
 
@@ -158,7 +166,8 @@ jobs:
           VERSION: ${{ needs.metadata.outputs.version }}
           RPM_ARCH: ${{ matrix.arch }}
         run: |
-          RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "*.${RPM_ARCH}.rpm" | head -n1)"
+          RPM_PATTERN="*.${RPM_ARCH}.rpm"
+          RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "${RPM_PATTERN}" | head -n1)"
           if [[ -z "${RPM_FILE}" ]]; then
             echo "Failed to locate built ${RPM_ARCH} RPM." >&2
             exit 1
@@ -178,13 +187,22 @@ jobs:
           VERSION: ${{ needs.metadata.outputs.version }}
           RPM_ARCH: ${{ matrix.arch }}
         run: |
-          RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "*.${RPM_ARCH}.rpm" | head -n1)"
-          if [[ "${RPM_ARCH}" == "x86_64" ]]; then
-            NOARCH_FILE="$(find dist/rpm -maxdepth 1 -type f -name "*.noarch.rpm" | head -n1)"
-            dnf install -y --nogpgcheck "${RPM_FILE}" "${NOARCH_FILE}"
-          else
-            dnf install -y --nogpgcheck "${RPM_FILE}"
+          RPM_PATTERN="*.${RPM_ARCH}.rpm"
+          NOARCH_PATTERN="*.noarch.rpm"
+          RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "${RPM_PATTERN}" | head -n1)"
+          NOARCH_FILE="$(find dist/rpm -maxdepth 1 -type f -name "${NOARCH_PATTERN}" | head -n1)"
+
+          if [[ -z "${RPM_FILE}" ]]; then
+            echo "Failed to locate built ${RPM_ARCH} RPM for smoke testing." >&2
+            exit 1
           fi
+
+          if [[ -z "${NOARCH_FILE}" ]]; then
+            echo "Failed to locate ro-control-common noarch RPM for smoke testing." >&2
+            exit 1
+          fi
+
+          dnf install -y --nogpgcheck "${RPM_FILE}" "${NOARCH_FILE}"
 
           INSTALLED_VERSION="$(ro-control --version | tr -d '\n')"
           if [[ "${INSTALLED_VERSION}" != "${VERSION}" ]]; then
