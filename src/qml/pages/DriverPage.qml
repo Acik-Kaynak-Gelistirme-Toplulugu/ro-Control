@@ -190,6 +190,7 @@ Item {
                         id: eulaAccept
                         visible: nvidiaInstaller.proprietaryAgreementRequired
                         text: qsTr("I reviewed the NVIDIA license terms")
+                        palette.text: page.textColor
                     }
 
                     GridLayout {
@@ -307,6 +308,8 @@ Item {
                                     Layout.fillWidth: true
                                     model: nvidiaUpdater.availableVersions
                                     enabled: model.length > 0
+                                    palette.text: page.textColor
+                                    palette.buttonText: page.textColor
                                 }
 
                                 Button {

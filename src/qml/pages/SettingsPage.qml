@@ -64,6 +64,8 @@ Item {
                             Layout.preferredWidth: Math.round(220 * settingsPage.uiScale)
                             model: hasUiPreferences ? uiPreferences.availableThemeModes : []
                             textRole: "label"
+                            palette.text: settingsPage.textColor
+                            palette.buttonText: settingsPage.textColor
 
                             Component.onCompleted: settingsPage.syncThemePicker()
 
@@ -88,7 +90,9 @@ Item {
                             id: languagePicker
                             Layout.preferredWidth: Math.round(220 * settingsPage.uiScale)
                             model: hasLanguageManager ? languageManager.availableLanguages : []
-                            textRole: "nativeLabel"
+                            textRole: "label"
+                            palette.text: settingsPage.textColor
+                            palette.buttonText: settingsPage.textColor
 
                             Component.onCompleted: settingsPage.syncLanguagePicker()
 

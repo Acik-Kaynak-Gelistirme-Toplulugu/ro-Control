@@ -65,3 +65,7 @@ The GitHub release workflow publishes only:
 Each architecture job also performs a smoke install with `dnf install` and
 verifies that `ro-control --version` matches the tagged release version before
 publishing assets.
+
+For non-release artifact builds, use the **RPM Artifacts** GitHub Actions
+workflow (`.github/workflows/rpm-artifacts.yml`). It builds `.rpm` outputs for
+both `x86_64` and `aarch64` and uploads them as workflow artifacts.

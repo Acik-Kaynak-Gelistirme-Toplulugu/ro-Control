@@ -11,18 +11,36 @@ namespace {
 
 struct LanguageEntry {
   const char *code;
-  const char *label;
   const char *nativeLabel;
   bool shipped;
 };
 
 constexpr LanguageEntry kSupportedLanguages[] = {
-    {"system", "System Default", "System Default", true},
-    {"en", "English", "English", true},
-    {"de", "German", "Deutsch", false},
-    {"es", "Spanish", "Espanol", false},
-    {"tr", "Turkish", "Turkce", true},
+    {"system", "System Default", true},
+    {"en", "English", true},
+    {"de", "Deutsch", false},
+    {"es", "Espanol", false},
+    {"tr", "Turkce", true},
 };
+
+QString localizedLanguageLabel(const QString &code) {
+  if (code == QStringLiteral("system")) {
+    return QCoreApplication::translate("LanguageManager", "System Default");
+  }
+  if (code == QStringLiteral("en")) {
+    return QCoreApplication::translate("LanguageManager", "English");
+  }
+  if (code == QStringLiteral("de")) {
+    return QCoreApplication::translate("LanguageManager", "German");
+  }
+  if (code == QStringLiteral("es")) {
+    return QCoreApplication::translate("LanguageManager", "Spanish");
+  }
+  if (code == QStringLiteral("tr")) {
+    return QCoreApplication::translate("LanguageManager", "Turkish");
+  }
+  return code;
+}
 
 bool isShippedLanguage(const QString &languageCode) {
   for (const auto &entry : kSupportedLanguages) {
@@ -71,9 +89,10 @@ QVariantList LanguageManager::availableLanguages() const {
       continue;
     }
 
+    const QString code = QString::fromLatin1(entry.code);
     QVariantMap language;
-    language.insert(QStringLiteral("code"), QString::fromLatin1(entry.code));
-    language.insert(QStringLiteral("label"), QString::fromLatin1(entry.label));
+    language.insert(QStringLiteral("code"), code);
+    language.insert(QStringLiteral("label"), localizedLanguageLabel(code));
     language.insert(QStringLiteral("nativeLabel"),
                     QString::fromLatin1(entry.nativeLabel));
     language.insert(QStringLiteral("shipped"), entry.shipped);

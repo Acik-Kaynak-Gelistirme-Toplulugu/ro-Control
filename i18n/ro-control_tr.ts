@@ -549,6 +549,11 @@ Yedek Acik Surucu: %6</translation>
         <translation>Wayland kernel parametresi uygulanamadı: </translation>
     </message>
     <message>
+        <location filename="../src/backend/nvidia/installer.cpp" line="543" />
+        <source>Wayland detected: applying nvidia-drm.modeset=1...</source>
+        <translation>Wayland algılandı: nvidia-drm.modeset=1 uygulanıyor...</translation>
+    </message>
+    <message>
         <location filename="../src/backend/nvidia/installer.cpp" line="531" />
         <source>X11 detected: checking NVIDIA userspace packages...</source>
         <translation>X11 tespit edildi: NVIDIA userspace paketleri kontrol ediliyor...</translation>
@@ -557,6 +562,34 @@ Yedek Acik Surucu: %6</translation>
         <location filename="../src/backend/nvidia/installer.cpp" line="540" />
         <source>Failed to install the X11 NVIDIA package: </source>
         <translation>X11 NVIDIA paketi kurulamadı: </translation>
+    </message>
+</context>
+<context>
+    <name>LanguageManager</name>
+    <message>
+        <location filename="../src/backend/system/languagemanager.cpp" line="28" />
+        <source>System Default</source>
+        <translation>Sistem Varsayilani</translation>
+    </message>
+    <message>
+        <location filename="../src/backend/system/languagemanager.cpp" line="31" />
+        <source>English</source>
+        <translation>Ingilizce</translation>
+    </message>
+    <message>
+        <location filename="../src/backend/system/languagemanager.cpp" line="34" />
+        <source>German</source>
+        <translation>Almanca</translation>
+    </message>
+    <message>
+        <location filename="../src/backend/system/languagemanager.cpp" line="37" />
+        <source>Spanish</source>
+        <translation>Ispanyolca</translation>
+    </message>
+    <message>
+        <location filename="../src/backend/system/languagemanager.cpp" line="40" />
+        <source>Turkish</source>
+        <translation>Turkce</translation>
     </message>
 </context>
 <context>
@@ -703,6 +736,24 @@ Yedek Acik Surucu: %6</translation>
         <location filename="../src/backend/nvidia/updater.cpp" line="576" />
         <source>Selected version applied successfully. Please restart the system.</source>
         <translation>Seçili sürüm başarıyla uygulandı. Lütfen sistemi yeniden başlatın.</translation>
+    </message>
+</context>
+<context>
+    <name>UiPreferencesManager</name>
+    <message>
+        <location filename="../src/backend/system/uipreferencesmanager.cpp" line="20" />
+        <source>Follow System</source>
+        <translation>Sistemi Takip Et</translation>
+    </message>
+    <message>
+        <location filename="../src/backend/system/uipreferencesmanager.cpp" line="23" />
+        <source>Light</source>
+        <translation>Acik</translation>
+    </message>
+    <message>
+        <location filename="../src/backend/system/uipreferencesmanager.cpp" line="26" />
+        <source>Dark</source>
+        <translation>Koyu</translation>
     </message>
 </context>
 <context>
