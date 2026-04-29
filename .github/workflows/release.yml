@@ -147,9 +147,9 @@ jobs:
             --define "dist .fc${FEDORA_VERSION}"
 
           find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "ro-control-[0-9]*.${RPM_ARCH}.rpm" -exec cp {} dist/rpm/ \;
+          find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "ro-control-common-[0-9]*.noarch.rpm" -exec cp {} dist/rpm/ \;
 
           if [[ "${RPM_ARCH}" == "x86_64" ]]; then
-            find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "ro-control-common-[0-9]*.noarch.rpm" -exec cp {} dist/rpm/ \;
             cp ~/rpmbuild/SRPMS/*.src.rpm dist/rpm/
           fi
 
@@ -179,12 +179,19 @@ jobs:
           RPM_ARCH: ${{ matrix.arch }}
         run: |
           RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "*.${RPM_ARCH}.rpm" | head -n1)"
-          if [[ "${RPM_ARCH}" == "x86_64" ]]; then
-            NOARCH_FILE="$(find dist/rpm -maxdepth 1 -type f -name "*.noarch.rpm" | head -n1)"
-            dnf install -y --nogpgcheck "${RPM_FILE}" "${NOARCH_FILE}"
-          else
-            dnf install -y --nogpgcheck "${RPM_FILE}"
+          NOARCH_FILE="$(find dist/rpm -maxdepth 1 -type f -name "*.noarch.rpm" | head -n1)"
+
+          if [[ -z "${RPM_FILE}" ]]; then
+            echo "Failed to locate built ${RPM_ARCH} RPM for smoke testing." >&2
+            exit 1
           fi
+
+          if [[ -z "${NOARCH_FILE}" ]]; then
+            echo "Failed to locate ro-control-common noarch RPM for smoke testing." >&2
+            exit 1
+          fi
+
+          dnf install -y --nogpgcheck "${RPM_FILE}" "${NOARCH_FILE}"
 
           INSTALLED_VERSION="$(ro-control --version | tr -d '\n')"
           if [[ "${INSTALLED_VERSION}" != "${VERSION}" ]]; then

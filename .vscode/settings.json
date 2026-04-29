@@ -1,4 +1,12 @@
 {
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build-copilot/compile_commands.json",
+    "cmake.configureSettings": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+    },
+    "yaml.schemas": {
+        "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.yml"
+    },
     "qt-qml.qmlls.enabled": true,
     "qt-qml.qmlls.useQmlImportPathEnvVar": true,
     "qt-qml.qmlls.additionalImportPaths": [
