@@ -17,6 +17,9 @@ name: Release
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
@@ -33,18 +36,19 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Resolve version
         id: meta
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             VERSION="${{ inputs.version }}"
-          elif [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
-            VERSION="${{ github.event.release.tag_name }}"
-            VERSION="${VERSION#v}"
           else
-            VERSION="${GITHUB_REF_NAME#v}"
+            RAW_TAG="${{ github.event.release.tag_name }}"
+            if [[ -z "${RAW_TAG}" ]]; then
+              RAW_TAG="${GITHUB_REF_NAME}"
+            fi
+            VERSION="${RAW_TAG#v}"
           fi
 
           if [[ -z "${VERSION}" ]]; then
@@ -54,6 +58,13 @@ jobs:
 
           PROJECT_VERSION="$(sed -n 's/^[[:space:]]*VERSION[[:space:]]\([0-9.][0-9.]*\)$/\1/p' CMakeLists.txt | head -n1)"
           SPEC_DEFAULT_VERSION="$(sed -n 's/^%global upstream_version %{!?upstream_version:\([0-9.][0-9.]*\)}%{?upstream_version}$/\1/p' packaging/rpm/ro-control.spec | head -n1)"
+
+          echo "Resolved release metadata:"
+          echo "  event=${GITHUB_EVENT_NAME}"
+          echo "  ref_name=${GITHUB_REF_NAME}"
+          echo "  version=${VERSION}"
+          echo "  project_version=${PROJECT_VERSION}"
+          echo "  spec_default_version=${SPEC_DEFAULT_VERSION}"
 
           if [[ "${VERSION}" != "${PROJECT_VERSION}" ]]; then
             echo "Tag/workflow version (${VERSION}) does not match CMake project version (${PROJECT_VERSION})." >&2
@@ -76,7 +87,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Create source archives
         env:
@@ -109,7 +120,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download source archives
         uses: actions/download-artifact@v4
