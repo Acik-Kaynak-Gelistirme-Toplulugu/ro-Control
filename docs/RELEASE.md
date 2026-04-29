@@ -29,6 +29,7 @@ Use this checklist for every production release.
 - [ ] `packaging/rpm/ro-control.spec` release/version fields are correct.
 - [ ] Build Fedora RPM artifacts successfully for `x86_64`, `aarch64`, `noarch`, and `src`.
 - [ ] Verify installation and launch on the target desktop environment.
+  Release automation currently performs the install smoke-test on `x86_64`; `aarch64` release builds are validated through package build and metadata checks, then should be installed manually on ARM hardware before announcing support.
 - [ ] Verify `man ro-control` and shell completions install correctly.
 - [ ] Confirm release tag version matches `CMakeLists.txt` and `packaging/rpm/ro-control.spec`.
 
