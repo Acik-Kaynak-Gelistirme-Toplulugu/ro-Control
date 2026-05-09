@@ -152,7 +152,9 @@ void NvidiaInstaller::refreshProprietaryAgreement() {
   setProprietaryAgreement(
       true,
       tr("The proprietary NVIDIA driver is subject to NVIDIA's software "
-         "license. Review the official NVIDIA license before installation: %1")
+         "license. ro-Control cannot audit or review the closed-source "
+         "license text for you. Review the official NVIDIA license before "
+         "installation: %1")
           .arg(QString::fromLatin1(kNvidiaLicenseUrl)));
 }
 

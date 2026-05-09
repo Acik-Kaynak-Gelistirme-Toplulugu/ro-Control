@@ -16,7 +16,6 @@ BuildRequires:  gcc-c++
 BuildRequires:  extra-cmake-modules
 BuildRequires:  ninja-build
 BuildRequires:  qt6-qtbase-devel
-BuildRequires:  qt6-qtbase-private-devel
 BuildRequires:  qt6-qtdeclarative-devel
 BuildRequires:  qt6-qttools-devel
 BuildRequires:  qt6-qtwayland-devel
@@ -35,6 +34,7 @@ manage NVIDIA drivers and monitor core system metrics.
 %package common
 Summary:        Shared assets for the ro-Control desktop application
 BuildArch:      noarch
+Obsoletes:      %{name} < 0.2.1-1
 
 Requires:       kf6-qqc2-desktop-style
 Requires:       polkit

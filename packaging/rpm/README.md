@@ -8,6 +8,8 @@ This directory contains the RPM recipe for ro-Control.
 - Require translation tooling so localized builds are never emitted partially
 - Run the upstream Qt test suite during `%check`
 - Publish GitHub Release RPMs for `x86_64`, `aarch64`, `noarch`, and `src`
+- Keep the main binary package installable on Fedora 43 KDE via `dnf install ro-control`
+- Avoid all Qt private ABI dependencies in shipped RPM metadata
 
 ## Source archive expectations
 
@@ -27,6 +29,32 @@ not need to preserve a specific upstream folder name.
 - `qt6-qtwayland-devel`
 - `kf6-qqc2-desktop-style`
 - `polkit-devel`
+
+Do not add `qt6-qtbase-private-devel` unless the codebase actually requires a
+Qt private header. The Fedora 43 package must not emit `Qt_*_PRIVATE_API`
+runtime dependencies.
+
+## Fedora 43 packaging contract
+
+- Build binary RPMs in a Fedora 43 environment, not `latest`, Rawhide, or Fedora 44.
+- `ro-control.x86_64` or `ro-control.aarch64` must provide `/usr/bin/ro-control`.
+- `ro-control-common.noarch` should contain shared assets only.
+- `rpm -qpR ro-control-*.rpm` must not contain `Qt_6.10`, `Qt_6.10_PRIVATE_API`,
+  or any `PRIVATE_API` symbol dependency.
+
+## Package split
+
+Expected package ownership:
+
+- `ro-control.<arch>`
+  - `/usr/bin/ro-control`
+- `ro-control-common.noarch`
+  - desktop entry
+  - icons
+  - AppStream metadata
+  - PolicyKit assets
+  - helper script
+  - docs and shell completions
 
 ## Local build example
 
@@ -67,5 +95,6 @@ verifies that `ro-control --version` matches the tagged release version before
 publishing assets.
 
 For non-release artifact builds, use the **RPM Artifacts** GitHub Actions
-workflow (`.github/workflows/rpm-artifacts.yml`). It builds `.rpm` outputs for
-both `x86_64` and `aarch64` and uploads them as workflow artifacts.
+workflow (`.github/workflows/rpm-artifacts.yml`). It builds the main
+architecture RPM plus the `ro-control-common.noarch` companion package and
+uploads them as workflow artifacts from a Fedora 43 container.

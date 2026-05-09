@@ -2,9 +2,19 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
+import "pages" as Pages
 
 ApplicationWindow {
     id: root
+    required property var nvidiaDetector
+    required property var nvidiaInstaller
+    required property var nvidiaUpdater
+    required property var cpuMonitor
+    required property var gpuMonitor
+    required property var ramMonitor
+    required property var systemInfo
+    required property var languageManager
+    required property var uiPreferences
     visible: true
     width: 1320
     height: 840
@@ -22,19 +32,40 @@ ApplicationWindow {
         return ((0.2126 * colorValue.r) + (0.7152 * colorValue.g) + (0.0722 * colorValue.b)) < 0.5;
     }
 
-    readonly property bool hasUiPreferences: typeof uiPreferences !== "undefined" && uiPreferences !== null
-    readonly property string themeMode: (hasUiPreferences && uiPreferences.themeMode)
-                                        ? uiPreferences.themeMode
+    readonly property bool hasUiPreferences: root.uiPreferences !== null
+    readonly property bool hasLanguageManager: root.languageManager !== null
+    readonly property string themeMode: (hasUiPreferences && root.uiPreferences.themeMode)
+                                        ? root.uiPreferences.themeMode
                                         : "system"
-    readonly property bool systemDarkMode: Qt.styleHints.colorScheme === Qt.Dark
-                                           || (Qt.styleHints.colorScheme === Qt.Unknown
-                                               && (palette.window.r + palette.window.g + palette.window.b) / 3 < 0.5)
+    readonly property bool systemDarkMode: isColorDark(systemPalette.window)
     readonly property bool darkMode: themeMode === "dark"
                                      || (themeMode === "system" && systemDarkMode)
-    readonly property bool showAdvancedInfo: (hasUiPreferences && uiPreferences.showAdvancedInfo !== undefined)
-                                             ? uiPreferences.showAdvancedInfo
+    readonly property bool showAdvancedInfo: (hasUiPreferences && root.uiPreferences.showAdvancedInfo !== undefined)
+                                             ? root.uiPreferences.showAdvancedInfo
                                              : true
     readonly property real uiScale: Math.max(0.85, Math.min(width / 1320, 1.15))
+
+    function syncThemePicker() {
+        if (!hasUiPreferences)
+            return;
+        for (let i = 0; i < themePicker.model.length; ++i) {
+            if (themePicker.model[i].code === root.uiPreferences.themeMode) {
+                themePicker.currentIndex = i;
+                break;
+            }
+        }
+    }
+
+    function syncLanguagePicker() {
+        if (!hasLanguageManager)
+            return;
+        for (let i = 0; i < languagePicker.model.length; ++i) {
+            if (languagePicker.model[i].code === root.languageManager.currentLanguage) {
+                languagePicker.currentIndex = i;
+                break;
+            }
+        }
+    }
 
     QtObject {
         id: colors
@@ -119,6 +150,44 @@ ApplicationWindow {
                     }
                 }
 
+                RowLayout {
+                    spacing: Math.round(8 * root.uiScale)
+
+                    ComboBox {
+                        id: languagePicker
+                        Layout.preferredWidth: Math.round(170 * root.uiScale)
+                        model: root.hasLanguageManager ? root.languageManager.availableLanguages : []
+                        textRole: "nativeLabel"
+                        palette.text: colors.text
+                        palette.buttonText: colors.text
+
+                        Component.onCompleted: root.syncLanguagePicker()
+
+                        onActivated: {
+                            const selected = model[currentIndex];
+                            if (root.hasLanguageManager && selected && selected.code)
+                                root.languageManager.setCurrentLanguage(selected.code);
+                        }
+                    }
+
+                    ComboBox {
+                        id: themePicker
+                        Layout.preferredWidth: Math.round(150 * root.uiScale)
+                        model: root.hasUiPreferences ? root.uiPreferences.availableThemeModes : []
+                        textRole: "label"
+                        palette.text: colors.text
+                        palette.buttonText: colors.text
+
+                        Component.onCompleted: root.syncThemePicker()
+
+                        onActivated: {
+                            const selected = model[currentIndex];
+                            if (root.hasUiPreferences && selected && selected.code)
+                                root.uiPreferences.setThemeMode(selected.code);
+                        }
+                    }
+                }
+
             }
         }
 
@@ -197,27 +266,51 @@ ApplicationWindow {
                 anchors.margins: Math.round(10 * root.uiScale)
                 currentIndex: tabBar.currentIndex
 
-                DriverPage {
+                Pages.DriverPage {
                     theme: colors
                     darkMode: root.darkMode
                     showAdvancedInfo: root.showAdvancedInfo
                     uiScale: root.uiScale
+                    nvidiaDetector: root.nvidiaDetector
+                    nvidiaInstaller: root.nvidiaInstaller
+                    nvidiaUpdater: root.nvidiaUpdater
                 }
 
-                MonitorPage {
+                Pages.MonitorPage {
                     theme: colors
                     darkMode: root.darkMode
                     showAdvancedInfo: root.showAdvancedInfo
                     uiScale: root.uiScale
+                    systemInfo: root.systemInfo
+                    cpuMonitor: root.cpuMonitor
+                    gpuMonitor: root.gpuMonitor
+                    ramMonitor: root.ramMonitor
                 }
 
-                SettingsPage {
+                Pages.SettingsPage {
                     theme: colors
                     darkMode: root.darkMode
                     showAdvancedInfo: root.showAdvancedInfo
                     uiScale: root.uiScale
+                    uiPreferences: root.uiPreferences
                 }
             }
+        }
+    }
+
+    Connections {
+        target: root.uiPreferences
+
+        function onThemeModeChanged() {
+            root.syncThemePicker()
+        }
+    }
+
+    Connections {
+        target: root.languageManager
+
+        function onCurrentLanguageChanged() {
+            root.syncLanguagePicker()
         }
     }
 }

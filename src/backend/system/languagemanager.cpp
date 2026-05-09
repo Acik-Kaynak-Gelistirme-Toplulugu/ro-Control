@@ -16,16 +16,16 @@ struct LanguageEntry {
 };
 
 constexpr LanguageEntry kSupportedLanguages[] = {
-    {"system", "System Default", true},
+    {"system", "System", true},
     {"en", "English", true},
     {"de", "Deutsch", false},
-    {"es", "Espanol", false},
-    {"tr", "Turkce", true},
+    {"es", "Español", false},
+    {"tr", "Türkçe", true},
 };
 
 QString localizedLanguageLabel(const QString &code) {
   if (code == QStringLiteral("system")) {
-    return QCoreApplication::translate("LanguageManager", "System Default");
+    return QCoreApplication::translate("LanguageManager", "System");
   }
   if (code == QStringLiteral("en")) {
     return QCoreApplication::translate("LanguageManager", "English");
@@ -94,7 +94,7 @@ QVariantList LanguageManager::availableLanguages() const {
     language.insert(QStringLiteral("code"), code);
     language.insert(QStringLiteral("label"), localizedLanguageLabel(code));
     language.insert(QStringLiteral("nativeLabel"),
-                    QString::fromLatin1(entry.nativeLabel));
+                    QString::fromUtf8(entry.nativeLabel));
     language.insert(QStringLiteral("shipped"), entry.shipped);
     languages.append(language);
   }
@@ -126,7 +126,7 @@ LanguageManager::displayNameForLanguage(const QString &languageCode) const {
   const QString normalizedLanguage = normalizeLanguageCode(languageCode);
   for (const auto &entry : kSupportedLanguages) {
     if (QString::fromLatin1(entry.code) == normalizedLanguage) {
-      return QString::fromLatin1(entry.nativeLabel);
+      return QString::fromUtf8(entry.nativeLabel);
     }
   }
 

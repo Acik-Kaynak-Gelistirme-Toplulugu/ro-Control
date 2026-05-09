@@ -1,4 +1,6 @@
 #include <QTest>
+#include <QFile>
+#include <QTemporaryDir>
 
 #include "nvidia/detector.h"
 
@@ -77,6 +79,26 @@ private slots:
     NvidiaDetector detector;
     detector.refresh();
     QVERIFY(!detector.activeDriver().trimmed().isEmpty());
+  }
+
+  void testSecureBootEfivarOverride() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString efivarPath = tempDir.filePath(QStringLiteral("SecureBoot-test"));
+    QFile file(efivarPath);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    QVERIFY(file.write(QByteArray::fromHex("0700000001")) == 5);
+    file.close();
+
+    qputenv("RO_CONTROL_SECURE_BOOT_EFIVAR_PATH", efivarPath.toUtf8());
+
+    NvidiaDetector detector;
+    const auto info = detector.detect();
+    QVERIFY(info.secureBootKnown);
+    QVERIFY(info.secureBootEnabled);
+
+    qunsetenv("RO_CONTROL_SECURE_BOOT_EFIVAR_PATH");
   }
 };
 

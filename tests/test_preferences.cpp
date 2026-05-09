@@ -81,12 +81,12 @@ void TestPreferences::testLanguageManagerExposesEffectiveLanguageMetadata() {
 
   manager.setCurrentLanguage(QStringLiteral("system"));
   QVERIFY(
-      manager.currentLanguageLabel().startsWith(QStringLiteral("System Default")));
+      manager.currentLanguageLabel().startsWith(QStringLiteral("System")));
 
   manager.setCurrentLanguage(QStringLiteral("tr"));
   QCOMPARE(manager.currentLanguage(), QStringLiteral("tr"));
   QCOMPARE(manager.effectiveLanguage(), QStringLiteral("tr"));
-  QCOMPARE(manager.currentLanguageLabel(), QStringLiteral("Turkce"));
+  QCOMPARE(manager.currentLanguageLabel(), QStringLiteral("Türkçe"));
 }
 
 QTEST_GUILESS_MAIN(TestPreferences)

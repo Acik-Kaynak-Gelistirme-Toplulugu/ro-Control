@@ -7,7 +7,6 @@
 #include <QLocale>
 #include <QObject>
 #include <QQmlApplicationEngine>
-#include <QQmlContext>
 #include <QQuickWindow>
 #include <QSGRendererInterface>
 #include <QStringList>
@@ -272,17 +271,26 @@ int main(int argc, char *argv[]) {
   LanguageManager languageManager(&app, &engine, &translator);
   UiPreferencesManager uiPreferencesManager;
 
-  // Backend nesnelerini tüm QML dosyalarına global olarak aç
-  engine.rootContext()->setContextProperty("nvidiaDetector", &detector);
-  engine.rootContext()->setContextProperty("nvidiaInstaller", &installer);
-  engine.rootContext()->setContextProperty("nvidiaUpdater", &updater);
-  engine.rootContext()->setContextProperty("cpuMonitor", &cpuMonitor);
-  engine.rootContext()->setContextProperty("gpuMonitor", &gpuMonitor);
-  engine.rootContext()->setContextProperty("ramMonitor", &ramMonitor);
-  engine.rootContext()->setContextProperty("systemInfo", &systemInfo);
-  engine.rootContext()->setContextProperty("languageManager", &languageManager);
-  engine.rootContext()->setContextProperty("uiPreferences",
-                                           &uiPreferencesManager);
+  QVariantMap initialProperties;
+  initialProperties.insert(QStringLiteral("nvidiaDetector"),
+                           QVariant::fromValue(&detector));
+  initialProperties.insert(QStringLiteral("nvidiaInstaller"),
+                           QVariant::fromValue(&installer));
+  initialProperties.insert(QStringLiteral("nvidiaUpdater"),
+                           QVariant::fromValue(&updater));
+  initialProperties.insert(QStringLiteral("cpuMonitor"),
+                           QVariant::fromValue(&cpuMonitor));
+  initialProperties.insert(QStringLiteral("gpuMonitor"),
+                           QVariant::fromValue(&gpuMonitor));
+  initialProperties.insert(QStringLiteral("ramMonitor"),
+                           QVariant::fromValue(&ramMonitor));
+  initialProperties.insert(QStringLiteral("systemInfo"),
+                           QVariant::fromValue(&systemInfo));
+  initialProperties.insert(QStringLiteral("languageManager"),
+                           QVariant::fromValue(&languageManager));
+  initialProperties.insert(QStringLiteral("uiPreferences"),
+                           QVariant::fromValue(&uiPreferencesManager));
+  engine.setInitialProperties(initialProperties);
 
   QObject::connect(
       &engine, &QQmlApplicationEngine::objectCreationFailed, &app,

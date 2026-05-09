@@ -17,6 +17,7 @@ class GpuMonitor : public QObject {
       int memoryTotalMiB READ memoryTotalMiB NOTIFY memoryTotalMiBChanged)
   Q_PROPERTY(int memoryUsagePercent READ memoryUsagePercent NOTIFY
                  memoryUsagePercentChanged)
+  Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
   Q_PROPERTY(int updateInterval READ updateInterval WRITE setUpdateInterval
                  NOTIFY updateIntervalChanged)
 
@@ -31,6 +32,7 @@ public:
   int memoryUsedMiB() const;
   int memoryTotalMiB() const;
   int memoryUsagePercent() const;
+  QString statusMessage() const;
   int updateInterval() const;
 
   Q_INVOKABLE void refresh();
@@ -47,15 +49,18 @@ signals:
   void memoryUsedMiBChanged();
   void memoryTotalMiBChanged();
   void memoryUsagePercentChanged();
+  void statusMessageChanged();
   void updateIntervalChanged();
 
 private:
   void clearMetrics();
   void setAvailable(bool value);
+  void setStatusMessage(const QString &value);
 
   QTimer m_timer;
   bool m_available = false;
   QString m_gpuName;
+  QString m_statusMessage;
   int m_temperatureC = 0;
   int m_utilizationPercent = 0;
   int m_memoryUsedMiB = 0;

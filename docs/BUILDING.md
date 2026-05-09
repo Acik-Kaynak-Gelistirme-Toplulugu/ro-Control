@@ -3,6 +3,7 @@
 This guide covers building ro-Control from source on Linux systems with Qt 6 and CMake.
 The primary target is Fedora KDE Desktop, with official release artifacts for
 `x86_64`, `aarch64`, `noarch`, and `src`.
+For Ro-ASD ISO integration, package validation should be treated as Fedora 43 KDE specific.
 
 ---
 
@@ -49,6 +50,8 @@ sudo dnf install \
 
 Official release outputs do not include `i686`. Driver install/update/remove
 workflows are supported on `x86_64` and `aarch64` release builds.
+RPM validation for repo publication should be performed in a Fedora 43 build
+environment so no newer Qt ABI leaks into the package metadata.
 
 Runtime tools used by diagnostics and driver operations:
 

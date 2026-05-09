@@ -9,6 +9,7 @@
 #include <QPointer>
 #include <QStandardPaths>
 #include <QThread>
+#include <QVersionNumber>
 #include <QtGlobal>
 
 namespace {
@@ -49,6 +50,7 @@ QString normalizedTransactionOutput(const CommandRunner::Result &result) {
 struct UpdateStatusSnapshot {
   QString currentVersion;
   QString latestVersion;
+  QString latestPackageVersion;
   QStringList availableVersions;
   bool remoteCatalogAvailable = false;
   bool updateAvailable = false;
@@ -83,8 +85,8 @@ QString detectInstalledKernelPackageName() {
   return QStringLiteral("akmod-nvidia");
 }
 
-QString queryLatestRemoteVersion(CommandRunner &runner,
-                                 const QString &kernelPackageName) {
+QString queryLatestRemotePackageVersion(CommandRunner &runner,
+                                        const QString &kernelPackageName) {
   const auto result = runner.run(
       QStringLiteral("dnf"),
       {QStringLiteral("--refresh"), QStringLiteral("repoquery"),
@@ -97,6 +99,58 @@ QString queryLatestRemoteVersion(CommandRunner &runner,
   }
 
   return firstNonEmptyLine(result.stdout);
+}
+
+QString fetchTextFromUrl(CommandRunner &runner, const QString &url) {
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 10000;
+
+  if (CapabilityProbe::isToolAvailable(QStringLiteral("curl"))) {
+    const auto result =
+        runner.run(QStringLiteral("curl"),
+                   {QStringLiteral("-fsSL"), QStringLiteral("--compressed"),
+                    url},
+                   options);
+    if (result.success()) {
+      return result.stdout;
+    }
+  }
+
+  if (CapabilityProbe::isToolAvailable(QStringLiteral("wget"))) {
+    const auto result =
+        runner.run(QStringLiteral("wget"), {QStringLiteral("-qO-"), url},
+                   options);
+    if (result.success()) {
+      return result.stdout;
+    }
+  }
+
+  return {};
+}
+
+QStringList queryOfficialDriverVersions(CommandRunner &runner) {
+  const QString pageText = fetchTextFromUrl(
+      runner, QStringLiteral("https://www.nvidia.com/en-us/drivers/unix/"));
+  if (pageText.isEmpty()) {
+    return {};
+  }
+
+  return NvidiaVersionParser::parseOfficialUnixDriverVersions(
+      pageText, CapabilityProbe::normalizedCpuArchitecture());
+}
+
+bool isOfficialUpdateAvailable(const QString &currentVersion,
+                               const QString &latestVersion) {
+  const QString normalizedCurrent =
+      NvidiaVersionParser::normalizedDriverVersion(currentVersion);
+  const QString normalizedLatest =
+      NvidiaVersionParser::normalizedDriverVersion(latestVersion);
+  if (normalizedCurrent.isEmpty() || normalizedLatest.isEmpty()) {
+    return false;
+  }
+
+  return QVersionNumber::compare(QVersionNumber::fromString(normalizedCurrent),
+                                 QVersionNumber::fromString(normalizedLatest)) < 0;
 }
 
 UpdateStatusSnapshot collectUpdateStatus() {
@@ -112,28 +166,40 @@ UpdateStatusSnapshot collectUpdateStatus() {
     return snapshot;
   }
 
-  if (QStandardPaths::findExecutable(QStringLiteral("dnf")).isEmpty()) {
-    snapshot.message = NvidiaUpdater::tr("dnf not found.");
-    return snapshot;
-  }
-
   CommandRunner runner;
-  const auto listResult =
-      runner.run(QStringLiteral("dnf"),
-                 {QStringLiteral("--refresh"), QStringLiteral("list"),
-                  QStringLiteral("--showduplicates"), kernelPackageName});
-
-  if (listResult.success()) {
-    snapshot.availableVersions =
-        NvidiaVersionParser::parseAvailablePackageVersions(listResult.stdout,
-                                                           kernelPackageName);
-    snapshot.remoteCatalogAvailable = !snapshot.availableVersions.isEmpty();
+  const QStringList officialVersions = queryOfficialDriverVersions(runner);
+  if (!officialVersions.isEmpty()) {
+    snapshot.latestVersion = officialVersions.constFirst();
+    snapshot.remoteCatalogAvailable = true;
   }
 
-  snapshot.latestVersion = queryLatestRemoteVersion(runner, kernelPackageName);
-  if (snapshot.latestVersion.isEmpty() &&
-      !snapshot.availableVersions.isEmpty()) {
-    snapshot.latestVersion = snapshot.availableVersions.constLast();
+  const bool hasDnf =
+      !QStandardPaths::findExecutable(QStringLiteral("dnf")).isEmpty();
+  if (hasDnf) {
+    const auto listResult =
+        runner.run(QStringLiteral("dnf"),
+                   {QStringLiteral("--refresh"), QStringLiteral("list"),
+                    QStringLiteral("--showduplicates"), kernelPackageName});
+
+    if (listResult.success()) {
+      snapshot.availableVersions =
+          NvidiaVersionParser::parseAvailablePackageVersions(listResult.stdout,
+                                                             kernelPackageName);
+      snapshot.remoteCatalogAvailable =
+          snapshot.remoteCatalogAvailable || !snapshot.availableVersions.isEmpty();
+    }
+
+    snapshot.latestPackageVersion =
+        queryLatestRemotePackageVersion(runner, kernelPackageName);
+    if (snapshot.latestPackageVersion.isEmpty() &&
+        !snapshot.availableVersions.isEmpty()) {
+      snapshot.latestPackageVersion = snapshot.availableVersions.constLast();
+    }
+  }
+
+  if (snapshot.latestVersion.isEmpty()) {
+    snapshot.latestVersion =
+        NvidiaVersionParser::normalizedDriverVersion(snapshot.latestPackageVersion);
   }
 
   if (snapshot.currentVersion.isEmpty()) {
@@ -141,16 +207,33 @@ UpdateStatusSnapshot collectUpdateStatus() {
       snapshot.updateAvailable = true;
       snapshot.message =
           snapshot.latestVersion.isEmpty()
-              ? NvidiaUpdater::tr("Online NVIDIA packages were found. You can "
-                                  "download and install the driver now.")
+              ? NvidiaUpdater::tr("Official NVIDIA driver sources are reachable. "
+                                  "You can install the driver now.")
               : NvidiaUpdater::tr(
-                    "Online NVIDIA driver found. Latest remote version: %1")
+                    "Latest official NVIDIA driver version: %1")
                     .arg(snapshot.latestVersion);
     } else {
-      snapshot.message =
-          NvidiaUpdater::tr("No online NVIDIA package catalog was found. RPM "
-                            "Fusion may not be configured yet.");
+      snapshot.message = hasDnf ? NvidiaUpdater::tr("No official NVIDIA driver "
+                                                    "version could be retrieved.")
+                                : NvidiaUpdater::tr("dnf not found.");
     }
+    return snapshot;
+  }
+
+  if (!snapshot.latestVersion.isEmpty()) {
+    snapshot.updateAvailable =
+        isOfficialUpdateAvailable(snapshot.currentVersion, snapshot.latestVersion);
+    snapshot.message = snapshot.updateAvailable
+                           ? NvidiaUpdater::tr("Official NVIDIA update found: %1")
+                                 .arg(snapshot.latestVersion)
+                           : NvidiaUpdater::tr(
+                                 "Driver matches the latest official NVIDIA "
+                                 "production branch.");
+    return snapshot;
+  }
+
+  if (!hasDnf) {
+    snapshot.message = NvidiaUpdater::tr("dnf not found.");
     return snapshot;
   }
 
@@ -159,9 +242,9 @@ UpdateStatusSnapshot collectUpdateStatus() {
                  {QStringLiteral("check-update"), kernelPackageName});
 
   if (checkResult.exitCode == 100) {
-    const QString checkUpdateVersion =
+    const QString checkUpdateVersion = NvidiaVersionParser::normalizedDriverVersion(
         NvidiaVersionParser::parseCheckUpdateVersion(checkResult.stdout,
-                                                     kernelPackageName);
+                                                     kernelPackageName));
     if (!checkUpdateVersion.isEmpty()) {
       snapshot.latestVersion = checkUpdateVersion;
     }
@@ -329,7 +412,7 @@ QStringList NvidiaUpdater::buildTransactionArguments(
   const QString normalizedRequestedVersion = requestedVersion.trimmed();
   const QString normalizedInstalledVersion = installedVersion.trimmed();
   const QString targetVersion = normalizedRequestedVersion.isEmpty()
-                                    ? m_latestVersion.trimmed()
+                                    ? m_latestPackageVersion.trimmed()
                                     : normalizedRequestedVersion;
 
   QStringList args;
@@ -400,12 +483,8 @@ void NvidiaUpdater::refreshAvailableVersions() {
             return;
           }
 
+          guard->m_latestPackageVersion = snapshot.latestPackageVersion;
           guard->setAvailableVersions(snapshot.availableVersions);
-          emit guard->progressMessage(
-              snapshot.availableVersions.isEmpty()
-                  ? NvidiaUpdater::tr("No available versions found.")
-                  : NvidiaUpdater::tr("Available versions: %1")
-                        .arg(snapshot.availableVersions.size()));
         },
         Qt::QueuedConnection);
   });
@@ -440,9 +519,14 @@ void NvidiaUpdater::checkForUpdate() {
             emit guard->updateAvailableChanged();
           }
 
+          guard->m_latestPackageVersion = snapshot.latestPackageVersion;
           guard->setLatestVersion(snapshot.latestVersion);
           guard->setAvailableVersions(snapshot.availableVersions);
-          emit guard->progressMessage(snapshot.message);
+          const bool success = snapshot.updateAvailable ||
+                               !snapshot.latestVersion.isEmpty() ||
+                               snapshot.remoteCatalogAvailable ||
+                               snapshot.currentVersion.isEmpty();
+          emit guard->checkFinished(success, snapshot.message);
         },
         Qt::QueuedConnection);
   });
@@ -554,6 +638,7 @@ void NvidiaUpdater::applyVersion(const QString &version) {
               guard->m_updateAvailable = snapshot.updateAvailable;
               emit guard->updateAvailableChanged();
             }
+            guard->m_latestPackageVersion = snapshot.latestPackageVersion;
             guard->setLatestVersion(snapshot.latestVersion);
             guard->setAvailableVersions(snapshot.availableVersions);
             emit guard->progressMessage(noChangeMessage);
@@ -604,6 +689,7 @@ void NvidiaUpdater::applyVersion(const QString &version) {
             guard->m_updateAvailable = snapshot.updateAvailable;
             emit guard->updateAvailableChanged();
           }
+          guard->m_latestPackageVersion = snapshot.latestPackageVersion;
           guard->setLatestVersion(snapshot.latestVersion);
           guard->setAvailableVersions(snapshot.availableVersions);
           emit guard->progressMessage(snapshot.message);

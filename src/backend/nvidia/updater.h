@@ -42,6 +42,7 @@ signals:
   void availableVersionsChanged();
   void busyChanged();
   void progressMessage(const QString &message);
+  void checkFinished(bool success, const QString &message);
   void updateFinished(bool success, const QString &message);
 
 private:
@@ -61,6 +62,7 @@ private:
   bool finalizeDriverChange(CommandRunner &runner, const QString &sessionType,
                             QString *errorMessage);
   QString detectSessionType() const;
+  QString m_latestPackageVersion;
   bool m_updateAvailable = false;
   QString m_currentVersion;
   QString m_latestVersion;

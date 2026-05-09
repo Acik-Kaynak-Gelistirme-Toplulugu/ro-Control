@@ -5,6 +5,7 @@
 #include "system/sessionutil.h"
 
 #include <QFile>
+#include <QDir>
 #include <QRegularExpression>
 #include <QTextStream>
 #include <QtGlobal>
@@ -47,23 +48,23 @@ QString NvidiaDetector::activeDriver() const {
   }
   if (m_info.nouveauActive)
     return tr("Fallback Open Driver");
-  return tr("Not Installed / Unknown");
+  return tr("Not Installed");
 }
 
 QString NvidiaDetector::verificationReport() const {
   const QString gpuText = m_info.found ? m_info.name
                                        : (m_info.displayAdapterName.isEmpty()
-                                              ? tr("None")
+                                              ? tr("Unavailable")
                                               : m_info.displayAdapterName);
   const QString versionText =
-      m_info.driverVersion.isEmpty() ? tr("None") : m_info.driverVersion;
+      m_info.driverVersion.isEmpty() ? tr("Unavailable") : m_info.driverVersion;
 
   return tr("GPU: %1\nDriver Version: %2\nSecure Boot: %3\nSession: %4\n"
             "Active Stack: %5\nFallback Open Driver: %6")
       .arg(gpuText, versionText,
            m_info.secureBootKnown
                ? (m_info.secureBootEnabled ? tr("Enabled") : tr("Disabled"))
-               : tr("Disabled / Unknown"),
+               : tr("Unknown"),
            m_info.sessionType.isEmpty() ? tr("Unknown") : m_info.sessionType,
            activeDriver(),
            m_info.nouveauActive ? tr("Active") : tr("Inactive"));
@@ -199,6 +200,15 @@ bool NvidiaDetector::isModuleLoaded(const QString &moduleName) const {
 }
 
 bool NvidiaDetector::detectSecureBoot(bool *known) const {
+  bool enabled = false;
+  bool efivarsKnown = false;
+  if (detectSecureBootFromEfivars(&enabled, &efivarsKnown)) {
+    if (known != nullptr) {
+      *known = efivarsKnown;
+    }
+    return enabled;
+  }
+
   if (!CapabilityProbe::isToolAvailable(QStringLiteral("mokutil"))) {
     if (known != nullptr) {
       *known = false;
@@ -223,4 +233,41 @@ bool NvidiaDetector::detectSecureBoot(bool *known) const {
   }
 
   return false;
+}
+
+bool NvidiaDetector::detectSecureBootFromEfivars(bool *enabled,
+                                                 bool *known) const {
+  if (enabled == nullptr || known == nullptr) {
+    return false;
+  }
+
+  const QString overridePath =
+      qEnvironmentVariable("RO_CONTROL_SECURE_BOOT_EFIVAR_PATH").trimmed();
+  QString secureBootPath = overridePath;
+  if (secureBootPath.isEmpty()) {
+    QDir efivarsDir(QStringLiteral("/sys/firmware/efi/efivars"));
+    const QStringList entries = efivarsDir.entryList(
+        {QStringLiteral("SecureBoot-*")}, QDir::Files, QDir::Name);
+    if (!entries.isEmpty()) {
+      secureBootPath = efivarsDir.filePath(entries.constFirst());
+    }
+  }
+
+  if (secureBootPath.isEmpty()) {
+    return false;
+  }
+
+  QFile file(secureBootPath);
+  if (!file.open(QIODevice::ReadOnly)) {
+    return false;
+  }
+
+  const QByteArray raw = file.readAll();
+  if (raw.size() < 5) {
+    return false;
+  }
+
+  *enabled = raw.at(4) != 0;
+  *known = true;
+  return true;
 }

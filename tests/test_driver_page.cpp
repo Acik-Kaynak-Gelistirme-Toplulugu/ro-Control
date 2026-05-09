@@ -1,6 +1,5 @@
 #include <QGuiApplication>
 #include <QQmlComponent>
-#include <QQmlContext>
 #include <QQmlEngine>
 #include <QDir>
 #include <QFile>
@@ -22,6 +21,8 @@ class DetectorMock : public QObject {
                  NOTIFY infoChanged)
   Q_PROPERTY(bool secureBootEnabled READ secureBootEnabled WRITE
                  setSecureBootEnabled NOTIFY infoChanged)
+  Q_PROPERTY(bool secureBootKnown READ secureBootKnown WRITE setSecureBootKnown
+                 NOTIFY infoChanged)
   Q_PROPERTY(bool waylandSession READ waylandSession WRITE setWaylandSession
                  NOTIFY infoChanged)
   Q_PROPERTY(QString sessionType READ sessionType WRITE setSessionType NOTIFY
@@ -38,6 +39,7 @@ public:
   bool driverLoaded() const { return m_driverLoaded; }
   bool nouveauActive() const { return m_nouveauActive; }
   bool secureBootEnabled() const { return m_secureBootEnabled; }
+  bool secureBootKnown() const { return m_secureBootKnown; }
   bool waylandSession() const { return m_waylandSession; }
   QString sessionType() const { return m_sessionType; }
   QString activeDriver() const { return m_activeDriver; }
@@ -99,6 +101,14 @@ public:
     emit infoChanged();
   }
 
+  void setSecureBootKnown(bool value) {
+    if (m_secureBootKnown == value) {
+      return;
+    }
+    m_secureBootKnown = value;
+    emit infoChanged();
+  }
+
   void setSessionType(const QString &value) {
     if (m_sessionType == value) {
       return;
@@ -135,10 +145,11 @@ private:
   bool m_driverLoaded = false;
   bool m_nouveauActive = false;
   bool m_secureBootEnabled = false;
+  bool m_secureBootKnown = false;
   bool m_waylandSession = false;
   QString m_sessionType = QStringLiteral("unknown");
-  QString m_activeDriver = QStringLiteral("Not Installed / Unknown");
-  QString m_verificationReport = QStringLiteral("GPU: None");
+  QString m_activeDriver = QStringLiteral("Not Installed");
+  QString m_verificationReport = QStringLiteral("GPU: Unavailable");
 };
 
 class InstallerMock : public QObject {
@@ -272,6 +283,7 @@ signals:
   void availableVersionsChanged();
   void busyChanged();
   void progressMessage(const QString &message);
+  void checkFinished(bool success, const QString &message);
   void updateFinished(bool success, const QString &message);
 
 private:
@@ -298,10 +310,6 @@ QObject *TestDriverPage::createPage(DetectorMock *detector,
                                     InstallerMock *installer,
                                     UpdaterMock *updater,
                                     QQmlEngine *engine) const {
-  engine->rootContext()->setContextProperty("nvidiaDetector", detector);
-  engine->rootContext()->setContextProperty("nvidiaInstaller", installer);
-  engine->rootContext()->setContextProperty("nvidiaUpdater", updater);
-
   const QString sourceRoot = QStringLiteral(RO_CONTROL_SOURCE_DIR);
   const QString sourcePagePath =
       QDir(sourceRoot).filePath(QStringLiteral("src/qml/pages/DriverPage.qml"));
@@ -389,6 +397,12 @@ QObject *TestDriverPage::createPage(DetectorMock *detector,
   initialProperties.insert(QStringLiteral("width"), 1280);
   initialProperties.insert(QStringLiteral("height"), 900);
   initialProperties.insert(QStringLiteral("theme"), theme);
+  initialProperties.insert(QStringLiteral("nvidiaDetector"),
+                           QVariant::fromValue(detector));
+  initialProperties.insert(QStringLiteral("nvidiaInstaller"),
+                           QVariant::fromValue(installer));
+  initialProperties.insert(QStringLiteral("nvidiaUpdater"),
+                           QVariant::fromValue(updater));
 
   QObject *object = component.createWithInitialProperties(initialProperties);
   if (object == nullptr) {
