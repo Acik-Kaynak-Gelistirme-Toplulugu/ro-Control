@@ -227,10 +227,9 @@ Item {
                             implicitWidth: Math.round(38 * page.uiScale)
                             implicitHeight: Math.round(38 * page.uiScale)
                             enabled: !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
-                            icon.name: "view-refresh"
+                            icon.source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
                             icon.width: Math.round(18 * page.uiScale)
                             icon.height: Math.round(18 * page.uiScale)
-                            icon.color: page.textColor
                             display: AbstractButton.IconOnly
                             ToolTip.visible: hovered
                             ToolTip.text: qsTr("Rescan and check updates")

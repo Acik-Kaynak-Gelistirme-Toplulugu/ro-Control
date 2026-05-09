@@ -131,6 +131,18 @@ set_source_files_properties(src/qml/assets/ro-control-logo.png PROPERTIES
     QT_RESOURCE_ALIAS "assets/ro-control-logo.png"
 )
 
+set_source_files_properties(src/qml/assets/icon-language.svg PROPERTIES
+    QT_RESOURCE_ALIAS "assets/icon-language.svg"
+)
+
+set_source_files_properties(src/qml/assets/icon-refresh.svg PROPERTIES
+    QT_RESOURCE_ALIAS "assets/icon-refresh.svg"
+)
+
+set_source_files_properties(src/qml/assets/icon-theme.svg PROPERTIES
+    QT_RESOURCE_ALIAS "assets/icon-theme.svg"
+)
+
 qt_add_qml_module(ro-control
     URI "rocontrol"
     VERSION 1.0
@@ -138,7 +150,6 @@ qt_add_qml_module(ro-control
         src/qml/Main.qml
         src/qml/pages/DriverPage.qml
         src/qml/pages/MonitorPage.qml
-        src/qml/pages/SettingsPage.qml
         src/qml/components/InfoBadge.qml
         src/qml/components/ActionButton.qml
         src/qml/components/DetailRow.qml
@@ -149,6 +160,9 @@ qt_add_qml_module(ro-control
     RESOURCES
         src/qml/assets/ro-control-logo.svg
         src/qml/assets/ro-control-logo.png
+        src/qml/assets/icon-language.svg
+        src/qml/assets/icon-refresh.svg
+        src/qml/assets/icon-theme.svg
 )
 
 if(Qt6LinguistTools_FOUND)

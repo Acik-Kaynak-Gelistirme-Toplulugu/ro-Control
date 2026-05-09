@@ -37,22 +37,22 @@ You can contribute in several ways:
 
 ## Branch Strategy
 
-We use a structured branching model:
+We use a lightweight pull-request workflow:
 
 ```
-main        ← Stable, release-ready code only. Never push directly.
-dev         ← Active development. All features merge here first.
-feature/*   ← New features (branched from dev)
-fix/*       ← Bug fixes (branched from dev)
-release/*   ← Release preparation (branched from dev)
+main      ← Stable, review-gated default branch
+feat/*    ← New features (branched from main)
+fix/*     ← Bug fixes (branched from main)
+docs/*    ← Documentation updates
+chore/*   ← Build, CI, and maintenance work
 ```
 
-**Always branch from `dev`, not `main`.**
+**Always branch from the latest `main`.**
 
 ```bash
-git checkout dev
-git pull origin dev
-git checkout -b feature/your-feature-name
+git checkout main
+git pull origin main
+git checkout -b feat/your-feature-name
 ```
 
 ---
@@ -134,14 +134,14 @@ cd build && ctest --output-on-failure
 ## Pull Request Process
 
 1. Fork the repository
-2. Create a branch from `dev`: `git checkout -b feature/your-feature`
+2. Create a branch from `main`: `git checkout -b feat/your-feature`
 3. Make your changes with clear commits
-4. Push to your fork: `git push origin feature/your-feature`
-5. Open a Pull Request targeting the **`dev`** branch (not `main`)
+4. Push to your fork: `git push origin feat/your-feature`
+5. Open a Pull Request targeting the **`main`** branch
 6. Fill in the PR template completely
 7. Wait for review — we aim to respond within 72 hours
 
-**PRs to `main` will be rejected.** All contributions go through `dev` first.
+Direct pushes to `main` should be avoided. Use reviewed pull requests instead.
 
 Recommended PR checklist:
 

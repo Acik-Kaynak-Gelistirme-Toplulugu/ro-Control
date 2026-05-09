@@ -4,7 +4,7 @@ Use this checklist for every production release.
 
 ## 1. Branch and PR State
 
-- [ ] `dev` and `main` are synchronized.
+- [ ] `main` contains the approved release candidate.
 - [ ] All required PR reviews are approved.
 - [ ] No pending change requests remain.
 
@@ -22,7 +22,7 @@ Use this checklist for every production release.
 - [ ] Ensure AppStream metadata is up to date.
 - [ ] Refresh translation sources and verify `.ts` files are complete.
 - [ ] Run `cmake --build build --target ro-control_lrelease` and confirm shipped locales compile cleanly.
-- [ ] Smoke-test the app in English and Turkish locales.
+- [ ] Smoke-test the app in English, German, Spanish, and Turkish locales.
 
 ## 4. Packaging
 
@@ -45,4 +45,4 @@ Use this checklist for every production release.
 
 - [ ] Announce release notes.
 - [ ] Open next milestone planning issues.
-- [ ] Back-merge `main` into `dev` if release happened from PR flow.
+- [ ] Open follow-up issues for any deferred release work.

@@ -28,7 +28,7 @@ Mevcut kod tabanı özellikle şu alanlara odaklanır:
 - Script sarmalayıcıları yerine yerel Qt/QML masaüstü deneyimi
 - PolicyKit ve DNF üzerinden güvenli sürücü yaşam döngüsü işlemleri
 - GPU, CPU ve RAM telemetrisi için pratik tanılama araçları
-- İngilizce kaynak metinler ve tam Türkçe çalışma zamanı yerelleştirmesi
+- İngilizce kaynak metinler ve dağıtıma giren Almanca, İspanyolca ve Türkçe çalışma zamanı yerelleştirmesi
 - Kalıcı arayüz tercihleri ve açık `Sistem / Açık / Koyu` tema seçimi
 
 Şu anda **hibrit grafik geçişi**, fan kontrolü veya overclock özellikleri sunmaz.
@@ -63,7 +63,7 @@ ro-Control, daha geniş **Project Ro ASD / ro-ASD OS** ekosistemi içinde NVIDIA
 
 ### 🌍 Çok Dil Desteği
 - Qt çeviri sistemi (`.ts` / `.qm`) ile çalışma zamanı yerelleştirme
-- Dağıtıma giren çalışma zamanı dilleri: İngilizce ve Türkçe
+- Dağıtıma giren çalışma zamanı dilleri: İngilizce, Almanca, İspanyolca ve Türkçe
 - Yeni diller için genişletilebilir iş akışı
 
 ### 🧰 CLI Desteği
@@ -186,12 +186,13 @@ Kullanım desteği ve issue yönlendirmesi için [SUPPORT.md](SUPPORT.md) dosyas
 Hızlı katkı akışı:
 
 ```bash
-git checkout dev
-git checkout -b feature/ozellik-adi
+git checkout main
+git pull origin main
+git checkout -b feat/degisiklik-adi
 # ... değişikliklerinizi yapın ...
 git commit -m "feat: değişikliğinizi açıklayın"
-git push origin feature/ozellik-adi
-# Pull Request açın → dev branch'ine
+git push origin feat/degisiklik-adi
+# Pull Request açın → main branch'ine
 ```
 
 ## Gereksinimler

@@ -1,6 +1,6 @@
 {
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    "C_Cpp.default.compileCommands": "${workspaceFolder}/build-copilot/compile_commands.json",
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
     "cmake.configureSettings": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
     },
@@ -10,11 +10,8 @@
     "qt-qml.qmlls.enabled": true,
     "qt-qml.qmlls.useQmlImportPathEnvVar": true,
     "qt-qml.qmlls.additionalImportPaths": [
-        "/opt/homebrew/share/qt/qml",
         "${workspaceFolder}/src/qml",
         "${workspaceFolder}/src/qml/pages",
-        "${workspaceFolder}/build/rocontrol",
-        "${workspaceFolder}/build-copilot/rocontrol",
-        "${workspaceFolder}/build-codex/rocontrol"
+        "${workspaceFolder}/build/rocontrol"
     ]
 }

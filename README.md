@@ -29,7 +29,7 @@ The current codebase focuses on:
 - Native Qt/QML desktop UX instead of wrapper scripts
 - Safe driver lifecycle operations through PolicyKit and DNF
 - Practical diagnostics for GPU, CPU, and RAM telemetry
-- English source strings with complete Turkish runtime localization
+- English source strings with shipped German, Spanish, and Turkish runtime localization
 - Persistent interface preferences with explicit `System / Light / Dark` theme selection
 
 It does **not** currently implement hybrid graphics switching, fan control, or overclocking.
@@ -77,7 +77,7 @@ The easiest way to develop ro-Control rapidly on Fedora is using the provided `d
 
 ### 🌍 Internationalization
 - Runtime locale loading with Qt translations (`.ts` / `.qm`)
-- Shipped runtime locales: English and Turkish
+- Shipped runtime locales: English, German, Spanish, and Turkish
 - Extensible translation workflow for additional languages
 
 ### 🧰 CLI Support
@@ -200,12 +200,13 @@ For usage questions and issue routing, see [SUPPORT.md](SUPPORT.md).
 Quick contribution flow:
 
 ```bash
-git checkout dev
-git checkout -b feature/your-feature-name
+git checkout main
+git pull origin main
+git checkout -b feat/your-change
 # ... make your changes ...
 git commit -m "feat: describe your change"
-git push origin feature/your-feature-name
-# Open a Pull Request → dev
+git push origin feat/your-change
+# Open a Pull Request → main
 ```
 
 ## Requirements

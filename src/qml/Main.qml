@@ -191,10 +191,9 @@ ApplicationWindow {
                         id: languageButton
                         implicitWidth: Math.round(46 * root.uiScale)
                         implicitHeight: Math.round(46 * root.uiScale)
-                        icon.name: "globe"
+                        icon.source: "qrc:/qt/qml/rocontrol/assets/icon-language.svg"
                         icon.width: Math.round(21 * root.uiScale)
                         icon.height: Math.round(21 * root.uiScale)
-                        icon.color: colors.text
                         display: AbstractButton.IconOnly
                         onClicked: root.openQuickMenu("language", languageButton)
                         ToolTip.visible: hovered
@@ -215,10 +214,9 @@ ApplicationWindow {
                         id: themeButton
                         implicitWidth: Math.round(46 * root.uiScale)
                         implicitHeight: Math.round(46 * root.uiScale)
-                        icon.name: root.darkMode ? "weather-clear-night" : "weather-clear"
+                        icon.source: "qrc:/qt/qml/rocontrol/assets/icon-theme.svg"
                         icon.width: Math.round(21 * root.uiScale)
                         icon.height: Math.round(21 * root.uiScale)
-                        icon.color: colors.text
                         display: AbstractButton.IconOnly
                         onClicked: root.openQuickMenu("theme", themeButton)
                         ToolTip.visible: hovered
