@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -34,23 +36,23 @@ Rectangle {
 
                 Layout.leftMargin: 22
                 Layout.rightMargin: 22
-                Layout.topMargin: index === 0 ? 0 : 10
+                Layout.topMargin: menuCard.index === 0 ? 0 : 10
                 Layout.fillWidth: true
                 implicitHeight: 90
                 radius: 22
-                color: sidebar.currentIndex === index ? theme.sidebarActive
-                                                      : "transparent"
-                border.width: sidebar.currentIndex === index ? 1 : 0
-                border.color: theme.sidebarBorder
+                color: sidebar.currentIndex === menuCard.index ? sidebar.theme.sidebarActive
+                                                               : "transparent"
+                border.width: sidebar.currentIndex === menuCard.index ? 1 : 0
+                border.color: sidebar.theme.sidebarBorder
 
                 Rectangle {
-                    visible: sidebar.currentIndex === index
+                    visible: sidebar.currentIndex === menuCard.index
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
                     width: 4
                     height: parent.height - 20
                     radius: 2
-                    color: theme.sidebarAccent
+                    color: sidebar.theme.sidebarAccent
                 }
 
                 RowLayout {
@@ -60,15 +62,15 @@ Rectangle {
                     spacing: 16
 
                     Rectangle {
-                        width: 48
-                        height: 48
+                        implicitWidth: 48
+                        implicitHeight: 48
                         radius: 16
-                        color: sidebar.currentIndex === index ? theme.sidebarAccent : theme.cardStrong
+                        color: sidebar.currentIndex === menuCard.index ? sidebar.theme.sidebarAccent : sidebar.theme.cardStrong
 
                         Label {
                             anchors.centerIn: parent
                             text: menuCard.modelData.marker
-                            color: sidebar.currentIndex === index ? "#ffffff" : theme.sidebarMuted
+                            color: sidebar.currentIndex === menuCard.index ? "#ffffff" : sidebar.theme.sidebarMuted
                             font.pixelSize: 18
                             font.weight: Font.DemiBold
                         }
@@ -77,17 +79,17 @@ Rectangle {
                     Label {
                         Layout.fillWidth: true
                         text: menuCard.modelData.title
-                        color: sidebar.currentIndex === index ? theme.sidebarText : theme.sidebarText
+                        color: sidebar.theme.sidebarText
                         font.pixelSize: 16
-                        font.weight: sidebar.currentIndex === index ? Font.DemiBold : Font.Medium
+                        font.weight: sidebar.currentIndex === menuCard.index ? Font.DemiBold : Font.Medium
                     }
 
                     Rectangle {
-                        width: 10
-                        height: 10
+                        implicitWidth: 10
+                        implicitHeight: 10
                         radius: 5
-                        visible: sidebar.currentIndex === index
-                        color: theme.sidebarAccent
+                        visible: sidebar.currentIndex === menuCard.index
+                        color: sidebar.theme.sidebarAccent
                     }
                 }
 
@@ -96,14 +98,14 @@ Rectangle {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onEntered: {
-                        if (sidebar.currentIndex !== index)
-                            menuCard.color = theme.sidebarHover;
+                        if (sidebar.currentIndex !== menuCard.index)
+                            menuCard.color = sidebar.theme.sidebarHover;
                     }
                     onExited: {
-                        if (sidebar.currentIndex !== index)
+                        if (sidebar.currentIndex !== menuCard.index)
                             menuCard.color = "transparent";
                     }
-                    onClicked: sidebar.currentIndex = index
+                    onClicked: sidebar.currentIndex = menuCard.index
                 }
             }
         }
