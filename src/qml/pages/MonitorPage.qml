@@ -4,6 +4,10 @@ import QtQuick.Layouts
 
 Item {
     id: page
+    required property var systemInfo
+    required property var cpuMonitor
+    required property var gpuMonitor
+    required property var ramMonitor
 
     property var theme: ({})
     property bool darkMode: false
@@ -42,7 +46,7 @@ Item {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 126
+                    implicitHeight: page.gpuMonitor && page.gpuMonitor.available ? 126 : 154
                     radius: 14
                     color: page.cardColor
                     border.width: 1
@@ -54,8 +58,8 @@ Item {
                         spacing: 6
 
                         Label { text: qsTr("CPU"); color: page.softTextColor; font.bold: true }
-                        Label { text: cpuMonitor.usagePercent.toFixed(1) + "%"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
-                        Label { text: qsTr("Temperature: %1").arg(page.formatTemp(cpuMonitor.temperatureC)); color: page.softTextColor }
+                        Label { text: page.cpuMonitor ? page.cpuMonitor.usagePercent.toFixed(1) + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
+                        Label { text: qsTr("Temperature: %1").arg(page.formatTemp(page.cpuMonitor ? page.cpuMonitor.temperatureC : -1)); color: page.softTextColor }
                     }
                 }
 
@@ -73,8 +77,15 @@ Item {
                         spacing: 6
 
                         Label { text: qsTr("GPU"); color: page.softTextColor; font.bold: true }
-                        Label { text: gpuMonitor.utilizationPercent + "%"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
-                        Label { text: qsTr("Temperature: %1").arg(page.formatTemp(gpuMonitor.temperatureC)); color: page.softTextColor }
+                        Label { text: page.gpuMonitor ? page.gpuMonitor.utilizationPercent + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
+                        Label { text: qsTr("Temperature: %1").arg(page.formatTemp(page.gpuMonitor ? page.gpuMonitor.temperatureC : -1)); color: page.softTextColor }
+                        Label {
+                            visible: page.gpuMonitor && !page.gpuMonitor.available && page.gpuMonitor.statusMessage.length > 0
+                            text: page.gpuMonitor ? page.gpuMonitor.statusMessage : ""
+                            color: page.softTextColor
+                            wrapMode: Text.Wrap
+                            width: parent.width
+                        }
                     }
                 }
 
@@ -92,8 +103,8 @@ Item {
                         spacing: 6
 
                         Label { text: qsTr("Memory"); color: page.softTextColor; font.bold: true }
-                        Label { text: ramMonitor.usagePercent + "%"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
-                        Label { text: qsTr("Usage: %1").arg(page.formatRam(ramMonitor.usedMiB, ramMonitor.totalMiB)); color: page.softTextColor }
+                        Label { text: page.ramMonitor ? page.ramMonitor.usagePercent + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
+                        Label { text: qsTr("Usage: %1").arg(page.formatRam(page.ramMonitor ? page.ramMonitor.usedMiB : 0, page.ramMonitor ? page.ramMonitor.totalMiB : 0)); color: page.softTextColor }
                     }
                 }
             }
@@ -124,7 +135,7 @@ Item {
                         Layout.fillWidth: true
                         from: 0
                         to: 100
-                        value: cpuMonitor.usagePercent
+                        value: page.cpuMonitor ? page.cpuMonitor.usagePercent : 0
                     }
 
                     Label { text: qsTr("GPU"); color: page.softTextColor }
@@ -132,7 +143,7 @@ Item {
                         Layout.fillWidth: true
                         from: 0
                         to: 100
-                        value: gpuMonitor.utilizationPercent
+                        value: page.gpuMonitor ? page.gpuMonitor.utilizationPercent : 0
                     }
 
                     Label { text: qsTr("RAM"); color: page.softTextColor }
@@ -140,89 +151,22 @@ Item {
                         Layout.fillWidth: true
                         from: 0
                         to: 100
-                        value: ramMonitor.usagePercent
+                        value: page.ramMonitor ? page.ramMonitor.usagePercent : 0
                     }
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        Button {
-                            text: qsTr("Refresh")
-                            onClicked: {
-                                cpuMonitor.refresh();
-                                gpuMonitor.refresh();
-                                ramMonitor.refresh();
-                            }
-                        }
-
-                        Item { Layout.fillWidth: true }
-
-                        Label {
-                            visible: page.showAdvancedInfo
-                            text: qsTr("Interval: %1 ms").arg(cpuMonitor.updateInterval)
-                            color: page.softTextColor
-                        }
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                radius: 14
-                color: page.cardColor
-                border.width: 1
-                border.color: page.borderColor
-                implicitHeight: detailLayout.implicitHeight + 24
-
-                ColumnLayout {
-                    id: detailLayout
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
-
-                    Label {
-                        text: qsTr("Detailed Telemetry")
-                        color: page.textColor
-                        font.pixelSize: Math.round(18 * page.uiScale)
-                        font.bold: true
-                    }
-
-                    Label {
-                        text: qsTr("CPU Temperature: %1").arg(page.formatTemp(cpuMonitor.temperatureC))
-                        color: page.softTextColor
-                    }
-
-                    Label {
-                        text: qsTr("GPU Temperature: %1").arg(page.formatTemp(gpuMonitor.temperatureC))
-                        color: page.softTextColor
-                    }
-
-                    Label {
-                        text: qsTr("GPU Memory: %1 / %2 MiB")
-                                  .arg(gpuMonitor.memoryUsedMiB)
-                                  .arg(gpuMonitor.memoryTotalMiB)
-                        color: page.softTextColor
-                    }
-
-                    Label {
-                        text: qsTr("RAM Used: %1 / %2 MiB")
-                                  .arg(ramMonitor.usedMiB)
-                                  .arg(ramMonitor.totalMiB)
-                        color: page.softTextColor
-                    }
                 }
             }
         }
     }
 
     Component.onCompleted: {
-        systemInfo.refresh();
-        cpuMonitor.start();
-        gpuMonitor.start();
-        ramMonitor.start();
-        cpuMonitor.refresh();
-        gpuMonitor.refresh();
-        ramMonitor.refresh();
+        if (page.systemInfo)
+            page.systemInfo.refresh();
+        if (page.cpuMonitor)
+            page.cpuMonitor.start();
+        if (page.gpuMonitor)
+            page.gpuMonitor.start();
+        if (page.ramMonitor)
+            page.ramMonitor.start();
     }
 }

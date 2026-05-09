@@ -107,6 +107,23 @@ private slots:
     qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SMI");
   }
 
+  void testGpuStatusMessageWhenTelemetryUnavailable() {
+    qputenv("RO_CONTROL_COMMAND_NVIDIA_SMI",
+            QByteArrayLiteral("/definitely/missing/nvidia-smi"));
+    qputenv("RO_CONTROL_DRM_ROOT",
+            QByteArrayLiteral("/definitely/missing/drm-root"));
+
+    GpuMonitor gpu;
+    gpu.stop();
+    gpu.refresh();
+
+    QVERIFY(!gpu.available());
+    QVERIFY(!gpu.statusMessage().trimmed().isEmpty());
+
+    qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SMI");
+    qunsetenv("RO_CONTROL_DRM_ROOT");
+  }
+
   void testRamConstruction() {
     RamMonitor ram;
     QVERIFY(ram.running());

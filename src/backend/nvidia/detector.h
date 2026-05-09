@@ -72,6 +72,7 @@ private:
   bool isPackageInstalled(const QString &packageName) const;
   bool isModuleLoaded(const QString &moduleName) const;
   bool detectSecureBoot(bool *known = nullptr) const;
+  bool detectSecureBootFromEfivars(bool *enabled, bool *known) const;
 
   GpuInfo m_info;
 };

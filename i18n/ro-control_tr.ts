@@ -24,8 +24,8 @@
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="191" />
-        <source>I reviewed the NVIDIA license terms</source>
-        <translation>NVIDIA lisans kosullarini inceledim</translation>
+        <source>I reviewed the official NVIDIA license outside ro-Control</source>
+        <translation>Resmi NVIDIA lisansını ro-Control dışında inceledim</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="175" />
@@ -75,18 +75,18 @@
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="116" />
-        <source>Not Detected</source>
-        <translation>Algilanmadi</translation>
+        <source>No NVIDIA GPU</source>
+        <translation>NVIDIA GPU bulunamadı</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="136" />
-        <source>Latest: %1</source>
-        <translation>En guncel: %1</translation>
+        <source>Official latest: %1</source>
+        <translation>Resmi en güncel sürüm: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="136" />
-        <source>Latest: Unknown</source>
-        <translation>En guncel: Bilinmiyor</translation>
+        <source>Official latest: Unavailable</source>
+        <translation>Resmi en güncel sürüm: Kullanılamıyor</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="153" />
@@ -100,13 +100,17 @@
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="155" />
-        <source>Secure Boot: Disabled / Unknown</source>
-        <translation>Secure Boot: Kapali / Bilinmiyor</translation>
+        <source>Secure Boot: Disabled</source>
+        <translation>Secure Boot: Kapalı</translation>
+    </message>
+    <message>
+        <source>Secure Boot: Unknown</source>
+        <translation>Secure Boot: Bilinmiyor</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="183" />
-        <source>Use safe guided operations for install, update, and cleanup.</source>
-        <translation>Kurulum, guncelleme ve temizlik icin guvenli yonlendirilmis islemleri kullanin.</translation>
+        <source>Latest version information is resolved from the official NVIDIA Unix driver page. Fedora workflow guidance follows the official NVIDIA Fedora installation guide.</source>
+        <translation>En güncel sürüm bilgisi resmi NVIDIA Unix sürücü sayfasından alınır. Fedora akışı resmi NVIDIA Fedora kurulum rehberini takip eder.</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="202" />
@@ -159,13 +163,13 @@
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="247" />
-        <source>Checking repository for updates...</source>
-        <translation>Depo guncellemeleri denetleniyor...</translation>
+        <source>Checking official NVIDIA driver sources...</source>
+        <translation>Resmi NVIDIA sürücü kaynakları denetleniyor...</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="257" />
-        <source>Applying latest online version...</source>
-        <translation>En guncel cevrimici surum uygulaniyor...</translation>
+        <source>Applying latest available driver...</source>
+        <translation>Mevcut en güncel sürücü uygulanıyor...</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="279" />
@@ -201,7 +205,7 @@
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="254" />
         <source>Install Latest</source>
-        <translation>En Günceli Kur</translation>
+        <translation>En Son Sürümü Kur</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="254" />
@@ -209,9 +213,29 @@
         <translation>En Son Sürümü Uygula</translation>
     </message>
     <message>
+        <source>Install Latest (%1)</source>
+        <translation>En Son Sürümü Kur (%1)</translation>
+    </message>
+    <message>
+        <source>Apply Latest (%1)</source>
+        <translation>En Son Sürümü Uygula (%1)</translation>
+    </message>
+    <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="276" />
         <source>Apply Selected</source>
         <translation>Seçileni Uygula</translation>
+    </message>
+    <message>
+        <source>Version Selection</source>
+        <translation>Sürüm Seçimi</translation>
+    </message>
+    <message>
+        <source>Use this area to test or switch to an older repository version.</source>
+        <translation>Bu alanı eski bir depo sürümünü denemek veya ona geçmek için kullanın.</translation>
+    </message>
+    <message>
+        <source>Maintenance</source>
+        <translation>Bakım</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="234" />
@@ -331,22 +355,40 @@
     </message>
     <message>
         <location filename="../src/qml/pages/MonitorPage.qml" line="151" />
-        <source>Refresh</source>
-        <translation>Yenile</translation>
+        <source>GPU telemetry is unavailable on this architecture unless nvidia-smi or DRM hwmon metrics are exposed.</source>
+        <translation>Bu mimaride `nvidia-smi` veya DRM hwmon metrikleri sunulmadıkça GPU telemetrisi kullanılamaz.</translation>
+    </message>
+    <message>
+        <source>GPU telemetry is unavailable because nvidia-smi or DRM hwmon metrics could not be read.</source>
+        <translation>`nvidia-smi` veya DRM hwmon metrikleri okunamadığı için GPU telemetrisi kullanılamıyor.</translation>
+    </message>
+    <message>
+        <source>GPU telemetry is being read from DRM and hwmon fallbacks.</source>
+        <translation>GPU telemetrisi DRM ve hwmon yedek kaynaklarından okunuyor.</translation>
+    </message>
+    <message>
+        <source>GPU telemetry output could not be parsed.</source>
+        <translation>GPU telemetri çıktısı ayrıştırılamadı.</translation>
+    </message>
+    <message>
+        <source>GPU telemetry output did not contain usable metrics.</source>
+        <translation>GPU telemetri çıktısı kullanılabilir metrikler içermiyor.</translation>
+    </message>
+    <message>
+        <source>GPU telemetry is being read from nvidia-smi.</source>
+        <translation>GPU telemetrisi `nvidia-smi` üzerinden okunuyor.</translation>
     </message>
 </context>
 <context>
     <name>NvidiaDetector</name>
     <message>
         <location filename="../src/backend/nvidia/detector.cpp" line="49" />
-        <source>Not Installed / Unknown</source>
-        <translation>Kurulu Değil / Bilinmiyor</translation>
+        <source>Not Installed</source>
+        <translation>Kurulu Değil</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="53" />
-        <location filename="../src/backend/nvidia/detector.cpp" line="55" />
-        <source>None</source>
-        <translation>Yok</translation>
+        <source>Unavailable</source>
+        <translation>Kullanılamıyor</translation>
     </message>
     <message>
         <location filename="../src/backend/nvidia/detector.cpp" line="43" />
@@ -390,8 +432,8 @@ Yedek Acik Surucu: %6</translation>
     </message>
     <message>
         <location filename="../src/backend/nvidia/detector.cpp" line="62" />
-        <source>Disabled / Unknown</source>
-        <translation>Devre Dışı / Bilinmiyor</translation>
+        <source>Unknown</source>
+        <translation>Bilinmiyor</translation>
     </message>
     <message>
         <location filename="../src/backend/nvidia/detector.cpp" line="63" />
@@ -423,8 +465,8 @@ Yedek Acik Surucu: %6</translation>
     </message>
     <message>
         <location filename="../src/backend/nvidia/installer.cpp" line="155" />
-        <source>The proprietary NVIDIA driver is subject to NVIDIA's software license. Review the official NVIDIA license before installation: %1</source>
-        <translation>Kapali kaynak NVIDIA surucusu, NVIDIA yazilim lisansina tabidir. Kurulumdan once resmi NVIDIA lisansini inceleyin: %1</translation>
+        <source>The proprietary NVIDIA driver is subject to NVIDIA's software license. ro-Control cannot audit or review the closed-source license text for you. Review the official NVIDIA license before installation: %1</source>
+        <translation>Kapalı kaynak NVIDIA sürücüsü NVIDIA yazılım lisansına tabidir. ro-Control kapalı kaynak lisans metnini sizin için denetleyemez veya inceleyemez. Kurulumdan önce resmi NVIDIA lisansını inceleyin: %1</translation>
     </message>
     <message>
         <location filename="../src/backend/nvidia/installer.cpp" line="167" />
@@ -568,8 +610,8 @@ Yedek Acik Surucu: %6</translation>
     <name>LanguageManager</name>
     <message>
         <location filename="../src/backend/system/languagemanager.cpp" line="28" />
-        <source>System Default</source>
-        <translation>Sistem Varsayilani</translation>
+        <source>System</source>
+        <translation>Sistem</translation>
     </message>
     <message>
         <location filename="../src/backend/system/languagemanager.cpp" line="31" />
@@ -589,7 +631,7 @@ Yedek Acik Surucu: %6</translation>
     <message>
         <location filename="../src/backend/system/languagemanager.cpp" line="40" />
         <source>Turkish</source>
-        <translation>Turkce</translation>
+        <translation>Türkçe</translation>
     </message>
 </context>
 <context>
@@ -612,18 +654,26 @@ Yedek Acik Surucu: %6</translation>
     </message>
     <message>
         <location filename="../src/backend/nvidia/updater.cpp" line="137" />
-        <source>Online NVIDIA packages were found. You can download and install the driver now.</source>
-        <translation>Çevrimiçi NVIDIA paketleri bulundu. Sürücüyü şimdi indirip kurabilirsiniz.</translation>
+        <source>Official NVIDIA driver sources are reachable. You can install the driver now.</source>
+        <translation>Resmi NVIDIA sürücü kaynaklarına erişilebiliyor. Sürücüyü şimdi kurabilirsiniz.</translation>
     </message>
     <message>
         <location filename="../src/backend/nvidia/updater.cpp" line="139" />
-        <source>Online NVIDIA driver found. Latest remote version: %1</source>
-        <translation>Çevrimiçi NVIDIA sürücüsü bulundu. En güncel uzak sürüm: %1</translation>
+        <source>Latest official NVIDIA driver version: %1</source>
+        <translation>Resmi en güncel NVIDIA sürümü: %1</translation>
     </message>
     <message>
         <location filename="../src/backend/nvidia/updater.cpp" line="143" />
-        <source>No online NVIDIA package catalog was found. RPM Fusion may not be configured yet.</source>
-        <translation>Çevrimiçi NVIDIA paket kataloğu bulunamadı. RPM Fusion henüz yapılandırılmamış olabilir.</translation>
+        <source>No official NVIDIA driver version could be retrieved.</source>
+        <translation>Resmi NVIDIA sürüm bilgisi alınamadı.</translation>
+    </message>
+    <message>
+        <source>Official NVIDIA update found: %1</source>
+        <translation>Resmi NVIDIA güncellemesi bulundu: %1</translation>
+    </message>
+    <message>
+        <source>Driver matches the latest official NVIDIA production branch.</source>
+        <translation>Sürücü resmi NVIDIA üretim dalındaki en güncel sürümle eşleşiyor.</translation>
     </message>
     <message>
         <location filename="../src/backend/nvidia/updater.cpp" line="162" />
@@ -684,15 +734,6 @@ Yedek Acik Surucu: %6</translation>
     </message>
     <message>
         <location filename="../src/backend/nvidia/updater.cpp" line="400" />
-        <source>No available versions found.</source>
-        <translation>Hiçbir uygun sürüm bulunamadı.</translation>
-    </message>
-    <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="401" />
-        <source>Available versions: %1</source>
-        <translation>Mevcut sürümler: %1</translation>
-    </message>
-    <message>
         <location filename="../src/backend/nvidia/updater.cpp" line="411" />
         <source>Starting update check...</source>
         <translation>Güncelleme denetimi başlatılıyor...</translation>
@@ -742,8 +783,8 @@ Yedek Acik Surucu: %6</translation>
     <name>UiPreferencesManager</name>
     <message>
         <location filename="../src/backend/system/uipreferencesmanager.cpp" line="20" />
-        <source>Follow System</source>
-        <translation>Sistemi Takip Et</translation>
+        <source>System</source>
+        <translation>Sistem</translation>
     </message>
     <message>
         <location filename="../src/backend/system/uipreferencesmanager.cpp" line="23" />

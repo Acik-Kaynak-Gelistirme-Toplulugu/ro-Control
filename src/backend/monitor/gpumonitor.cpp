@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFile>
 #include <QRegularExpression>
+#include <QSysInfo>
 #include <algorithm>
 
 namespace {
@@ -176,6 +177,8 @@ int GpuMonitor::memoryTotalMiB() const { return m_memoryTotalMiB; }
 
 int GpuMonitor::memoryUsagePercent() const { return m_memoryUsagePercent; }
 
+QString GpuMonitor::statusMessage() const { return m_statusMessage; }
+
 int GpuMonitor::updateInterval() const { return m_timer.interval(); }
 
 void GpuMonitor::refresh() {
@@ -200,6 +203,13 @@ void GpuMonitor::refresh() {
     if (!readGenericLinuxGpuMetrics(&nextTemp, &nextUtil, &nextUsed,
                                     &nextTotal)) {
       setAvailable(false);
+      const QString architecture = QSysInfo::currentCpuArchitecture().trimmed();
+      if (architecture == QStringLiteral("arm64") ||
+          architecture == QStringLiteral("aarch64")) {
+        setStatusMessage(tr("GPU telemetry is unavailable on this architecture unless nvidia-smi or DRM hwmon metrics are exposed."));
+      } else {
+        setStatusMessage(tr("GPU telemetry is unavailable because nvidia-smi or DRM hwmon metrics could not be read."));
+      }
       clearMetrics();
       return;
     }
@@ -234,6 +244,7 @@ void GpuMonitor::refresh() {
     }
 
     setAvailable(true);
+    setStatusMessage(tr("GPU telemetry is being read from DRM and hwmon fallbacks."));
     return;
   }
 
@@ -243,6 +254,7 @@ void GpuMonitor::refresh() {
 
   if (fields.size() < 5) {
     setAvailable(false);
+    setStatusMessage(tr("GPU telemetry output could not be parsed."));
     clearMetrics();
     return;
   }
@@ -277,6 +289,7 @@ void GpuMonitor::refresh() {
                                   totalAvailable;
   if (!telemetryAvailable) {
     setAvailable(false);
+    setStatusMessage(tr("GPU telemetry output did not contain usable metrics."));
     clearMetrics();
     return;
   }
@@ -312,6 +325,7 @@ void GpuMonitor::refresh() {
   }
 
   setAvailable(true);
+  setStatusMessage(tr("GPU telemetry is being read from nvidia-smi."));
 }
 
 void GpuMonitor::start() {
@@ -380,4 +394,13 @@ void GpuMonitor::setAvailable(bool value) {
 
   m_available = value;
   emit availableChanged();
+}
+
+void GpuMonitor::setStatusMessage(const QString &value) {
+  if (m_statusMessage == value) {
+    return;
+  }
+
+  m_statusMessage = value;
+  emit statusMessageChanged();
 }

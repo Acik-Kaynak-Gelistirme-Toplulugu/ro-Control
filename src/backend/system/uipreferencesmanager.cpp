@@ -17,7 +17,7 @@ constexpr ThemeModeEntry kThemeModes[] = {
 
 QString themeModeLabel(const QString &code) {
   if (code == QStringLiteral("system")) {
-    return QCoreApplication::translate("UiPreferencesManager", "Follow System");
+    return QCoreApplication::translate("UiPreferencesManager", "System");
   }
   if (code == QStringLiteral("light")) {
     return QCoreApplication::translate("UiPreferencesManager", "Light");
