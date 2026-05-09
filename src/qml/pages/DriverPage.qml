@@ -88,26 +88,6 @@ Item {
             width: pageScroll.availableWidth
             spacing: 10
 
-            Rectangle {
-                Layout.fillWidth: true
-                radius: 14
-                color: page.bannerTone === "error" ? page.dangerBg
-                                                   : (page.bannerTone === "success" ? page.successBg : page.infoBg)
-                border.width: 1
-                border.color: page.borderColor
-                implicitHeight: 54
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 10
-
-                    Label { text: page.operationRunning ? qsTr("Working") : qsTr("Status"); color: page.textColor; font.bold: true }
-
-                    Label { Layout.fillWidth: true; text: page.bannerText; color: page.softTextColor; elide: Text.ElideRight }
-                }
-            }
-
             GridLayout {
                 Layout.fillWidth: true
                 columns: width > 900 ? 3 : 1
