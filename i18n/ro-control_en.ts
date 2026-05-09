@@ -811,21 +811,6 @@ Choose Accept to continue with the closed-source installation, or Reject to canc
     </message>
 </context>
 <context>
-    <name>SettingsPage</name>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Appearance</translation>
-    </message>
-    <message>
-        <source>Reset Defaults</source>
-        <translation type="vanished">Reset Defaults</translation>
-    </message>
-    <message>
-        <source>Show advanced diagnostics</source>
-        <translation type="vanished">Show advanced diagnostics</translation>
-    </message>
-</context>
-<context>
     <name>SidebarMenu</name>
     <message>
         <location filename="../src/qml/components/SidebarMenu.qml" line="16"/>

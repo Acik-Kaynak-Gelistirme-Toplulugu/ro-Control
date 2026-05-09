@@ -76,7 +76,6 @@ tar -xzf %{SOURCE0} --strip-components=1
 
 %files common
 %license LICENSE
-%doc README.md README.tr.md CHANGELOG.md
 %{_datadir}/applications/io.github.projectroasd.rocontrol.desktop
 %{_datadir}/man/man1/ro-control.1*
 %{_datadir}/metainfo/io.github.projectroasd.rocontrol.metainfo.xml

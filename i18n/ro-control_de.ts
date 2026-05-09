@@ -458,20 +458,6 @@ Aktiver Stapel: %5
 Offener Ausweichtreiber: %6</translation>
     </message>
     <message>
-        <source>GPU: %1
-Driver Version: %2
-Sicherer Start: %3
-Session: %4
-Active Stack: %5
-Fallback Open Driver: %6</source>
-        <translation type="vanished">GPU: %1
-Treiberversion: %2
-Secure Boot: %3
-Sitzung: %4
-Aktiver Stapel: %5
-Offener Ausweichtreiber: %6</translation>
-    </message>
-    <message>
         <location filename="../src/backend/nvidia/detector.cpp" line="66"/>
         <source>Enabled</source>
         <translation>Aktiviert</translation>
@@ -822,21 +808,6 @@ Wählen Sie Akzeptieren, um mit der Closed-Source-Installation fortzufahren, ode
         <location filename="../src/backend/nvidia/updater.cpp" line="674"/>
         <source>Selected version applied successfully. Please restart the system.</source>
         <translation>Ausgewählte Version erfolgreich angewendet. Bitte starten Sie das System neu.</translation>
-    </message>
-</context>
-<context>
-    <name>SettingsPage</name>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Darstellung</translation>
-    </message>
-    <message>
-        <source>Reset Defaults</source>
-        <translation type="vanished">Standardwerte zurücksetzen</translation>
-    </message>
-    <message>
-        <source>Show advanced diagnostics</source>
-        <translation type="vanished">Erweiterte Diagnose anzeigen</translation>
     </message>
 </context>
 <context>

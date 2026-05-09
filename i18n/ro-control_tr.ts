@@ -443,20 +443,6 @@
         <translation>Yedek Açık Sürücü</translation>
     </message>
     <message>
-        <source>GPU: %1
-Driver Version: %2
-Güvenli Önyükleme: %3
-Session: %4
-Active Stack: %5
-Fallback Open Driver: %6</source>
-        <translation type="vanished">GPU: %1
-Sürücü Sürümü: %2
-Secure Boot: %3
-Oturum: %4
-Etkin Yığın: %5
-Yedek Açık Sürücü: %6</translation>
-    </message>
-    <message>
         <location filename="../src/backend/nvidia/detector.cpp" line="62"/>
         <source>GPU: %1
 Driver Version: %2
@@ -822,21 +808,6 @@ Kapalı kaynak kuruluma devam etmek için Kabul Et&apos;i, iptal etmek için Red
         <location filename="../src/backend/nvidia/updater.cpp" line="674"/>
         <source>Selected version applied successfully. Please restart the system.</source>
         <translation>Seçilen sürüm başarıyla uygulandı. Lütfen sistemi yeniden başlatın.</translation>
-    </message>
-</context>
-<context>
-    <name>SettingsPage</name>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Görünüm</translation>
-    </message>
-    <message>
-        <source>Reset Defaults</source>
-        <translation type="vanished">Varsayılanlara Sıfırla</translation>
-    </message>
-    <message>
-        <source>Show advanced diagnostics</source>
-        <translation type="vanished">Gelişmiş tanılamayı göster</translation>
     </message>
 </context>
 <context>

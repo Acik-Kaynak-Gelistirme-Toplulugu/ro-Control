@@ -29,30 +29,6 @@ QString simplifiedDesktopName(const QString &desktop) {
   return trimmed;
 }
 
-[[maybe_unused]] QString virtualizationLabel(const QString &value) {
-  const QString lowered = value.trimmed().toLower();
-  if (lowered.isEmpty() || lowered == QStringLiteral("none")) {
-    return {};
-  }
-  if (lowered == QStringLiteral("kvm") || lowered == QStringLiteral("qemu")) {
-    return QStringLiteral("KVM/QEMU");
-  }
-  if (lowered == QStringLiteral("vmware")) {
-    return QStringLiteral("VMware");
-  }
-  if (lowered == QStringLiteral("oracle") ||
-      lowered == QStringLiteral("virtualbox")) {
-    return QStringLiteral("VirtualBox");
-  }
-  if (lowered == QStringLiteral("microsoft")) {
-    return QStringLiteral("Hyper-V");
-  }
-  if (lowered == QStringLiteral("parallels")) {
-    return QStringLiteral("Parallels");
-  }
-  return value.trimmed();
-}
-
 QString valueFromOsRelease(const QString &key) {
   QFile file(QStringLiteral("/etc/os-release"));
   if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {

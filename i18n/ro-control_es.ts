@@ -458,20 +458,6 @@ Pila activa: %5
 Controlador abierto alternativo: %6</translation>
     </message>
     <message>
-        <source>GPU: %1
-Driver Version: %2
-Arranque seguro: %3
-Session: %4
-Active Stack: %5
-Fallback Open Driver: %6</source>
-        <translation type="vanished">GPU: %1
-Versión del controlador: %2
-Secure Boot: %3
-Sesión: %4
-Pila activa: %5
-Controlador abierto alternativo: %6</translation>
-    </message>
-    <message>
         <location filename="../src/backend/nvidia/detector.cpp" line="66"/>
         <source>Enabled</source>
         <translation>Activado</translation>
@@ -822,21 +808,6 @@ Elija Aceptar para continuar con la instalación de código cerrado o Rechazar p
         <location filename="../src/backend/nvidia/updater.cpp" line="674"/>
         <source>Selected version applied successfully. Please restart the system.</source>
         <translation>La versión seleccionada se aplicó correctamente. Reinicie el sistema.</translation>
-    </message>
-</context>
-<context>
-    <name>SettingsPage</name>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Apariencia</translation>
-    </message>
-    <message>
-        <source>Reset Defaults</source>
-        <translation type="vanished">Restablecer valores</translation>
-    </message>
-    <message>
-        <source>Show advanced diagnostics</source>
-        <translation type="vanished">Mostrar diagnóstico avanzado</translation>
     </message>
 </context>
 <context>
