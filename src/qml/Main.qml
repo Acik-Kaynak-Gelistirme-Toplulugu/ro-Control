@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material
@@ -44,27 +46,35 @@ ApplicationWindow {
                                              ? root.uiPreferences.showAdvancedInfo
                                              : true
     readonly property real uiScale: Math.max(0.85, Math.min(width / 1320, 1.15))
+    property string quickMenuMode: ""
+    readonly property var visibleLanguages: root.hasLanguageManager
+                                            ? root.languageManager.availableLanguages.filter(function(item) { return item.code !== "system"; })
+                                            : []
+    readonly property var visibleThemeModes: root.hasUiPreferences
+                                             ? root.uiPreferences.availableThemeModes.filter(function(item) { return item.code !== "system"; })
+                                             : []
 
-    function syncThemePicker() {
-        if (!hasUiPreferences)
-            return;
-        for (let i = 0; i < themePicker.model.length; ++i) {
-            if (themePicker.model[i].code === root.uiPreferences.themeMode) {
-                themePicker.currentIndex = i;
-                break;
-            }
-        }
+    function currentLanguageLabel() {
+        return root.hasLanguageManager ? root.languageManager.currentLanguageLabel : qsTr("Language");
     }
 
-    function syncLanguagePicker() {
-        if (!hasLanguageManager)
-            return;
-        for (let i = 0; i < languagePicker.model.length; ++i) {
-            if (languagePicker.model[i].code === root.languageManager.currentLanguage) {
-                languagePicker.currentIndex = i;
-                break;
-            }
-        }
+    function currentThemeLabel() {
+        if (root.themeMode === "dark")
+            return qsTr("Dark");
+        if (root.themeMode === "light")
+            return qsTr("Light");
+        return qsTr("Automatic");
+    }
+
+    function openQuickMenu(mode, sourceButton) {
+        quickMenuMode = mode;
+        quickMenuPopup.width = Math.round(220 * root.uiScale);
+        quickMenuPopup.x = Math.max(Math.round(16 * root.uiScale),
+                                    Math.min(sourceButton.mapToItem(root.contentItem, 0, 0).x
+                                             + sourceButton.width - quickMenuPopup.width,
+                                             root.width - quickMenuPopup.width - Math.round(16 * root.uiScale)));
+        quickMenuPopup.y = sourceButton.mapToItem(root.contentItem, 0, sourceButton.height).y + Math.round(8 * root.uiScale);
+        quickMenuPopup.open();
     }
 
     QtObject {
@@ -151,43 +161,125 @@ ApplicationWindow {
                 }
 
                 RowLayout {
-                    spacing: Math.round(8 * root.uiScale)
+                    spacing: Math.round(10 * root.uiScale)
 
-                    ComboBox {
-                        id: languagePicker
-                        Layout.preferredWidth: Math.round(170 * root.uiScale)
-                        model: root.hasLanguageManager ? root.languageManager.availableLanguages : []
-                        textRole: "nativeLabel"
-                        palette.text: colors.text
-                        palette.buttonText: colors.text
+                    ToolButton {
+                        id: languageButton
+                        implicitWidth: Math.round(46 * root.uiScale)
+                        implicitHeight: Math.round(46 * root.uiScale)
+                        onClicked: root.openQuickMenu("language", languageButton)
+                        ToolTip.visible: hovered
+                        ToolTip.text: root.currentLanguageLabel()
 
-                        Component.onCompleted: root.syncLanguagePicker()
+                        background: Rectangle {
+                            radius: width / 2
+                            color: languageButton.down || quickMenuPopup.visible && root.quickMenuMode === "language"
+                                   ? colors.accentA
+                                   : colors.card
+                            border.width: 1
+                            border.color: colors.border
+                        }
 
-                        onActivated: {
-                            const selected = model[currentIndex];
-                            if (root.hasLanguageManager && selected && selected.code)
-                                root.languageManager.setCurrentLanguage(selected.code);
+                        contentItem: Text {
+                            text: "\u25CE"
+                            color: colors.text
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.pixelSize: Math.round(18 * root.uiScale)
                         }
                     }
 
-                    ComboBox {
-                        id: themePicker
-                        Layout.preferredWidth: Math.round(150 * root.uiScale)
-                        model: root.hasUiPreferences ? root.uiPreferences.availableThemeModes : []
-                        textRole: "label"
-                        palette.text: colors.text
-                        palette.buttonText: colors.text
+                    ToolButton {
+                        id: themeButton
+                        implicitWidth: Math.round(46 * root.uiScale)
+                        implicitHeight: Math.round(46 * root.uiScale)
+                        onClicked: root.openQuickMenu("theme", themeButton)
+                        ToolTip.visible: hovered
+                        ToolTip.text: root.currentThemeLabel()
 
-                        Component.onCompleted: root.syncThemePicker()
+                        background: Rectangle {
+                            radius: width / 2
+                            color: themeButton.down || quickMenuPopup.visible && root.quickMenuMode === "theme"
+                                   ? colors.accentA
+                                   : colors.card
+                            border.width: 1
+                            border.color: colors.border
+                        }
 
-                        onActivated: {
-                            const selected = model[currentIndex];
-                            if (root.hasUiPreferences && selected && selected.code)
-                                root.uiPreferences.setThemeMode(selected.code);
+                        contentItem: Text {
+                            text: root.darkMode ? "\u25D1" : "\u25D0"
+                            color: colors.text
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.pixelSize: Math.round(18 * root.uiScale)
                         }
                     }
                 }
 
+            }
+        }
+
+        Popup {
+            id: quickMenuPopup
+            modal: false
+            focus: true
+            padding: Math.round(10 * root.uiScale)
+            closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+            background: Rectangle {
+                radius: Math.round(16 * root.uiScale)
+                color: colors.shellAlt
+                border.width: 1
+                border.color: colors.border
+            }
+
+            contentItem: ColumnLayout {
+                spacing: Math.round(6 * root.uiScale)
+
+                Repeater {
+                    model: root.quickMenuMode === "language" ? root.visibleLanguages : root.visibleThemeModes
+
+                    delegate: Button {
+                        id: quickMenuButton
+                        required property var modelData
+                        Layout.fillWidth: true
+                        text: root.quickMenuMode === "language" ? modelData.nativeLabel : modelData.label
+
+                        background: Rectangle {
+                            radius: Math.round(10 * root.uiScale)
+                            color: quickMenuButton.modelData.code === (root.quickMenuMode === "language"
+                                                                       ? root.languageManager.currentLanguage
+                                                                       : root.uiPreferences.themeMode)
+                                   ? colors.accentA
+                                   : colors.card
+                            border.width: 1
+                            border.color: colors.border
+                        }
+
+                        contentItem: Text {
+                            text: quickMenuButton.text
+                            color: quickMenuButton.modelData.code === (root.quickMenuMode === "language"
+                                                                       ? root.languageManager.currentLanguage
+                                                                       : root.uiPreferences.themeMode)
+                                   ? colors.window
+                                   : colors.text
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.pixelSize: Math.round(13 * root.uiScale)
+                            font.bold: quickMenuButton.modelData.code === (root.quickMenuMode === "language"
+                                                                           ? root.languageManager.currentLanguage
+                                                                           : root.uiPreferences.themeMode)
+                        }
+
+                        onClicked: {
+                            if (root.quickMenuMode === "language")
+                                root.languageManager.setCurrentLanguage(modelData.code);
+                            else
+                                root.uiPreferences.setThemeMode(modelData.code);
+                            quickMenuPopup.close();
+                        }
+                    }
+                }
             }
         }
 
@@ -235,22 +327,6 @@ ApplicationWindow {
                     color: tabBar.currentIndex === 1 ? colors.accentA : "transparent"
                 }
             }
-            TabButton {
-                id: settingsTab
-                text: qsTr("Settings")
-                contentItem: Text {
-                    text: settingsTab.text
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    color: tabBar.currentIndex === 2 ? colors.window : colors.textMuted
-                    font.pixelSize: Math.round(14 * root.uiScale)
-                    font.bold: tabBar.currentIndex === 2
-                }
-                background: Rectangle {
-                    radius: Math.round(12 * root.uiScale)
-                    color: tabBar.currentIndex === 2 ? colors.accentA : "transparent"
-                }
-            }
         }
 
         Rectangle {
@@ -287,30 +363,7 @@ ApplicationWindow {
                     ramMonitor: root.ramMonitor
                 }
 
-                Pages.SettingsPage {
-                    theme: colors
-                    darkMode: root.darkMode
-                    showAdvancedInfo: root.showAdvancedInfo
-                    uiScale: root.uiScale
-                    uiPreferences: root.uiPreferences
-                }
             }
-        }
-    }
-
-    Connections {
-        target: root.uiPreferences
-
-        function onThemeModeChanged() {
-            root.syncThemePicker()
-        }
-    }
-
-    Connections {
-        target: root.languageManager
-
-        function onCurrentLanguageChanged() {
-            root.syncLanguagePicker()
         }
     }
 }
