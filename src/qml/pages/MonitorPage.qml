@@ -19,6 +19,8 @@ Item {
     readonly property color borderColor: theme && theme.border ? theme.border : "#d9e1f0"
     readonly property color textColor: theme && theme.text ? theme.text : "#12213a"
     readonly property color softTextColor: theme && theme.textSoft ? theme.textSoft : "#6f829e"
+    readonly property color infoBg: theme && theme.infoBg ? theme.infoBg : "#e9f2ff"
+    readonly property int summaryCardHeight: Math.round(138 * page.uiScale)
 
     function formatTemp(value) {
         return value > 0 ? value + " C" : qsTr("Unavailable");
@@ -26,6 +28,17 @@ Item {
 
     function formatRam(used, total) {
         return total > 0 ? used + " / " + total + " MiB" : qsTr("Unavailable");
+    }
+
+    function refreshTelemetry() {
+        if (page.systemInfo)
+            page.systemInfo.refresh();
+        if (page.cpuMonitor)
+            page.cpuMonitor.refresh();
+        if (page.gpuMonitor)
+            page.gpuMonitor.refresh();
+        if (page.ramMonitor)
+            page.ramMonitor.refresh();
     }
 
     ScrollView {
@@ -46,7 +59,8 @@ Item {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: page.gpuMonitor && page.gpuMonitor.available ? 126 : 154
+                    Layout.preferredHeight: page.summaryCardHeight
+                    Layout.minimumHeight: page.summaryCardHeight
                     radius: 14
                     color: page.cardColor
                     border.width: 1
@@ -57,41 +71,25 @@ Item {
                         anchors.margins: 12
                         spacing: 6
 
-                        Label { text: qsTr("CPU"); color: page.softTextColor; font.bold: true }
-                        Label { text: page.cpuMonitor ? page.cpuMonitor.usagePercent.toFixed(1) + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
+                        Label { text: qsTr("CPU"); color: page.softTextColor; font.weight: Font.DemiBold; font.pixelSize: Math.round(12 * page.uiScale) }
+                        Label { text: page.cpuMonitor ? page.cpuMonitor.usagePercent.toFixed(1) + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.weight: Font.DemiBold }
                         Label { text: qsTr("Temperature: %1").arg(page.formatTemp(page.cpuMonitor ? page.cpuMonitor.temperatureC : -1)); color: page.softTextColor }
-                    }
-                }
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight: 126
-                    radius: 14
-                    color: page.cardColor
-                    border.width: 1
-                    border.color: page.borderColor
-
-                    Column {
-                        anchors.fill: parent
-                        anchors.margins: 12
-                        spacing: 6
-
-                        Label { text: qsTr("GPU"); color: page.softTextColor; font.bold: true }
-                        Label { text: page.gpuMonitor ? page.gpuMonitor.utilizationPercent + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
-                        Label { text: qsTr("Temperature: %1").arg(page.formatTemp(page.gpuMonitor ? page.gpuMonitor.temperatureC : -1)); color: page.softTextColor }
                         Label {
-                            visible: page.gpuMonitor && !page.gpuMonitor.available && page.gpuMonitor.statusMessage.length > 0
-                            text: page.gpuMonitor ? page.gpuMonitor.statusMessage : ""
+                            visible: page.cpuMonitor && page.cpuMonitor.temperatureC <= 0 && page.cpuMonitor.statusMessage.length > 0
+                            text: page.cpuMonitor ? page.cpuMonitor.statusMessage : ""
                             color: page.softTextColor
+                            elide: Text.ElideRight
                             wrapMode: Text.Wrap
                             width: parent.width
+                            maximumLineCount: 2
                         }
                     }
                 }
 
                 Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 126
+                    Layout.preferredHeight: page.summaryCardHeight
+                    Layout.minimumHeight: page.summaryCardHeight
                     radius: 14
                     color: page.cardColor
                     border.width: 1
@@ -102,8 +100,37 @@ Item {
                         anchors.margins: 12
                         spacing: 6
 
-                        Label { text: qsTr("Memory"); color: page.softTextColor; font.bold: true }
-                        Label { text: page.ramMonitor ? page.ramMonitor.usagePercent + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.bold: true }
+                        Label { text: qsTr("GPU"); color: page.softTextColor; font.weight: Font.DemiBold; font.pixelSize: Math.round(12 * page.uiScale) }
+                        Label { text: page.gpuMonitor ? page.gpuMonitor.utilizationPercent + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.weight: Font.DemiBold }
+                        Label { text: qsTr("Temperature: %1").arg(page.formatTemp(page.gpuMonitor ? page.gpuMonitor.temperatureC : -1)); color: page.softTextColor }
+                        Label {
+                            visible: page.gpuMonitor && page.gpuMonitor.temperatureC <= 0 && page.gpuMonitor.statusMessage.length > 0
+                            text: page.gpuMonitor ? page.gpuMonitor.statusMessage : ""
+                            color: page.softTextColor
+                            elide: Text.ElideRight
+                            wrapMode: Text.Wrap
+                            width: parent.width
+                            maximumLineCount: 2
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: page.summaryCardHeight
+                    Layout.minimumHeight: page.summaryCardHeight
+                    radius: 14
+                    color: page.cardColor
+                    border.width: 1
+                    border.color: page.borderColor
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 6
+
+                        Label { text: qsTr("Memory"); color: page.softTextColor; font.weight: Font.DemiBold; font.pixelSize: Math.round(12 * page.uiScale) }
+                        Label { text: page.ramMonitor ? page.ramMonitor.usagePercent + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.weight: Font.DemiBold }
                         Label { text: qsTr("Usage: %1").arg(page.formatRam(page.ramMonitor ? page.ramMonitor.usedMiB : 0, page.ramMonitor ? page.ramMonitor.totalMiB : 0)); color: page.softTextColor }
                     }
                 }
@@ -123,11 +150,38 @@ Item {
                     anchors.margins: 12
                     spacing: 10
 
-                    Label {
-                        text: qsTr("Live Resource Bars")
-                        color: page.textColor
-                        font.pixelSize: Math.round(18 * page.uiScale)
-                        font.bold: true
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("Live Resource Bars")
+                            color: page.textColor
+                            font.pixelSize: Math.round(18 * page.uiScale)
+                            font.weight: Font.DemiBold
+                        }
+
+                        ToolButton {
+                            id: telemetryRefreshButton
+                            implicitWidth: Math.round(42 * page.uiScale)
+                            implicitHeight: Math.round(38 * page.uiScale)
+                            icon.name: "view-refresh"
+                            icon.width: Math.round(18 * page.uiScale)
+                            icon.height: Math.round(18 * page.uiScale)
+                            icon.color: page.textColor
+                            display: AbstractButton.IconOnly
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Refresh telemetry")
+                            onClicked: page.refreshTelemetry()
+
+                            background: Rectangle {
+                                radius: width / 2
+                                color: telemetryRefreshButton.down || telemetryRefreshButton.hovered ? page.infoBg : page.bgColor
+                                border.width: 1
+                                border.color: page.textColor
+                            }
+                        }
                     }
 
                     Label { text: qsTr("CPU"); color: page.softTextColor }

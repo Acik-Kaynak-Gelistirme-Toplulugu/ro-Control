@@ -50,7 +50,7 @@ Rectangle {
             text: card.value
             color: card.theme.text
             font.pixelSize: card.valuePixelSize
-            font.weight: Font.Bold
+            font.weight: Font.DemiBold
             wrapMode: Text.Wrap
             Layout.fillWidth: true
             maximumLineCount: 2

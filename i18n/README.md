@@ -5,11 +5,9 @@ This directory contains the Qt Linguist translation sources for ro-Control.
 ## Current locales
 
 - `ro-control_en.ts` - English source catalog kept in sync with extracted strings
+- `ro-control_de.ts` - German translation catalog
+- `ro-control_es.ts` - Spanish translation catalog
 - `ro-control_tr.ts` - Turkish translation catalog
-
-Additional catalogs (`ro-control_de.ts`, `ro-control_es.ts`) are maintained in the
-repository, but currently not shipped at runtime until translation coverage is
-completed.
 
 English is the source language used directly in code. Additional locales should be
 added as new `ro-control_<locale>.ts` files.

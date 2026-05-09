@@ -27,9 +27,6 @@ const QStringList kKernelPackageCleanupTargets = {
     QStringLiteral("xorg-x11-drv-nvidia-kmodsrc"),
 };
 
-const char kNvidiaLicenseUrl[] =
-    "https://www.nvidia.com/en-us/drivers/nvidia-license/";
-
 QString commandError(const CommandRunner::Result &result,
                      const QString &fallback = QString()) {
   const QString stderrText = result.stderr.trimmed();
@@ -151,11 +148,25 @@ void NvidiaInstaller::setProprietaryAgreement(bool required,
 void NvidiaInstaller::refreshProprietaryAgreement() {
   setProprietaryAgreement(
       true,
-      tr("The proprietary NVIDIA driver is subject to NVIDIA's software "
-         "license. ro-Control cannot audit or review the closed-source "
-         "license text for you. Review the official NVIDIA license before "
-         "installation: %1")
-          .arg(QString::fromLatin1(kNvidiaLicenseUrl)));
+      tr("Closed-source NVIDIA driver license summary\n\n"
+         "This closed-source NVIDIA driver is provided under NVIDIA's driver "
+         "software license. By accepting, you confirm that you have authority "
+         "to accept the license terms and that ro-Control may start installing "
+         "the closed-source driver packages.\n\n"
+         "Important points:\n"
+         "- The software is licensed, not sold.\n"
+         "- The license is limited, revocable, non-transferable, and "
+         "non-sublicensable except where NVIDIA explicitly allows it.\n"
+         "- You may install and use copies of the driver software only as "
+         "permitted by the license and applicable law.\n"
+         "- NVIDIA does not grant extra third-party patent, codec, standards, "
+         "or content rights through this driver license.\n"
+         "- Open-source components, if any, remain governed by their own "
+         "separate open-source licenses.\n"
+         "- If you do not accept the NVIDIA license terms, do not install or "
+         "use the closed-source driver.\n\n"
+         "Choose Accept to continue with the closed-source installation, or "
+         "Reject to cancel."));
 }
 
 void NvidiaInstaller::install() { installProprietary(false); }
@@ -237,7 +248,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
     emitProgressAsync(
         guard,
         NvidiaInstaller::tr(
-            "Installing the proprietary NVIDIA driver (akmod-nvidia)..."));
+            "Installing the closed-source NVIDIA driver (akmod-nvidia)..."));
 
     QStringList installArgs{QStringLiteral("install"), QStringLiteral("-y"),
                             QStringLiteral("--refresh"),
@@ -301,7 +312,7 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
           if (guard) {
             emit guard->installFinished(
                 true, NvidiaInstaller::tr(
-                          "The proprietary NVIDIA driver was installed "
+                          "The closed-source NVIDIA driver was installed "
                           "successfully. Please restart the system."));
           }
         },

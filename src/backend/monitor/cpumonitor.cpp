@@ -12,6 +12,8 @@
 
 namespace {
 
+constexpr qint64 kMinimumUsageSampleMs = 650;
+
 QString readFileText(const QString &path) {
   QFile file(path);
   if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -125,19 +127,41 @@ int readCpuTemperatureFromHwmon() {
   return readFirstValidTemperature(fallbackPaths);
 }
 
-int readCpuTemperatureC() {
-  const int thermalZoneTemperature = readCpuTemperatureFromThermalZones();
-  if (thermalZoneTemperature > 0) {
-    return thermalZoneTemperature;
+int parseTemperatureFromPlainText(const QString &text) {
+  static const QRegularExpression numberPattern(
+      QStringLiteral(R"(([+-]?\d+(?:\.\d+)?))"));
+  const auto match = numberPattern.match(text);
+  if (!match.hasMatch()) {
+    return 0;
   }
 
-  const int hwmonTemperature = readCpuTemperatureFromHwmon();
-  if (hwmonTemperature > 0) {
-    return hwmonTemperature;
-  }
+  bool ok = false;
+  const double value = match.captured(1).toDouble(&ok);
+  return ok && value > 0.0 ? static_cast<int>(value) : 0;
+}
 
+int readCpuTemperatureFromSensors() {
   CommandRunner runner;
-  const auto result = runner.run(QStringLiteral("sensors"));
+  auto result = runner.run(QStringLiteral("sensors"), {QStringLiteral("-u")});
+  if (result.success()) {
+    static const QRegularExpression inputPattern(
+        QStringLiteral(R"(\btemp\d+_input:\s*([+-]?\d+(?:\.\d+)?))"));
+    const QStringList lines = result.stdout.split(QLatin1Char('\n'));
+    for (const QString &line : lines) {
+      const auto match = inputPattern.match(line.trimmed());
+      if (!match.hasMatch()) {
+        continue;
+      }
+
+      bool ok = false;
+      const double value = match.captured(1).toDouble(&ok);
+      if (ok && value > 0.0) {
+        return static_cast<int>(value);
+      }
+    }
+  }
+
+  result = runner.run(QStringLiteral("sensors"));
   if (!result.success()) {
     return 0;
   }
@@ -175,6 +199,43 @@ int readCpuTemperatureC() {
   return 0;
 }
 
+int readCpuTemperatureFromAcpi() {
+  CommandRunner runner;
+  const auto result = runner.run(QStringLiteral("acpi"), {QStringLiteral("-t")});
+  return result.success() ? parseTemperatureFromPlainText(result.stdout) : 0;
+}
+
+int readCpuTemperatureFromVcgencmd() {
+  CommandRunner runner;
+  const auto result =
+      runner.run(QStringLiteral("vcgencmd"), {QStringLiteral("measure_temp")});
+  return result.success() ? parseTemperatureFromPlainText(result.stdout) : 0;
+}
+
+int readCpuTemperatureC() {
+  const int thermalZoneTemperature = readCpuTemperatureFromThermalZones();
+  if (thermalZoneTemperature > 0) {
+    return thermalZoneTemperature;
+  }
+
+  const int hwmonTemperature = readCpuTemperatureFromHwmon();
+  if (hwmonTemperature > 0) {
+    return hwmonTemperature;
+  }
+
+  const int sensorsTemperature = readCpuTemperatureFromSensors();
+  if (sensorsTemperature > 0) {
+    return sensorsTemperature;
+  }
+
+  const int acpiTemperature = readCpuTemperatureFromAcpi();
+  if (acpiTemperature > 0) {
+    return acpiTemperature;
+  }
+
+  return readCpuTemperatureFromVcgencmd();
+}
+
 } // namespace
 
 CpuMonitor::CpuMonitor(QObject *parent) : QObject(parent) {
@@ -182,6 +243,7 @@ CpuMonitor::CpuMonitor(QObject *parent) : QObject(parent) {
   m_timer.setTimerType(Qt::VeryCoarseTimer);
   connect(&m_timer, &QTimer::timeout, this, &CpuMonitor::refresh);
 
+  m_sampleTimer.start();
   start();
   refresh();
 }
@@ -189,6 +251,8 @@ CpuMonitor::CpuMonitor(QObject *parent) : QObject(parent) {
 double CpuMonitor::usagePercent() const { return m_usagePercent; }
 
 int CpuMonitor::temperatureC() const { return m_temperatureC; }
+
+QString CpuMonitor::statusMessage() const { return m_statusMessage; }
 
 bool CpuMonitor::available() const { return m_available; }
 
@@ -242,8 +306,11 @@ void CpuMonitor::refresh() {
   const quint64 idleAll = idle + iowait;
   const quint64 nonIdle = user + nice + system + irq + softirq + steal;
   const quint64 total = idleAll + nonIdle;
+  const qint64 elapsedMs =
+      m_sampleTimer.isValid() ? m_sampleTimer.elapsed() : kMinimumUsageSampleMs;
 
-  if (m_prevTotal > 0 && total >= m_prevTotal && idleAll >= m_prevIdle) {
+  if (m_prevTotal > 0 && total >= m_prevTotal && idleAll >= m_prevIdle &&
+      elapsedMs >= kMinimumUsageSampleMs) {
     const quint64 totalDelta = total - m_prevTotal;
     const quint64 idleDelta = idleAll - m_prevIdle;
 
@@ -255,10 +322,17 @@ void CpuMonitor::refresh() {
     }
   }
 
-  m_prevTotal = total;
-  m_prevIdle = idleAll;
+  if (m_prevTotal == 0 || elapsedMs >= kMinimumUsageSampleMs) {
+    m_prevTotal = total;
+    m_prevIdle = idleAll;
+    m_sampleTimer.restart();
+  }
 
-  setTemperatureC(readCpuTemperatureC());
+  const int temperatureC = readCpuTemperatureC();
+  setTemperatureC(temperatureC);
+  setStatusMessage(temperatureC > 0
+                       ? tr("CPU temperature is being read from system sensors.")
+                       : tr("CPU temperature sensor is not exposed by the kernel."));
   setAvailable(true);
 }
 
@@ -305,6 +379,15 @@ void CpuMonitor::setTemperatureC(int value) {
 
   m_temperatureC = value;
   emit temperatureCChanged();
+}
+
+void CpuMonitor::setStatusMessage(const QString &value) {
+  if (m_statusMessage == value) {
+    return;
+  }
+
+  m_statusMessage = value;
+  emit statusMessageChanged();
 }
 
 void CpuMonitor::setAvailable(bool value) {

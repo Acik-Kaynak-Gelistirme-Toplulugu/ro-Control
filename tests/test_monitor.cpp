@@ -110,6 +110,10 @@ private slots:
   void testGpuStatusMessageWhenTelemetryUnavailable() {
     qputenv("RO_CONTROL_COMMAND_NVIDIA_SMI",
             QByteArrayLiteral("/definitely/missing/nvidia-smi"));
+    qputenv("RO_CONTROL_COMMAND_SENSORS",
+            QByteArrayLiteral("/definitely/missing/sensors"));
+    qputenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS",
+            QByteArrayLiteral("/definitely/missing/nvidia-settings"));
     qputenv("RO_CONTROL_DRM_ROOT",
             QByteArrayLiteral("/definitely/missing/drm-root"));
 
@@ -121,6 +125,53 @@ private slots:
     QVERIFY(!gpu.statusMessage().trimmed().isEmpty());
 
     qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SMI");
+    qunsetenv("RO_CONTROL_COMMAND_SENSORS");
+    qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS");
+    qunsetenv("RO_CONTROL_DRM_ROOT");
+  }
+
+  void testGpuTemperatureFallsBackToSensors() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString scriptPath = tempDir.filePath(QStringLiteral("fake-sensors.sh"));
+    QFile script(scriptPath);
+    QVERIFY(script.open(QIODevice::WriteOnly | QIODevice::Text));
+
+    QTextStream stream(&script);
+    stream << "#!/bin/sh\n";
+    stream << "cat <<'EOF'\n";
+    stream << "nouveau-pci-0100\n";
+    stream << "Adapter: PCI adapter\n";
+    stream << "temp1:\n";
+    stream << "  temp1_input: 52.000\n";
+    stream << "EOF\n";
+    script.close();
+    QVERIFY(QFile::setPermissions(scriptPath, QFileDevice::ReadOwner |
+                                                  QFileDevice::WriteOwner |
+                                                  QFileDevice::ExeOwner));
+
+    qputenv("RO_CONTROL_COMMAND_NVIDIA_SMI",
+            QByteArrayLiteral("/definitely/missing/nvidia-smi"));
+    qputenv("RO_CONTROL_COMMAND_SENSORS", scriptPath.toUtf8());
+    qputenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS",
+            QByteArrayLiteral("/definitely/missing/nvidia-settings"));
+    qputenv("RO_CONTROL_DRM_ROOT",
+            QByteArrayLiteral("/definitely/missing/drm-root"));
+
+    GpuMonitor gpu;
+    gpu.stop();
+    gpu.refresh();
+
+    QVERIFY(gpu.available());
+    QCOMPARE(gpu.temperatureC(), 52);
+    QCOMPARE(gpu.utilizationPercent(), 0);
+    QCOMPARE(gpu.memoryUsedMiB(), 0);
+    QCOMPARE(gpu.memoryTotalMiB(), 0);
+
+    qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SMI");
+    qunsetenv("RO_CONTROL_COMMAND_SENSORS");
+    qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS");
     qunsetenv("RO_CONTROL_DRM_ROOT");
   }
 

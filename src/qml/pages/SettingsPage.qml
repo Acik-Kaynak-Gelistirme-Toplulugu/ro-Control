@@ -45,7 +45,7 @@ Item {
                         text: qsTr("Appearance")
                         color: settingsPage.textColor
                         font.pixelSize: Math.round(18 * settingsPage.uiScale)
-                        font.bold: true
+                        font.weight: Font.DemiBold
                     }
 
                     RowLayout {
