@@ -42,12 +42,6 @@
 		<release version="0.2.1" date="2026-03-30" />
 	</releases>
 
-	<screenshots>
-		<screenshot type="default">
-			<image>https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/monitor-overview.svg</image>
-		</screenshot>
-	</screenshots>
-
 	<launchable type="desktop-id">io.github.projectroasd.rocontrol.desktop</launchable>
 	<provides>
 		<binary>ro-control</binary>
@@ -60,5 +54,4 @@
 	<url type="homepage">https://github.com/Project-Ro-ASD/ro-Control</url>
 	<url type="vcs-browser">https://github.com/Project-Ro-ASD/ro-Control</url>
 	<url type="bugtracker">https://github.com/Project-Ro-ASD/ro-Control/issues</url>
-	<url type="help">https://github.com/Project-Ro-ASD/ro-Control/blob/main/SUPPORT.md</url>
 </component>

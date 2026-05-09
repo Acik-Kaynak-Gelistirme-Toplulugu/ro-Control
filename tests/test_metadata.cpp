@@ -1,5 +1,4 @@
 #include <QFile>
-#include <QRegularExpression>
 #include <QTest>
 
 namespace {
@@ -65,9 +64,7 @@ private slots:
     QVERIFY(metainfo.contains(
         QStringLiteral("<id>io.github.projectroasd.rocontrol.desktop</id>")));
 
-    const QRegularExpression screenshotRe(
-        QStringLiteral(R"(<image>https://raw\.githubusercontent\.com/.+/docs/screenshots/.+</image>)"));
-    QVERIFY(screenshotRe.match(metainfo).hasMatch());
+    QVERIFY(!metainfo.contains(QStringLiteral("<screenshots>")));
   }
 
   void testAppStreamContainsCurrentReleaseVersion() {
