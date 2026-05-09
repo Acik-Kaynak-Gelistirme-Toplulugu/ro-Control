@@ -74,15 +74,6 @@ Item {
                         Label { text: qsTr("CPU"); color: page.softTextColor; font.weight: Font.DemiBold; font.pixelSize: Math.round(12 * page.uiScale) }
                         Label { text: page.cpuMonitor ? page.cpuMonitor.usagePercent.toFixed(1) + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.weight: Font.DemiBold }
                         Label { text: qsTr("Temperature: %1").arg(page.formatTemp(page.cpuMonitor ? page.cpuMonitor.temperatureC : -1)); color: page.softTextColor }
-                        Label {
-                            visible: page.cpuMonitor && page.cpuMonitor.temperatureC <= 0 && page.cpuMonitor.statusMessage.length > 0
-                            text: page.cpuMonitor ? page.cpuMonitor.statusMessage : ""
-                            color: page.softTextColor
-                            elide: Text.ElideRight
-                            wrapMode: Text.Wrap
-                            width: parent.width
-                            maximumLineCount: 2
-                        }
                     }
                 }
 
@@ -103,15 +94,6 @@ Item {
                         Label { text: qsTr("GPU"); color: page.softTextColor; font.weight: Font.DemiBold; font.pixelSize: Math.round(12 * page.uiScale) }
                         Label { text: page.gpuMonitor ? page.gpuMonitor.utilizationPercent + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.weight: Font.DemiBold }
                         Label { text: qsTr("Temperature: %1").arg(page.formatTemp(page.gpuMonitor ? page.gpuMonitor.temperatureC : -1)); color: page.softTextColor }
-                        Label {
-                            visible: page.gpuMonitor && page.gpuMonitor.temperatureC <= 0 && page.gpuMonitor.statusMessage.length > 0
-                            text: page.gpuMonitor ? page.gpuMonitor.statusMessage : ""
-                            color: page.softTextColor
-                            elide: Text.ElideRight
-                            wrapMode: Text.Wrap
-                            width: parent.width
-                            maximumLineCount: 2
-                        }
                     }
                 }
 
@@ -129,7 +111,43 @@ Item {
                         anchors.margins: 12
                         spacing: 6
 
-                        Label { text: qsTr("Memory"); color: page.softTextColor; font.weight: Font.DemiBold; font.pixelSize: Math.round(12 * page.uiScale) }
+                        RowLayout {
+                            width: parent.width
+                            spacing: 8
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("Memory")
+                                color: page.softTextColor
+                                font.weight: Font.DemiBold
+                                font.pixelSize: Math.round(12 * page.uiScale)
+                            }
+
+                            ToolButton {
+                                id: telemetryRefreshButton
+                                implicitWidth: Math.round(34 * page.uiScale)
+                                implicitHeight: Math.round(34 * page.uiScale)
+                                display: AbstractButton.IconOnly
+                                ToolTip.visible: hovered
+                                ToolTip.text: qsTr("Refresh telemetry")
+                                onClicked: page.refreshTelemetry()
+
+                                contentItem: Image {
+                                    source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
+                                    sourceSize.width: Math.round(17 * page.uiScale)
+                                    sourceSize.height: Math.round(17 * page.uiScale)
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                background: Rectangle {
+                                    radius: width / 2
+                                    color: telemetryRefreshButton.down ? page.infoBg : page.bgColor
+                                    border.width: 1
+                                    border.color: page.borderColor
+                                }
+                            }
+                        }
+
                         Label { text: page.ramMonitor ? page.ramMonitor.usagePercent + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.weight: Font.DemiBold }
                         Label { text: qsTr("Usage: %1").arg(page.formatRam(page.ramMonitor ? page.ramMonitor.usedMiB : 0, page.ramMonitor ? page.ramMonitor.totalMiB : 0)); color: page.softTextColor }
                     }
@@ -160,26 +178,6 @@ Item {
                             color: page.textColor
                             font.pixelSize: Math.round(18 * page.uiScale)
                             font.weight: Font.DemiBold
-                        }
-
-                        ToolButton {
-                            id: telemetryRefreshButton
-                            implicitWidth: Math.round(42 * page.uiScale)
-                            implicitHeight: Math.round(38 * page.uiScale)
-                            icon.source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
-                            icon.width: Math.round(18 * page.uiScale)
-                            icon.height: Math.round(18 * page.uiScale)
-                            display: AbstractButton.IconOnly
-                            ToolTip.visible: hovered
-                            ToolTip.text: qsTr("Refresh telemetry")
-                            onClicked: page.refreshTelemetry()
-
-                            background: Rectangle {
-                                radius: width / 2
-                                color: telemetryRefreshButton.down || telemetryRefreshButton.hovered ? page.infoBg : page.bgColor
-                                border.width: 1
-                                border.color: page.textColor
-                            }
                         }
                     }
 

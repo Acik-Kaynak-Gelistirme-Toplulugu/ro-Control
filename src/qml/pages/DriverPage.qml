@@ -27,6 +27,9 @@ Item {
     readonly property bool driverInstalledLocally: page.nvidiaDetector.driverVersion.length > 0 || page.nvidiaUpdater.currentVersion.length > 0
     readonly property string installedVersionLabel: page.nvidiaDetector.driverVersion.length > 0 ? page.nvidiaDetector.driverVersion : page.nvidiaUpdater.currentVersion
     readonly property bool catalogAvailable: page.nvidiaUpdater.latestVersion.length > 0 || page.nvidiaUpdater.availableVersions.length > 0
+    readonly property color driverVersionStatusColor: page.nvidiaUpdater.updateAvailable
+                                                      ? (theme && theme.warning ? theme.warning : page.softTextColor)
+                                                      : page.softTextColor
     readonly property color bgColor: theme && theme.card ? theme.card : "#ffffff"
     readonly property color cardColor: theme && theme.cardStrong ? theme.cardStrong : "#f5f8ff"
     readonly property color borderColor: theme && theme.border ? theme.border : "#d9e1f0"
@@ -73,6 +76,21 @@ Item {
         if (page.catalogAvailable)
             return qsTr("Driver catalog loaded");
         return qsTr("Driver scan pending");
+    }
+
+    function driverVersionStatusLabel() {
+        if (page.installedVersionLabel.length > 0 && page.nvidiaUpdater.latestVersion.length > 0) {
+            if (page.nvidiaUpdater.updateAvailable)
+                return qsTr("New version available: %1").arg(page.nvidiaUpdater.latestVersion);
+            return qsTr("Installed version is up to date.");
+        }
+        if (page.installedVersionLabel.length > 0)
+            return qsTr("Installed version detected.");
+        if (page.nvidiaUpdater.latestVersion.length > 0)
+            return qsTr("Not installed. Latest available version: %1").arg(page.nvidiaUpdater.latestVersion);
+        if (page.catalogAvailable)
+            return qsTr("Driver catalog loaded.");
+        return qsTr("Checking whether a newer driver is available...");
     }
 
     function closedLicenseText() {
@@ -146,7 +164,44 @@ Item {
                         anchors.margins: 12
                         spacing: 6
 
-                        Label { text: qsTr("Driver Version"); color: page.softTextColor; font.weight: Font.DemiBold; font.pixelSize: Math.round(12 * page.uiScale) }
+                        RowLayout {
+                            width: parent.width
+                            spacing: 8
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("Driver Version")
+                                color: page.softTextColor
+                                font.weight: Font.DemiBold
+                                font.pixelSize: Math.round(12 * page.uiScale)
+                            }
+
+                            ToolButton {
+                                id: refreshButton
+                                implicitWidth: Math.round(34 * page.uiScale)
+                                implicitHeight: Math.round(34 * page.uiScale)
+                                enabled: !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
+                                display: AbstractButton.IconOnly
+                                ToolTip.visible: hovered
+                                ToolTip.text: qsTr("Rescan and check updates")
+                                onClicked: page.refreshDriverState(true)
+
+                                contentItem: Image {
+                                    source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
+                                    sourceSize.width: Math.round(17 * page.uiScale)
+                                    sourceSize.height: Math.round(17 * page.uiScale)
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                background: Rectangle {
+                                    radius: width / 2
+                                    color: refreshButton.down ? page.infoBg : page.bgColor
+                                    border.width: 1
+                                    border.color: page.borderColor
+                                }
+                            }
+                        }
+
                         Label {
                             text: page.driverVersionMainLabel()
                             color: page.textColor
@@ -154,6 +209,13 @@ Item {
                             font.weight: Font.DemiBold
                             elide: Text.ElideRight
                             width: parent.width
+                        }
+                        Label {
+                            width: parent.width
+                            text: page.driverVersionStatusLabel()
+                            color: page.driverVersionStatusColor
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
                         }
                     }
                 }
@@ -183,11 +245,10 @@ Item {
                         }
                         Label {
                             width: parent.width
-                            text: page.nvidiaDetector.secureBootKnown
-                                  ? (page.nvidiaDetector.secureBootEnabled
-                                     ? qsTr("Kernel module signing may be required.")
-                                     : qsTr("No Secure Boot signing requirement detected."))
-                                  : qsTr("Secure Boot state could not be verified.")
+                            visible: page.nvidiaDetector.secureBootKnown
+                            text: page.nvidiaDetector.secureBootEnabled
+                                  ? qsTr("Kernel module signing may be required.")
+                                  : qsTr("No Secure Boot signing requirement detected.")
                             color: page.softTextColor
                             wrapMode: Text.Wrap
                             maximumLineCount: 2
@@ -220,27 +281,6 @@ Item {
                             color: page.textColor
                             font.pixelSize: Math.round(18 * page.uiScale)
                             font.weight: Font.DemiBold
-                        }
-
-                        ToolButton {
-                            id: refreshButton
-                            implicitWidth: Math.round(38 * page.uiScale)
-                            implicitHeight: Math.round(38 * page.uiScale)
-                            enabled: !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
-                            icon.source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
-                            icon.width: Math.round(18 * page.uiScale)
-                            icon.height: Math.round(18 * page.uiScale)
-                            display: AbstractButton.IconOnly
-                            ToolTip.visible: hovered
-                            ToolTip.text: qsTr("Rescan and check updates")
-                            onClicked: page.refreshDriverState(true)
-
-                            background: Rectangle {
-                                radius: width / 2
-                                color: refreshButton.down ? page.infoBg : page.bgColor
-                                border.width: 1
-                                border.color: page.borderColor
-                            }
                         }
                     }
 

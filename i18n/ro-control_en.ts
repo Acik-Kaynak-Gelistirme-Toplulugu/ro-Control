@@ -17,232 +17,261 @@
 <context>
     <name>DriverPage</name>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="48"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="51"/>
         <source>General</source>
         <translation>General</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="82"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="100"/>
         <source>Closed-source NVIDIA driver installation requires reviewing and accepting the NVIDIA license terms before ro-Control can start the closed-source install workflow.</source>
         <translation>Closed-source NVIDIA driver installation requires reviewing and accepting the NVIDIA license terms before ro-Control can start the closed-source install workflow.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="95"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="113"/>
         <source>Checking official NVIDIA driver sources...</source>
         <translation>Checking official NVIDIA driver sources...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="132"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="150"/>
         <source>No NVIDIA GPU</source>
         <translation>No NVIDIA GPU</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="149"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="173"/>
         <source>Driver Version</source>
         <translation>Driver Version</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="174"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="236"/>
         <source>Secure Boot</source>
         <translation>Secure Boot</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="177"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="239"/>
         <source>Enabled</source>
         <translation>Enabled</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="178"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="240"/>
         <source>Disabled</source>
         <translation>Disabled</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="179"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="241"/>
         <source>Unknown</source>
         <translation>Unknown</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="219"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="280"/>
         <source>Driver Actions</source>
         <translation>Driver Actions</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="16"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="55"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="423"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="58"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="463"/>
         <source>Ready</source>
         <translation>Ready</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="43"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="46"/>
         <source>Update</source>
         <translation>Update</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="45"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="48"/>
         <source>Package</source>
         <translation>Package</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="47"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="50"/>
         <source>Kernel</source>
         <translation>Kernel</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="65"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="68"/>
         <source>Apply Latest Open Source</source>
         <translation>Apply Latest Open Source</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="65"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="68"/>
         <source>Install Open Source</source>
         <translation>Install Open Source</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="72"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="75"/>
         <source>Latest available: %1</source>
         <translation>Latest available: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="74"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="77"/>
         <source>Driver catalog loaded</source>
         <translation>Driver catalog loaded</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="75"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="78"/>
         <source>Driver scan pending</source>
         <translation>Driver scan pending</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="86"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="84"/>
+        <source>New version available: %1</source>
+        <translation>New version available: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="85"/>
+        <source>Installed version is up to date.</source>
+        <translation>Installed version is up to date.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="88"/>
+        <source>Installed version detected.</source>
+        <translation>Installed version detected.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="90"/>
+        <source>Not installed. Latest available version: %1</source>
+        <translation>Not installed. Latest available version: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="92"/>
+        <source>Driver catalog loaded.</source>
+        <translation>Driver catalog loaded.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="93"/>
+        <source>Checking whether a newer driver is available...</source>
+        <translation>Checking whether a newer driver is available...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="104"/>
         <source>System</source>
         <translation>System</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="188"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="250"/>
         <source>Kernel module signing may be required.</source>
         <translation>Kernel module signing may be required.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="189"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="251"/>
         <source>No Secure Boot signing requirement detected.</source>
         <translation>No Secure Boot signing requirement detected.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="190"/>
         <source>Secure Boot state could not be verified.</source>
-        <translation>Secure Boot state could not be verified.</translation>
+        <translation type="vanished">Secure Boot state could not be verified.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="235"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="186"/>
         <source>Rescan and check updates</source>
         <translation>Rescan and check updates</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="262"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="302"/>
         <source>Install Closed Source</source>
         <translation>Install Closed Source</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="268"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="529"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="308"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="569"/>
         <source>Installing closed-source NVIDIA driver...</source>
         <translation>Installing closed-source NVIDIA driver...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="469"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="509"/>
         <source>NVIDIA License Review</source>
         <translation>NVIDIA License Review</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="485"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="525"/>
         <source>Close</source>
         <translation>Close</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="518"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="558"/>
         <source>Reject</source>
         <translation>Reject</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="526"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="566"/>
         <source>Accept</source>
         <translation>Accept</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="131"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="149"/>
         <source>GPU</source>
         <translation>GPU</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="268"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="290"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="329"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="392"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="393"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="397"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="398"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="405"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="406"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="529"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="308"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="330"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="369"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="432"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="433"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="437"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="438"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="445"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="446"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="569"/>
         <source>Installer</source>
         <translation>Installer</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="279"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="319"/>
         <source>Applying latest available driver...</source>
         <translation>Applying latest available driver...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="315"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="355"/>
         <source>Maintenance</source>
         <translation>Maintenance</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="326"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="366"/>
         <source>Install Open Modules</source>
         <translation>Install Open Modules</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="329"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="369"/>
         <source>Installing open NVIDIA kernel modules...</source>
         <translation>Installing open NVIDIA kernel modules...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="290"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="330"/>
         <source>Cleaning NVIDIA artifacts...</source>
         <translation>Cleaning NVIDIA artifacts...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="249"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="289"/>
         <source>Install, update, deep-clean, or rescan the NVIDIA driver stack. The refresh button also checks available driver updates.</source>
         <translation>Install, update, deep-clean, or rescan the NVIDIA driver stack. The refresh button also checks available driver updates.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="352"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="392"/>
         <source>Activity</source>
         <translation>Activity</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="379"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="419"/>
         <source>Clear</source>
         <translation>Clear</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="95"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="279"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="417"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="418"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="423"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="425"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="426"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="431"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="432"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="113"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="319"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="457"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="458"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="463"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="465"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="466"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="471"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="472"/>
         <source>Updater</source>
         <translation>Updater</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="287"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="327"/>
         <source>Deep Clean</source>
         <translation>Deep Clean</translation>
     </message>
@@ -372,44 +401,44 @@
     </message>
     <message>
         <location filename="../src/qml/pages/MonitorPage.qml" line="74"/>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="186"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="184"/>
         <source>CPU</source>
         <translation>CPU</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/MonitorPage.qml" line="76"/>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="105"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="96"/>
         <source>Temperature: %1</source>
         <translation>Temperature: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="103"/>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="194"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="94"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="192"/>
         <source>GPU</source>
         <translation>GPU</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="132"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="120"/>
         <source>Memory</source>
         <translation>Memory</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="134"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="152"/>
         <source>Usage: %1</source>
         <translation>Usage: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="159"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="177"/>
         <source>Live Resource Bars</source>
         <translation>Live Resource Bars</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="174"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="132"/>
         <source>Refresh telemetry</source>
         <translation>Refresh telemetry</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="202"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="200"/>
         <source>RAM</source>
         <translation>RAM</translation>
     </message>
@@ -813,17 +842,17 @@ Choose Accept to continue with the closed-source installation, or Reject to canc
 <context>
     <name>SidebarMenu</name>
     <message>
-        <location filename="../src/qml/components/SidebarMenu.qml" line="16"/>
+        <location filename="../src/qml/components/SidebarMenu.qml" line="18"/>
         <source>Install</source>
         <translation>Install</translation>
     </message>
     <message>
-        <location filename="../src/qml/components/SidebarMenu.qml" line="17"/>
+        <location filename="../src/qml/components/SidebarMenu.qml" line="19"/>
         <source>Expert</source>
         <translation>Expert</translation>
     </message>
     <message>
-        <location filename="../src/qml/components/SidebarMenu.qml" line="18"/>
+        <location filename="../src/qml/components/SidebarMenu.qml" line="20"/>
         <source>Monitor</source>
         <translation>Monitor</translation>
     </message>
