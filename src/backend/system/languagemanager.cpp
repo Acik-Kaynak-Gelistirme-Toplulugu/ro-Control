@@ -18,8 +18,8 @@ struct LanguageEntry {
 constexpr LanguageEntry kSupportedLanguages[] = {
     {"system", "System", true},
     {"en", "English", true},
-    {"de", "Deutsch", false},
-    {"es", "Español", false},
+    {"de", "Deutsch", true},
+    {"es", "Español", true},
     {"tr", "Türkçe", true},
 };
 

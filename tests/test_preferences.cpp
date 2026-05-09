@@ -87,6 +87,14 @@ void TestPreferences::testLanguageManagerExposesEffectiveLanguageMetadata() {
   QCOMPARE(manager.currentLanguage(), QStringLiteral("tr"));
   QCOMPARE(manager.effectiveLanguage(), QStringLiteral("tr"));
   QCOMPARE(manager.currentLanguageLabel(), QStringLiteral("Türkçe"));
+
+  QStringList languageCodes;
+  for (const QVariant &language : languages) {
+    languageCodes.append(
+        language.toMap().value(QStringLiteral("code")).toString());
+  }
+  QVERIFY(languageCodes.contains(QStringLiteral("de")));
+  QVERIFY(languageCodes.contains(QStringLiteral("es")));
 }
 
 QTEST_GUILESS_MAIN(TestPreferences)

@@ -3,8 +3,8 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QRegularExpression>
-#include <QSysInfo>
 #include <algorithm>
 
 namespace {
@@ -86,6 +86,159 @@ bool readFirstTemperatureFromHwmon(const QString &basePath, int *value) {
         *value = static_cast<int>(milliC / 1000);
         return true;
       }
+    }
+  }
+
+  return false;
+}
+
+bool readFirstTemperatureInputInDirectory(const QString &path, int *value) {
+  const QFileInfoList inputs = QDir(path).entryInfoList(
+      {QStringLiteral("temp*_input")}, QDir::Files, QDir::Name);
+  for (const QFileInfo &input : inputs) {
+    qint64 milliC = 0;
+    if (readIntegerFile(input.absoluteFilePath(), &milliC) && milliC > 0) {
+      *value = static_cast<int>(milliC / 1000);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool isGpuHwmonName(const QString &name) {
+  const QString lower = name.trimmed().toLower();
+  return lower.contains(QStringLiteral("nvidia")) ||
+         lower.contains(QStringLiteral("nouveau")) ||
+         lower.contains(QStringLiteral("gpu"));
+}
+
+bool readNvidiaTemperatureFromHwmonClass(int *value) {
+  const QFileInfoList hwmonEntries =
+      QDir(QStringLiteral("/sys/class/hwmon"))
+          .entryInfoList({QStringLiteral("hwmon*")},
+                         QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+  for (const QFileInfo &entry : hwmonEntries) {
+    if (!isGpuHwmonName(readFileText(entry.absoluteFilePath() +
+                                     QStringLiteral("/name")))) {
+      continue;
+    }
+
+    if (readFirstTemperatureInputInDirectory(entry.absoluteFilePath(), value)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool readNvidiaTemperatureFromPciHwmon(int *value) {
+  const QFileInfoList deviceEntries =
+      QDir(QStringLiteral("/sys/bus/pci/devices"))
+          .entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+  for (const QFileInfo &deviceEntry : deviceEntries) {
+    const QString devicePath = deviceEntry.absoluteFilePath();
+    if (readFileText(devicePath + QStringLiteral("/vendor"))
+            .compare(QStringLiteral("0x10de"), Qt::CaseInsensitive) != 0) {
+      continue;
+    }
+
+    const QString deviceClass =
+        readFileText(devicePath + QStringLiteral("/class")).toLower();
+    if (!deviceClass.startsWith(QStringLiteral("0x03")) &&
+        !deviceClass.startsWith(QStringLiteral("0x02"))) {
+      continue;
+    }
+
+    if (readFirstTemperatureFromHwmon(devicePath, value)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool readTemperatureFromSensorsOutput(const QString &text, int *value) {
+  static const QRegularExpression chipHeaderPattern(
+      QStringLiteral(R"(^([^\s:][^:]+)$)"));
+  static const QRegularExpression tempInputPattern(
+      QStringLiteral(R"(\btemp\d+_input:\s*([+-]?\d+(?:\.\d+)?))"));
+
+  bool inGpuChip = false;
+  const QStringList lines = text.split(QLatin1Char('\n'));
+  for (const QString &line : lines) {
+    const QString trimmed = line.trimmed();
+    if (trimmed.isEmpty()) {
+      continue;
+    }
+
+    const auto chipMatch = chipHeaderPattern.match(line);
+    if (chipMatch.hasMatch()) {
+      inGpuChip = isGpuHwmonName(chipMatch.captured(1));
+      continue;
+    }
+
+    if (!inGpuChip) {
+      continue;
+    }
+
+    const auto tempMatch = tempInputPattern.match(trimmed);
+    if (!tempMatch.hasMatch()) {
+      continue;
+    }
+
+    bool ok = false;
+    const double parsed = tempMatch.captured(1).toDouble(&ok);
+    if (ok && parsed > 0.0) {
+      *value = static_cast<int>(parsed);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool readTemperatureFromSensorsCommand(CommandRunner &runner, int *value) {
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 1500;
+  const auto result = runner.run(QStringLiteral("sensors"),
+                                 {QStringLiteral("-u")}, options);
+  return result.success() && readTemperatureFromSensorsOutput(result.stdout, value);
+}
+
+bool readTemperatureFromNvidiaSettings(CommandRunner &runner, int *value) {
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 1500;
+  const auto result =
+      runner.run(QStringLiteral("nvidia-settings"),
+                 {QStringLiteral("-q"), QStringLiteral("[gpu:0]/GPUCoreTemp"),
+                  QStringLiteral("-t")},
+                 options);
+  if (!result.success()) {
+    return false;
+  }
+
+  const QString line = result.stdout.split(QLatin1Char('\n'), Qt::SkipEmptyParts)
+                           .value(0)
+                           .trimmed();
+  return parseMetricInt(line, value);
+}
+
+bool readNvidiaTemperatureFallback(CommandRunner &runner, int *value) {
+  return readNvidiaTemperatureFromHwmonClass(value) ||
+         readNvidiaTemperatureFromPciHwmon(value) ||
+         readTemperatureFromSensorsCommand(runner, value) ||
+         readTemperatureFromNvidiaSettings(runner, value);
+}
+
+bool hasNvidiaPciDevice() {
+  const QFileInfoList deviceEntries =
+      QDir(QStringLiteral("/sys/bus/pci/devices"))
+          .entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+  for (const QFileInfo &deviceEntry : deviceEntries) {
+    if (readFileText(deviceEntry.absoluteFilePath() + QStringLiteral("/vendor"))
+            .compare(QStringLiteral("0x10de"), Qt::CaseInsensitive) == 0) {
+      return true;
     }
   }
 
@@ -200,15 +353,18 @@ void GpuMonitor::refresh() {
     int nextUsed = 0;
     int nextTotal = 0;
 
-    if (!readGenericLinuxGpuMetrics(&nextTemp, &nextUtil, &nextUsed,
-                                    &nextTotal)) {
+    const bool hasGenericMetrics = readGenericLinuxGpuMetrics(
+        &nextTemp, &nextUtil, &nextUsed, &nextTotal);
+    const bool hasTemperatureFallback =
+        nextTemp > 0 || readNvidiaTemperatureFallback(runner, &nextTemp);
+
+    if (!hasGenericMetrics && !hasTemperatureFallback) {
       setAvailable(false);
-      const QString architecture = QSysInfo::currentCpuArchitecture().trimmed();
-      if (architecture == QStringLiteral("arm64") ||
-          architecture == QStringLiteral("aarch64")) {
-        setStatusMessage(tr("GPU telemetry is unavailable on this architecture unless nvidia-smi or DRM hwmon metrics are exposed."));
+      if (!hasNvidiaPciDevice()) {
+        setStatusMessage(tr("No NVIDIA GPU detected in this session."));
       } else {
-        setStatusMessage(tr("GPU telemetry is unavailable because nvidia-smi or DRM hwmon metrics could not be read."));
+        setStatusMessage(
+            tr("NVIDIA driver is not exposing telemetry on this system."));
       }
       clearMetrics();
       return;
@@ -244,7 +400,9 @@ void GpuMonitor::refresh() {
     }
 
     setAvailable(true);
-    setStatusMessage(tr("GPU telemetry is being read from DRM and hwmon fallbacks."));
+    setStatusMessage(hasGenericMetrics
+                         ? tr("GPU telemetry is being read from Linux metrics.")
+                         : tr("GPU temperature is being read from system sensors."));
     return;
   }
 
@@ -265,10 +423,13 @@ void GpuMonitor::refresh() {
   int nextUsed = 0;
   int nextTotal = 0;
 
-  const bool tempAvailable = parseMetricInt(fields.at(1), &nextTemp);
+  bool tempAvailable = parseMetricInt(fields.at(1), &nextTemp);
   const bool utilAvailable = parseMetricInt(fields.at(2), &nextUtil);
   const bool usedAvailable = parseMetricInt(fields.at(3), &nextUsed);
   const bool totalAvailable = parseMetricInt(fields.at(4), &nextTotal);
+  if (!tempAvailable) {
+    tempAvailable = readNvidiaTemperatureFallback(runner, &nextTemp);
+  }
 
   if (nextTotal < 0 || nextUsed < 0) {
     setAvailable(false);

@@ -66,6 +66,13 @@ ApplicationWindow {
         return qsTr("Automatic");
     }
 
+    function sessionLabel() {
+        if (!root.nvidiaDetector || root.nvidiaDetector.sessionType.length === 0)
+            return qsTr("Unknown");
+        const value = root.nvidiaDetector.sessionType;
+        return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+
     function openQuickMenu(mode, sourceButton) {
         quickMenuMode = mode;
         quickMenuPopup.width = Math.round(220 * root.uiScale);
@@ -152,7 +159,7 @@ ApplicationWindow {
                     }
 
                     Label {
-                        text: qsTr("Modern NVIDIA driver operations and live Linux telemetry")
+                        text: qsTr("ro-ASD NVIDIA driver operations and system diagnostics")
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         color: colors.textSoft
@@ -163,10 +170,32 @@ ApplicationWindow {
                 RowLayout {
                     spacing: Math.round(10 * root.uiScale)
 
+                    Rectangle {
+                        Layout.preferredWidth: Math.round(92 * root.uiScale)
+                        Layout.preferredHeight: Math.round(34 * root.uiScale)
+                        radius: Math.round(10 * root.uiScale)
+                        color: colors.card
+                        border.width: 1
+                        border.color: colors.border
+
+                        Label {
+                            anchors.centerIn: parent
+                            text: root.sessionLabel()
+                            color: colors.text
+                            font.pixelSize: Math.round(13 * root.uiScale)
+                            font.weight: Font.DemiBold
+                        }
+                    }
+
                     ToolButton {
                         id: languageButton
                         implicitWidth: Math.round(46 * root.uiScale)
                         implicitHeight: Math.round(46 * root.uiScale)
+                        icon.name: "globe"
+                        icon.width: Math.round(21 * root.uiScale)
+                        icon.height: Math.round(21 * root.uiScale)
+                        icon.color: colors.text
+                        display: AbstractButton.IconOnly
                         onClicked: root.openQuickMenu("language", languageButton)
                         ToolTip.visible: hovered
                         ToolTip.text: root.currentLanguageLabel()
@@ -180,19 +209,17 @@ ApplicationWindow {
                             border.color: colors.border
                         }
 
-                        contentItem: Text {
-                            text: "\u25CE"
-                            color: colors.text
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            font.pixelSize: Math.round(18 * root.uiScale)
-                        }
                     }
 
                     ToolButton {
                         id: themeButton
                         implicitWidth: Math.round(46 * root.uiScale)
                         implicitHeight: Math.round(46 * root.uiScale)
+                        icon.name: root.darkMode ? "weather-clear-night" : "weather-clear"
+                        icon.width: Math.round(21 * root.uiScale)
+                        icon.height: Math.round(21 * root.uiScale)
+                        icon.color: colors.text
+                        display: AbstractButton.IconOnly
                         onClicked: root.openQuickMenu("theme", themeButton)
                         ToolTip.visible: hovered
                         ToolTip.text: root.currentThemeLabel()
@@ -206,13 +233,6 @@ ApplicationWindow {
                             border.color: colors.border
                         }
 
-                        contentItem: Text {
-                            text: root.darkMode ? "\u25D1" : "\u25D0"
-                            color: colors.text
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            font.pixelSize: Math.round(18 * root.uiScale)
-                        }
                     }
                 }
 
@@ -261,14 +281,15 @@ ApplicationWindow {
                             color: quickMenuButton.modelData.code === (root.quickMenuMode === "language"
                                                                        ? root.languageManager.currentLanguage
                                                                        : root.uiPreferences.themeMode)
-                                   ? colors.window
+                                   ? colors.text
                                    : colors.text
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             font.pixelSize: Math.round(13 * root.uiScale)
-                            font.bold: quickMenuButton.modelData.code === (root.quickMenuMode === "language"
-                                                                           ? root.languageManager.currentLanguage
-                                                                           : root.uiPreferences.themeMode)
+                            font.weight: quickMenuButton.modelData.code === (root.quickMenuMode === "language"
+                                                                             ? root.languageManager.currentLanguage
+                                                                             : root.uiPreferences.themeMode)
+                                         ? Font.DemiBold : Font.Medium
                         }
 
                         onClicked: {
@@ -302,9 +323,9 @@ ApplicationWindow {
                     text: driverTab.text
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
-                    color: tabBar.currentIndex === 0 ? colors.window : colors.textMuted
+                    color: tabBar.currentIndex === 0 ? colors.text : colors.textMuted
                     font.pixelSize: Math.round(14 * root.uiScale)
-                    font.bold: tabBar.currentIndex === 0
+                    font.weight: tabBar.currentIndex === 0 ? Font.DemiBold : Font.Medium
                 }
                 background: Rectangle {
                     radius: Math.round(12 * root.uiScale)
@@ -318,9 +339,9 @@ ApplicationWindow {
                     text: monitorTab.text
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
-                    color: tabBar.currentIndex === 1 ? colors.window : colors.textMuted
+                    color: tabBar.currentIndex === 1 ? colors.text : colors.textMuted
                     font.pixelSize: Math.round(14 * root.uiScale)
-                    font.bold: tabBar.currentIndex === 1
+                    font.weight: tabBar.currentIndex === 1 ? Font.DemiBold : Font.Medium
                 }
                 background: Rectangle {
                     radius: Math.round(12 * root.uiScale)
