@@ -100,7 +100,7 @@ jobs:
           git archive --format=tar.gz --prefix="${ARCHIVE_PREFIX}/" --output="${ARCHIVE_PREFIX}.tar.gz" "${GITHUB_SHA}"
 
       - name: Upload source archives
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ro-control-source-${{ needs.metadata.outputs.version }}
           path: |
@@ -127,7 +127,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download source archives
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ro-control-source-${{ needs.metadata.outputs.version }}
           path: dist
@@ -260,7 +260,7 @@ jobs:
 
           rpm -q ro-control
           command -v ro-control
-          rpm -q --whatprovides /usr/bin/ro-control | grep -Fx 'ro-control'
+          rpm -q --whatprovides /usr/bin/ro-control | grep -E '^ro-control(-|$)'
           ldd -r /usr/bin/ro-control
           ro-control --help > /dev/null
 
@@ -275,7 +275,7 @@ jobs:
           )
 
       - name: Upload RPM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ro-control-rpm-${{ matrix.arch }}-${{ needs.metadata.outputs.version }}
           path: |
@@ -288,7 +288,7 @@ jobs:
 
     steps:
       - name: Download all release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: ro-control-*
           path: dist

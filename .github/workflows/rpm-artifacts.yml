@@ -57,7 +57,7 @@ jobs:
           git archive --format=tar.gz --prefix="${ARCHIVE_PREFIX}/" --output="${ARCHIVE_PREFIX}.tar.gz" "${GITHUB_SHA}"
 
       - name: Upload source archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ro-control-source-${{ needs.metadata.outputs.version }}
           path: |
@@ -84,7 +84,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download source archive
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ro-control-source-${{ needs.metadata.outputs.version }}
           path: dist
@@ -161,7 +161,7 @@ jobs:
           fi
 
       - name: Upload RPM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ro-control-${{ matrix.arch }}-rpm
           path: |

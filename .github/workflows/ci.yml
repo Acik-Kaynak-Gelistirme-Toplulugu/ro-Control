@@ -173,7 +173,7 @@ jobs:
 
           rpm -q ro-control
           command -v ro-control
-          rpm -q --whatprovides /usr/bin/ro-control | grep -Fx 'ro-control'
+          rpm -q --whatprovides /usr/bin/ro-control | grep -E '^ro-control(-|$)'
           ldd -r /usr/bin/ro-control
 
       - name: Lint built RPMs
