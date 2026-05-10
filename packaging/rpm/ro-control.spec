@@ -3,10 +3,12 @@
 
 Name:           ro-control
 Version:        %{upstream_version}
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Smart NVIDIA driver manager and system monitor
 
 License:        GPL-3.0-or-later
+Vendor:         Project Ro ASD
+Packager:       Project Ro ASD <noreply@github.com>
 URL:            https://github.com/Project-Ro-ASD/ro-Control
 Source0:        %{name}-%{version}.tar.gz
 ExclusiveArch:  x86_64 aarch64
@@ -22,19 +24,9 @@ BuildRequires:  qt6-qtwayland-devel
 BuildRequires:  kf6-qqc2-desktop-style
 BuildRequires:  polkit-devel
 
-Requires:       %{name}-common = %{version}-%{release}
 Requires:       qt6-qtbase
 Requires:       qt6-qtdeclarative
 Requires:       qt6-qtwayland
-
-%description
-ro-Control is a Qt6/KDE Plasma desktop application that helps users
-manage NVIDIA drivers and monitor core system metrics.
-
-%package common
-Summary:        Shared assets for the ro-Control desktop application
-BuildArch:      noarch
-Obsoletes:      %{name} < 0.2.1-1
 
 Requires:       kf6-qqc2-desktop-style
 Requires:       polkit
@@ -50,10 +42,9 @@ Recommends:     /usr/sbin/akmods
 Recommends:     /usr/bin/dracut
 Recommends:     /usr/sbin/grubby
 
-%description common
-ro-Control common ships the desktop entry, helper script, shell completions,
-metadata, icons, PolicyKit action, and documentation shared by all supported
-CPU architectures.
+%description
+ro-Control is a Qt6/KDE Plasma desktop application that helps users
+manage NVIDIA drivers and monitor core system metrics.
 
 %prep
 %autosetup -c -T -n %{name}-%{version}
@@ -74,10 +65,8 @@ export QT_QUICK_CONTROLS_STYLE=Basic
 %ctest --output-on-failure
 
 %files
-%{_bindir}/ro-control
-
-%files common
 %license LICENSE
+%{_bindir}/ro-control
 %{_datadir}/applications/io.github.projectroasd.rocontrol.desktop
 %{_datadir}/man/man1/ro-control.1*
 %{_datadir}/metainfo/io.github.projectroasd.rocontrol.metainfo.xml
@@ -92,6 +81,11 @@ export QT_QUICK_CONTROLS_STYLE=Basic
 %{_datadir}/polkit-1/actions/io.github.ProjectRoASD.rocontrol.policy
 
 %changelog
+* Sun May 10 2026 ro-Control Maintainers <noreply@github.com> - 1.1.0-2
+- Merge runtime assets back into the main architecture RPM
+- Make each release RPM installable on its own without a companion noarch package
+- Keep AppStream, desktop entry, icons, helper, and policy metadata in the main package
+
 * Sun May 10 2026 ro-Control Maintainers <noreply@github.com> - 1.1.0-1
 - Target Fedora 43 for CI, RPM validation, and release builds
 - Validate RPM compatibility for x86_64 and aarch64 with store metadata checks

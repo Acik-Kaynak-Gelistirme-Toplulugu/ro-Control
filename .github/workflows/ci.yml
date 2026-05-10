@@ -136,15 +136,9 @@ jobs:
       - name: Verify Fedora 43 RPM compatibility
         run: |
           MAIN_RPM="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name 'ro-control-*.x86_64.rpm' | head -n1)"
-          COMMON_RPM="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name 'ro-control-common-*.noarch.rpm' | head -n1)"
 
           if [[ -z "${MAIN_RPM}" ]]; then
             echo "Failed to locate ro-control x86_64 RPM." >&2
-            exit 1
-          fi
-
-          if [[ -z "${COMMON_RPM}" ]]; then
-            echo "Failed to locate ro-control-common noarch RPM." >&2
             exit 1
           fi
 
@@ -155,21 +149,15 @@ jobs:
           fi
 
           rpm -qpl "${MAIN_RPM}" | grep -Fx '/usr/bin/ro-control'
-          if rpm -qpl "${COMMON_RPM}" | grep -Fx '/usr/bin/ro-control'; then
-            echo "/usr/bin/ro-control must not be shipped by ro-control-common." >&2
-            exit 1
-          fi
 
           cp "${MAIN_RPM}" /tmp/ro-control-x86_64.rpm
-          cp "${COMMON_RPM}" /tmp/ro-control-common-noarch.rpm
 
       - name: Install and smoke-test RPMs
         run: |
           MAIN_RPM=/tmp/ro-control-x86_64.rpm
-          COMMON_RPM=/tmp/ro-control-common-noarch.rpm
 
           dnf clean all
-          dnf -y --refresh --setopt=install_weak_deps=False install "${MAIN_RPM}" "${COMMON_RPM}"
+          dnf -y --refresh --setopt=install_weak_deps=False install "${MAIN_RPM}"
 
           rpm -q ro-control
           command -v ro-control

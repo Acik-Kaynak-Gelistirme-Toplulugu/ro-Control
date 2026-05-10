@@ -161,7 +161,6 @@ jobs:
           cp packaging/rpm/ro-control.spec "${HOME}/rpmbuild/SPECS/ro-control.spec"
           FEDORA_VERSION=43
           MAIN_RPM_PATTERN="ro-control-[0-9]*.${RPM_ARCH}.rpm"
-          COMMON_RPM_PATTERN="ro-control-common-[0-9]*.noarch.rpm"
 
           rpmbuild -ba "${HOME}/rpmbuild/SPECS/ro-control.spec" \
             --define "_topdir ${HOME}/rpmbuild" \
@@ -174,15 +173,6 @@ jobs:
             exit 1
           fi
           cp "${MAIN_RPM_FILE}" "dist/rpm/ro-control-${RPM_ARCH}.rpm"
-
-          COMMON_RPM_FILE="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${COMMON_RPM_PATTERN}" | head -n1)"
-          if [[ -n "${COMMON_RPM_FILE}" ]]; then
-            cp "${COMMON_RPM_FILE}" "dist/rpm/ro-control-common-noarch.rpm"
-          fi
-
-          if [[ "${RPM_ARCH}" == "x86_64" ]]; then
-            cp ~/rpmbuild/SRPMS/*.src.rpm dist/rpm/
-          fi
 
       - name: Verify package metadata
         env:
@@ -204,27 +194,18 @@ jobs:
           fi
           grep -Fx '/usr/bin/ro-control' "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-files.txt"
 
-      - name: Verify main/common package split
+      - name: Verify package payload
         env:
           RPM_ARCH: ${{ matrix.arch }}
         run: |
           MAIN_RPM_FILE="dist/rpm/ro-control-${RPM_ARCH}.rpm"
-          COMMON_RPM_FILE="dist/rpm/ro-control-common-noarch.rpm"
 
           if [[ ! -f "${MAIN_RPM_FILE}" ]]; then
             echo "Main ro-control RPM is missing." >&2
             exit 1
           fi
-
-          if [[ ! -f "${COMMON_RPM_FILE}" ]]; then
-            echo "ro-control-common noarch RPM is missing." >&2
-            exit 1
-          fi
-
-          if rpm -qpl "${COMMON_RPM_FILE}" | grep -Fx '/usr/bin/ro-control'; then
-            echo "/usr/bin/ro-control must not be shipped by ro-control-common." >&2
-            exit 1
-          fi
+          rpm -qpl "${MAIN_RPM_FILE}" | grep -Fx '/usr/share/metainfo/io.github.projectroasd.rocontrol.metainfo.xml'
+          rpm -qpl "${MAIN_RPM_FILE}" | grep -Fx '/usr/share/applications/io.github.projectroasd.rocontrol.desktop'
 
       - name: Validate desktop metadata
         run: |
@@ -238,19 +219,13 @@ jobs:
           RPM_ARCH: ${{ matrix.arch }}
         run: |
           RPM_FILE="dist/rpm/ro-control-${RPM_ARCH}.rpm"
-          NOARCH_FILE="dist/rpm/ro-control-common-noarch.rpm"
 
           if [[ ! -f "${RPM_FILE}" ]]; then
             echo "Failed to locate built ${RPM_ARCH} RPM for smoke testing." >&2
             exit 1
           fi
 
-          if [[ ! -f "${NOARCH_FILE}" ]]; then
-            echo "Failed to locate ro-control-common noarch RPM for smoke testing." >&2
-            exit 1
-          fi
-
-          dnf install -y --nogpgcheck "${RPM_FILE}" "${NOARCH_FILE}"
+          dnf install -y --nogpgcheck "${RPM_FILE}"
 
           INSTALLED_VERSION="$(ro-control --version | tr -d '\n')"
           if [[ "${INSTALLED_VERSION}" != "${VERSION}" ]]; then
@@ -279,7 +254,7 @@ jobs:
         with:
           name: ro-control-rpm-${{ matrix.arch }}-${{ needs.metadata.outputs.version }}
           path: |
-            dist/rpm/*
+            dist/rpm/ro-control-${{ matrix.arch }}.rpm
 
   release:
     name: Create GitHub Release
@@ -303,9 +278,3 @@ jobs:
           files: |
             dist/*x86_64.rpm
             dist/*aarch64.rpm
-            dist/*noarch.rpm
-            dist/*.src.rpm
-            dist/*SHA256SUMS.txt
-            dist/*-requires.txt
-            dist/*-info.txt
-            dist/*-files.txt
