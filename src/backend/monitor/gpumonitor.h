@@ -17,7 +17,8 @@ class GpuMonitor : public QObject {
       int memoryTotalMiB READ memoryTotalMiB NOTIFY memoryTotalMiBChanged)
   Q_PROPERTY(int memoryUsagePercent READ memoryUsagePercent NOTIFY
                  memoryUsagePercentChanged)
-  Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
+  Q_PROPERTY(
+      QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
   Q_PROPERTY(int updateInterval READ updateInterval WRITE setUpdateInterval
                  NOTIFY updateIntervalChanged)
 

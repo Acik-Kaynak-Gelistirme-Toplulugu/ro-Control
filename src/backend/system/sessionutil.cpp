@@ -64,15 +64,15 @@ QString loginctlDisplaySession(CommandRunner &runner) {
 QString loginctlFirstGraphicalSession(CommandRunner &runner) {
   const QString userName = qEnvironmentVariable("USER").trimmed();
   const auto result =
-      runner.run(QStringLiteral("loginctl"),
-                 {QStringLiteral("list-sessions"), QStringLiteral("--no-legend")});
+      runner.run(QStringLiteral("loginctl"), {QStringLiteral("list-sessions"),
+                                              QStringLiteral("--no-legend")});
 
   if (!result.success()) {
     return {};
   }
 
-  const QStringList lines = result.stdout.split(QLatin1Char('\n'),
-                                                Qt::SkipEmptyParts);
+  const QStringList lines =
+      result.stdout.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
   for (const QString &line : lines) {
     const QStringList parts = line.simplified().split(QLatin1Char(' '));
     if (parts.size() < 3) {
@@ -97,18 +97,21 @@ QString loginctlFirstGraphicalSession(CommandRunner &runner) {
 } // namespace
 
 SessionInfo detectSessionInfo() {
-  const QString envType = normalizeSessionType(qEnvironmentVariable("XDG_SESSION_TYPE"));
+  const QString envType =
+      normalizeSessionType(qEnvironmentVariable("XDG_SESSION_TYPE"));
   if (!envType.isEmpty()) {
     return infoFromType(envType, QStringLiteral("XDG_SESSION_TYPE"),
                         QStringLiteral("XDG_SESSION_TYPE=%1").arg(envType));
   }
 
   CommandRunner runner;
-  const QString currentSessionId = qEnvironmentVariable("XDG_SESSION_ID").trimmed();
+  const QString currentSessionId =
+      qEnvironmentVariable("XDG_SESSION_ID").trimmed();
   QString type = loginctlSessionType(runner, currentSessionId);
   if (!type.isEmpty()) {
-    return infoFromType(type, QStringLiteral("loginctl current session"),
-                        QStringLiteral("XDG_SESSION_ID=%1").arg(currentSessionId));
+    return infoFromType(
+        type, QStringLiteral("loginctl current session"),
+        QStringLiteral("XDG_SESSION_ID=%1").arg(currentSessionId));
   }
 
   const QString displaySessionId = loginctlDisplaySession(runner);
@@ -127,7 +130,8 @@ SessionInfo detectSessionInfo() {
 
   const bool hasWaylandDisplay =
       !qEnvironmentVariable("WAYLAND_DISPLAY").trimmed().isEmpty();
-  const bool hasX11Display = !qEnvironmentVariable("DISPLAY").trimmed().isEmpty();
+  const bool hasX11Display =
+      !qEnvironmentVariable("DISPLAY").trimmed().isEmpty();
 
   if (hasWaylandDisplay && !hasX11Display) {
     return infoFromType(QStringLiteral("wayland"),
@@ -149,24 +153,23 @@ SessionInfo detectSessionInfo() {
   const QString qtPlatform =
       qEnvironmentVariable("QT_QPA_PLATFORM").trimmed().toLower();
   if (qtPlatform.contains(QStringLiteral("wayland"))) {
-    return infoFromType(QStringLiteral("wayland"), QStringLiteral("QT_QPA_PLATFORM"),
-                        QStringLiteral("QT_QPA_PLATFORM=%1").arg(qtPlatform),
-                        false);
+    return infoFromType(
+        QStringLiteral("wayland"), QStringLiteral("QT_QPA_PLATFORM"),
+        QStringLiteral("QT_QPA_PLATFORM=%1").arg(qtPlatform), false);
   }
   if (qtPlatform == QStringLiteral("xcb") ||
       qtPlatform.contains(QStringLiteral("x11"))) {
-    return infoFromType(QStringLiteral("x11"), QStringLiteral("QT_QPA_PLATFORM"),
-                        QStringLiteral("QT_QPA_PLATFORM=%1").arg(qtPlatform),
-                        false);
+    return infoFromType(
+        QStringLiteral("x11"), QStringLiteral("QT_QPA_PLATFORM"),
+        QStringLiteral("QT_QPA_PLATFORM=%1").arg(qtPlatform), false);
   }
 
   SessionInfo unknown;
-  unknown.evidence << QStringLiteral("No reliable session signal was available");
+  unknown.evidence << QStringLiteral(
+      "No reliable session signal was available");
   return unknown;
 }
 
-QString detectSessionType() {
-  return detectSessionInfo().type;
-}
+QString detectSessionType() { return detectSessionInfo().type; }
 
 } // namespace SessionUtil

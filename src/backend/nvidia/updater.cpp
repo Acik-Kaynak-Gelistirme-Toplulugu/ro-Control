@@ -160,20 +160,18 @@ QString fetchTextFromUrl(CommandRunner &runner, const QString &url) {
   options.timeoutMs = 10000;
 
   if (CapabilityProbe::isToolAvailable(QStringLiteral("curl"))) {
-    const auto result =
-        runner.run(QStringLiteral("curl"),
-                   {QStringLiteral("-fsSL"), QStringLiteral("--compressed"),
-                    url},
-                   options);
+    const auto result = runner.run(
+        QStringLiteral("curl"),
+        {QStringLiteral("-fsSL"), QStringLiteral("--compressed"), url},
+        options);
     if (result.success()) {
       return result.stdout;
     }
   }
 
   if (CapabilityProbe::isToolAvailable(QStringLiteral("wget"))) {
-    const auto result =
-        runner.run(QStringLiteral("wget"), {QStringLiteral("-qO-"), url},
-                   options);
+    const auto result = runner.run(QStringLiteral("wget"),
+                                   {QStringLiteral("-qO-"), url}, options);
     if (result.success()) {
       return result.stdout;
     }
@@ -204,7 +202,8 @@ bool isOfficialUpdateAvailable(const QString &currentVersion,
   }
 
   return QVersionNumber::compare(QVersionNumber::fromString(normalizedCurrent),
-                                 QVersionNumber::fromString(normalizedLatest)) < 0;
+                                 QVersionNumber::fromString(normalizedLatest)) <
+         0;
 }
 
 UpdateStatusSnapshot collectUpdateStatus() {
@@ -239,8 +238,8 @@ UpdateStatusSnapshot collectUpdateStatus() {
       snapshot.availableVersions =
           NvidiaVersionParser::parseAvailablePackageVersions(listResult.stdout,
                                                              kernelPackageName);
-      snapshot.remoteCatalogAvailable =
-          snapshot.remoteCatalogAvailable || !snapshot.availableVersions.isEmpty();
+      snapshot.remoteCatalogAvailable = snapshot.remoteCatalogAvailable ||
+                                        !snapshot.availableVersions.isEmpty();
     }
 
     snapshot.latestPackageVersion =
@@ -252,8 +251,8 @@ UpdateStatusSnapshot collectUpdateStatus() {
   }
 
   if (snapshot.latestVersion.isEmpty()) {
-    snapshot.latestVersion =
-        NvidiaVersionParser::normalizedDriverVersion(snapshot.latestPackageVersion);
+    snapshot.latestVersion = NvidiaVersionParser::normalizedDriverVersion(
+        snapshot.latestPackageVersion);
   }
 
   if (snapshot.currentVersion.isEmpty()) {
@@ -261,28 +260,29 @@ UpdateStatusSnapshot collectUpdateStatus() {
       snapshot.updateAvailable = true;
       snapshot.message =
           snapshot.latestVersion.isEmpty()
-              ? NvidiaUpdater::tr("Official NVIDIA driver sources are reachable. "
-                                  "You can install the driver now.")
-              : NvidiaUpdater::tr(
-                    "Latest official NVIDIA driver version: %1")
+              ? NvidiaUpdater::tr(
+                    "Official NVIDIA driver sources are reachable. "
+                    "You can install the driver now.")
+              : NvidiaUpdater::tr("Latest official NVIDIA driver version: %1")
                     .arg(snapshot.latestVersion);
     } else {
-      snapshot.message = hasDnf ? NvidiaUpdater::tr("No official NVIDIA driver "
-                                                    "version could be retrieved.")
-                                : NvidiaUpdater::tr("dnf not found.");
+      snapshot.message = hasDnf
+                             ? NvidiaUpdater::tr("No official NVIDIA driver "
+                                                 "version could be retrieved.")
+                             : NvidiaUpdater::tr("dnf not found.");
     }
     return snapshot;
   }
 
   if (!snapshot.latestVersion.isEmpty()) {
-    snapshot.updateAvailable =
-        isOfficialUpdateAvailable(snapshot.currentVersion, snapshot.latestVersion);
-    snapshot.message = snapshot.updateAvailable
-                           ? NvidiaUpdater::tr("Official NVIDIA update found: %1")
-                                 .arg(snapshot.latestVersion)
-                           : NvidiaUpdater::tr(
-                                 "Driver matches the latest official NVIDIA "
-                                 "production branch.");
+    snapshot.updateAvailable = isOfficialUpdateAvailable(
+        snapshot.currentVersion, snapshot.latestVersion);
+    snapshot.message =
+        snapshot.updateAvailable
+            ? NvidiaUpdater::tr("Official NVIDIA update found: %1")
+                  .arg(snapshot.latestVersion)
+            : NvidiaUpdater::tr("Driver matches the latest official NVIDIA "
+                                "production branch.");
     return snapshot;
   }
 
@@ -296,9 +296,10 @@ UpdateStatusSnapshot collectUpdateStatus() {
                  {QStringLiteral("check-update"), kernelPackageName});
 
   if (checkResult.exitCode == 100) {
-    const QString checkUpdateVersion = NvidiaVersionParser::normalizedDriverVersion(
-        NvidiaVersionParser::parseCheckUpdateVersion(checkResult.stdout,
-                                                     kernelPackageName));
+    const QString checkUpdateVersion =
+        NvidiaVersionParser::normalizedDriverVersion(
+            NvidiaVersionParser::parseCheckUpdateVersion(checkResult.stdout,
+                                                         kernelPackageName));
     if (!checkUpdateVersion.isEmpty()) {
       snapshot.latestVersion = checkUpdateVersion;
     }
@@ -431,7 +432,8 @@ void NvidiaUpdater::cancelOperation() {
   }
 
   m_cancelRequested->store(true, std::memory_order_relaxed);
-  emit progressMessage(tr("Cancel requested. Waiting for the active command to stop safely..."));
+  emit progressMessage(
+      tr("Cancel requested. Waiting for the active command to stop safely..."));
 }
 
 void NvidiaUpdater::setLatestVersion(const QString &version) {
@@ -680,19 +682,17 @@ void NvidiaUpdater::applyVersion(const QString &version) {
     const QStringList args = guard->buildTransactionArguments(
         trimmedVersion, installedVersion, sessionType, kernelPackageName);
     emitProgressAsync(
-        guard,
-        NvidiaUpdater::tr("Driver transaction kernel package: `%1`")
-            .arg(kernelPackageName));
+        guard, NvidiaUpdater::tr("Driver transaction kernel package: `%1`")
+                   .arg(kernelPackageName));
     emitProgressAsync(
-        guard,
-        NvidiaUpdater::tr("Driver transaction packages for %1: %2")
-            .arg(sessionType == QStringLiteral("wayland")
-                     ? NvidiaUpdater::tr("Wayland")
-                     : NvidiaUpdater::tr("X11"))
-            .arg(quotedList(guard->buildDriverTargets(
-                trimmedVersion.isEmpty() ? guard->m_latestPackageVersion
-                                         : trimmedVersion,
-                sessionType, kernelPackageName))));
+        guard, NvidiaUpdater::tr("Driver transaction packages for %1: %2")
+                   .arg(sessionType == QStringLiteral("wayland")
+                            ? NvidiaUpdater::tr("Wayland")
+                            : NvidiaUpdater::tr("X11"))
+                   .arg(quotedList(guard->buildDriverTargets(
+                       trimmedVersion.isEmpty() ? guard->m_latestPackageVersion
+                                                : trimmedVersion,
+                       sessionType, kernelPackageName))));
 
     QList<CommandRunner::RootCommand> rootCommands;
     rootCommands.append({QStringLiteral("dnf"), args});
@@ -700,14 +700,13 @@ void NvidiaUpdater::applyVersion(const QString &version) {
         {QStringLiteral("akmods"), {QStringLiteral("--force")}});
     rootCommands.append(buildSessionSpecificRootCommands(sessionType));
 
-    emitProgressAsync(
-        guard, NvidiaUpdater::tr("Detected %1 session via %2.")
-                   .arg(sessionType == QStringLiteral("wayland")
-                            ? NvidiaUpdater::tr("Wayland")
-                            : NvidiaUpdater::tr("X11"),
-                        sessionInfo.source.isEmpty()
-                            ? NvidiaUpdater::tr("session probe")
-                            : sessionInfo.source));
+    emitProgressAsync(guard, NvidiaUpdater::tr("Detected %1 session via %2.")
+                                 .arg(sessionType == QStringLiteral("wayland")
+                                          ? NvidiaUpdater::tr("Wayland")
+                                          : NvidiaUpdater::tr("X11"),
+                                      sessionInfo.source.isEmpty()
+                                          ? NvidiaUpdater::tr("session probe")
+                                          : sessionInfo.source));
 
     auto result = runner.runAsRootBatch(rootCommands, runOptions);
     if (!result.success()) {

@@ -275,8 +275,7 @@ CommandRunner::runAsRootBatch(const QList<RootCommand> &commands,
 
     stdinData += command.program.toUtf8();
     for (const QString &arg : command.args) {
-      if (arg.contains(QLatin1Char('\t')) ||
-          arg.contains(QLatin1Char('\n'))) {
+      if (arg.contains(QLatin1Char('\t')) || arg.contains(QLatin1Char('\n'))) {
         return Result{.exitCode = -1,
                       .stdout = {},
                       .stderr = QStringLiteral(

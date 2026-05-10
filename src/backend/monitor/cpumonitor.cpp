@@ -201,7 +201,8 @@ int readCpuTemperatureFromSensors() {
 
 int readCpuTemperatureFromAcpi() {
   CommandRunner runner;
-  const auto result = runner.run(QStringLiteral("acpi"), {QStringLiteral("-t")});
+  const auto result =
+      runner.run(QStringLiteral("acpi"), {QStringLiteral("-t")});
   return result.success() ? parseTemperatureFromPlainText(result.stdout) : 0;
 }
 
@@ -330,9 +331,10 @@ void CpuMonitor::refresh() {
 
   const int temperatureC = readCpuTemperatureC();
   setTemperatureC(temperatureC);
-  setStatusMessage(temperatureC > 0
-                       ? tr("CPU temperature is being read from system sensors.")
-                       : tr("CPU temperature sensor is not exposed by the kernel."));
+  setStatusMessage(
+      temperatureC > 0
+          ? tr("CPU temperature is being read from system sensors.")
+          : tr("CPU temperature sensor is not exposed by the kernel."));
   setAvailable(true);
 }
 

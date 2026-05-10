@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QObject>
 #include <QElapsedTimer>
+#include <QObject>
 #include <QTimer>
 
 // Gercek zamanli CPU istatistikleri
@@ -9,7 +9,8 @@ class CpuMonitor : public QObject {
   Q_OBJECT
   Q_PROPERTY(double usagePercent READ usagePercent NOTIFY usagePercentChanged)
   Q_PROPERTY(int temperatureC READ temperatureC NOTIFY temperatureCChanged)
-  Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
+  Q_PROPERTY(
+      QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
   Q_PROPERTY(bool available READ available NOTIFY availableChanged)
   Q_PROPERTY(bool running READ running NOTIFY runningChanged)
   Q_PROPERTY(int updateInterval READ updateInterval WRITE setUpdateInterval

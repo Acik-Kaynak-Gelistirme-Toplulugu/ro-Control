@@ -28,12 +28,12 @@ QString unixDriverSectionLabel(const QString &architecture) {
 
 QString plainTextFromHtml(const QString &text) {
   QString plainText = text;
-  plainText.remove(QRegularExpression(
-      QStringLiteral(R"(<script\b[^>]*>[\s\S]*?</script>)"),
-      QRegularExpression::CaseInsensitiveOption));
-  plainText.remove(QRegularExpression(
-      QStringLiteral(R"(<style\b[^>]*>[\s\S]*?</style>)"),
-      QRegularExpression::CaseInsensitiveOption));
+  plainText.remove(
+      QRegularExpression(QStringLiteral(R"(<script\b[^>]*>[\s\S]*?</script>)"),
+                         QRegularExpression::CaseInsensitiveOption));
+  plainText.remove(
+      QRegularExpression(QStringLiteral(R"(<style\b[^>]*>[\s\S]*?</style>)"),
+                         QRegularExpression::CaseInsensitiveOption));
   plainText.replace(QRegularExpression(QStringLiteral(R"(<[^>]+>)")),
                     QStringLiteral(" "));
   plainText.replace(QStringLiteral("&nbsp;"), QStringLiteral(" "));

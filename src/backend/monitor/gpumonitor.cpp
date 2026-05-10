@@ -119,8 +119,8 @@ bool readNvidiaTemperatureFromHwmonClass(int *value) {
           .entryInfoList({QStringLiteral("hwmon*")},
                          QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
   for (const QFileInfo &entry : hwmonEntries) {
-    if (!isGpuHwmonName(readFileText(entry.absoluteFilePath() +
-                                     QStringLiteral("/name")))) {
+    if (!isGpuHwmonName(
+            readFileText(entry.absoluteFilePath() + QStringLiteral("/name")))) {
       continue;
     }
 
@@ -201,9 +201,10 @@ bool readTemperatureFromSensorsOutput(const QString &text, int *value) {
 bool readTemperatureFromSensorsCommand(CommandRunner &runner, int *value) {
   CommandRunner::RunOptions options;
   options.timeoutMs = 1500;
-  const auto result = runner.run(QStringLiteral("sensors"),
-                                 {QStringLiteral("-u")}, options);
-  return result.success() && readTemperatureFromSensorsOutput(result.stdout, value);
+  const auto result =
+      runner.run(QStringLiteral("sensors"), {QStringLiteral("-u")}, options);
+  return result.success() &&
+         readTemperatureFromSensorsOutput(result.stdout, value);
 }
 
 bool readTemperatureFromNvidiaSettings(CommandRunner &runner, int *value) {
@@ -218,9 +219,10 @@ bool readTemperatureFromNvidiaSettings(CommandRunner &runner, int *value) {
     return false;
   }
 
-  const QString line = result.stdout.split(QLatin1Char('\n'), Qt::SkipEmptyParts)
-                           .value(0)
-                           .trimmed();
+  const QString line =
+      result.stdout.split(QLatin1Char('\n'), Qt::SkipEmptyParts)
+          .value(0)
+          .trimmed();
   return parseMetricInt(line, value);
 }
 
@@ -353,8 +355,8 @@ void GpuMonitor::refresh() {
     int nextUsed = 0;
     int nextTotal = 0;
 
-    const bool hasGenericMetrics = readGenericLinuxGpuMetrics(
-        &nextTemp, &nextUtil, &nextUsed, &nextTotal);
+    const bool hasGenericMetrics =
+        readGenericLinuxGpuMetrics(&nextTemp, &nextUtil, &nextUsed, &nextTotal);
     const bool hasTemperatureFallback =
         nextTemp > 0 || readNvidiaTemperatureFallback(runner, &nextTemp);
 
@@ -400,9 +402,10 @@ void GpuMonitor::refresh() {
     }
 
     setAvailable(true);
-    setStatusMessage(hasGenericMetrics
-                         ? tr("GPU telemetry is being read from Linux metrics.")
-                         : tr("GPU temperature is being read from system sensors."));
+    setStatusMessage(
+        hasGenericMetrics
+            ? tr("GPU telemetry is being read from Linux metrics.")
+            : tr("GPU temperature is being read from system sensors."));
     return;
   }
 
@@ -450,7 +453,8 @@ void GpuMonitor::refresh() {
                                   totalAvailable;
   if (!telemetryAvailable) {
     setAvailable(false);
-    setStatusMessage(tr("GPU telemetry output did not contain usable metrics."));
+    setStatusMessage(
+        tr("GPU telemetry output did not contain usable metrics."));
     clearMetrics();
     return;
   }

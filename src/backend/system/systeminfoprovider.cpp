@@ -16,6 +16,7 @@
 
 namespace {
 
+#if defined(Q_OS_LINUX)
 QString virtualizationLabel(const QString &virtualization) {
   const QString normalized = virtualization.trimmed().toLower();
   if (normalized.isEmpty() || normalized == QStringLiteral("none")) {
@@ -44,6 +45,7 @@ QString virtualizationLabel(const QString &virtualization) {
   label[0] = label[0].toUpper();
   return label;
 }
+#endif
 
 QString simplifiedDesktopName(const QString &desktop) {
   const QString trimmed = desktop.trimmed();
@@ -114,12 +116,14 @@ void SystemInfoProvider::refresh() {
 
 bool SystemInfoProvider::requestRestart() {
 #if defined(Q_OS_LINUX)
-  const QString systemctl = QStandardPaths::findExecutable(QStringLiteral("systemctl"));
+  const QString systemctl =
+      QStandardPaths::findExecutable(QStringLiteral("systemctl"));
   if (!systemctl.isEmpty()) {
     return QProcess::startDetached(systemctl, {QStringLiteral("reboot")});
   }
 
-  const QString reboot = QStandardPaths::findExecutable(QStringLiteral("reboot"));
+  const QString reboot =
+      QStandardPaths::findExecutable(QStringLiteral("reboot"));
   if (!reboot.isEmpty()) {
     return QProcess::startDetached(reboot, {});
   }
@@ -237,7 +241,8 @@ QString SystemInfoProvider::detectVirtualizationType() const {
     }
   }
 
-  return virtualizationLabel(valueFromOsRelease(QStringLiteral("VIRTUALIZATION")));
+  return virtualizationLabel(
+      valueFromOsRelease(QStringLiteral("VIRTUALIZATION")));
 #else
   return {};
 #endif

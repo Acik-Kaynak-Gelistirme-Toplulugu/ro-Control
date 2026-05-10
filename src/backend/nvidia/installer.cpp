@@ -270,7 +270,8 @@ void NvidiaInstaller::cancelOperation() {
   }
 
   m_cancelRequested->store(true, std::memory_order_relaxed);
-  emit progressMessage(tr("Cancel requested. Waiting for the active command to stop safely..."));
+  emit progressMessage(
+      tr("Cancel requested. Waiting for the active command to stop safely..."));
 }
 
 void NvidiaInstaller::setProprietaryAgreement(bool required,
@@ -368,7 +369,8 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
       return;
     }
 
-    const SessionUtil::SessionInfo sessionInfo = SessionUtil::detectSessionInfo();
+    const SessionUtil::SessionInfo sessionInfo =
+        SessionUtil::detectSessionInfo();
     const QString sessionType = sessionInfo.type.trimmed().toLower();
     if (sessionType != QStringLiteral("wayland") &&
         sessionType != QStringLiteral("x11")) {
@@ -393,13 +395,12 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
             "Installing the closed-source NVIDIA driver with one privileged "
             "authorization..."));
     emitProgressAsync(
-        guard,
-        NvidiaInstaller::tr("Closed-source install packages for %1: %2")
-            .arg(sessionType == QStringLiteral("wayland")
-                     ? NvidiaInstaller::tr("Wayland")
-                     : NvidiaInstaller::tr("X11"))
-            .arg(quotedList(buildDriverInstallTargets(
-                QStringLiteral("akmod-nvidia"), sessionType))));
+        guard, NvidiaInstaller::tr("Closed-source install packages for %1: %2")
+                   .arg(sessionType == QStringLiteral("wayland")
+                            ? NvidiaInstaller::tr("Wayland")
+                            : NvidiaInstaller::tr("X11"))
+                   .arg(quotedList(buildDriverInstallTargets(
+                       QStringLiteral("akmod-nvidia"), sessionType))));
 
     QStringList installArgs{QStringLiteral("install"), QStringLiteral("-y"),
                             QStringLiteral("--refresh"),
@@ -423,21 +424,21 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
         {QStringLiteral("akmods"), {QStringLiteral("--force")}});
     rootCommands.append(buildSessionSpecificRootCommands(sessionType));
 
-    emitProgressAsync(
-        guard, NvidiaInstaller::tr("Detected %1 session via %2.")
-                   .arg(sessionType == QStringLiteral("wayland")
-                            ? NvidiaInstaller::tr("Wayland")
-                            : NvidiaInstaller::tr("X11"),
-                        sessionInfo.source.isEmpty()
-                            ? NvidiaInstaller::tr("session probe")
-                            : sessionInfo.source));
+    emitProgressAsync(guard, NvidiaInstaller::tr("Detected %1 session via %2.")
+                                 .arg(sessionType == QStringLiteral("wayland")
+                                          ? NvidiaInstaller::tr("Wayland")
+                                          : NvidiaInstaller::tr("X11"),
+                                      sessionInfo.source.isEmpty()
+                                          ? NvidiaInstaller::tr("session probe")
+                                          : sessionInfo.source));
 
     auto result = runner.runAsRootBatch(rootCommands, runOptions);
     if (!result.success()) {
-      const QString error = commandCanceled(result)
-                                ? NvidiaInstaller::tr("Operation canceled by user.")
-                                : NvidiaInstaller::tr("Installation failed: ") +
-                                      commandError(result);
+      const QString error =
+          commandCanceled(result)
+              ? NvidiaInstaller::tr("Operation canceled by user.")
+              : NvidiaInstaller::tr("Installation failed: ") +
+                    commandError(result);
       QMetaObject::invokeMethod(
           guard,
           [guard, error]() {
@@ -493,7 +494,8 @@ void NvidiaInstaller::installOpenSource() {
         NvidiaInstaller::tr(
             "Switching to the community open-source graphics driver stack..."));
 
-    const SessionUtil::SessionInfo sessionInfo = SessionUtil::detectSessionInfo();
+    const SessionUtil::SessionInfo sessionInfo =
+        SessionUtil::detectSessionInfo();
     const QString sessionType = sessionInfo.type.trimmed().toLower();
     if (sessionType != QStringLiteral("wayland") &&
         sessionType != QStringLiteral("x11")) {
@@ -525,14 +527,13 @@ void NvidiaInstaller::installOpenSource() {
     QList<CommandRunner::RootCommand> rootCommands =
         buildCommunityNouveauRootCommands(sessionType);
 
-    emitProgressAsync(
-        guard, NvidiaInstaller::tr("Detected %1 session via %2.")
-                   .arg(sessionType == QStringLiteral("wayland")
-                            ? NvidiaInstaller::tr("Wayland")
-                            : NvidiaInstaller::tr("X11"),
-                        sessionInfo.source.isEmpty()
-                            ? NvidiaInstaller::tr("session probe")
-                            : sessionInfo.source));
+    emitProgressAsync(guard, NvidiaInstaller::tr("Detected %1 session via %2.")
+                                 .arg(sessionType == QStringLiteral("wayland")
+                                          ? NvidiaInstaller::tr("Wayland")
+                                          : NvidiaInstaller::tr("X11"),
+                                      sessionInfo.source.isEmpty()
+                                          ? NvidiaInstaller::tr("session probe")
+                                          : sessionInfo.source));
 
     auto result = runner.runAsRootBatch(rootCommands, runOptions);
     if (!result.success()) {
@@ -598,12 +599,11 @@ void NvidiaInstaller::remove() {
 
     const bool success = result.success();
     const QString message =
-        success
-            ? NvidiaInstaller::tr("Driver removed successfully.")
-            : (commandCanceled(result)
-                   ? NvidiaInstaller::tr("Operation canceled by user.")
-                   : NvidiaInstaller::tr("Removal failed: ") +
-                         result.stderr.trimmed());
+        success ? NvidiaInstaller::tr("Driver removed successfully.")
+                : (commandCanceled(result)
+                       ? NvidiaInstaller::tr("Operation canceled by user.")
+                       : NvidiaInstaller::tr("Removal failed: ") +
+                             result.stderr.trimmed());
     QMetaObject::invokeMethod(
         guard,
         [guard, success, message]() {
@@ -661,10 +661,9 @@ void NvidiaInstaller::deepClean() {
       return;
     }
 
-    const auto cleanResult =
-        runner.runAsRoot(QStringLiteral("dnf"),
-                         {QStringLiteral("clean"), QStringLiteral("all")},
-                         runOptions);
+    const auto cleanResult = runner.runAsRoot(
+        QStringLiteral("dnf"), {QStringLiteral("clean"), QStringLiteral("all")},
+        runOptions);
     if (!cleanResult.success()) {
       const QString error =
           commandCanceled(cleanResult)

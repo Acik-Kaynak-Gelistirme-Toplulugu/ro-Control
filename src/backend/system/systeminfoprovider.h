@@ -12,8 +12,8 @@ class SystemInfoProvider : public QObject {
   Q_PROPERTY(QString kernelVersion READ kernelVersion NOTIFY infoChanged)
   Q_PROPERTY(QString cpuModel READ cpuModel NOTIFY infoChanged)
   Q_PROPERTY(bool virtualMachine READ virtualMachine NOTIFY infoChanged)
-  Q_PROPERTY(QString virtualizationType READ virtualizationType NOTIFY
-                 infoChanged)
+  Q_PROPERTY(
+      QString virtualizationType READ virtualizationType NOTIFY infoChanged)
 
 public:
   explicit SystemInfoProvider(QObject *parent = nullptr);

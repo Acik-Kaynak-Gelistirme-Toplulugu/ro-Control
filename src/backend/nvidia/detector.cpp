@@ -4,8 +4,8 @@
 #include "system/commandrunner.h"
 #include "system/sessionutil.h"
 
-#include <QFile>
 #include <QDir>
+#include <QFile>
 #include <QRegularExpression>
 #include <QTextStream>
 #include <QtGlobal>
@@ -211,11 +211,10 @@ QString NvidiaDetector::detectDriverPackageVersion() const {
                                     QStringLiteral("akmod-nvidia-open")};
   CommandRunner runner;
   for (const QString &packageName : packageNames) {
-    const auto result =
-        runner.run(QStringLiteral("rpm"),
-                   {QStringLiteral("-q"), QStringLiteral("--qf"),
-                    QStringLiteral("%{EPOCH}:%{VERSION}-%{RELEASE}"),
-                    packageName});
+    const auto result = runner.run(
+        QStringLiteral("rpm"),
+        {QStringLiteral("-q"), QStringLiteral("--qf"),
+         QStringLiteral("%{EPOCH}:%{VERSION}-%{RELEASE}"), packageName});
     if (result.success()) {
       const QString version = normalizedRpmDriverVersion(result.stdout);
       if (!version.isEmpty()) {
