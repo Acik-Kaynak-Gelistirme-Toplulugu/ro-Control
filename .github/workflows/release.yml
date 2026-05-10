@@ -301,9 +301,9 @@ jobs:
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
           files: |
-            dist/*.x86_64.rpm
-            dist/*.aarch64.rpm
-            dist/*.noarch.rpm
+            dist/*x86_64.rpm
+            dist/*aarch64.rpm
+            dist/*noarch.rpm
             dist/*.src.rpm
             dist/*SHA256SUMS.txt
             dist/*-requires.txt
