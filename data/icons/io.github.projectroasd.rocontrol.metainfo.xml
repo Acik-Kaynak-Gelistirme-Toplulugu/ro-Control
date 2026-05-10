@@ -6,6 +6,7 @@
 	<summary xml:lang="tr">NVIDIA sürücü yöneticisi ve sistem monitörü</summary>
 	<metadata_license>CC0-1.0</metadata_license>
 	<project_license>GPL-3.0-or-later</project_license>
+	<developer_name>Project Ro ASD</developer_name>
 	<content_rating type="oars-1.1" />
 
 	<description>
@@ -42,6 +43,11 @@
 		<release version="0.2.1" date="2026-03-30" />
 	</releases>
 
+	<kudos>
+		<kudo>HiDpiIcon</kudo>
+		<kudo>ModernToolkit</kudo>
+	</kudos>
+
 	<launchable type="desktop-id">io.github.projectroasd.rocontrol.desktop</launchable>
 	<provides>
 		<binary>ro-control</binary>
@@ -52,6 +58,7 @@
 	</developer>
 
 	<url type="homepage">https://github.com/Project-Ro-ASD/ro-Control</url>
+	<url type="help">https://github.com/Project-Ro-ASD/ro-Control#readme</url>
 	<url type="vcs-browser">https://github.com/Project-Ro-ASD/ro-Control</url>
 	<url type="bugtracker">https://github.com/Project-Ro-ASD/ro-Control/issues</url>
 </component>

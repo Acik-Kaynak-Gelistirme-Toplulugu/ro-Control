@@ -80,7 +80,9 @@ tar -xzf %{SOURCE0} --strip-components=1
 %{_datadir}/man/man1/ro-control.1*
 %{_datadir}/metainfo/io.github.projectroasd.rocontrol.metainfo.xml
 %{_datadir}/icons/hicolor/256x256/apps/ro-control.png
+%{_datadir}/icons/hicolor/256x256/apps/io.github.projectroasd.rocontrol.png
 %{_datadir}/icons/hicolor/scalable/apps/ro-control.svg
+%{_datadir}/icons/hicolor/scalable/apps/io.github.projectroasd.rocontrol.svg
 %{_datadir}/bash-completion/completions/ro-control
 %{_datadir}/zsh/site-functions/_ro-control
 %{_datadir}/fish/vendor_completions.d/ro-control.fish

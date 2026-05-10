@@ -244,8 +244,20 @@ install(FILES
 )
 
 install(FILES
+    data/icons/hicolor/scalable/apps/ro-control.svg
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+    RENAME io.github.projectroasd.rocontrol.svg
+)
+
+install(FILES
     data/icons/hicolor/256x256/apps/ro-control.png
     DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps
+)
+
+install(FILES
+    data/icons/hicolor/256x256/apps/ro-control.png
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps
+    RENAME io.github.projectroasd.rocontrol.png
 )
 
 install(FILES data/icons/io.github.projectroasd.rocontrol.metainfo.xml

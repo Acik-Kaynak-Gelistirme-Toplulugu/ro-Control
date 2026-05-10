@@ -25,9 +25,11 @@ private slots:
     QVERIFY(!desktop.isEmpty());
     QVERIFY(desktop.contains(QStringLiteral("[Desktop Entry]")));
     QVERIFY(desktop.contains(QStringLiteral("Exec=ro-control")));
-    QVERIFY(desktop.contains(QStringLiteral("Icon=ro-control")));
+    QVERIFY(desktop.contains(
+        QStringLiteral("Icon=io.github.projectroasd.rocontrol")));
     QVERIFY(desktop.contains(QStringLiteral("Categories=System;Settings;HardwareSettings;")));
     QVERIFY(desktop.contains(QStringLiteral("Name[tr]=ro-Control")));
+    QVERIFY(desktop.contains(QStringLiteral("SingleMainWindow=true")));
   }
 
   void testAppStreamContainsExpectedIdsAndUrls() {
@@ -39,7 +41,10 @@ private slots:
     QVERIFY(metainfo.contains(QStringLiteral(
         "<launchable type=\"desktop-id\">io.github.projectroasd.rocontrol.desktop</launchable>")));
     QVERIFY(metainfo.contains(QStringLiteral("<binary>ro-control</binary>")));
+    QVERIFY(metainfo.contains(
+        QStringLiteral("<developer_name>Project Ro ASD</developer_name>")));
     QVERIFY(metainfo.contains(QStringLiteral("<url type=\"homepage\">https://github.com/Project-Ro-ASD/ro-Control</url>")));
+    QVERIFY(metainfo.contains(QStringLiteral("<url type=\"help\">https://github.com/Project-Ro-ASD/ro-Control#readme</url>")));
     QVERIFY(metainfo.contains(QStringLiteral("<url type=\"bugtracker\">https://github.com/Project-Ro-ASD/ro-Control/issues</url>")));
   }
 
@@ -48,7 +53,8 @@ private slots:
     QVERIFY(!policy.isEmpty());
     QVERIFY(policy.contains(QStringLiteral("@RO_CONTROL_POLICY_ID@")));
     QVERIFY(policy.contains(QStringLiteral("@RO_CONTROL_HELPER_INSTALL_PATH@")));
-    QVERIFY(policy.contains(QStringLiteral("<icon_name>ro-control</icon_name>")));
+    QVERIFY(policy.contains(
+        QStringLiteral("<icon_name>io.github.projectroasd.rocontrol</icon_name>")));
   }
 
   void testDesktopAndAppStreamIdsStayAligned() {
