@@ -175,31 +175,6 @@ Item {
                                 font.weight: Font.DemiBold
                                 font.pixelSize: Math.round(12 * page.uiScale)
                             }
-
-                            ToolButton {
-                                id: refreshButton
-                                implicitWidth: Math.round(34 * page.uiScale)
-                                implicitHeight: Math.round(34 * page.uiScale)
-                                enabled: !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
-                                display: AbstractButton.IconOnly
-                                ToolTip.visible: hovered
-                                ToolTip.text: qsTr("Rescan and check updates")
-                                onClicked: page.refreshDriverState(true)
-
-                                contentItem: Image {
-                                    source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
-                                    sourceSize.width: Math.round(17 * page.uiScale)
-                                    sourceSize.height: Math.round(17 * page.uiScale)
-                                    fillMode: Image.PreserveAspectFit
-                                }
-
-                                background: Rectangle {
-                                    radius: width / 2
-                                    color: refreshButton.down ? page.infoBg : page.bgColor
-                                    border.width: 1
-                                    border.color: page.borderColor
-                                }
-                            }
                         }
 
                         Label {
@@ -281,6 +256,33 @@ Item {
                             color: page.textColor
                             font.pixelSize: Math.round(18 * page.uiScale)
                             font.weight: Font.DemiBold
+                        }
+
+                        ToolButton {
+                            id: refreshButton
+                            implicitWidth: Math.round(36 * page.uiScale)
+                            implicitHeight: Math.round(36 * page.uiScale)
+                            enabled: !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
+                            display: AbstractButton.IconOnly
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Rescan and check updates")
+                            onClicked: page.refreshDriverState(true)
+
+                            contentItem: Image {
+                                source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
+                                width: Math.round(20 * page.uiScale)
+                                height: Math.round(20 * page.uiScale)
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                                antialiasing: true
+                            }
+
+                            background: Rectangle {
+                                radius: width / 2
+                                color: refreshButton.down ? page.infoBg : page.bgColor
+                                border.width: 1
+                                border.color: page.borderColor
+                            }
                         }
                     }
 

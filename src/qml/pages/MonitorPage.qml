@@ -122,30 +122,6 @@ Item {
                                 font.weight: Font.DemiBold
                                 font.pixelSize: Math.round(12 * page.uiScale)
                             }
-
-                            ToolButton {
-                                id: telemetryRefreshButton
-                                implicitWidth: Math.round(34 * page.uiScale)
-                                implicitHeight: Math.round(34 * page.uiScale)
-                                display: AbstractButton.IconOnly
-                                ToolTip.visible: hovered
-                                ToolTip.text: qsTr("Refresh telemetry")
-                                onClicked: page.refreshTelemetry()
-
-                                contentItem: Image {
-                                    source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
-                                    sourceSize.width: Math.round(17 * page.uiScale)
-                                    sourceSize.height: Math.round(17 * page.uiScale)
-                                    fillMode: Image.PreserveAspectFit
-                                }
-
-                                background: Rectangle {
-                                    radius: width / 2
-                                    color: telemetryRefreshButton.down ? page.infoBg : page.bgColor
-                                    border.width: 1
-                                    border.color: page.borderColor
-                                }
-                            }
                         }
 
                         Label { text: page.ramMonitor ? page.ramMonitor.usagePercent + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.weight: Font.DemiBold }
@@ -178,6 +154,32 @@ Item {
                             color: page.textColor
                             font.pixelSize: Math.round(18 * page.uiScale)
                             font.weight: Font.DemiBold
+                        }
+
+                        ToolButton {
+                            id: telemetryRefreshButton
+                            implicitWidth: Math.round(36 * page.uiScale)
+                            implicitHeight: Math.round(36 * page.uiScale)
+                            display: AbstractButton.IconOnly
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Refresh telemetry")
+                            onClicked: page.refreshTelemetry()
+
+                            contentItem: Image {
+                                source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
+                                width: Math.round(20 * page.uiScale)
+                                height: Math.round(20 * page.uiScale)
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                                antialiasing: true
+                            }
+
+                            background: Rectangle {
+                                radius: width / 2
+                                color: telemetryRefreshButton.down ? page.infoBg : page.bgColor
+                                border.width: 1
+                                border.color: page.borderColor
+                            }
                         }
                     }
 

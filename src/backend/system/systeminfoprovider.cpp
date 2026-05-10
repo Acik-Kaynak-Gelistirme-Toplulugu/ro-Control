@@ -14,6 +14,35 @@
 
 namespace {
 
+QString virtualizationLabel(const QString &virtualization) {
+  const QString normalized = virtualization.trimmed().toLower();
+  if (normalized.isEmpty() || normalized == QStringLiteral("none")) {
+    return {};
+  }
+  if (normalized == QStringLiteral("kvm")) {
+    return QStringLiteral("KVM");
+  }
+  if (normalized == QStringLiteral("qemu")) {
+    return QStringLiteral("QEMU");
+  }
+  if (normalized == QStringLiteral("vmware")) {
+    return QStringLiteral("VMware");
+  }
+  if (normalized == QStringLiteral("oracle")) {
+    return QStringLiteral("VirtualBox");
+  }
+  if (normalized == QStringLiteral("microsoft")) {
+    return QStringLiteral("Hyper-V");
+  }
+
+  QString label = virtualization.trimmed();
+  if (label.isEmpty()) {
+    return {};
+  }
+  label[0] = label[0].toUpper();
+  return label;
+}
+
 QString simplifiedDesktopName(const QString &desktop) {
   const QString trimmed = desktop.trimmed();
   if (trimmed.compare(QStringLiteral("KDE"), Qt::CaseInsensitive) == 0 ||
