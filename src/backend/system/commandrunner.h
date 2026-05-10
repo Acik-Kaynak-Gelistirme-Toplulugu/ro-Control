@@ -1,8 +1,12 @@
 #pragma once
 
+#include <QByteArray>
+#include <QList>
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <atomic>
+#include <memory>
 
 // CommandRunner: Tüm backend modüllerinin kullandığı shell komut çalıştırıcı.
 // Hiçbir modül doğrudan sistem çağrısı yapmaz — hepsi bu sınıfı kullanır.
@@ -15,6 +19,8 @@ public:
     int timeoutMs = -1;
     int retries = 0;
     int retryDelayMs = 250;
+    QByteArray stdinData;
+    std::shared_ptr<std::atomic_bool> cancelRequested;
   };
 
   struct Result {
@@ -23,6 +29,11 @@ public:
     QString stderr;
     int attempt = 1;
     bool success() const { return exitCode == 0; }
+  };
+
+  struct RootCommand {
+    QString program;
+    QStringList args;
   };
 
   explicit CommandRunner(QObject *parent = nullptr);
@@ -37,6 +48,9 @@ public:
   Result runAsRoot(const QString &program, const QStringList &args = {});
   Result runAsRoot(const QString &program, const QStringList &args,
                    const RunOptions &options);
+  Result runAsRootBatch(const QList<RootCommand> &commands);
+  Result runAsRootBatch(const QList<RootCommand> &commands,
+                        const RunOptions &options);
 
 signals:
   // Uzun işlemler için anlık çıktı (DNF install vb.)
@@ -49,6 +63,7 @@ signals:
 
 private:
   QString resolveProgram(const QString &program) const;
+  static QString helperPath();
   static QString overrideEnvironmentVariableName(const QString &program);
   Result runOnce(const QString &program, const QStringList &args,
                  const RunOptions &options, int attempt);

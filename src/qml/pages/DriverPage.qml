@@ -1,12 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components" as Components
 
 Item {
     id: page
     required property var nvidiaDetector
     required property var nvidiaInstaller
     required property var nvidiaUpdater
+    property var systemInfo: null
 
     property var theme: ({})
     property bool darkMode: false
@@ -20,14 +22,26 @@ Item {
     property string operationDetail: ""
     property bool operationActive: false
     property bool suppressPassiveStatus: true
+    property bool activityFollowTail: true
+    property string lastOperationText: ""
+    property string lastOperationTone: "info"
+    property string requestedDriverAction: ""
+    property string pendingDriverStateText: ""
+    property string pendingDriverStateTone: "info"
+    property bool postOperationRefreshPending: false
     readonly property bool backendBusy: page.nvidiaInstaller.busy || page.nvidiaUpdater.busy
     readonly property bool operationRunning: page.operationActive || page.backendBusy
     readonly property bool remoteDriverCatalogAvailable: page.nvidiaUpdater.latestVersion.length > 0 || page.nvidiaUpdater.availableVersions.length > 0
     readonly property bool canInstallLatestRemoteDriver: page.nvidiaDetector.gpuFound && remoteDriverCatalogAvailable
-    readonly property bool driverInstalledLocally: page.nvidiaDetector.driverVersion.length > 0 || page.nvidiaUpdater.currentVersion.length > 0
+    readonly property bool confirmedDriverInstalledLocally: page.nvidiaDetector.driverVersion.length > 0 || page.nvidiaDetector.driverPackageInstalled || page.nvidiaUpdater.currentVersion.length > 0
+    readonly property bool driverInstalledLocally: page.confirmedDriverInstalledLocally || page.pendingDriverStateText.length > 0
     readonly property string installedVersionLabel: page.nvidiaDetector.driverVersion.length > 0 ? page.nvidiaDetector.driverVersion : page.nvidiaUpdater.currentVersion
     readonly property bool catalogAvailable: page.nvidiaUpdater.latestVersion.length > 0 || page.nvidiaUpdater.availableVersions.length > 0
-    readonly property color driverVersionStatusColor: page.nvidiaUpdater.updateAvailable
+    readonly property color driverVersionStatusColor: page.pendingDriverStateText.length > 0
+                                                      ? (page.pendingDriverStateTone === "warning"
+                                                         ? (theme && theme.warning ? theme.warning : page.softTextColor)
+                                                         : (theme && theme.success ? theme.success : page.softTextColor))
+                                                      : page.nvidiaUpdater.updateAvailable
                                                       ? (theme && theme.warning ? theme.warning : page.softTextColor)
                                                       : page.softTextColor
     readonly property color bgColor: theme && theme.card ? theme.card : "#ffffff"
@@ -64,11 +78,97 @@ Item {
         setOperationState(source, message, success ? "success" : "error", false);
     }
 
-    function latestActionLabel() {
-        return page.driverInstalledLocally ? qsTr("Apply Latest Open Source") : qsTr("Install Open Source");
+    function recordOperationResult(source, success, message) {
+        const lowered = (message || "").toLowerCase();
+        const canceled = lowered.indexOf("cancel") >= 0 || lowered.indexOf("iptal") >= 0 || lowered.indexOf("abgebrochen") >= 0 || lowered.indexOf("cancelad") >= 0;
+        lastOperationTone = success ? "success" : (canceled ? "warning" : "error");
+        lastOperationText = success
+                            ? qsTr("%1 completed: %2").arg(source).arg(message)
+                            : (canceled ? qsTr("%1 canceled: %2").arg(source).arg(message)
+                                        : qsTr("%1 failed: %2").arg(source).arg(message));
+    }
+
+    function requestCancelDriverOperation() {
+        if (page.nvidiaInstaller.busy)
+            page.nvidiaInstaller.cancelOperation();
+        if (page.nvidiaUpdater.busy)
+            page.nvidiaUpdater.cancelOperation();
+        page.setOperationState(qsTr("System"), qsTr("Cancel requested. Waiting for the active command to stop safely..."), "warning", true);
+        page.appendLog(qsTr("System"), qsTr("Cancel requested. Waiting for the active command to stop safely..."));
+    }
+
+    function requestSystemRestart() {
+        if (!page.systemInfo || !page.systemInfo.requestRestart()) {
+            page.appendLog(qsTr("System"), qsTr("Restart request failed. Please restart the computer manually."));
+            page.setOperationState(qsTr("System"), qsTr("Restart request failed. Please restart the computer manually."), "error", false);
+            return;
+        }
+
+        page.appendLog(qsTr("System"), qsTr("Restart requested."));
+        page.setOperationState(qsTr("System"), qsTr("Restart requested."), "success", false);
+    }
+
+    function markDriverActionStarted(action) {
+        requestedDriverAction = action || "";
+        pendingDriverStateText = "";
+        pendingDriverStateTone = "info";
+        postOperationRefreshPending = false;
+    }
+
+    function markDriverActionFinished(success) {
+        if (!success)
+            return;
+
+        if (requestedDriverAction === "closed-install" || requestedDriverAction === "closed-update") {
+            const version = page.nvidiaUpdater.latestVersion.length > 0 ? page.nvidiaUpdater.latestVersion : page.installedVersionLabel;
+            pendingDriverStateText = version.length > 0
+                                     ? qsTr("Closed-source driver prepared: %1. Restart required.").arg(version)
+                                     : qsTr("Closed-source driver prepared. Restart required.");
+            pendingDriverStateTone = "success";
+        } else if (requestedDriverAction === "open-install") {
+            pendingDriverStateText = qsTr("Open-source graphics stack prepared. Restart required.");
+            pendingDriverStateTone = "success";
+        } else if (requestedDriverAction === "deep-clean") {
+            pendingDriverStateText = qsTr("NVIDIA driver cleanup completed. Restart recommended.");
+            pendingDriverStateTone = "warning";
+        }
+    }
+
+    function refreshAfterDriverAction() {
+        postOperationRefreshPending = true;
+        page.appendLog(qsTr("System"), qsTr("Refreshing driver status shown on this page..."));
+        page.nvidiaDetector.refresh();
+        page.suppressPassiveStatus = true;
+        page.nvidiaUpdater.checkForUpdate();
+        page.nvidiaInstaller.refreshProprietaryAgreement();
+    }
+
+    function closedSourceDriverAlreadyCurrent() {
+        return page.driverInstalledLocally && page.catalogAvailable && !page.nvidiaUpdater.updateAvailable;
+    }
+
+    function beginClosedSourceInstall() {
+        if (page.closedSourceDriverAlreadyCurrent()) {
+            currentDriverPopup.open();
+            return;
+        }
+
+        page.continueClosedSourceInstall();
+    }
+
+    function continueClosedSourceInstall() {
+        if (page.nvidiaInstaller.proprietaryAgreementRequired) {
+            licensePopup.open();
+        } else {
+            page.markDriverActionStarted("closed-install");
+            page.setOperationState(qsTr("Installer"), qsTr("Installing closed-source NVIDIA driver..."), "info", true);
+            page.nvidiaInstaller.installProprietary(false);
+        }
     }
 
     function driverVersionMainLabel() {
+        if (page.pendingDriverStateText.length > 0)
+            return page.pendingDriverStateText;
         if (page.installedVersionLabel.length > 0)
             return page.installedVersionLabel;
         if (page.nvidiaUpdater.latestVersion.length > 0)
@@ -79,6 +179,10 @@ Item {
     }
 
     function driverVersionStatusLabel() {
+        if (page.postOperationRefreshPending)
+            return qsTr("Refreshing installed driver status...");
+        if (page.pendingDriverStateText.length > 0)
+            return qsTr("The page has recorded the completed operation; system activation may require a restart.");
         if (page.installedVersionLabel.length > 0 && page.nvidiaUpdater.latestVersion.length > 0) {
             if (page.nvidiaUpdater.updateAvailable)
                 return qsTr("New version available: %1").arg(page.nvidiaUpdater.latestVersion);
@@ -103,9 +207,17 @@ Item {
     function appendLog(source, message) {
         const prefix = source && source.length > 0 ? source : qsTr("System");
         const nextLine = "[" + Qt.formatTime(new Date(), "HH:mm:ss") + "] " + prefix + ": " + message;
+        const shouldFollow = page.activityFollowTail && activityLog.selectedText.length === 0;
         activityLog.text = activityLog.text.length > 0 ? activityLog.text + "\n" + nextLine : nextLine;
-        if (activityLog.cursorPosition >= activityLog.length - nextLine.length - 1)
+        if (shouldFollow)
             activityLog.cursorPosition = activityLog.length;
+    }
+
+    function resumeActivityFollow() {
+        activityFollowTail = true;
+        activityLog.deselect();
+        activityLog.cursorPosition = activityLog.length;
+        activityLog.forceActiveFocus();
     }
 
     function refreshDriverState(showProgress) {
@@ -258,69 +370,45 @@ Item {
                             font.weight: Font.DemiBold
                         }
 
-                        ToolButton {
+                        Components.RefreshToolButton {
                             id: refreshButton
-                            implicitWidth: Math.round(36 * page.uiScale)
-                            implicitHeight: Math.round(36 * page.uiScale)
                             enabled: !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
-                            display: AbstractButton.IconOnly
-                            ToolTip.visible: hovered
-                            ToolTip.text: qsTr("Rescan and check updates")
+                            busy: page.nvidiaUpdater.busy
+                            theme: page.theme
+                            uiScale: page.uiScale
+                            tooltip: qsTr("Rescan and check updates")
                             onClicked: page.refreshDriverState(true)
-
-                            contentItem: Image {
-                                source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
-                                width: Math.round(20 * page.uiScale)
-                                height: Math.round(20 * page.uiScale)
-                                fillMode: Image.PreserveAspectFit
-                                smooth: true
-                                antialiasing: true
-                            }
-
-                            background: Rectangle {
-                                radius: width / 2
-                                color: refreshButton.down ? page.infoBg : page.bgColor
-                                border.width: 1
-                                border.color: page.borderColor
-                            }
                         }
                     }
 
                     Label {
                         Layout.fillWidth: true
-                        text: qsTr("Install, update, deep-clean, or rescan the NVIDIA driver stack. The refresh button also checks available driver updates.")
+                        text: qsTr("Install, update, deep-clean, or rescan the NVIDIA driver stack. The closed-source path installs the official NVIDIA RPM Fusion driver; the open-source path switches to the community open-source graphics stack.")
                         color: page.softTextColor
                         wrapMode: Text.Wrap
                     }
 
                     GridLayout {
                         Layout.fillWidth: true
-                        columns: width > 920 ? 3 : 1
+                        columns: width > 920 ? 4 : 1
                         columnSpacing: 8
                         rowSpacing: 8
 
                         Button {
                             Layout.fillWidth: true
                             text: qsTr("Install Closed Source")
-                            enabled: !page.nvidiaInstaller.busy
-                            onClicked: {
-                                if (page.nvidiaInstaller.proprietaryAgreementRequired) {
-                                    licensePopup.open();
-                                } else {
-                                    page.setOperationState(qsTr("Installer"), qsTr("Installing closed-source NVIDIA driver..."), "info", true);
-                                    page.nvidiaInstaller.installProprietary(false);
-                                }
-                            }
+                            enabled: !page.nvidiaInstaller.busy && !page.nvidiaUpdater.busy
+                            onClicked: page.beginClosedSourceInstall()
                         }
 
                         Button {
                             Layout.fillWidth: true
-                            text: page.latestActionLabel()
-                            enabled: !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy && (page.nvidiaUpdater.updateAvailable || page.catalogAvailable)
+                            text: qsTr("Use Open Source Driver")
+                            enabled: !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
                             onClicked: {
-                                page.setOperationState(qsTr("Updater"), qsTr("Applying latest available driver..."), "info", true);
-                                page.suppressPassiveStatus = false;
-                                page.nvidiaUpdater.applyUpdate();
+                                page.markDriverActionStarted("open-install");
+                                page.setOperationState(qsTr("Installer"), qsTr("Switching to the community open-source graphics driver stack..."), "info", true);
+                                page.nvidiaInstaller.installOpenSource();
                             }
                         }
 
@@ -329,48 +417,18 @@ Item {
                             text: qsTr("Deep Clean")
                             enabled: page.driverInstalledLocally && !page.nvidiaInstaller.busy && !page.nvidiaUpdater.busy
                             onClicked: {
+                                page.markDriverActionStarted("deep-clean");
                                 page.setOperationState(qsTr("Installer"), qsTr("Cleaning NVIDIA artifacts..."), "info", true);
                                 page.nvidiaInstaller.deepClean();
                             }
                         }
 
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                visible: page.showAdvancedInfo
-                radius: 14
-                color: page.cardColor
-                border.width: 1
-                border.color: page.borderColor
-                implicitHeight: maintenanceLayout.implicitHeight + 24
-
-                ColumnLayout {
-                    id: maintenanceLayout
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 10
-
-                    Label {
-                        text: qsTr("Maintenance")
-                        color: page.textColor
-                        font.pixelSize: Math.round(18 * page.uiScale)
-                        font.weight: Font.DemiBold
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-
                         Button {
-                            text: qsTr("Install Open Modules")
-                            enabled: !page.nvidiaInstaller.busy
-                            onClicked: {
-                                page.setOperationState(qsTr("Installer"), qsTr("Installing open NVIDIA kernel modules..."), "info", true);
-                                page.nvidiaInstaller.installOpenSource();
-                            }
+                            Layout.fillWidth: true
+                            text: qsTr("Restart System")
+                            visible: page.pendingDriverStateText.length > 0
+                            enabled: visible && !page.operationRunning
+                            onClicked: restartPopup.open()
                         }
 
                     }
@@ -383,43 +441,116 @@ Item {
                 color: page.cardColor
                 border.width: 1
                 border.color: page.borderColor
-                implicitHeight: 240
+                implicitHeight: Math.round(340 * page.uiScale)
+                Layout.preferredHeight: Math.round(340 * page.uiScale)
+                Layout.maximumHeight: Math.round(360 * page.uiScale)
 
                 ColumnLayout {
+                    id: activityLayout
                     anchors.fill: parent
                     anchors.margins: 12
                     spacing: 8
 
-                    Label {
-                        text: qsTr("Activity")
-                        color: page.textColor
-                        font.pixelSize: Math.round(18 * page.uiScale)
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("Activity")
+                            color: page.textColor
+                            font.pixelSize: Math.round(18 * page.uiScale)
                             font.weight: Font.DemiBold
+                        }
+
+                        Label {
+                            text: page.activityFollowTail ? qsTr("Live") : qsTr("Reading")
+                            color: page.activityFollowTail ? (page.theme && page.theme.success ? page.theme.success : page.textColor)
+                                                           : page.softTextColor
+                            font.pixelSize: Math.round(12 * page.uiScale)
+                            font.weight: Font.DemiBold
+                        }
                     }
 
-                    TextArea {
-                        id: activityLog
+                    Components.StatusBanner {
+                        Layout.fillWidth: true
+                        theme: page.theme
+                        tone: page.lastOperationTone
+                        text: page.lastOperationText
+                    }
+
+                    ScrollView {
+                        id: activityScroll
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        readOnly: true
-                        wrapMode: Text.Wrap
-                        color: page.textColor
-                        font.family: "Noto Sans Mono"
+                        clip: true
+                        ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+                        ScrollBar.horizontal.policy: ScrollBar.AsNeeded
                         background: Rectangle {
                             radius: 10
                             color: page.bgColor
                             border.width: 1
                             border.color: page.borderColor
                         }
+
+                        TextArea {
+                            id: activityLog
+                            width: activityScroll.availableWidth
+                            readOnly: true
+                            selectByMouse: true
+                            persistentSelection: true
+                            wrapMode: Text.Wrap
+                            textFormat: TextEdit.PlainText
+                            color: page.textColor
+                            selectedTextColor: page.bgColor
+                            selectionColor: page.theme && page.theme.accentA ? page.theme.accentA : "#3778c2"
+                            font.family: "Noto Sans Mono"
+                            font.pixelSize: Math.round(12 * page.uiScale)
+                            padding: 10
+                            background: null
+
+                            Keys.onPressed: function(event) {
+                                if (event.key === Qt.Key_PageUp || event.key === Qt.Key_Up || event.key === Qt.Key_Home)
+                                    page.activityFollowTail = false;
+                            }
+
+                            TapHandler {
+                                onTapped: page.activityFollowTail = false
+                            }
+
+                            WheelHandler {
+                                onWheel: page.activityFollowTail = false
+                            }
+                        }
                     }
 
                     RowLayout {
                         Layout.fillWidth: true
-                        Item { Layout.fillWidth: true }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: page.activityFollowTail ? qsTr("Following live output") : qsTr("Paused for reading")
+                            color: page.softTextColor
+                            font.pixelSize: Math.round(12 * page.uiScale)
+                        }
+
+                        Button {
+                            text: qsTr("Follow")
+                            enabled: !page.activityFollowTail
+                            onClicked: page.resumeActivityFollow()
+                        }
+
+                        Button {
+                            text: qsTr("Cancel")
+                            enabled: page.operationRunning
+                            onClicked: page.requestCancelDriverOperation()
+                        }
 
                         Button {
                             text: qsTr("Clear")
-                            onClicked: activityLog.text = ""
+                            onClicked: {
+                                activityLog.text = "";
+                                page.activityFollowTail = true;
+                            }
                         }
                     }
                 }
@@ -437,18 +568,18 @@ Item {
 
         function onInstallFinished(success, message) {
             page.finishOperation(qsTr("Installer"), success, message);
+            page.recordOperationResult(qsTr("Installer"), success, message);
+            page.markDriverActionFinished(success);
             page.appendLog(qsTr("Installer"), message);
-            page.nvidiaDetector.refresh();
-            page.nvidiaUpdater.checkForUpdate();
-            page.nvidiaInstaller.refreshProprietaryAgreement();
+            page.refreshAfterDriverAction();
         }
 
         function onRemoveFinished(success, message) {
             page.finishOperation(qsTr("Installer"), success, message);
+            page.recordOperationResult(qsTr("Installer"), success, message);
+            page.markDriverActionFinished(success);
             page.appendLog(qsTr("Installer"), message);
-            page.nvidiaDetector.refresh();
-            page.nvidiaUpdater.checkForUpdate();
-            page.nvidiaInstaller.refreshProprietaryAgreement();
+            page.refreshAfterDriverAction();
         }
     }
 
@@ -466,19 +597,140 @@ Item {
             else
                 page.finishOperation(qsTr("Updater"), success, message);
             page.appendLog(qsTr("Updater"), message);
+            if (page.postOperationRefreshPending) {
+                page.postOperationRefreshPending = false;
+                page.appendLog(qsTr("System"), success ? qsTr("Driver page status refreshed.") : qsTr("Driver page status refresh failed."));
+            }
             page.suppressPassiveStatus = false;
         }
 
         function onUpdateFinished(success, message) {
             page.finishOperation(qsTr("Updater"), success, message);
+            page.recordOperationResult(qsTr("Updater"), success, message);
+            if (page.requestedDriverAction.length === 0)
+                page.requestedDriverAction = "closed-update";
+            page.markDriverActionFinished(success);
             page.appendLog(qsTr("Updater"), message);
-            page.nvidiaDetector.refresh();
-            page.nvidiaUpdater.checkForUpdate();
+            page.refreshAfterDriverAction();
         }
     }
 
     Component.onCompleted: {
         page.refreshDriverState(false);
+    }
+
+    Popup {
+        id: restartPopup
+        modal: true
+        focus: true
+        width: Math.min(page.width - 40, Math.round(520 * page.uiScale))
+        x: Math.round((page.width - width) / 2)
+        y: Math.round((page.height - implicitHeight) / 2)
+        padding: 14
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            radius: 12
+            color: page.bgColor
+            border.width: 1
+            border.color: page.borderColor
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 10
+
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Restart Computer")
+                color: page.textColor
+                font.pixelSize: Math.round(18 * page.uiScale)
+                font.weight: Font.DemiBold
+            }
+
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("A driver operation has completed and the computer must restart before the new graphics stack is active.")
+                color: page.softTextColor
+                wrapMode: Text.Wrap
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                Button {
+                    Layout.fillWidth: true
+                    text: qsTr("Cancel")
+                    onClicked: restartPopup.close()
+                }
+
+                Button {
+                    Layout.fillWidth: true
+                    text: qsTr("Restart Now")
+                    onClicked: {
+                        restartPopup.close();
+                        page.requestSystemRestart();
+                    }
+                }
+            }
+        }
+    }
+
+    Popup {
+        id: currentDriverPopup
+        modal: true
+        focus: true
+        width: Math.min(page.width - 40, Math.round(520 * page.uiScale))
+        x: Math.round((page.width - width) / 2)
+        y: Math.round((page.height - implicitHeight) / 2)
+        padding: 14
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            radius: 12
+            color: page.bgColor
+            border.width: 1
+            border.color: page.borderColor
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 10
+
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Driver Is Already Current")
+                color: page.textColor
+                font.pixelSize: Math.round(18 * page.uiScale)
+                font.weight: Font.DemiBold
+            }
+
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("The installed NVIDIA driver already matches the latest version available from the configured driver sources. Reinstall only if you want to rebuild the driver packages and kernel module.")
+                color: page.softTextColor
+                wrapMode: Text.Wrap
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                Button {
+                    Layout.fillWidth: true
+                    text: qsTr("Cancel")
+                    onClicked: currentDriverPopup.close()
+                }
+
+                Button {
+                    Layout.fillWidth: true
+                    text: qsTr("Reinstall Anyway")
+                    onClicked: {
+                        currentDriverPopup.close();
+                        page.continueClosedSourceInstall();
+                    }
+                }
+            }
+        }
     }
 
     Popup {
@@ -568,6 +820,7 @@ Item {
                     text: qsTr("Accept")
                     onClicked: {
                         licensePopup.close();
+                        page.markDriverActionStarted("closed-install");
                         page.setOperationState(qsTr("Installer"), qsTr("Installing closed-source NVIDIA driver..."), "info", true);
                         page.nvidiaInstaller.installProprietary(true);
                     }

@@ -74,7 +74,33 @@ CommandRunner::Result CommandRunner::runOnce(const QString &program,
   QProcess process;
   QByteArray stdoutBuffer;
   QByteArray stderrBuffer;
+  QByteArray stdoutLineBuffer;
+  QByteArray stderrLineBuffer;
   QElapsedTimer timer;
+
+  auto emitBufferedLines = [](QByteArray &lineBuffer, const QByteArray &chunk,
+                              const auto &emitLine) {
+    lineBuffer.append(chunk);
+
+    qsizetype newlineIndex = lineBuffer.indexOf('\n');
+    while (newlineIndex >= 0) {
+      const QString line =
+          QString::fromUtf8(lineBuffer.left(newlineIndex)).trimmed();
+      if (!line.isEmpty()) {
+        emitLine(line);
+      }
+      lineBuffer.remove(0, newlineIndex + 1);
+      newlineIndex = lineBuffer.indexOf('\n');
+    }
+  };
+
+  auto flushBufferedLine = [](QByteArray &lineBuffer, const auto &emitLine) {
+    const QString line = QString::fromUtf8(lineBuffer).trimmed();
+    if (!line.isEmpty()) {
+      emitLine(line);
+    }
+    lineBuffer.clear();
+  };
 
   emit commandStarted(program, args, attempt);
   timer.start();
@@ -96,19 +122,15 @@ CommandRunner::Result CommandRunner::runOnce(const QString &program,
   connect(&process, &QProcess::readyReadStandardOutput, this, [&]() {
     const QByteArray chunk = process.readAllStandardOutput();
     stdoutBuffer.append(chunk);
-
-    const QString line = QString::fromUtf8(chunk).trimmed();
-    if (!line.isEmpty())
-      emit outputLine(line);
+    emitBufferedLines(stdoutLineBuffer, chunk,
+                      [this](const QString &line) { emit outputLine(line); });
   });
 
   connect(&process, &QProcess::readyReadStandardError, this, [&]() {
     const QByteArray chunk = process.readAllStandardError();
     stderrBuffer.append(chunk);
-
-    const QString line = QString::fromUtf8(chunk).trimmed();
-    if (!line.isEmpty())
-      emit errorLine(line);
+    emitBufferedLines(stderrLineBuffer, chunk,
+                      [this](const QString &line) { emit errorLine(line); });
   });
 
   process.start(resolvedProgram, args);
@@ -125,11 +147,59 @@ CommandRunner::Result CommandRunner::runOnce(const QString &program,
     return result;
   }
 
-  const bool finished = process.waitForFinished(options.timeoutMs);
+  if (!options.stdinData.isEmpty()) {
+    process.write(options.stdinData);
+  }
+  process.closeWriteChannel();
+
+  bool finished = false;
+  const int pollIntervalMs = 100;
+  while (true) {
+    if (options.cancelRequested &&
+        options.cancelRequested->load(std::memory_order_relaxed)) {
+      process.terminate();
+      if (!process.waitForFinished(1500)) {
+        process.kill();
+        process.waitForFinished(1000);
+      }
+      flushBufferedLine(stdoutLineBuffer,
+                        [this](const QString &line) { emit outputLine(line); });
+      flushBufferedLine(stderrLineBuffer,
+                        [this](const QString &line) { emit errorLine(line); });
+      const Result result{
+          .exitCode = -3,
+          .stdout = QString::fromUtf8(stdoutBuffer),
+          .stderr = QStringLiteral("Command canceled by user: %1").arg(program),
+          .attempt = attempt,
+      };
+      emit commandFinished(program, result.exitCode, attempt,
+                           static_cast<int>(timer.elapsed()));
+      return result;
+    }
+
+    const int elapsedMs = static_cast<int>(timer.elapsed());
+    if (options.timeoutMs >= 0 && elapsedMs >= options.timeoutMs) {
+      finished = false;
+      break;
+    }
+
+    const int waitMs =
+        options.timeoutMs < 0
+            ? pollIntervalMs
+            : std::min(pollIntervalMs, options.timeoutMs - elapsedMs);
+    finished = process.waitForFinished(std::max(0, waitMs));
+    if (finished) {
+      break;
+    }
+  }
 
   if (!finished) {
     process.kill();
     process.waitForFinished(1000);
+    flushBufferedLine(stdoutLineBuffer,
+                      [this](const QString &line) { emit outputLine(line); });
+    flushBufferedLine(stderrLineBuffer,
+                      [this](const QString &line) { emit errorLine(line); });
     const Result result{
         .exitCode = -2,
         .stdout = QString::fromUtf8(stdoutBuffer),
@@ -141,8 +211,18 @@ CommandRunner::Result CommandRunner::runOnce(const QString &program,
     return result;
   }
 
-  stdoutBuffer.append(process.readAllStandardOutput());
-  stderrBuffer.append(process.readAllStandardError());
+  const QByteArray remainingStdout = process.readAllStandardOutput();
+  const QByteArray remainingStderr = process.readAllStandardError();
+  stdoutBuffer.append(remainingStdout);
+  stderrBuffer.append(remainingStderr);
+  emitBufferedLines(stdoutLineBuffer, remainingStdout,
+                    [this](const QString &line) { emit outputLine(line); });
+  emitBufferedLines(stderrLineBuffer, remainingStderr,
+                    [this](const QString &line) { emit errorLine(line); });
+  flushBufferedLine(stdoutLineBuffer,
+                    [this](const QString &line) { emit outputLine(line); });
+  flushBufferedLine(stderrLineBuffer,
+                    [this](const QString &line) { emit errorLine(line); });
 
   const Result result{
       .exitCode = process.exitCode(),
@@ -165,11 +245,63 @@ CommandRunner::Result CommandRunner::runAsRoot(const QString &program,
                                                const QStringList &args,
                                                const RunOptions &options) {
   QStringList pkexecArgs;
-  QString helperPath = QStringLiteral(RO_CONTROL_HELPER_BUILD_PATH);
-  if (!QFileInfo::exists(helperPath)) {
-    helperPath = QStringLiteral(RO_CONTROL_HELPER_INSTALL_PATH);
+  pkexecArgs << helperPath() << program << args;
+  return run(QStringLiteral("pkexec"), pkexecArgs, options);
+}
+
+CommandRunner::Result
+CommandRunner::runAsRootBatch(const QList<RootCommand> &commands) {
+  return runAsRootBatch(commands, RunOptions{});
+}
+
+CommandRunner::Result
+CommandRunner::runAsRootBatch(const QList<RootCommand> &commands,
+                              const RunOptions &options) {
+  if (commands.isEmpty()) {
+    return Result{.exitCode = -1,
+                  .stdout = {},
+                  .stderr = QStringLiteral("No privileged commands provided."),
+                  .attempt = 1};
   }
 
-  pkexecArgs << helperPath << program << args;
-  return run(QStringLiteral("pkexec"), pkexecArgs, options);
+  QByteArray stdinData;
+  for (const RootCommand &command : commands) {
+    if (command.program.trimmed().isEmpty()) {
+      return Result{.exitCode = -1,
+                    .stdout = {},
+                    .stderr = QStringLiteral("Empty privileged command."),
+                    .attempt = 1};
+    }
+
+    stdinData += command.program.toUtf8();
+    for (const QString &arg : command.args) {
+      if (arg.contains(QLatin1Char('\t')) ||
+          arg.contains(QLatin1Char('\n'))) {
+        return Result{.exitCode = -1,
+                      .stdout = {},
+                      .stderr = QStringLiteral(
+                          "Privileged command arguments cannot contain tabs or "
+                          "newlines."),
+                      .attempt = 1};
+      }
+      stdinData += '\t';
+      stdinData += arg.toUtf8();
+    }
+    stdinData += '\n';
+  }
+
+  RunOptions batchOptions = options;
+  batchOptions.stdinData = stdinData;
+
+  QStringList pkexecArgs;
+  pkexecArgs << helperPath() << QStringLiteral("--batch");
+  return run(QStringLiteral("pkexec"), pkexecArgs, batchOptions);
+}
+
+QString CommandRunner::helperPath() {
+  QString path = QStringLiteral(RO_CONTROL_HELPER_BUILD_PATH);
+  if (!QFileInfo::exists(path)) {
+    path = QStringLiteral(RO_CONTROL_HELPER_INSTALL_PATH);
+  }
+  return path;
 }

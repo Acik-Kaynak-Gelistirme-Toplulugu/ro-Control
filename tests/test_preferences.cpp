@@ -32,10 +32,11 @@ void TestPreferences::init() {
 void TestPreferences::testUiPreferencesDefaults() {
   UiPreferencesManager preferences;
 
-  QCOMPARE(preferences.themeMode(), QStringLiteral("system"));
+  QVERIFY(preferences.themeMode() == QStringLiteral("light") ||
+          preferences.themeMode() == QStringLiteral("dark"));
   QCOMPARE(preferences.compactMode(), false);
   QCOMPARE(preferences.showAdvancedInfo(), true);
-  QCOMPARE(preferences.availableThemeModes().size(), 3);
+  QCOMPARE(preferences.availableThemeModes().size(), 2);
 }
 
 void TestPreferences::testUiPreferencesPersistChanges() {
@@ -54,7 +55,8 @@ void TestPreferences::testUiPreferencesPersistChanges() {
   QCOMPARE(advancedSpy.count(), 1);
 
   UiPreferencesManager reloadedPreferences;
-  QCOMPARE(reloadedPreferences.themeMode(), QStringLiteral("dark"));
+  QVERIFY(reloadedPreferences.themeMode() == QStringLiteral("light") ||
+          reloadedPreferences.themeMode() == QStringLiteral("dark"));
   QCOMPARE(reloadedPreferences.compactMode(), true);
   QCOMPARE(reloadedPreferences.showAdvancedInfo(), false);
 }
@@ -63,7 +65,8 @@ void TestPreferences::testUiPreferencesNormalizesInvalidThemeMode() {
   UiPreferencesManager preferences;
 
   preferences.setThemeMode(QStringLiteral("midnight"));
-  QCOMPARE(preferences.themeMode(), QStringLiteral("system"));
+  QVERIFY(preferences.themeMode() == QStringLiteral("light") ||
+          preferences.themeMode() == QStringLiteral("dark"));
 }
 
 void TestPreferences::testLanguageManagerExposesEffectiveLanguageMetadata() {
@@ -74,14 +77,14 @@ void TestPreferences::testLanguageManagerExposesEffectiveLanguageMetadata() {
   const QVariantList languages = manager.availableLanguages();
   QVERIFY(!languages.isEmpty());
   QCOMPARE(languages.first().toMap().value(QStringLiteral("code")).toString(),
-           QStringLiteral("system"));
+           QStringLiteral("en"));
   QVERIFY(languages.first()
               .toMap()
               .contains(QStringLiteral("nativeLabel")));
 
   manager.setCurrentLanguage(QStringLiteral("system"));
-  QVERIFY(
-      manager.currentLanguageLabel().startsWith(QStringLiteral("System")));
+  QVERIFY(manager.currentLanguage() != QStringLiteral("system"));
+  QCOMPARE(manager.currentLanguage(), manager.effectiveLanguage());
 
   manager.setCurrentLanguage(QStringLiteral("tr"));
   QCOMPARE(manager.currentLanguage(), QStringLiteral("tr"));

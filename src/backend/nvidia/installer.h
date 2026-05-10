@@ -2,9 +2,14 @@
 
 #include <QObject>
 #include <QString>
+#include <atomic>
 #include <functional>
+#include <memory>
 
 class CommandRunner;
+namespace SessionUtil {
+struct SessionInfo;
+}
 
 // NvidiaInstaller: DNF üzerinden NVIDIA sürücü kurulum/kaldırma işlemleri.
 // Tüm işlemler root gerektirir — polkit üzerinden yetki alınır.
@@ -34,7 +39,7 @@ public:
   // Kapali kaynak kurulum (kullanici onayi bilgisiyle)
   Q_INVOKABLE void installProprietary(bool agreementAccepted);
 
-  // Acik kaynak surucuye gecis/kurulum
+  // Topluluk acik kaynak grafik surucusune gecis/kurulum
   Q_INVOKABLE void installOpenSource();
 
   // Sürücüyü kur (akmod-nvidia)
@@ -45,6 +50,9 @@ public:
 
   // Eski sürücü kalıntılarını temizle
   Q_INVOKABLE void deepClean();
+
+  // Devam eden kurulum/kaldırma işlemini best-effort iptal et
+  Q_INVOKABLE void cancelOperation();
 
 signals:
   // İşlem adımları — QML'e ilerleme göstermek için
@@ -62,10 +70,11 @@ private:
   void runAsyncTask(const std::function<void()> &task);
   void setProprietaryAgreement(bool required, const QString &text);
   bool applySessionSpecificSetup(CommandRunner &runner,
-                                 const QString &sessionType,
+                                 const SessionUtil::SessionInfo &sessionInfo,
                                  QString *errorMessage);
 
   bool m_proprietaryAgreementRequired = false;
   QString m_proprietaryAgreementText;
   bool m_busy = false;
+  std::shared_ptr<std::atomic_bool> m_cancelRequested;
 };

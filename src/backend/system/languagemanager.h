@@ -44,5 +44,5 @@ private:
   QCoreApplication *m_application = nullptr;
   QQmlEngine *m_engine = nullptr;
   QTranslator *m_translator = nullptr;
-  QString m_currentLanguage = QStringLiteral("system");
+  QString m_currentLanguage = QStringLiteral("en");
 };

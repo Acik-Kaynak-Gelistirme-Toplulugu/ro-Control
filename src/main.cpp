@@ -172,6 +172,15 @@ void configureGuiGraphicsEnvironment() {
   const QByteArray sessionType =
       qgetenv("XDG_SESSION_TYPE").trimmed().toLower();
 
+  // ro-Control is a driver management tool, not a GPU-accelerated UI. Using
+  // Qt Quick's software renderer on Linux avoids EGL/DRI startup warnings and
+  // keeps the app usable while the graphics driver stack is broken or changing.
+  if (qEnvironmentVariableIsEmpty("RO_CONTROL_USE_HARDWARE_RENDER")) {
+    qputenv("QT_QUICK_BACKEND", QByteArrayLiteral("software"));
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
+    return;
+  }
+
   // NVIDIA on Fedora/X11 is generally more stable through the GLX path than
   // the EGL/DRI2 integration that can emit startup errors.
   if (sessionType == "x11" &&
@@ -266,6 +275,8 @@ int main(int argc, char *argv[]) {
   GpuMonitor gpuMonitor;
   RamMonitor ramMonitor;
   SystemInfoProvider systemInfo;
+
+  detector.refresh();
 
   QQmlApplicationEngine engine;
   LanguageManager languageManager(&app, &engine, &translator);

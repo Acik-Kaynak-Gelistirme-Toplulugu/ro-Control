@@ -19,6 +19,7 @@ private slots:
     QCOMPARE(info.found, false);
     QVERIFY(info.name.isEmpty());
     QVERIFY(info.driverVersion.isEmpty());
+    QCOMPARE(info.driverPackageInstalled, false);
     QCOMPARE(info.driverLoaded, false);
     QCOMPARE(info.nouveauActive, false);
     QCOMPARE(info.openKernelModulesInstalled, false);
@@ -42,7 +43,10 @@ private slots:
   void testIsDriverInstalled() {
     NvidiaDetector detector;
     const bool installed = detector.isDriverInstalled();
-    QCOMPARE(installed, !detector.installedDriverVersion().isEmpty());
+    const auto info = detector.detect();
+    QCOMPARE(installed,
+             !detector.installedDriverVersion().isEmpty() ||
+                 info.driverPackageInstalled);
   }
 
   void testInstalledDriverVersion() {
@@ -59,7 +63,7 @@ private slots:
     if (!info.found) {
       QVERIFY(info.name.isEmpty());
     }
-    if (info.driverVersion.isEmpty()) {
+    if (info.driverVersion.isEmpty() && !info.driverPackageInstalled) {
       QVERIFY(!detector.isDriverInstalled());
     }
   }

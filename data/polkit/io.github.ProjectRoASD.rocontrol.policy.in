@@ -11,8 +11,8 @@
     <action id="@RO_CONTROL_POLICY_ID@">
         <description>Manage NVIDIA drivers with ro-Control</description>
         <description xml:lang="tr">ro-Control ile NVIDIA sürücülerini yönet</description>
-        <message>Authentication is required to perform privileged ro-Control operations</message>
-        <message xml:lang="tr">Ayrıcalıklı ro-Control işlemleri için kimlik doğrulama gerekli</message>
+        <message>Authentication is required to install, update, remove, and prepare NVIDIA driver packages and kernel modules</message>
+        <message xml:lang="tr">NVIDIA sürücü paketlerini ve kernel modüllerini kurmak, güncellemek, kaldırmak ve hazırlamak için kimlik doğrulama gerekli</message>
         <icon_name>ro-control</icon_name>
         <defaults>
             <allow_any>auth_admin</allow_any>

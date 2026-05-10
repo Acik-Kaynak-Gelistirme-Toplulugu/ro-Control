@@ -14,7 +14,9 @@
 
 namespace {
 
-const QStringList kSharedVersionLockedDriverPackages = {
+const QStringList kCommonVersionLockedDriverPackages;
+
+const QStringList kX11VersionLockedDriverPackages = {
     QStringLiteral("xorg-x11-drv-nvidia"),
     QStringLiteral("xorg-x11-drv-nvidia-libs"),
     QStringLiteral("xorg-x11-drv-nvidia-cuda"),
@@ -25,6 +27,13 @@ const QStringList kFloatingDriverPackages = {
     QStringLiteral("nvidia-modprobe"),
     QStringLiteral("nvidia-persistenced"),
     QStringLiteral("nvidia-settings"),
+};
+
+const QStringList kNvidiaKernelModules = {
+    QStringLiteral("nvidia"),
+    QStringLiteral("nvidia_modeset"),
+    QStringLiteral("nvidia_uvm"),
+    QStringLiteral("nvidia_drm"),
 };
 
 QString commandError(const CommandRunner::Result &result,
@@ -43,8 +52,41 @@ QString commandError(const CommandRunner::Result &result,
   return fallback;
 }
 
+bool commandCanceled(const CommandRunner::Result &result) {
+  return result.exitCode == -3;
+}
+
 QString normalizedTransactionOutput(const CommandRunner::Result &result) {
   return (result.stdout + QLatin1Char('\n') + result.stderr).toLower();
+}
+
+QString quotedList(const QStringList &values) {
+  QStringList quoted;
+  quoted.reserve(values.size());
+  for (const QString &value : values) {
+    quoted << QStringLiteral("`%1`").arg(value);
+  }
+  return quoted.join(QStringLiteral(", "));
+}
+
+QList<CommandRunner::RootCommand>
+buildSessionSpecificRootCommands(const QString &sessionType) {
+  QList<CommandRunner::RootCommand> commands;
+  commands.append({QStringLiteral("dracut"),
+                   {QStringLiteral("--force"), QStringLiteral("--add-drivers"),
+                    kNvidiaKernelModules.join(QLatin1Char(' '))}});
+
+  if (sessionType == QStringLiteral("wayland")) {
+    commands.append({QStringLiteral("dnf"),
+                     {QStringLiteral("install"), QStringLiteral("-y"),
+                      QStringLiteral("egl-wayland")}});
+    commands.append({QStringLiteral("grubby"),
+                     {QStringLiteral("--update-kernel=ALL"),
+                      QStringLiteral("--args=nvidia-drm.modeset=1 "
+                                     "nvidia-drm.fbdev=1")}});
+  }
+
+  return commands;
 }
 
 struct UpdateStatusSnapshot {
@@ -292,10 +334,24 @@ void attachRunnerLogging(CommandRunner &runner,
       &runner, &CommandRunner::commandStarted, guard,
       [guard](const QString &program, const QStringList &args, int attempt) {
         QStringList visibleArgs = args;
+        bool privilegedBatch = false;
         if (!visibleArgs.isEmpty() &&
             visibleArgs.constFirst().contains(
                 QStringLiteral("ro-control-helper"))) {
           visibleArgs.removeFirst();
+          privilegedBatch =
+              !visibleArgs.isEmpty() &&
+              visibleArgs.constFirst() == QStringLiteral("--batch");
+        }
+
+        if (program == QStringLiteral("pkexec") && privilegedBatch) {
+          emitProgressAsync(
+              guard, NvidiaUpdater::tr(
+                         "Starting privileged driver transaction batch "
+                         "(attempt %1). The exact commands and package manager "
+                         "output will appear below.")
+                         .arg(attempt));
+          return;
         }
 
         const QString commandLine = QStringLiteral("$ %1 %2").arg(
@@ -310,6 +366,10 @@ void attachRunnerLogging(CommandRunner &runner,
       &runner, &CommandRunner::commandFinished, guard,
       [guard](const QString &program, int exitCode, int attempt,
               int elapsedMs) {
+        if (program == QStringLiteral("pkexec")) {
+          return;
+        }
+
         emitProgressAsync(
             guard, NvidiaUpdater::tr(
                        "Command finished (attempt %1, exit %2, %3 ms): %4")
@@ -322,7 +382,9 @@ void attachRunnerLogging(CommandRunner &runner,
 
 } // namespace
 
-NvidiaUpdater::NvidiaUpdater(QObject *parent) : QObject(parent) {}
+NvidiaUpdater::NvidiaUpdater(QObject *parent) : QObject(parent) {
+  m_cancelRequested = std::make_shared<std::atomic_bool>(false);
+}
 
 void NvidiaUpdater::setBusy(bool busy) {
   if (m_busy == busy) {
@@ -339,6 +401,7 @@ void NvidiaUpdater::runAsyncTask(const std::function<void()> &task) {
     return;
   }
 
+  m_cancelRequested->store(false, std::memory_order_relaxed);
   setBusy(true);
 
   QThread *thread = QThread::create(task);
@@ -347,6 +410,16 @@ void NvidiaUpdater::runAsyncTask(const std::function<void()> &task) {
     thread->deleteLater();
   });
   thread->start();
+}
+
+void NvidiaUpdater::cancelOperation() {
+  if (!m_busy) {
+    emit progressMessage(tr("No driver operation is running."));
+    return;
+  }
+
+  m_cancelRequested->store(true, std::memory_order_relaxed);
+  emit progressMessage(tr("Cancel requested. Waiting for the active command to stop safely..."));
 }
 
 void NvidiaUpdater::setLatestVersion(const QString &version) {
@@ -383,8 +456,8 @@ bool NvidiaUpdater::transactionChanged(
   return true;
 }
 
-QString NvidiaUpdater::detectSessionType() const {
-  return SessionUtil::detectSessionType();
+SessionUtil::SessionInfo NvidiaUpdater::detectSessionInfo() const {
+  return SessionUtil::detectSessionInfo();
 }
 
 QString NvidiaUpdater::detectInstalledKernelPackageName() const {
@@ -398,7 +471,10 @@ NvidiaUpdater::buildDriverTargets(const QString &version,
   Q_UNUSED(sessionType);
   QStringList targets;
   QStringList versionLockedPackages{kernelPackageName};
-  versionLockedPackages << kSharedVersionLockedDriverPackages;
+  versionLockedPackages << kCommonVersionLockedDriverPackages;
+  if (sessionType.trimmed().toLower() == QStringLiteral("x11")) {
+    versionLockedPackages << kX11VersionLockedDriverPackages;
+  }
   targets << NvidiaVersionParser::buildVersionedPackageSpecs(
       versionLockedPackages, version);
   targets << kFloatingDriverPackages;
@@ -438,7 +514,8 @@ QStringList NvidiaUpdater::buildTransactionArguments(
 }
 
 bool NvidiaUpdater::finalizeDriverChange(CommandRunner &runner,
-                                         const QString &sessionType,
+                                         const SessionUtil::SessionInfo
+                                             &sessionInfo,
                                          QString *errorMessage) {
   auto result =
       runner.runAsRoot(QStringLiteral("akmods"), {QStringLiteral("--force")});
@@ -450,12 +527,58 @@ bool NvidiaUpdater::finalizeDriverChange(CommandRunner &runner,
     return false;
   }
 
+  const QString sessionType = sessionInfo.type.trimmed().toLower();
+  if (sessionType != QStringLiteral("wayland") &&
+      sessionType != QStringLiteral("x11")) {
+    if (errorMessage != nullptr) {
+      *errorMessage =
+          tr("The active display session could not be detected reliably. "
+             "ro-Control will not guess Wayland or X11 specific NVIDIA setup.");
+    }
+    return false;
+  }
+
+  emit progressMessage(
+      tr("Detected %1 session via %2.")
+          .arg(sessionType == QStringLiteral("wayland") ? tr("Wayland")
+                                                        : tr("X11"),
+               sessionInfo.source.isEmpty() ? tr("session probe")
+                                            : sessionInfo.source));
+
+  emit progressMessage(
+      tr("Adding NVIDIA kernel modules to the initramfs driver set..."));
+  result = runner.runAsRoot(
+      QStringLiteral("dracut"),
+      QStringList{QStringLiteral("--force"), QStringLiteral("--add-drivers"),
+                  kNvidiaKernelModules.join(QLatin1Char(' '))});
+  if (!result.success()) {
+    if (errorMessage != nullptr) {
+      *errorMessage = tr("Failed to prepare NVIDIA kernel modules: ") +
+                      commandError(result, tr("unknown error"));
+    }
+    return false;
+  }
+
   if (sessionType == QStringLiteral("wayland")) {
-    emit progressMessage(
-        tr("Wayland detected: applying nvidia-drm.modeset=1..."));
+    emit progressMessage(tr("Wayland detected: installing EGL Wayland support "
+                            "and enabling NVIDIA DRM modeset..."));
+    result = runner.runAsRoot(
+        QStringLiteral("dnf"),
+        {QStringLiteral("install"), QStringLiteral("-y"),
+         QStringLiteral("egl-wayland")});
+    if (!result.success()) {
+      if (errorMessage != nullptr) {
+        *errorMessage =
+            tr("Failed to install Wayland NVIDIA support packages: ") +
+            commandError(result, tr("unknown error"));
+      }
+      return false;
+    }
+
     result = runner.runAsRoot(QStringLiteral("grubby"),
                               {QStringLiteral("--update-kernel=ALL"),
-                               QStringLiteral("--args=nvidia-drm.modeset=1")});
+                               QStringLiteral("--args=nvidia-drm.modeset=1 "
+                                              "nvidia-drm.fbdev=1")});
     if (!result.success()) {
       if (errorMessage != nullptr) {
         *errorMessage = tr("Failed to update the Wayland kernel parameter: ") +
@@ -463,6 +586,20 @@ bool NvidiaUpdater::finalizeDriverChange(CommandRunner &runner,
       }
       return false;
     }
+    return true;
+  }
+
+  emit progressMessage(tr("X11 detected: checking NVIDIA Xorg packages..."));
+  result = runner.runAsRoot(
+      QStringLiteral("dnf"),
+      {QStringLiteral("install"), QStringLiteral("-y"),
+       QStringLiteral("xorg-x11-drv-nvidia")});
+  if (!result.success()) {
+    if (errorMessage != nullptr) {
+      *errorMessage = tr("Failed to install the X11 NVIDIA package: ") +
+                      commandError(result, tr("unknown error"));
+    }
+    return false;
   }
 
   return true;
@@ -554,6 +691,8 @@ void NvidiaUpdater::applyVersion(const QString &version) {
 
     CommandRunner runner;
     attachRunnerLogging(runner, guard);
+    CommandRunner::RunOptions runOptions;
+    runOptions.cancelRequested = guard->m_cancelRequested;
 
     if (QStandardPaths::findExecutable(QStringLiteral("dnf")).isEmpty()) {
       QMetaObject::invokeMethod(
@@ -570,8 +709,26 @@ void NvidiaUpdater::applyVersion(const QString &version) {
 
     NvidiaDetector detector;
     const QString installedVersion = detector.installedDriverVersion();
-    const QString sessionType = SessionUtil::detectSessionType();
+    const SessionUtil::SessionInfo sessionInfo = guard->detectSessionInfo();
+    const QString sessionType = sessionInfo.type.trimmed().toLower();
     const QString kernelPackageName = guard->detectInstalledKernelPackageName();
+
+    if (sessionType != QStringLiteral("wayland") &&
+        sessionType != QStringLiteral("x11")) {
+      QMetaObject::invokeMethod(
+          guard,
+          [guard]() {
+            if (guard) {
+              emit guard->updateFinished(
+                  false, NvidiaUpdater::tr(
+                             "The active display session could not be detected "
+                             "reliably. ro-Control will not guess Wayland or "
+                             "X11 specific NVIDIA setup."));
+            }
+          },
+          Qt::QueuedConnection);
+      return;
+    }
 
     if (!trimmedVersion.isEmpty() && !knownVersions.contains(trimmedVersion)) {
       QMetaObject::invokeMethod(
@@ -597,12 +754,43 @@ void NvidiaUpdater::applyVersion(const QString &version) {
 
     const QStringList args = guard->buildTransactionArguments(
         trimmedVersion, installedVersion, sessionType, kernelPackageName);
+    emitProgressAsync(
+        guard,
+        NvidiaUpdater::tr("Driver transaction kernel package: `%1`")
+            .arg(kernelPackageName));
+    emitProgressAsync(
+        guard,
+        NvidiaUpdater::tr("Driver transaction packages for %1: %2")
+            .arg(sessionType == QStringLiteral("wayland")
+                     ? NvidiaUpdater::tr("Wayland")
+                     : NvidiaUpdater::tr("X11"))
+            .arg(quotedList(guard->buildDriverTargets(
+                trimmedVersion.isEmpty() ? guard->m_latestPackageVersion
+                                         : trimmedVersion,
+                sessionType, kernelPackageName))));
 
-    auto result = runner.runAsRoot(QStringLiteral("dnf"), args);
+    QList<CommandRunner::RootCommand> rootCommands;
+    rootCommands.append({QStringLiteral("dnf"), args});
+    rootCommands.append(
+        {QStringLiteral("akmods"), {QStringLiteral("--force")}});
+    rootCommands.append(buildSessionSpecificRootCommands(sessionType));
+
+    emitProgressAsync(
+        guard, NvidiaUpdater::tr("Detected %1 session via %2.")
+                   .arg(sessionType == QStringLiteral("wayland")
+                            ? NvidiaUpdater::tr("Wayland")
+                            : NvidiaUpdater::tr("X11"),
+                        sessionInfo.source.isEmpty()
+                            ? NvidiaUpdater::tr("session probe")
+                            : sessionInfo.source));
+
+    auto result = runner.runAsRootBatch(rootCommands, runOptions);
     if (!result.success()) {
       const QString error =
-          NvidiaUpdater::tr("Update failed: ") +
-          commandError(result, NvidiaUpdater::tr("unknown error"));
+          commandCanceled(result)
+              ? NvidiaUpdater::tr("Operation canceled by user.")
+              : NvidiaUpdater::tr("Update failed: ") +
+                    commandError(result, NvidiaUpdater::tr("unknown error"));
       QMetaObject::invokeMethod(
           guard,
           [guard, error]() {
@@ -643,21 +831,6 @@ void NvidiaUpdater::applyVersion(const QString &version) {
             guard->setAvailableVersions(snapshot.availableVersions);
             emit guard->progressMessage(noChangeMessage);
             emit guard->updateFinished(true, noChangeMessage);
-          },
-          Qt::QueuedConnection);
-      return;
-    }
-
-    emitProgressAsync(guard, NvidiaUpdater::tr("Rebuilding kernel module..."));
-
-    QString finalizeError;
-    if (!guard->finalizeDriverChange(runner, sessionType, &finalizeError)) {
-      QMetaObject::invokeMethod(
-          guard,
-          [guard, finalizeError]() {
-            if (guard) {
-              emit guard->updateFinished(false, finalizeError);
-            }
           },
           Qt::QueuedConnection);
       return;

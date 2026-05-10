@@ -1,7 +1,11 @@
 #include "uipreferencesmanager.h"
 
 #include <QCoreApplication>
+#include <QGuiApplication>
+#include <QPalette>
 #include <QSettings>
+#include <QStyleHints>
+#include <QtGlobal>
 
 namespace {
 
@@ -10,15 +14,11 @@ struct ThemeModeEntry {
 };
 
 constexpr ThemeModeEntry kThemeModes[] = {
-    {"system"},
     {"light"},
     {"dark"},
 };
 
 QString themeModeLabel(const QString &code) {
-  if (code == QStringLiteral("system")) {
-    return QCoreApplication::translate("UiPreferencesManager", "System");
-  }
   if (code == QStringLiteral("light")) {
     return QCoreApplication::translate("UiPreferencesManager", "Light");
   }
@@ -31,9 +31,29 @@ QString themeModeLabel(const QString &code) {
 } // namespace
 
 UiPreferencesManager::UiPreferencesManager(QObject *parent) : QObject(parent) {
+  m_systemDarkMode = detectSystemDarkMode();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+  auto *guiApplication =
+      qobject_cast<QGuiApplication *>(QCoreApplication::instance());
+  if (guiApplication != nullptr && guiApplication->styleHints() != nullptr) {
+    connect(guiApplication->styleHints(), &QStyleHints::colorSchemeChanged,
+            this, [this]() {
+              const bool systemDarkMode = detectSystemDarkMode();
+              if (systemDarkMode == m_systemDarkMode) {
+                return;
+              }
+
+              m_systemDarkMode = systemDarkMode;
+              m_themeMode = systemThemeMode();
+              persistValue(QStringLiteral("ui/themeMode"), m_themeMode);
+              emit themeModeChanged();
+            });
+  }
+#endif
+
   QSettings settings;
-  m_themeMode = normalizeThemeMode(
-      settings.value(QStringLiteral("ui/themeMode"), m_themeMode).toString());
+  m_themeMode = systemThemeMode();
+  settings.setValue(QStringLiteral("ui/themeMode"), m_themeMode);
   m_compactMode =
       settings.value(QStringLiteral("ui/compactMode"), m_compactMode).toBool();
   m_showAdvancedInfo =
@@ -93,7 +113,7 @@ void UiPreferencesManager::setShowAdvancedInfo(bool showAdvancedInfo) {
 }
 
 void UiPreferencesManager::resetToDefaults() {
-  setThemeMode(QStringLiteral("system"));
+  setThemeMode(systemThemeMode());
   setCompactMode(false);
   setShowAdvancedInfo(true);
 }
@@ -107,7 +127,36 @@ UiPreferencesManager::normalizeThemeMode(const QString &themeMode) const {
     }
   }
 
-  return QStringLiteral("system");
+  return systemThemeMode();
+}
+
+bool UiPreferencesManager::detectSystemDarkMode() const {
+  auto *guiApplication =
+      qobject_cast<QGuiApplication *>(QCoreApplication::instance());
+  if (guiApplication == nullptr) {
+    return false;
+  }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+  if (guiApplication->styleHints() != nullptr) {
+    const Qt::ColorScheme colorScheme =
+        guiApplication->styleHints()->colorScheme();
+    if (colorScheme == Qt::ColorScheme::Dark) {
+      return true;
+    }
+    if (colorScheme == Qt::ColorScheme::Light) {
+      return false;
+    }
+  }
+#endif
+
+  const QColor windowColor = guiApplication->palette().window().color();
+  return ((0.2126 * windowColor.redF()) + (0.7152 * windowColor.greenF()) +
+          (0.0722 * windowColor.blueF())) < 0.5;
+}
+
+QString UiPreferencesManager::systemThemeMode() const {
+  return m_systemDarkMode ? QStringLiteral("dark") : QStringLiteral("light");
 }
 
 void UiPreferencesManager::persistValue(const QString &key,

@@ -25,33 +25,22 @@ ApplicationWindow {
     title: qsTr("ro-Control")
     font.family: "Noto Sans"
 
-    SystemPalette {
-        id: systemPalette
-        colorGroup: SystemPalette.Active
-    }
-
-    function isColorDark(colorValue) {
-        return ((0.2126 * colorValue.r) + (0.7152 * colorValue.g) + (0.0722 * colorValue.b)) < 0.5;
-    }
-
     readonly property bool hasUiPreferences: root.uiPreferences !== null
     readonly property bool hasLanguageManager: root.languageManager !== null
     readonly property string themeMode: (hasUiPreferences && root.uiPreferences.themeMode)
                                         ? root.uiPreferences.themeMode
-                                        : "system"
-    readonly property bool systemDarkMode: isColorDark(systemPalette.window)
+                                        : "light"
     readonly property bool darkMode: themeMode === "dark"
-                                     || (themeMode === "system" && systemDarkMode)
     readonly property bool showAdvancedInfo: (hasUiPreferences && root.uiPreferences.showAdvancedInfo !== undefined)
                                              ? root.uiPreferences.showAdvancedInfo
                                              : true
     readonly property real uiScale: Math.max(0.85, Math.min(width / 1320, 1.15))
     property string quickMenuMode: ""
     readonly property var visibleLanguages: root.hasLanguageManager
-                                            ? root.languageManager.availableLanguages.filter(function(item) { return item.code !== "system"; })
+                                            ? root.languageManager.availableLanguages
                                             : []
     readonly property var visibleThemeModes: root.hasUiPreferences
-                                             ? root.uiPreferences.availableThemeModes.filter(function(item) { return item.code !== "system"; })
+                                             ? root.uiPreferences.availableThemeModes
                                              : []
 
     function currentLanguageLabel() {
@@ -369,6 +358,7 @@ ApplicationWindow {
                     nvidiaDetector: root.nvidiaDetector
                     nvidiaInstaller: root.nvidiaInstaller
                     nvidiaUpdater: root.nvidiaUpdater
+                    systemInfo: root.systemInfo
                 }
 
                 Pages.MonitorPage {

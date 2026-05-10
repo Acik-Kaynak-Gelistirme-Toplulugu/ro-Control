@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components" as Components
 
 Item {
     id: page
@@ -13,6 +14,7 @@ Item {
     property bool darkMode: false
     property bool showAdvancedInfo: true
     property real uiScale: 1.0
+    property bool telemetryRefreshAnimating: false
 
     readonly property color bgColor: theme && theme.card ? theme.card : "#ffffff"
     readonly property color cardColor: theme && theme.cardStrong ? theme.cardStrong : "#f5f8ff"
@@ -156,29 +158,16 @@ Item {
                             font.weight: Font.DemiBold
                         }
 
-                        ToolButton {
+                        Components.RefreshToolButton {
                             id: telemetryRefreshButton
-                            implicitWidth: Math.round(36 * page.uiScale)
-                            implicitHeight: Math.round(36 * page.uiScale)
-                            display: AbstractButton.IconOnly
-                            ToolTip.visible: hovered
-                            ToolTip.text: qsTr("Refresh telemetry")
-                            onClicked: page.refreshTelemetry()
-
-                            contentItem: Image {
-                                source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
-                                width: Math.round(20 * page.uiScale)
-                                height: Math.round(20 * page.uiScale)
-                                fillMode: Image.PreserveAspectFit
-                                smooth: true
-                                antialiasing: true
-                            }
-
-                            background: Rectangle {
-                                radius: width / 2
-                                color: telemetryRefreshButton.down ? page.infoBg : page.bgColor
-                                border.width: 1
-                                border.color: page.borderColor
+                            busy: page.telemetryRefreshAnimating
+                            theme: page.theme
+                            uiScale: page.uiScale
+                            tooltip: qsTr("Refresh telemetry")
+                            onClicked: {
+                                page.refreshTelemetry();
+                                page.telemetryRefreshAnimating = true;
+                                telemetryRefreshPulse.restart();
                             }
                         }
                     }
@@ -221,5 +210,12 @@ Item {
             page.gpuMonitor.start();
         if (page.ramMonitor)
             page.ramMonitor.start();
+    }
+
+    Timer {
+        id: telemetryRefreshPulse
+        interval: 650
+        repeat: false
+        onTriggered: page.telemetryRefreshAnimating = false
     }
 }

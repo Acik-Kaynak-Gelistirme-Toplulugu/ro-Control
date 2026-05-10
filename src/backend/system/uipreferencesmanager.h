@@ -36,9 +36,12 @@ signals:
 
 private:
   QString normalizeThemeMode(const QString &themeMode) const;
+  bool detectSystemDarkMode() const;
+  QString systemThemeMode() const;
   void persistValue(const QString &key, const QVariant &value) const;
 
-  QString m_themeMode = QStringLiteral("system");
+  QString m_themeMode = QStringLiteral("light");
+  bool m_systemDarkMode = false;
   bool m_compactMode = false;
   bool m_showAdvancedInfo = true;
 };

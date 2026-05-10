@@ -15,6 +15,8 @@ class DetectorMock : public QObject {
   Q_PROPERTY(QString gpuName READ gpuName WRITE setGpuName NOTIFY infoChanged)
   Q_PROPERTY(QString driverVersion READ driverVersion WRITE setDriverVersion
                  NOTIFY infoChanged)
+  Q_PROPERTY(bool driverPackageInstalled READ driverPackageInstalled WRITE
+                 setDriverPackageInstalled NOTIFY infoChanged)
   Q_PROPERTY(bool driverLoaded READ driverLoaded WRITE setDriverLoaded NOTIFY
                  infoChanged)
   Q_PROPERTY(bool nouveauActive READ nouveauActive WRITE setNouveauActive
@@ -36,6 +38,7 @@ public:
   bool gpuFound() const { return m_gpuFound; }
   QString gpuName() const { return m_gpuName; }
   QString driverVersion() const { return m_driverVersion; }
+  bool driverPackageInstalled() const { return m_driverPackageInstalled; }
   bool driverLoaded() const { return m_driverLoaded; }
   bool nouveauActive() const { return m_nouveauActive; }
   bool secureBootEnabled() const { return m_secureBootEnabled; }
@@ -66,6 +69,14 @@ public:
       return;
     }
     m_driverVersion = value;
+    emit infoChanged();
+  }
+
+  void setDriverPackageInstalled(bool value) {
+    if (m_driverPackageInstalled == value) {
+      return;
+    }
+    m_driverPackageInstalled = value;
     emit infoChanged();
   }
 
@@ -142,6 +153,7 @@ private:
   bool m_gpuFound = false;
   QString m_gpuName;
   QString m_driverVersion;
+  bool m_driverPackageInstalled = false;
   bool m_driverLoaded = false;
   bool m_nouveauActive = false;
   bool m_secureBootEnabled = false;
@@ -198,6 +210,7 @@ public:
   Q_INVOKABLE void installOpenSource() {}
   Q_INVOKABLE void remove() {}
   Q_INVOKABLE void deepClean() {}
+  Q_INVOKABLE void cancelOperation() { emit progressMessage(QStringLiteral("Cancel requested.")); }
 
 signals:
   void progressMessage(const QString &message);
@@ -275,6 +288,7 @@ public:
   Q_INVOKABLE void applyUpdate() {}
   Q_INVOKABLE void applyVersion(const QString &) {}
   Q_INVOKABLE void refreshAvailableVersions() {}
+  Q_INVOKABLE void cancelOperation() { emit progressMessage(QStringLiteral("Cancel requested.")); }
 
 signals:
   void updateAvailableChanged();
@@ -300,6 +314,7 @@ class TestDriverPage : public QObject {
 private slots:
   void testDriverInstalledLocallyUsesDetectorVersion();
   void testOperationRunningStillTracksBackendBusyAfterManualStateChanges();
+  void testCompletedInstallImmediatelyUpdatesDriverState();
 
 private:
   QObject *createPage(DetectorMock *detector, InstallerMock *installer,
@@ -349,6 +364,7 @@ QObject *TestDriverPage::createPage(DetectorMock *detector,
 
   const QStringList componentFiles = {QStringLiteral("ActionButton.qml"),
                                       QStringLiteral("InfoBadge.qml"),
+                                      QStringLiteral("RefreshToolButton.qml"),
                                       QStringLiteral("SectionPanel.qml"),
                                       QStringLiteral("StatusBanner.qml"),
                                       QStringLiteral("StatCard.qml")};
@@ -459,6 +475,31 @@ void TestDriverPage::
 
   updater.setBusy(false);
   QTRY_VERIFY(!page->property("operationRunning").toBool());
+}
+
+void TestDriverPage::testCompletedInstallImmediatelyUpdatesDriverState() {
+  QQmlEngine engine;
+  DetectorMock detector;
+  InstallerMock installer;
+  UpdaterMock updater;
+
+  updater.setLatestVersion(QStringLiteral("595.71.05"));
+
+  QScopedPointer<QObject> page(
+      createPage(&detector, &installer, &updater, &engine));
+
+  QVERIFY(!page->property("driverInstalledLocally").toBool());
+
+  QVERIFY(QMetaObject::invokeMethod(
+      page.get(), "markDriverActionStarted",
+      Q_ARG(QVariant, QVariant(QStringLiteral("closed-install")))));
+  QVERIFY(QMetaObject::invokeMethod(page.get(), "markDriverActionFinished",
+                                    Q_ARG(QVariant, QVariant(true))));
+
+  QTRY_VERIFY(page->property("driverInstalledLocally").toBool());
+  QVERIFY(page->property("pendingDriverStateText")
+              .toString()
+              .contains(QStringLiteral("595.71.05")));
 }
 
 int main(int argc, char **argv) {

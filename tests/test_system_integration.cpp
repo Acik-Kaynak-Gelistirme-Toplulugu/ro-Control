@@ -3,11 +3,16 @@
 #include <QTemporaryDir>
 #include <QStandardPaths>
 #include <QTest>
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <thread>
 
 #include "system/capabilityprobe.h"
 #include "system/commandrunner.h"
 #include "system/dnfmanager.h"
 #include "system/polkit.h"
+#include "system/sessionutil.h"
 
 namespace {
 
@@ -44,6 +49,95 @@ private slots:
     QCOMPARE(result.stdout.trimmed(), QStringLiteral("override-ok"));
 
     qunsetenv("RO_CONTROL_COMMAND_DNF");
+  }
+
+  void testSessionTypeUsesXdgSessionType() {
+    const QByteArray previousXdgSessionType = qgetenv("XDG_SESSION_TYPE");
+    qputenv("XDG_SESSION_TYPE", QByteArrayLiteral("xorg"));
+
+    const auto info = SessionUtil::detectSessionInfo();
+    QCOMPARE(info.type, QStringLiteral("x11"));
+    QVERIFY(info.isCertain);
+    QCOMPARE(info.source, QStringLiteral("XDG_SESSION_TYPE"));
+
+    if (previousXdgSessionType.isNull()) {
+      qunsetenv("XDG_SESSION_TYPE");
+    } else {
+      qputenv("XDG_SESSION_TYPE", previousXdgSessionType);
+    }
+  }
+
+  void testSessionTypeFallsBackToDisplayVariables() {
+    QTemporaryDir tempDir = createExecutableTempDir();
+    QVERIFY(tempDir.isValid());
+
+    const QString scriptPath =
+        tempDir.filePath(QStringLiteral("fake-loginctl.sh"));
+    QFile script(scriptPath);
+    QVERIFY(script.open(QIODevice::WriteOnly | QIODevice::Text));
+    QVERIFY(script.write("#!/bin/sh\nexit 1\n") > 0);
+    script.close();
+    QVERIFY(script.setPermissions(QFileDevice::ReadOwner |
+                                  QFileDevice::WriteOwner |
+                                  QFileDevice::ExeOwner));
+
+    const QByteArray previousLoginctlOverride =
+        qgetenv("RO_CONTROL_COMMAND_LOGINCTL");
+    const QByteArray previousXdgSessionType = qgetenv("XDG_SESSION_TYPE");
+    const QByteArray previousXdgSessionId = qgetenv("XDG_SESSION_ID");
+    const QByteArray previousWaylandDisplay = qgetenv("WAYLAND_DISPLAY");
+    const QByteArray previousDisplay = qgetenv("DISPLAY");
+    const QByteArray previousQtPlatform = qgetenv("QT_QPA_PLATFORM");
+
+    qputenv("RO_CONTROL_COMMAND_LOGINCTL", scriptPath.toUtf8());
+    qunsetenv("XDG_SESSION_TYPE");
+    qunsetenv("XDG_SESSION_ID");
+    qputenv("WAYLAND_DISPLAY", QByteArrayLiteral("wayland-0"));
+    qunsetenv("DISPLAY");
+    qunsetenv("QT_QPA_PLATFORM");
+
+    auto info = SessionUtil::detectSessionInfo();
+    QCOMPARE(info.type, QStringLiteral("wayland"));
+    QVERIFY(!info.isCertain);
+    QCOMPARE(info.source, QStringLiteral("WAYLAND_DISPLAY"));
+
+    qunsetenv("WAYLAND_DISPLAY");
+    qputenv("DISPLAY", QByteArrayLiteral(":0"));
+    info = SessionUtil::detectSessionInfo();
+    QCOMPARE(info.type, QStringLiteral("x11"));
+    QVERIFY(!info.isCertain);
+    QCOMPARE(info.source, QStringLiteral("DISPLAY"));
+
+    if (previousLoginctlOverride.isNull()) {
+      qunsetenv("RO_CONTROL_COMMAND_LOGINCTL");
+    } else {
+      qputenv("RO_CONTROL_COMMAND_LOGINCTL", previousLoginctlOverride);
+    }
+    if (previousXdgSessionType.isNull()) {
+      qunsetenv("XDG_SESSION_TYPE");
+    } else {
+      qputenv("XDG_SESSION_TYPE", previousXdgSessionType);
+    }
+    if (previousXdgSessionId.isNull()) {
+      qunsetenv("XDG_SESSION_ID");
+    } else {
+      qputenv("XDG_SESSION_ID", previousXdgSessionId);
+    }
+    if (previousWaylandDisplay.isNull()) {
+      qunsetenv("WAYLAND_DISPLAY");
+    } else {
+      qputenv("WAYLAND_DISPLAY", previousWaylandDisplay);
+    }
+    if (previousDisplay.isNull()) {
+      qunsetenv("DISPLAY");
+    } else {
+      qputenv("DISPLAY", previousDisplay);
+    }
+    if (previousQtPlatform.isNull()) {
+      qunsetenv("QT_QPA_PLATFORM");
+    } else {
+      qputenv("QT_QPA_PLATFORM", previousQtPlatform);
+    }
   }
 
   void testCapabilityProbeUsesProgramOverride() {
@@ -122,6 +216,28 @@ private slots:
     const auto result =
         runner.run(QStringLiteral("sleep"), {QStringLiteral("1")}, options);
     QVERIFY(result.exitCode == -2 || result.exitCode == -1);
+  }
+
+  void testCommandRunnerCancel() {
+    if (QStandardPaths::findExecutable(QStringLiteral("sleep")).isEmpty()) {
+      QSKIP("sleep is not available on this host.");
+    }
+
+    CommandRunner runner;
+    CommandRunner::RunOptions options;
+    options.cancelRequested = std::make_shared<std::atomic_bool>(false);
+
+    std::thread cancelThread([flag = options.cancelRequested]() {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      flag->store(true, std::memory_order_relaxed);
+    });
+
+    const auto result =
+        runner.run(QStringLiteral("sleep"), {QStringLiteral("5")}, options);
+    cancelThread.join();
+
+    QCOMPARE(result.exitCode, -3);
+    QVERIFY(result.stderr.contains(QStringLiteral("canceled")));
   }
 
   void testDnfManagerAvailabilityAndVersion() {

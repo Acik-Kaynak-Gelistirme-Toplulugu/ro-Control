@@ -12,6 +12,8 @@ class NvidiaDetector : public QObject {
   Q_PROPERTY(
       QString displayAdapterName READ displayAdapterName NOTIFY infoChanged)
   Q_PROPERTY(QString driverVersion READ driverVersion NOTIFY infoChanged)
+  Q_PROPERTY(bool driverPackageInstalled READ driverPackageInstalled NOTIFY
+                 infoChanged)
   Q_PROPERTY(bool driverLoaded READ driverLoaded NOTIFY infoChanged)
   Q_PROPERTY(bool nouveauActive READ nouveauActive NOTIFY infoChanged)
   Q_PROPERTY(bool secureBootEnabled READ secureBootEnabled NOTIFY infoChanged)
@@ -29,6 +31,7 @@ public:
     QString displayAdapterName;
     QString driverVersion;
     QString vbiosVersion;
+    bool driverPackageInstalled = false;
     bool driverLoaded = false;
     bool nouveauActive = false;
     bool openKernelModulesInstalled = false;
@@ -43,6 +46,7 @@ public:
   QString gpuName() const { return m_info.name; }
   QString displayAdapterName() const { return m_info.displayAdapterName; }
   QString driverVersion() const { return m_info.driverVersion; }
+  bool driverPackageInstalled() const { return m_info.driverPackageInstalled; }
   bool driverLoaded() const { return m_info.driverLoaded; }
   bool nouveauActive() const { return m_info.nouveauActive; }
   bool secureBootEnabled() const { return m_info.secureBootEnabled; }
@@ -69,6 +73,8 @@ private:
   QString detectGpuName() const;
   QString detectDisplayAdapterName() const;
   QString detectDriverVersion() const;
+  QString detectDriverPackageVersion() const;
+  bool detectDriverPackageInstalled() const;
   bool isPackageInstalled(const QString &packageName) const;
   bool isModuleLoaded(const QString &moduleName) const;
   bool detectSecureBoot(bool *known = nullptr) const;

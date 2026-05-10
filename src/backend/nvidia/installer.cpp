@@ -11,20 +11,43 @@
 
 namespace {
 
-const QStringList kSharedNvidiaUserspacePackages = {
+const QStringList kCommonNvidiaUserspacePackages = {
+    QStringLiteral("nvidia-modprobe"),
+    QStringLiteral("nvidia-persistenced"),
+    QStringLiteral("nvidia-settings"),
+};
+
+const QStringList kX11NvidiaUserspacePackages = {
     QStringLiteral("xorg-x11-drv-nvidia"),
     QStringLiteral("xorg-x11-drv-nvidia-libs"),
     QStringLiteral("xorg-x11-drv-nvidia-cuda"),
     QStringLiteral("xorg-x11-drv-nvidia-cuda-libs"),
-    QStringLiteral("nvidia-modprobe"),
-    QStringLiteral("nvidia-persistenced"),
-    QStringLiteral("nvidia-settings"),
+};
+
+const QStringList kCommunityNouveauCommonPackages = {
+    QStringLiteral("mesa-dri-drivers"),
+    QStringLiteral("mesa-vulkan-drivers"),
+};
+
+const QStringList kCommunityNouveauX11Packages = {
+    QStringLiteral("xorg-x11-drv-nouveau"),
 };
 
 const QStringList kKernelPackageCleanupTargets = {
     QStringLiteral("akmod-nvidia"),
     QStringLiteral("akmod-nvidia-open"),
     QStringLiteral("xorg-x11-drv-nvidia-kmodsrc"),
+};
+
+const QStringList kNvidiaPackageCleanupTargets = {
+    QStringLiteral("*nvidia*"),
+};
+
+const QStringList kNvidiaKernelModules = {
+    QStringLiteral("nvidia"),
+    QStringLiteral("nvidia_modeset"),
+    QStringLiteral("nvidia_uvm"),
+    QStringLiteral("nvidia_drm"),
 };
 
 QString commandError(const CommandRunner::Result &result,
@@ -42,10 +65,84 @@ QString commandError(const CommandRunner::Result &result,
   return fallback;
 }
 
-QStringList buildDriverInstallTargets(const QString &kernelPackageName) {
+bool commandCanceled(const CommandRunner::Result &result) {
+  return result.exitCode == -3;
+}
+
+QStringList buildDriverInstallTargets(const QString &kernelPackageName,
+                                      const QString &sessionType) {
   QStringList packages{kernelPackageName};
-  packages << kSharedNvidiaUserspacePackages;
+  packages << kCommonNvidiaUserspacePackages;
+  if (sessionType == QStringLiteral("x11")) {
+    packages << kX11NvidiaUserspacePackages;
+  }
   return packages;
+}
+
+QStringList buildCommunityNouveauInstallTargets(const QString &sessionType) {
+  QStringList packages = kCommunityNouveauCommonPackages;
+  if (sessionType == QStringLiteral("x11")) {
+    packages << kCommunityNouveauX11Packages;
+  }
+  return packages;
+}
+
+QString quotedList(const QStringList &values) {
+  QStringList quoted;
+  quoted.reserve(values.size());
+  for (const QString &value : values) {
+    quoted << QStringLiteral("`%1`").arg(value);
+  }
+  return quoted.join(QStringLiteral(", "));
+}
+
+QList<CommandRunner::RootCommand>
+buildSessionSpecificRootCommands(const QString &sessionType) {
+  QList<CommandRunner::RootCommand> commands;
+  commands.append({QStringLiteral("dracut"),
+                   {QStringLiteral("--force"), QStringLiteral("--add-drivers"),
+                    kNvidiaKernelModules.join(QLatin1Char(' '))}});
+
+  if (sessionType == QStringLiteral("wayland")) {
+    commands.append({QStringLiteral("dnf"),
+                     {QStringLiteral("install"), QStringLiteral("-y"),
+                      QStringLiteral("egl-wayland")}});
+    commands.append({QStringLiteral("grubby"),
+                     {QStringLiteral("--update-kernel=ALL"),
+                      QStringLiteral("--args=nvidia-drm.modeset=1 "
+                                     "nvidia-drm.fbdev=1")}});
+  }
+
+  return commands;
+}
+
+QList<CommandRunner::RootCommand>
+buildCommunityNouveauRootCommands(const QString &sessionType) {
+  QList<CommandRunner::RootCommand> commands;
+  QStringList removeArgs{QStringLiteral("remove"), QStringLiteral("-y")};
+  removeArgs << kNvidiaPackageCleanupTargets;
+  removeArgs << QStringLiteral("--exclude")
+             << QStringLiteral("nvidia-gpu-firmware");
+  commands.append({QStringLiteral("dnf"), removeArgs});
+
+  QStringList installArgs{QStringLiteral("install"), QStringLiteral("-y"),
+                          QStringLiteral("--refresh")};
+  installArgs << buildCommunityNouveauInstallTargets(sessionType);
+  commands.append({QStringLiteral("dnf"), installArgs});
+
+  commands.append({QStringLiteral("grubby"),
+                   {QStringLiteral("--update-kernel=ALL"),
+                    QStringLiteral("--remove-args=nvidia-drm.modeset=1 "
+                                   "nvidia-drm.fbdev=1 "
+                                   "rd.driver.blacklist=nouveau "
+                                   "modprobe.blacklist=nouveau")}});
+  commands.append({QStringLiteral("grubby"),
+                   {QStringLiteral("--update-kernel=ALL"),
+                    QStringLiteral("--args=rd.driver.blacklist=nova_core "
+                                   "modprobe.blacklist=nova_core")}});
+  commands.append({QStringLiteral("dracut"), {QStringLiteral("--force")}});
+
+  return commands;
 }
 
 void emitProgressAsync(const QPointer<NvidiaInstaller> &guard,
@@ -74,10 +171,24 @@ void attachRunnerLogging(CommandRunner &runner,
       &runner, &CommandRunner::commandStarted, guard,
       [guard](const QString &program, const QStringList &args, int attempt) {
         QStringList visibleArgs = args;
+        bool privilegedBatch = false;
         if (!visibleArgs.isEmpty() &&
             visibleArgs.constFirst().contains(
                 QStringLiteral("ro-control-helper"))) {
           visibleArgs.removeFirst();
+          privilegedBatch =
+              !visibleArgs.isEmpty() &&
+              visibleArgs.constFirst() == QStringLiteral("--batch");
+        }
+
+        if (program == QStringLiteral("pkexec") && privilegedBatch) {
+          emitProgressAsync(
+              guard, NvidiaInstaller::tr(
+                         "Starting privileged installation batch (attempt %1). "
+                         "The exact commands and package manager output will "
+                         "appear below.")
+                         .arg(attempt));
+          return;
         }
 
         const QString commandLine = QStringLiteral("$ %1 %2").arg(
@@ -92,6 +203,10 @@ void attachRunnerLogging(CommandRunner &runner,
       &runner, &CommandRunner::commandFinished, guard,
       [guard](const QString &program, int exitCode, int attempt,
               int elapsedMs) {
+        if (program == QStringLiteral("pkexec")) {
+          return;
+        }
+
         emitProgressAsync(
             guard, NvidiaInstaller::tr(
                        "Command finished (attempt %1, exit %2, %3 ms): %4")
@@ -105,6 +220,7 @@ void attachRunnerLogging(CommandRunner &runner,
 } // namespace
 
 NvidiaInstaller::NvidiaInstaller(QObject *parent) : QObject(parent) {
+  m_cancelRequested = std::make_shared<std::atomic_bool>(false);
   refreshProprietaryAgreement();
 }
 
@@ -123,6 +239,7 @@ void NvidiaInstaller::runAsyncTask(const std::function<void()> &task) {
     return;
   }
 
+  m_cancelRequested->store(false, std::memory_order_relaxed);
   setBusy(true);
 
   QThread *thread = QThread::create(task);
@@ -131,6 +248,16 @@ void NvidiaInstaller::runAsyncTask(const std::function<void()> &task) {
     thread->deleteLater();
   });
   thread->start();
+}
+
+void NvidiaInstaller::cancelOperation() {
+  if (!m_busy) {
+    emit progressMessage(tr("No driver operation is running."));
+    return;
+  }
+
+  m_cancelRequested->store(true, std::memory_order_relaxed);
+  emit progressMessage(tr("Cancel requested. Waiting for the active command to stop safely..."));
 }
 
 void NvidiaInstaller::setProprietaryAgreement(bool required,
@@ -196,6 +323,8 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
 
     CommandRunner runner;
     attachRunnerLogging(runner, guard);
+    CommandRunner::RunOptions runOptions;
+    runOptions.cancelRequested = guard->m_cancelRequested;
 
     emitProgressAsync(
         guard, NvidiaInstaller::tr("Checking RPM Fusion repositories..."));
@@ -220,25 +349,19 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
       return;
     }
 
-    auto result = runner.runAsRoot(
-        QStringLiteral("dnf"),
-        {QStringLiteral("install"), QStringLiteral("-y"),
-         QStringLiteral("https://mirrors.rpmfusion.org/free/fedora/"
-                        "rpmfusion-free-release-%1.noarch.rpm")
-             .arg(fedoraVersion),
-         QStringLiteral("https://mirrors.rpmfusion.org/nonfree/fedora/"
-                        "rpmfusion-nonfree-release-%1.noarch.rpm")
-             .arg(fedoraVersion)});
-
-    if (!result.success()) {
-      const QString error =
-          NvidiaInstaller::tr("Failed to enable RPM Fusion repositories: ") +
-          result.stderr.trimmed();
+    const SessionUtil::SessionInfo sessionInfo = SessionUtil::detectSessionInfo();
+    const QString sessionType = sessionInfo.type.trimmed().toLower();
+    if (sessionType != QStringLiteral("wayland") &&
+        sessionType != QStringLiteral("x11")) {
       QMetaObject::invokeMethod(
           guard,
-          [guard, error]() {
+          [guard]() {
             if (guard) {
-              emit guard->installFinished(false, error);
+              emit guard->installFinished(
+                  false, NvidiaInstaller::tr(
+                             "The active display session could not be detected "
+                             "reliably. ro-Control will not guess Wayland or "
+                             "X11 specific NVIDIA setup."));
             }
           },
           Qt::QueuedConnection);
@@ -248,58 +371,59 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
     emitProgressAsync(
         guard,
         NvidiaInstaller::tr(
-            "Installing the closed-source NVIDIA driver (akmod-nvidia)..."));
+            "Installing the closed-source NVIDIA driver with one privileged "
+            "authorization..."));
+    emitProgressAsync(
+        guard,
+        NvidiaInstaller::tr("Closed-source install packages for %1: %2")
+            .arg(sessionType == QStringLiteral("wayland")
+                     ? NvidiaInstaller::tr("Wayland")
+                     : NvidiaInstaller::tr("X11"))
+            .arg(quotedList(buildDriverInstallTargets(
+                QStringLiteral("akmod-nvidia"), sessionType))));
 
     QStringList installArgs{QStringLiteral("install"), QStringLiteral("-y"),
                             QStringLiteral("--refresh"),
                             QStringLiteral("--best"),
                             QStringLiteral("--allowerasing")};
-    installArgs << buildDriverInstallTargets(QStringLiteral("akmod-nvidia"));
-    result = runner.runAsRoot(QStringLiteral("dnf"), installArgs);
+    installArgs << buildDriverInstallTargets(QStringLiteral("akmod-nvidia"),
+                                             sessionType);
 
-    if (!result.success()) {
-      const QString error = NvidiaInstaller::tr("Installation failed: ") +
-                            result.stderr.trimmed();
-      QMetaObject::invokeMethod(
-          guard,
-          [guard, error]() {
-            if (guard) {
-              emit guard->installFinished(false, error);
-            }
-          },
-          Qt::QueuedConnection);
-      return;
-    }
+    QList<CommandRunner::RootCommand> rootCommands;
+    rootCommands.append(
+        {QStringLiteral("dnf"),
+         {QStringLiteral("install"), QStringLiteral("-y"),
+          QStringLiteral("https://mirrors.rpmfusion.org/free/fedora/"
+                         "rpmfusion-free-release-%1.noarch.rpm")
+              .arg(fedoraVersion),
+          QStringLiteral("https://mirrors.rpmfusion.org/nonfree/fedora/"
+                         "rpmfusion-nonfree-release-%1.noarch.rpm")
+              .arg(fedoraVersion)}});
+    rootCommands.append({QStringLiteral("dnf"), installArgs});
+    rootCommands.append(
+        {QStringLiteral("akmods"), {QStringLiteral("--force")}});
+    rootCommands.append(buildSessionSpecificRootCommands(sessionType));
 
     emitProgressAsync(
-        guard,
-        NvidiaInstaller::tr("Building the kernel module (akmods --force)..."));
-    result =
-        runner.runAsRoot(QStringLiteral("akmods"), {QStringLiteral("--force")});
+        guard, NvidiaInstaller::tr("Detected %1 session via %2.")
+                   .arg(sessionType == QStringLiteral("wayland")
+                            ? NvidiaInstaller::tr("Wayland")
+                            : NvidiaInstaller::tr("X11"),
+                        sessionInfo.source.isEmpty()
+                            ? NvidiaInstaller::tr("session probe")
+                            : sessionInfo.source));
+
+    auto result = runner.runAsRootBatch(rootCommands, runOptions);
     if (!result.success()) {
-      const QString error =
-          NvidiaInstaller::tr("Kernel module build failed: ") +
-          (result.stderr.trimmed().isEmpty() ? result.stdout.trimmed()
-                                             : result.stderr.trimmed());
+      const QString error = commandCanceled(result)
+                                ? NvidiaInstaller::tr("Operation canceled by user.")
+                                : NvidiaInstaller::tr("Installation failed: ") +
+                                      commandError(result);
       QMetaObject::invokeMethod(
           guard,
           [guard, error]() {
             if (guard) {
               emit guard->installFinished(false, error);
-            }
-          },
-          Qt::QueuedConnection);
-      return;
-    }
-
-    const QString sessionType = SessionUtil::detectSessionType();
-    QString sessionError;
-    if (!guard->applySessionSpecificSetup(runner, sessionType, &sessionError)) {
-      QMetaObject::invokeMethod(
-          guard,
-          [guard, sessionError]() {
-            if (guard) {
-              emit guard->installFinished(false, sessionError);
             }
           },
           Qt::QueuedConnection);
@@ -336,49 +460,27 @@ void NvidiaInstaller::installOpenSource() {
 
     CommandRunner runner;
     attachRunnerLogging(runner, guard);
+    CommandRunner::RunOptions runOptions;
+    runOptions.cancelRequested = guard->m_cancelRequested;
 
-    emitProgressAsync(guard, NvidiaInstaller::tr(
-                                 "Switching to NVIDIA open kernel modules..."));
+    emitProgressAsync(
+        guard,
+        NvidiaInstaller::tr(
+            "Switching to the community open-source graphics driver stack..."));
 
-    auto result = runner.runAsRoot(
-        QStringLiteral("dnf"),
-        QStringList{QStringLiteral("remove"), QStringLiteral("-y")} +
-            kKernelPackageCleanupTargets);
-
-    if (!result.success()) {
-      const QString error =
-          NvidiaInstaller::tr(
-              "Failed to remove conflicting NVIDIA kernel packages: ") +
-          commandError(result);
+    const SessionUtil::SessionInfo sessionInfo = SessionUtil::detectSessionInfo();
+    const QString sessionType = sessionInfo.type.trimmed().toLower();
+    if (sessionType != QStringLiteral("wayland") &&
+        sessionType != QStringLiteral("x11")) {
       QMetaObject::invokeMethod(
           guard,
-          [guard, error]() {
+          [guard]() {
             if (guard) {
-              emit guard->installFinished(false, error);
-            }
-          },
-          Qt::QueuedConnection);
-      return;
-    }
-
-    QStringList installArgs{QStringLiteral("install"), QStringLiteral("-y"),
-                            QStringLiteral("--refresh"),
-                            QStringLiteral("--best"),
-                            QStringLiteral("--allowerasing")};
-    installArgs << buildDriverInstallTargets(
-        QStringLiteral("akmod-nvidia-open"));
-    result = runner.runAsRoot(QStringLiteral("dnf"), installArgs);
-
-    if (!result.success()) {
-      const QString error =
-          NvidiaInstaller::tr(
-              "Open NVIDIA kernel module installation failed: ") +
-          commandError(result);
-      QMetaObject::invokeMethod(
-          guard,
-          [guard, error]() {
-            if (guard) {
-              emit guard->installFinished(false, error);
+              emit guard->installFinished(
+                  false, NvidiaInstaller::tr(
+                             "The active display session could not be detected "
+                             "reliably. ro-Control will not guess Wayland or "
+                             "X11 specific NVIDIA setup."));
             }
           },
           Qt::QueuedConnection);
@@ -387,13 +489,34 @@ void NvidiaInstaller::installOpenSource() {
 
     emitProgressAsync(
         guard,
-        NvidiaInstaller::tr("Building the kernel module (akmods --force)..."));
-    result =
-        runner.runAsRoot(QStringLiteral("akmods"), {QStringLiteral("--force")});
+        NvidiaInstaller::tr("Community open-source install packages: %1")
+            .arg(quotedList(buildCommunityNouveauInstallTargets(sessionType))));
+    emitProgressAsync(
+        guard,
+        NvidiaInstaller::tr("NVIDIA official/RPM Fusion packages to remove "
+                            "before enabling the open-source driver: %1")
+            .arg(quotedList(kNvidiaPackageCleanupTargets)));
+
+    QList<CommandRunner::RootCommand> rootCommands =
+        buildCommunityNouveauRootCommands(sessionType);
+
+    emitProgressAsync(
+        guard, NvidiaInstaller::tr("Detected %1 session via %2.")
+                   .arg(sessionType == QStringLiteral("wayland")
+                            ? NvidiaInstaller::tr("Wayland")
+                            : NvidiaInstaller::tr("X11"),
+                        sessionInfo.source.isEmpty()
+                            ? NvidiaInstaller::tr("session probe")
+                            : sessionInfo.source));
+
+    auto result = runner.runAsRootBatch(rootCommands, runOptions);
     if (!result.success()) {
       const QString error =
-          NvidiaInstaller::tr("Kernel module build failed: ") +
-          commandError(result, NvidiaInstaller::tr("unknown error"));
+          commandCanceled(result)
+              ? NvidiaInstaller::tr("Operation canceled by user.")
+              : NvidiaInstaller::tr(
+                    "Community open-source driver installation failed: ") +
+                    commandError(result, NvidiaInstaller::tr("unknown error"));
       QMetaObject::invokeMethod(
           guard,
           [guard, error]() {
@@ -405,30 +528,14 @@ void NvidiaInstaller::installOpenSource() {
       return;
     }
 
-    QString sessionError;
-    const QString sessionType = SessionUtil::detectSessionType();
-    if (!guard->applySessionSpecificSetup(runner, sessionType, &sessionError)) {
-      QMetaObject::invokeMethod(
-          guard,
-          [guard, sessionError]() {
-            if (guard) {
-              emit guard->installFinished(false, sessionError);
-            }
-          },
-          Qt::QueuedConnection);
-      return;
-    }
-
-    runner.runAsRoot(QStringLiteral("dracut"), {QStringLiteral("--force")});
-
     QMetaObject::invokeMethod(
         guard,
         [guard]() {
           if (guard) {
             emit guard->installFinished(
                 true, NvidiaInstaller::tr(
-                          "NVIDIA open kernel modules were installed "
-                          "successfully. Please restart the system."));
+                          "The community open-source graphics driver stack was "
+                          "prepared successfully. Please restart the system."));
           }
         },
         Qt::QueuedConnection);
@@ -451,6 +558,8 @@ void NvidiaInstaller::remove() {
 
     CommandRunner runner;
     attachRunnerLogging(runner, guard);
+    CommandRunner::RunOptions runOptions;
+    runOptions.cancelRequested = guard->m_cancelRequested;
 
     emitProgressAsync(guard,
                       NvidiaInstaller::tr("Removing the NVIDIA driver..."));
@@ -459,13 +568,17 @@ void NvidiaInstaller::remove() {
         QStringLiteral("dnf"),
         {QStringLiteral("remove"), QStringLiteral("-y"),
          QStringLiteral("akmod-nvidia"), QStringLiteral("akmod-nvidia-open"),
-         QStringLiteral("xorg-x11-drv-nvidia*")});
+         QStringLiteral("xorg-x11-drv-nvidia*")},
+        runOptions);
 
     const bool success = result.success();
     const QString message =
         success
             ? NvidiaInstaller::tr("Driver removed successfully.")
-            : NvidiaInstaller::tr("Removal failed: ") + result.stderr.trimmed();
+            : (commandCanceled(result)
+                   ? NvidiaInstaller::tr("Operation canceled by user.")
+                   : NvidiaInstaller::tr("Removal failed: ") +
+                         result.stderr.trimmed());
     QMetaObject::invokeMethod(
         guard,
         [guard, success, message]() {
@@ -493,6 +606,8 @@ void NvidiaInstaller::deepClean() {
 
     CommandRunner runner;
     attachRunnerLogging(runner, guard);
+    CommandRunner::RunOptions runOptions;
+    runOptions.cancelRequested = guard->m_cancelRequested;
 
     emitProgressAsync(
         guard, NvidiaInstaller::tr("Cleaning legacy driver leftovers..."));
@@ -501,11 +616,15 @@ void NvidiaInstaller::deepClean() {
         runner.runAsRoot(QStringLiteral("dnf"),
                          {QStringLiteral("remove"), QStringLiteral("-y"),
                           QStringLiteral("*nvidia*"), QStringLiteral("*akmod*"),
-                          QStringLiteral("*nvidia-open*")});
+                          QStringLiteral("*nvidia-open*")},
+                         runOptions);
 
     if (!removeResult.success()) {
-      const QString error = NvidiaInstaller::tr("Deep clean failed: ") +
-                            removeResult.stderr.trimmed();
+      const QString error =
+          commandCanceled(removeResult)
+              ? NvidiaInstaller::tr("Operation canceled by user.")
+              : NvidiaInstaller::tr("Deep clean failed: ") +
+                    removeResult.stderr.trimmed();
       QMetaObject::invokeMethod(
           guard,
           [guard, error]() {
@@ -519,10 +638,14 @@ void NvidiaInstaller::deepClean() {
 
     const auto cleanResult =
         runner.runAsRoot(QStringLiteral("dnf"),
-                         {QStringLiteral("clean"), QStringLiteral("all")});
+                         {QStringLiteral("clean"), QStringLiteral("all")},
+                         runOptions);
     if (!cleanResult.success()) {
-      const QString error = NvidiaInstaller::tr("DNF cache cleanup failed: ") +
-                            cleanResult.stderr.trimmed();
+      const QString error =
+          commandCanceled(cleanResult)
+              ? NvidiaInstaller::tr("Operation canceled by user.")
+              : NvidiaInstaller::tr("DNF cache cleanup failed: ") +
+                    cleanResult.stderr.trimmed();
       QMetaObject::invokeMethod(
           guard,
           [guard, error]() {
@@ -549,16 +672,64 @@ void NvidiaInstaller::deepClean() {
 }
 
 bool NvidiaInstaller::applySessionSpecificSetup(CommandRunner &runner,
-                                                const QString &sessionType,
+                                                const SessionUtil::SessionInfo
+                                                    &sessionInfo,
                                                 QString *errorMessage) {
-  if (sessionType == QStringLiteral("wayland")) {
-    emit progressMessage(
-        tr("Wayland detected: applying nvidia-drm.modeset=1..."));
+  const QString sessionType = sessionInfo.type.trimmed().toLower();
+  if (sessionType != QStringLiteral("wayland") &&
+      sessionType != QStringLiteral("x11")) {
+    if (errorMessage) {
+      *errorMessage =
+          tr("The active display session could not be detected reliably. "
+             "ro-Control will not guess Wayland or X11 specific NVIDIA setup.");
+    }
+    return false;
+  }
 
-    const auto result =
-        runner.runAsRoot(QStringLiteral("grubby"),
-                         {QStringLiteral("--update-kernel=ALL"),
-                          QStringLiteral("--args=nvidia-drm.modeset=1")});
+  emit progressMessage(
+      tr("Detected %1 session via %2.")
+          .arg(sessionType == QStringLiteral("wayland") ? tr("Wayland")
+                                                        : tr("X11"),
+               sessionInfo.source.isEmpty() ? tr("session probe")
+                                            : sessionInfo.source));
+
+  emit progressMessage(
+      tr("Adding NVIDIA kernel modules to the initramfs driver set..."));
+  auto result = runner.runAsRoot(
+      QStringLiteral("dracut"),
+      QStringList{QStringLiteral("--force"), QStringLiteral("--add-drivers"),
+                  kNvidiaKernelModules.join(QLatin1Char(' '))});
+
+  if (!result.success()) {
+    if (errorMessage) {
+      *errorMessage = tr("Failed to prepare NVIDIA kernel modules: ") +
+                      commandError(result);
+    }
+    return false;
+  }
+
+  if (sessionType == QStringLiteral("wayland")) {
+    emit progressMessage(tr("Wayland detected: installing EGL Wayland support "
+                            "and enabling NVIDIA DRM modeset..."));
+
+    result = runner.runAsRoot(
+        QStringLiteral("dnf"),
+        {QStringLiteral("install"), QStringLiteral("-y"),
+         QStringLiteral("egl-wayland")});
+
+    if (!result.success()) {
+      if (errorMessage) {
+        *errorMessage =
+            tr("Failed to install Wayland NVIDIA support packages: ") +
+            commandError(result);
+      }
+      return false;
+    }
+
+    result = runner.runAsRoot(
+        QStringLiteral("grubby"),
+        {QStringLiteral("--update-kernel=ALL"),
+         QStringLiteral("--args=nvidia-drm.modeset=1 nvidia-drm.fbdev=1")});
 
     if (!result.success()) {
       if (errorMessage) {
@@ -570,21 +741,20 @@ bool NvidiaInstaller::applySessionSpecificSetup(CommandRunner &runner,
     return true;
   }
 
-  if (sessionType == QStringLiteral("x11")) {
-    emit progressMessage(
-        tr("X11 detected: checking NVIDIA userspace packages..."));
+  emit progressMessage(tr("X11 detected: checking NVIDIA Xorg packages..."));
 
-    const auto result = runner.runAsRoot(
-        QStringLiteral("dnf"), {QStringLiteral("install"), QStringLiteral("-y"),
-                                QStringLiteral("xorg-x11-drv-nvidia")});
+  result = runner.runAsRoot(
+      QStringLiteral("dnf"),
+      {QStringLiteral("install"), QStringLiteral("-y"),
+       QStringLiteral("xorg-x11-drv-nvidia")});
 
-    if (!result.success()) {
-      if (errorMessage) {
-        *errorMessage =
-            tr("Failed to install the X11 NVIDIA package: ") + result.stderr;
-      }
-      return false;
+  if (!result.success()) {
+    if (errorMessage) {
+      *errorMessage =
+          tr("Failed to install the X11 NVIDIA package: ") +
+          commandError(result);
     }
+    return false;
   }
 
   return true;

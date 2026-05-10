@@ -3,7 +3,9 @@
 #include "commandrunner.h"
 
 #include <QFile>
+#include <QProcess>
 #include <QRegularExpression>
+#include <QStandardPaths>
 #include <QStringList>
 #include <QSysInfo>
 #include <QTextStream>
@@ -105,6 +107,21 @@ void SystemInfoProvider::refresh() {
   m_kernelVersion = nextKernelVersion;
   m_cpuModel = nextCpuModel;
   emit infoChanged();
+}
+
+bool SystemInfoProvider::requestRestart() {
+#if defined(Q_OS_LINUX)
+  const QString systemctl = QStandardPaths::findExecutable(QStringLiteral("systemctl"));
+  if (!systemctl.isEmpty()) {
+    return QProcess::startDetached(systemctl, {QStringLiteral("reboot")});
+  }
+
+  const QString reboot = QStandardPaths::findExecutable(QStringLiteral("reboot"));
+  if (!reboot.isEmpty()) {
+    return QProcess::startDetached(reboot, {});
+  }
+#endif
+  return false;
 }
 
 QString SystemInfoProvider::detectOsName() const {

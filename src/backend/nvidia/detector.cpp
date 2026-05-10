@@ -10,6 +10,25 @@
 #include <QTextStream>
 #include <QtGlobal>
 
+namespace {
+
+QString normalizedRpmDriverVersion(const QString &packageVersion) {
+  QString version = packageVersion.trimmed();
+  const int epochIndex = version.indexOf(QLatin1Char(':'));
+  if (epochIndex >= 0) {
+    version = version.mid(epochIndex + 1);
+  }
+
+  const int releaseIndex = version.indexOf(QLatin1Char('-'));
+  if (releaseIndex > 0) {
+    version = version.left(releaseIndex);
+  }
+
+  return version.trimmed();
+}
+
+} // namespace
+
 NvidiaDetector::NvidiaDetector(QObject *parent) : QObject(parent) {}
 
 NvidiaDetector::GpuInfo NvidiaDetector::detect() const {
@@ -19,6 +38,10 @@ NvidiaDetector::GpuInfo NvidiaDetector::detect() const {
   info.name = detectGpuName();
   info.found = !info.name.isEmpty();
   info.driverVersion = detectDriverVersion();
+  if (info.driverVersion.isEmpty()) {
+    info.driverVersion = detectDriverPackageVersion();
+  }
+  info.driverPackageInstalled = detectDriverPackageInstalled();
   info.driverLoaded = isModuleLoaded(QStringLiteral("nvidia"));
   info.nouveauActive = isModuleLoaded(QStringLiteral("nouveau"));
   info.openKernelModulesInstalled =
@@ -32,11 +55,15 @@ NvidiaDetector::GpuInfo NvidiaDetector::detect() const {
 bool NvidiaDetector::hasNvidiaGpu() const { return !detectGpuName().isEmpty(); }
 
 bool NvidiaDetector::isDriverInstalled() const {
-  return !detectDriverVersion().isEmpty();
+  return !installedDriverVersion().isEmpty() || detectDriverPackageInstalled();
 }
 
 QString NvidiaDetector::installedDriverVersion() const {
-  return detectDriverVersion();
+  const QString activeVersion = detectDriverVersion();
+  if (!activeVersion.isEmpty()) {
+    return activeVersion;
+  }
+  return detectDriverPackageVersion();
 }
 
 QString NvidiaDetector::activeDriver() const {
@@ -46,6 +73,8 @@ QString NvidiaDetector::activeDriver() const {
     }
     return tr("NVIDIA Driver");
   }
+  if (m_info.driverPackageInstalled)
+    return tr("Installed, Restart Required");
   if (m_info.nouveauActive)
     return tr("Fallback Open Driver");
   return tr("Not Installed");
@@ -171,6 +200,36 @@ QString NvidiaDetector::detectDriverVersion() const {
   }
 
   return {};
+}
+
+QString NvidiaDetector::detectDriverPackageVersion() const {
+  if (!CapabilityProbe::isToolAvailable(QStringLiteral("rpm"))) {
+    return {};
+  }
+
+  const QStringList packageNames = {QStringLiteral("akmod-nvidia"),
+                                    QStringLiteral("akmod-nvidia-open")};
+  CommandRunner runner;
+  for (const QString &packageName : packageNames) {
+    const auto result =
+        runner.run(QStringLiteral("rpm"),
+                   {QStringLiteral("-q"), QStringLiteral("--qf"),
+                    QStringLiteral("%{EPOCH}:%{VERSION}-%{RELEASE}"),
+                    packageName});
+    if (result.success()) {
+      const QString version = normalizedRpmDriverVersion(result.stdout);
+      if (!version.isEmpty()) {
+        return version;
+      }
+    }
+  }
+
+  return {};
+}
+
+bool NvidiaDetector::detectDriverPackageInstalled() const {
+  return isPackageInstalled(QStringLiteral("akmod-nvidia")) ||
+         isPackageInstalled(QStringLiteral("akmod-nvidia-open"));
 }
 
 bool NvidiaDetector::isPackageInstalled(const QString &packageName) const {

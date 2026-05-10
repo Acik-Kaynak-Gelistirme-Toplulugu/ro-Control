@@ -28,7 +28,7 @@ global_opts=(
 local -a install_opts
 install_opts=(
   '--proprietary[Use the proprietary NVIDIA driver install path]'
-  '--open-source[Use the NVIDIA open kernel module install path]'
+  '--open-source[Use the community open-source graphics path]'
   '--accept-license[Confirm NVIDIA license review for the proprietary install path]'
 )
 

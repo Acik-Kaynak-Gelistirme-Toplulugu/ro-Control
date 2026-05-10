@@ -16,7 +16,6 @@ struct LanguageEntry {
 };
 
 constexpr LanguageEntry kSupportedLanguages[] = {
-    {"system", "System", true},
     {"en", "English", true},
     {"de", "Deutsch", true},
     {"es", "Español", true},
@@ -24,9 +23,6 @@ constexpr LanguageEntry kSupportedLanguages[] = {
 };
 
 QString localizedLanguageLabel(const QString &code) {
-  if (code == QStringLiteral("system")) {
-    return QCoreApplication::translate("LanguageManager", "System");
-  }
   if (code == QStringLiteral("en")) {
     return QCoreApplication::translate("LanguageManager", "English");
   }
@@ -42,10 +38,10 @@ QString localizedLanguageLabel(const QString &code) {
   return code;
 }
 
-bool isShippedLanguage(const QString &languageCode) {
+bool isSupportedLanguage(const QString &languageCode) {
   for (const auto &entry : kSupportedLanguages) {
-    if (QString::fromLatin1(entry.code) == languageCode) {
-      return entry.shipped;
+    if (QString::fromLatin1(entry.code) == languageCode && entry.shipped) {
+      return true;
     }
   }
 
@@ -60,10 +56,9 @@ LanguageManager::LanguageManager(QCoreApplication *application,
     : QObject(parent), m_application(application), m_engine(engine),
       m_translator(translator) {
   QSettings settings;
-  const QString storedLanguage =
-      settings.value(QStringLiteral("ui/language"), QStringLiteral("system"))
-          .toString();
-  setCurrentLanguage(storedLanguage);
+  const QString systemLanguage = normalizeLanguageCode(systemLanguageCode());
+  settings.setValue(QStringLiteral("ui/language"), systemLanguage);
+  setCurrentLanguage(systemLanguage);
 }
 
 QString LanguageManager::currentLanguage() const { return m_currentLanguage; }
@@ -73,12 +68,6 @@ QString LanguageManager::effectiveLanguage() const {
 }
 
 QString LanguageManager::currentLanguageLabel() const {
-  if (m_currentLanguage == QStringLiteral("system")) {
-    return QStringLiteral("%1 (%2)").arg(
-        displayNameForLanguage(m_currentLanguage),
-        displayNameForLanguage(effectiveLanguage()));
-  }
-
   return displayNameForLanguage(m_currentLanguage);
 }
 
@@ -123,26 +112,35 @@ void LanguageManager::setCurrentLanguage(const QString &languageCode) {
 
 QString
 LanguageManager::displayNameForLanguage(const QString &languageCode) const {
-  const QString normalizedLanguage = normalizeLanguageCode(languageCode);
+  const QString trimmedLanguage = languageCode.trimmed().toLower();
   for (const auto &entry : kSupportedLanguages) {
-    if (QString::fromLatin1(entry.code) == normalizedLanguage) {
+    if (QString::fromLatin1(entry.code) == trimmedLanguage) {
       return QString::fromUtf8(entry.nativeLabel);
     }
   }
 
-  return normalizedLanguage;
+  const QLocale locale(trimmedLanguage);
+  const QString nativeLanguageName = locale.nativeLanguageName();
+  if (!nativeLanguageName.isEmpty()) {
+    return nativeLanguageName;
+  }
+
+  return trimmedLanguage;
 }
 
 QString
 LanguageManager::normalizeLanguageCode(const QString &languageCode) const {
   const QString normalizedLanguage = languageCode.trimmed().toLower();
-  for (const auto &entry : kSupportedLanguages) {
-    if (QString::fromLatin1(entry.code) == normalizedLanguage) {
-      return normalizedLanguage;
-    }
+  if (isSupportedLanguage(normalizedLanguage)) {
+    return normalizedLanguage;
   }
 
-  return QStringLiteral("system");
+  const QString systemLanguage = systemLanguageCode();
+  if (isSupportedLanguage(systemLanguage)) {
+    return systemLanguage;
+  }
+
+  return QStringLiteral("en");
 }
 
 QString LanguageManager::systemLanguageCode() const {
@@ -151,16 +149,7 @@ QString LanguageManager::systemLanguageCode() const {
 
 QString
 LanguageManager::effectiveLanguageCode(const QString &languageCode) const {
-  const QString normalizedLanguage = normalizeLanguageCode(languageCode);
-  const QString effective = normalizedLanguage == QStringLiteral("system")
-                                ? systemLanguageCode()
-                                : normalizedLanguage;
-
-  if (effective == QStringLiteral("en")) {
-    return effective;
-  }
-
-  return isShippedLanguage(effective) ? effective : QStringLiteral("en");
+  return normalizeLanguageCode(languageCode);
 }
 
 bool LanguageManager::loadLanguage(const QString &languageCode) {

@@ -3,9 +3,15 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <atomic>
 #include <functional>
+#include <memory>
 
 #include "system/commandrunner.h"
+
+namespace SessionUtil {
+struct SessionInfo;
+}
 
 // NvidiaUpdater: Kurulu surucu ile mevcut en guncel surumu karsilastirir.
 class NvidiaUpdater : public QObject {
@@ -34,6 +40,7 @@ public:
   Q_INVOKABLE void applyUpdate();
   Q_INVOKABLE void applyVersion(const QString &version);
   Q_INVOKABLE void refreshAvailableVersions();
+  Q_INVOKABLE void cancelOperation();
 
 signals:
   void updateAvailableChanged();
@@ -59,13 +66,15 @@ private:
   QStringList buildDriverTargets(const QString &version,
                                  const QString &sessionType,
                                  const QString &kernelPackageName) const;
-  bool finalizeDriverChange(CommandRunner &runner, const QString &sessionType,
+  bool finalizeDriverChange(CommandRunner &runner,
+                            const SessionUtil::SessionInfo &sessionInfo,
                             QString *errorMessage);
-  QString detectSessionType() const;
+  SessionUtil::SessionInfo detectSessionInfo() const;
   QString m_latestPackageVersion;
   bool m_updateAvailable = false;
   QString m_currentVersion;
   QString m_latestVersion;
   QStringList m_availableVersions;
   bool m_busy = false;
+  std::shared_ptr<std::atomic_bool> m_cancelRequested;
 };

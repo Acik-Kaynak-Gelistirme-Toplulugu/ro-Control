@@ -99,6 +99,7 @@ add_library(ro-control-backend STATIC ${BACKEND_SOURCES})
 target_link_libraries(ro-control-backend PUBLIC
     Qt6::Core
     Qt6::DBus
+    Qt6::Gui
     Qt6::Qml
 )
 
@@ -151,6 +152,7 @@ qt_add_qml_module(ro-control
         src/qml/pages/DriverPage.qml
         src/qml/pages/MonitorPage.qml
         src/qml/components/InfoBadge.qml
+        src/qml/components/RefreshToolButton.qml
         src/qml/components/ActionButton.qml
         src/qml/components/DetailRow.qml
         src/qml/components/SectionPanel.qml

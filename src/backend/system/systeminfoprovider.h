@@ -21,6 +21,7 @@ public:
   QString cpuModel() const { return m_cpuModel; }
 
   Q_INVOKABLE void refresh();
+  Q_INVOKABLE bool requestRestart();
 
 signals:
   void infoChanged();
