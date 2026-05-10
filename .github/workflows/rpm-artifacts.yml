@@ -77,7 +77,7 @@ jobs:
           - arch: aarch64
             runs_on: ubuntu-24.04-arm
     container:
-      image: fedora:latest
+      image: fedora:43
 
     steps:
       - name: Checkout repository
@@ -99,12 +99,13 @@ jobs:
             gcc-c++ \
             ninja-build \
             qt6-qtbase-devel \
-            qt6-qtbase-private-devel \
             qt6-qtdeclarative-devel \
             qt6-qttools-devel \
             qt6-qtwayland-devel \
             kf6-qqc2-desktop-style \
-            polkit-devel
+            polkit-devel \
+            desktop-file-utils \
+            appstream
 
       - name: Build RPM artifacts
         env:
@@ -115,24 +116,53 @@ jobs:
           mkdir -p ~/rpmbuild/SOURCES ~/rpmbuild/SPECS dist/rpm
           cp "dist/${ARCHIVE_PREFIX}.tar.gz" "${HOME}/rpmbuild/SOURCES/"
           cp packaging/rpm/ro-control.spec "${HOME}/rpmbuild/SPECS/ro-control.spec"
-          FEDORA_VERSION="$(rpm -E %fedora)"
-          RPM_PATTERN="ro-control-[0-9]*.${RPM_ARCH}.rpm"
+          FEDORA_VERSION=43
+          MAIN_RPM_PATTERN="ro-control-[0-9]*.${RPM_ARCH}.rpm"
+          COMMON_RPM_PATTERN="ro-control-common-[0-9]*.noarch.rpm"
 
           rpmbuild -ba "${HOME}/rpmbuild/SPECS/ro-control.spec" \
             --define "_topdir ${HOME}/rpmbuild" \
             --define "upstream_version ${VERSION}" \
             --define "dist .fc${FEDORA_VERSION}"
 
-          RPM_FILE="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${RPM_PATTERN}" | head -n1)"
-          if [[ -z "${RPM_FILE}" ]]; then
-            echo "Failed to find built ${RPM_ARCH} RPM." >&2
+          MAIN_RPM_FILE="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${MAIN_RPM_PATTERN}" | head -n1)"
+          if [[ -z "${MAIN_RPM_FILE}" ]]; then
+            echo "Failed to find built ${RPM_ARCH} main RPM." >&2
             exit 1
           fi
-          cp "${RPM_FILE}" "dist/rpm/ro-control-${RPM_ARCH}.rpm"
+
+          cp "${MAIN_RPM_FILE}" dist/rpm/
+
+          COMMON_RPM_FILE="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${COMMON_RPM_PATTERN}" | head -n1)"
+          if [[ -n "${COMMON_RPM_FILE}" ]]; then
+            cp "${COMMON_RPM_FILE}" dist/rpm/
+          fi
+
+      - name: Validate metadata and RPM dependency surface
+        env:
+          RPM_ARCH: ${{ matrix.arch }}
+        run: |
+          desktop-file-validate data/icons/io.github.projectroasd.rocontrol.desktop
+          appstreamcli validate --no-net data/icons/io.github.projectroasd.rocontrol.metainfo.xml
+
+          MAIN_RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "ro-control-*.${RPM_ARCH}.rpm" | head -n1)"
+          COMMON_RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name 'ro-control-common-*.noarch.rpm' | head -n1)"
+
+          rpm -qpR "${MAIN_RPM_FILE}" | tee /tmp/ro-control.requires
+          if grep -E 'Qt_6\.10|PRIVATE_API' /tmp/ro-control.requires; then
+            echo "Forbidden Qt private ABI dependency detected." >&2
+            exit 1
+          fi
+
+          rpm -qpl "${MAIN_RPM_FILE}" | grep -Fx '/usr/bin/ro-control'
+          if [[ -n "${COMMON_RPM_FILE}" ]] && rpm -qpl "${COMMON_RPM_FILE}" | grep -Fx '/usr/bin/ro-control'; then
+            echo "/usr/bin/ro-control must only be shipped by the main RPM." >&2
+            exit 1
+          fi
 
       - name: Upload RPM artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ro-control-${{ matrix.arch }}-rpm
           path: |
-            dist/rpm/ro-control-${{ matrix.arch }}.rpm
+            dist/rpm/*

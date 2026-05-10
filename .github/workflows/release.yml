@@ -120,7 +120,7 @@ jobs:
           - arch: aarch64
             runs_on: ubuntu-24.04-arm
     container:
-      image: fedora:latest
+      image: fedora:43
 
     steps:
       - name: Checkout repository
@@ -142,7 +142,6 @@ jobs:
             gcc-c++ \
             ninja-build \
             qt6-qtbase-devel \
-            qt6-qtbase-private-devel \
             qt6-qtdeclarative-devel \
             qt6-qttools-devel \
             qt6-qtwayland-devel \
@@ -160,7 +159,7 @@ jobs:
           mkdir -p ~/rpmbuild/SOURCES ~/rpmbuild/SPECS dist/rpm
           cp "dist/${ARCHIVE_PREFIX}.tar.gz" "${HOME}/rpmbuild/SOURCES/"
           cp packaging/rpm/ro-control.spec "${HOME}/rpmbuild/SPECS/ro-control.spec"
-          FEDORA_VERSION="$(rpm -E %fedora)"
+          FEDORA_VERSION=43
           MAIN_RPM_PATTERN="ro-control-[0-9]*.${RPM_ARCH}.rpm"
           COMMON_RPM_PATTERN="ro-control-common-[0-9]*.noarch.rpm"
 
@@ -191,6 +190,33 @@ jobs:
           rpm -qp --info "${RPM_FILE}" > "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-info.txt"
           rpm -qp --requires "${RPM_FILE}" | sort > "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-requires.txt"
           rpm -qlp "${RPM_FILE}" | sort > "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-files.txt"
+          if grep -E 'Qt_6\.10|PRIVATE_API' "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-requires.txt"; then
+            echo "Forbidden Qt private ABI dependency detected." >&2
+            exit 1
+          fi
+          grep -Fx '/usr/bin/ro-control' "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-files.txt"
+
+      - name: Verify main/common package split
+        env:
+          RPM_ARCH: ${{ matrix.arch }}
+        run: |
+          MAIN_RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "ro-control-*.${RPM_ARCH}.rpm" | head -n1)"
+          COMMON_RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name 'ro-control-common-*.noarch.rpm' | head -n1)"
+
+          if [[ -z "${MAIN_RPM_FILE}" ]]; then
+            echo "Main ro-control RPM is missing." >&2
+            exit 1
+          fi
+
+          if [[ -z "${COMMON_RPM_FILE}" ]]; then
+            echo "ro-control-common noarch RPM is missing." >&2
+            exit 1
+          fi
+
+          if rpm -qpl "${COMMON_RPM_FILE}" | grep -Fx '/usr/bin/ro-control'; then
+            echo "/usr/bin/ro-control must not be shipped by ro-control-common." >&2
+            exit 1
+          fi
 
       - name: Validate desktop metadata
         run: |
@@ -226,6 +252,10 @@ jobs:
             exit 1
           fi
 
+          rpm -q ro-control
+          command -v ro-control
+          rpm -q --whatprovides /usr/bin/ro-control | grep -Fx 'ro-control'
+          ldd -r /usr/bin/ro-control
           ro-control --help > /dev/null
 
       - name: Generate per-arch checksums

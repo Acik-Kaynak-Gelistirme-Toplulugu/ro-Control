@@ -20,12 +20,8 @@ jobs:
   build:
     name: Build & Test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        fedora: [41, 42]
     container:
-      image: fedora:${{ matrix.fedora }}
+      image: fedora:43
 
     steps:
       - name: Checkout repository
@@ -45,7 +41,6 @@ jobs:
             kf6-qqc2-desktop-style \
             polkit-devel \
             clang-tools-extra \
-            qt6-qtbase-private-devel \
             desktop-file-utils \
             appstream
 
@@ -74,10 +69,10 @@ jobs:
           xargs -0 clang-format --dry-run --Werror
 
   package-rpm:
-    name: RPM Build Check
+    name: RPM Build Check (Fedora 43)
     runs-on: ubuntu-latest
     container:
-      image: fedora:42
+      image: fedora:43
 
     steps:
       - name: Checkout repository
@@ -94,12 +89,13 @@ jobs:
             gcc-c++ \
             ninja-build \
             qt6-qtbase-devel \
-            qt6-qtbase-private-devel \
             qt6-qtdeclarative-devel \
             qt6-qttools-devel \
             qt6-qtwayland-devel \
             kf6-qqc2-desktop-style \
-            polkit-devel
+            polkit-devel \
+            desktop-file-utils \
+            appstream
 
       - name: Prepare source tarball
         id: prep
@@ -123,9 +119,56 @@ jobs:
 
       - name: Build RPM
         run: |
+          FEDORA_VERSION=43
           rpmbuild -ba "${HOME}/rpmbuild/SPECS/ro-control.spec" \
             --define "_topdir ${HOME}/rpmbuild" \
-            --define "upstream_version ${{ steps.prep.outputs.version }}"
+            --define "upstream_version ${{ steps.prep.outputs.version }}" \
+            --define "dist .fc${FEDORA_VERSION}"
+
+      - name: Validate desktop metadata
+        run: |
+          desktop-file-validate data/icons/io.github.projectroasd.rocontrol.desktop
+          appstreamcli validate --no-net data/icons/io.github.projectroasd.rocontrol.metainfo.xml
+
+      - name: Verify Fedora 43 RPM compatibility
+        run: |
+          MAIN_RPM="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name 'ro-control-*.x86_64.rpm' | head -n1)"
+          COMMON_RPM="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name 'ro-control-common-*.noarch.rpm' | head -n1)"
+
+          if [[ -z "${MAIN_RPM}" ]]; then
+            echo "Failed to locate ro-control x86_64 RPM." >&2
+            exit 1
+          fi
+
+          if [[ -z "${COMMON_RPM}" ]]; then
+            echo "Failed to locate ro-control-common noarch RPM." >&2
+            exit 1
+          fi
+
+          rpm -qpR "${MAIN_RPM}" | tee /tmp/ro-control.requires
+          if grep -E 'Qt_6\.10|PRIVATE_API' /tmp/ro-control.requires; then
+            echo "Forbidden Qt private or Fedora 44-era Qt ABI dependency detected." >&2
+            exit 1
+          fi
+
+          rpm -qpl "${MAIN_RPM}" | grep -Fx '/usr/bin/ro-control'
+          if rpm -qpl "${COMMON_RPM}" | grep -Fx '/usr/bin/ro-control'; then
+            echo "/usr/bin/ro-control must not be shipped by ro-control-common." >&2
+            exit 1
+          fi
+
+      - name: Install and smoke-test RPMs
+        run: |
+          MAIN_RPM="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name 'ro-control-*.x86_64.rpm' | head -n1)"
+          COMMON_RPM="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name 'ro-control-common-*.noarch.rpm' | head -n1)"
+
+          dnf clean all
+          dnf -y --refresh --setopt=install_weak_deps=False install "${MAIN_RPM}" "${COMMON_RPM}"
+
+          rpm -q ro-control
+          command -v ro-control
+          rpm -q --whatprovides /usr/bin/ro-control | grep -Fx 'ro-control'
+          ldd -r /usr/bin/ro-control
 
       - name: Lint built RPMs
         run: |
