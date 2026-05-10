@@ -1,4 +1,4 @@
-%global upstream_version %{!?upstream_version:1.0.0}%{?upstream_version}
+%global upstream_version %{!?upstream_version:1.1.0}%{?upstream_version}
 %global debug_package %{nil}
 
 Name:           ro-control
@@ -90,6 +90,11 @@ tar -xzf %{SOURCE0} --strip-components=1
 %{_datadir}/polkit-1/actions/io.github.ProjectRoASD.rocontrol.policy
 
 %changelog
+* Sat May 10 2026 ro-Control Maintainers <noreply@github.com> - 1.1.0-1
+- Target Fedora 43 for CI, RPM validation, and release builds
+- Validate RPM compatibility for x86_64 and aarch64 with store metadata checks
+- Align AppStream metadata with real application screenshots and improved package identity
+
 * Mon Mar 30 2026 ro-Control Maintainers <noreply@github.com> - 0.2.1-1
 - Limit release outputs to x86_64, aarch64, noarch, and src RPM artifacts
 - Split shared desktop assets into a noarch companion package

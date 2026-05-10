@@ -85,7 +85,7 @@ private slots:
         "data/icons/io.github.projectroasd.rocontrol.metainfo.xml"));
     QVERIFY(!metainfo.isEmpty());
     QVERIFY(metainfo.contains(
-        QStringLiteral("<release version=\"1.0.0\" date=\"2026-04-29\" />")));
+        QStringLiteral("<release version=\"1.1.0\" date=\"2026-05-10\" />")));
   }
 
   void testCliDocumentationAssetsExist() {

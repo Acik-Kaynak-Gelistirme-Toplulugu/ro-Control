@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(ro-control
-    VERSION 1.0.0
+    VERSION 1.1.0
     DESCRIPTION "Smart NVIDIA Driver Manager & System Monitor for Linux"
     HOMEPAGE_URL "https://github.com/Project-Ro-ASD/ro-Control"
     LANGUAGES CXX
@@ -128,10 +128,6 @@ set_source_files_properties(src/qml/assets/ro-control-logo.svg PROPERTIES
     QT_RESOURCE_ALIAS "assets/ro-control-logo.svg"
 )
 
-set_source_files_properties(src/qml/assets/ro-control-logo.png PROPERTIES
-    QT_RESOURCE_ALIAS "assets/ro-control-logo.png"
-)
-
 set_source_files_properties(src/qml/assets/icon-language.svg PROPERTIES
     QT_RESOURCE_ALIAS "assets/icon-language.svg"
 )
@@ -161,7 +157,6 @@ qt_add_qml_module(ro-control
         src/qml/components/SidebarMenu.qml
     RESOURCES
         src/qml/assets/ro-control-logo.svg
-        src/qml/assets/ro-control-logo.png
         src/qml/assets/icon-language.svg
         src/qml/assets/icon-refresh.svg
         src/qml/assets/icon-theme.svg
