@@ -9,7 +9,8 @@
 #include <memory>
 
 // CommandRunner is the shared process execution layer for backend modules.
-// Backend code routes system commands through this class instead of ad hoc calls.
+// Backend code routes system commands through this class instead of ad hoc
+// calls.
 class CommandRunner : public QObject {
   Q_OBJECT
 

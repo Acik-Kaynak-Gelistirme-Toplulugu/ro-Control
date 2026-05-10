@@ -13,7 +13,8 @@ namespace SessionUtil {
 struct SessionInfo;
 }
 
-// NvidiaUpdater compares the installed driver state with newer available builds.
+// NvidiaUpdater compares the installed driver state with newer available
+// builds.
 class NvidiaUpdater : public QObject {
   Q_OBJECT
 

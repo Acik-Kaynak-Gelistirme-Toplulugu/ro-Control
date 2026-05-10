@@ -162,6 +162,12 @@ qt_add_qml_module(ro-control
         src/qml/assets/icon-theme.svg
 )
 
+# Keep QML cache generation on the public bytecode path so RPM dependencies do
+# not pick up Qt private ABI symbols from AOT-generated C++.
+set_target_properties(ro-control PROPERTIES
+    QT_QMLCACHEGEN_ARGUMENTS "--only-bytecode"
+)
+
 if(Qt6LinguistTools_FOUND)
     # English strings ship directly from source code. Keep the English TS file
     # for catalog maintenance, but only compile non-source locales into .qm.

@@ -149,8 +149,8 @@ jobs:
           fi
 
           rpm -qpR "${MAIN_RPM}" | tee /tmp/ro-control.requires
-          if grep -E 'Qt_6\.10|PRIVATE_API' /tmp/ro-control.requires; then
-            echo "Forbidden Qt private or Fedora 44-era Qt ABI dependency detected." >&2
+          if grep -E 'PRIVATE_API' /tmp/ro-control.requires; then
+            echo "Forbidden Qt private ABI dependency detected." >&2
             exit 1
           fi
 

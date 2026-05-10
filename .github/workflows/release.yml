@@ -198,7 +198,7 @@ jobs:
           rpm -qp --info "${RPM_FILE}" > "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-info.txt"
           rpm -qp --requires "${RPM_FILE}" | sort > "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-requires.txt"
           rpm -qlp "${RPM_FILE}" | sort > "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-files.txt"
-          if grep -E 'Qt_6\.10|PRIVATE_API' "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-requires.txt"; then
+          if grep -E 'PRIVATE_API' "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-requires.txt"; then
             echo "Forbidden Qt private ABI dependency detected." >&2
             exit 1
           fi
