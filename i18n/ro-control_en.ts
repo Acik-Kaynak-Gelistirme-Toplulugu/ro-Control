@@ -351,11 +351,6 @@
         <translation>Light</translation>
     </message>
     <message>
-        <location filename="../src/qml/Main.qml" line="55"/>
-        <source>Automatic</source>
-        <translation>Automatic</translation>
-    </message>
-    <message>
         <location filename="../src/qml/Main.qml" line="60"/>
         <source>Unknown</source>
         <translation>Unknown</translation>

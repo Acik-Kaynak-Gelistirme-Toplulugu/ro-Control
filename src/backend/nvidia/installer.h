@@ -7,9 +7,6 @@
 #include <memory>
 
 class CommandRunner;
-namespace SessionUtil {
-struct SessionInfo;
-}
 
 // NvidiaInstaller: DNF üzerinden NVIDIA sürücü kurulum/kaldırma işlemleri.
 // Tüm işlemler root gerektirir — polkit üzerinden yetki alınır.
@@ -69,9 +66,6 @@ private:
   void setBusy(bool busy);
   void runAsyncTask(const std::function<void()> &task);
   void setProprietaryAgreement(bool required, const QString &text);
-  bool applySessionSpecificSetup(CommandRunner &runner,
-                                 const SessionUtil::SessionInfo &sessionInfo,
-                                 QString *errorMessage);
 
   bool m_proprietaryAgreementRequired = false;
   QString m_proprietaryAgreementText;

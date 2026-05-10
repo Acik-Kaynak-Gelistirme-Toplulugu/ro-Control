@@ -32,6 +32,21 @@ Item {
         return total > 0 ? used + " / " + total + " MiB" : qsTr("Unavailable");
     }
 
+    function safeText(value) {
+        return value && value.length > 0 ? value : qsTr("Unavailable");
+    }
+
+    function machineTypeLabel() {
+        if (!page.systemInfo)
+            return qsTr("Unavailable");
+        if (page.systemInfo.virtualMachine) {
+            return page.systemInfo.virtualizationType.length > 0
+                   ? qsTr("Virtual Machine: %1").arg(page.systemInfo.virtualizationType)
+                   : qsTr("Virtual Machine");
+        }
+        return qsTr("Physical Machine");
+    }
+
     function refreshTelemetry() {
         if (page.systemInfo)
             page.systemInfo.refresh();
@@ -128,6 +143,86 @@ Item {
 
                         Label { text: page.ramMonitor ? page.ramMonitor.usagePercent + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.weight: Font.DemiBold }
                         Label { text: qsTr("Usage: %1").arg(page.formatRam(page.ramMonitor ? page.ramMonitor.usedMiB : 0, page.ramMonitor ? page.ramMonitor.totalMiB : 0)); color: page.softTextColor }
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                radius: 14
+                color: page.cardColor
+                border.width: 1
+                border.color: page.borderColor
+                implicitHeight: systemLayout.implicitHeight + 24
+                visible: page.showAdvancedInfo
+
+                ColumnLayout {
+                    id: systemLayout
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 10
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("System")
+                            color: page.textColor
+                            font.pixelSize: Math.round(18 * page.uiScale)
+                            font.weight: Font.DemiBold
+                        }
+                    }
+
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columns: width > 920 ? 4 : 1
+                        columnSpacing: 8
+                        rowSpacing: 8
+
+                        Repeater {
+                            model: [
+                                { title: qsTr("Operating System"), value: page.safeText(page.systemInfo ? page.systemInfo.osName : "") },
+                                { title: qsTr("Desktop"), value: page.safeText(page.systemInfo ? page.systemInfo.desktopEnvironment : "") },
+                                { title: qsTr("Kernel"), value: page.safeText(page.systemInfo ? page.systemInfo.kernelVersion : "") },
+                                { title: qsTr("Machine"), value: page.machineTypeLabel() }
+                            ]
+
+                            delegate: Rectangle {
+                                required property var modelData
+                                Layout.fillWidth: true
+                                implicitHeight: Math.round(76 * page.uiScale)
+                                radius: 10
+                                color: page.bgColor
+                                border.width: 1
+                                border.color: page.borderColor
+
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    spacing: 4
+
+                                    Label {
+                                        width: parent.width
+                                        text: modelData.title
+                                        color: page.softTextColor
+                                        font.pixelSize: Math.round(11 * page.uiScale)
+                                        font.weight: Font.DemiBold
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Label {
+                                        width: parent.width
+                                        text: modelData.value
+                                        color: page.textColor
+                                        font.pixelSize: Math.round(13 * page.uiScale)
+                                        font.weight: Font.DemiBold
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -10,8 +10,6 @@ class UiPreferencesManager : public QObject {
   Q_PROPERTY(QString themeMode READ themeMode WRITE setThemeMode NOTIFY
                  themeModeChanged)
   Q_PROPERTY(QVariantList availableThemeModes READ availableThemeModes CONSTANT)
-  Q_PROPERTY(bool compactMode READ compactMode WRITE setCompactMode NOTIFY
-                 compactModeChanged)
   Q_PROPERTY(bool showAdvancedInfo READ showAdvancedInfo WRITE
                  setShowAdvancedInfo NOTIFY showAdvancedInfoChanged)
 
@@ -21,17 +19,14 @@ public:
   QString themeMode() const;
   QVariantList availableThemeModes() const;
 
-  bool compactMode() const;
   bool showAdvancedInfo() const;
 
   Q_INVOKABLE void setThemeMode(const QString &themeMode);
-  Q_INVOKABLE void setCompactMode(bool compactMode);
   Q_INVOKABLE void setShowAdvancedInfo(bool showAdvancedInfo);
   Q_INVOKABLE void resetToDefaults();
 
 signals:
   void themeModeChanged();
-  void compactModeChanged();
   void showAdvancedInfoChanged();
 
 private:
@@ -42,6 +37,5 @@ private:
 
   QString m_themeMode = QStringLiteral("light");
   bool m_systemDarkMode = false;
-  bool m_compactMode = false;
   bool m_showAdvancedInfo = true;
 };

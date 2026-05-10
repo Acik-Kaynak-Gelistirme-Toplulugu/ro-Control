@@ -66,9 +66,6 @@ private:
   QStringList buildDriverTargets(const QString &version,
                                  const QString &sessionType,
                                  const QString &kernelPackageName) const;
-  bool finalizeDriverChange(CommandRunner &runner,
-                            const SessionUtil::SessionInfo &sessionInfo,
-                            QString *errorMessage);
   SessionUtil::SessionInfo detectSessionInfo() const;
   QString m_latestPackageVersion;
   bool m_updateAvailable = false;

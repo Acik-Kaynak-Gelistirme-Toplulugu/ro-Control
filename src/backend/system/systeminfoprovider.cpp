@@ -95,10 +95,12 @@ void SystemInfoProvider::refresh() {
   const QString nextDesktopEnvironment = detectDesktopEnvironment();
   const QString nextKernelVersion = detectKernelVersion();
   const QString nextCpuModel = detectCpuModel();
+  const QString nextVirtualizationType = detectVirtualizationType();
 
   if (m_osName == nextOsName &&
       m_desktopEnvironment == nextDesktopEnvironment &&
-      m_kernelVersion == nextKernelVersion && m_cpuModel == nextCpuModel) {
+      m_kernelVersion == nextKernelVersion && m_cpuModel == nextCpuModel &&
+      m_virtualizationType == nextVirtualizationType) {
     return;
   }
 
@@ -106,6 +108,7 @@ void SystemInfoProvider::refresh() {
   m_desktopEnvironment = nextDesktopEnvironment;
   m_kernelVersion = nextKernelVersion;
   m_cpuModel = nextCpuModel;
+  m_virtualizationType = nextVirtualizationType;
   emit infoChanged();
 }
 
@@ -149,7 +152,6 @@ QString SystemInfoProvider::detectKernelVersion() const {
 }
 
 QString SystemInfoProvider::detectCpuModel() const {
-  QString virtualizationType;
 #if defined(Q_OS_LINUX)
   CommandRunner runner;
   const auto lscpuResult = runner.run(QStringLiteral("lscpu"));
@@ -194,21 +196,6 @@ QString SystemInfoProvider::detectCpuModel() const {
     }
   }
 
-  const auto virtResult =
-      runner.run(QStringLiteral("systemd-detect-virt"),
-                 {QStringLiteral("--quiet"), QStringLiteral("--vm")});
-  if (virtResult.success()) {
-    const auto virtName = runner.run(QStringLiteral("systemd-detect-virt"));
-    if (virtName.success()) {
-      virtualizationType = virtualizationLabel(virtName.stdout.trimmed());
-    }
-  }
-
-  if (virtualizationType.isEmpty()) {
-    const QString productName =
-        valueFromOsRelease(QStringLiteral("VIRTUALIZATION"));
-    virtualizationType = virtualizationLabel(productName);
-  }
 #elif defined(Q_OS_MACOS)
   CommandRunner runner;
   const auto result = runner.run(
@@ -223,6 +210,7 @@ QString SystemInfoProvider::detectCpuModel() const {
 #endif
 
   const QString architecture = QSysInfo::currentCpuArchitecture();
+  const QString virtualizationType = detectVirtualizationType();
   if (!virtualizationType.isEmpty()) {
     return architecture.isEmpty()
                ? QStringLiteral("%1 Virtual CPU").arg(virtualizationType)
@@ -231,6 +219,28 @@ QString SystemInfoProvider::detectCpuModel() const {
   }
   return architecture.isEmpty() ? QStringLiteral("Unknown CPU")
                                 : QStringLiteral("CPU (%1)").arg(architecture);
+}
+
+QString SystemInfoProvider::detectVirtualizationType() const {
+#if defined(Q_OS_LINUX)
+  CommandRunner runner;
+  const auto virtResult =
+      runner.run(QStringLiteral("systemd-detect-virt"),
+                 {QStringLiteral("--quiet"), QStringLiteral("--vm")});
+  if (virtResult.success()) {
+    const auto virtName = runner.run(QStringLiteral("systemd-detect-virt"));
+    if (virtName.success()) {
+      const QString label = virtualizationLabel(virtName.stdout.trimmed());
+      if (!label.isEmpty()) {
+        return label;
+      }
+    }
+  }
+
+  return virtualizationLabel(valueFromOsRelease(QStringLiteral("VIRTUALIZATION")));
+#else
+  return {};
+#endif
 }
 
 QString SystemInfoProvider::detectDesktopEnvironment() const {

@@ -54,8 +54,6 @@ UiPreferencesManager::UiPreferencesManager(QObject *parent) : QObject(parent) {
   QSettings settings;
   m_themeMode = systemThemeMode();
   settings.setValue(QStringLiteral("ui/themeMode"), m_themeMode);
-  m_compactMode =
-      settings.value(QStringLiteral("ui/compactMode"), m_compactMode).toBool();
   m_showAdvancedInfo =
       settings.value(QStringLiteral("ui/showAdvancedInfo"), m_showAdvancedInfo)
           .toBool();
@@ -75,8 +73,6 @@ QVariantList UiPreferencesManager::availableThemeModes() const {
   return modes;
 }
 
-bool UiPreferencesManager::compactMode() const { return m_compactMode; }
-
 bool UiPreferencesManager::showAdvancedInfo() const {
   return m_showAdvancedInfo;
 }
@@ -92,16 +88,6 @@ void UiPreferencesManager::setThemeMode(const QString &themeMode) {
   emit themeModeChanged();
 }
 
-void UiPreferencesManager::setCompactMode(bool compactMode) {
-  if (compactMode == m_compactMode) {
-    return;
-  }
-
-  m_compactMode = compactMode;
-  persistValue(QStringLiteral("ui/compactMode"), m_compactMode);
-  emit compactModeChanged();
-}
-
 void UiPreferencesManager::setShowAdvancedInfo(bool showAdvancedInfo) {
   if (showAdvancedInfo == m_showAdvancedInfo) {
     return;
@@ -114,7 +100,6 @@ void UiPreferencesManager::setShowAdvancedInfo(bool showAdvancedInfo) {
 
 void UiPreferencesManager::resetToDefaults() {
   setThemeMode(systemThemeMode());
-  setCompactMode(false);
   setShowAdvancedInfo(true);
 }
 

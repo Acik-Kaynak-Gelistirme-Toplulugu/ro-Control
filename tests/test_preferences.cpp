@@ -34,7 +34,6 @@ void TestPreferences::testUiPreferencesDefaults() {
 
   QVERIFY(preferences.themeMode() == QStringLiteral("light") ||
           preferences.themeMode() == QStringLiteral("dark"));
-  QCOMPARE(preferences.compactMode(), false);
   QCOMPARE(preferences.showAdvancedInfo(), true);
   QCOMPARE(preferences.availableThemeModes().size(), 2);
 }
@@ -42,22 +41,18 @@ void TestPreferences::testUiPreferencesDefaults() {
 void TestPreferences::testUiPreferencesPersistChanges() {
   UiPreferencesManager preferences;
   QSignalSpy themeSpy(&preferences, &UiPreferencesManager::themeModeChanged);
-  QSignalSpy compactSpy(&preferences, &UiPreferencesManager::compactModeChanged);
   QSignalSpy advancedSpy(&preferences,
                          &UiPreferencesManager::showAdvancedInfoChanged);
 
   preferences.setThemeMode(QStringLiteral("dark"));
-  preferences.setCompactMode(true);
   preferences.setShowAdvancedInfo(false);
 
   QCOMPARE(themeSpy.count(), 1);
-  QCOMPARE(compactSpy.count(), 1);
   QCOMPARE(advancedSpy.count(), 1);
 
   UiPreferencesManager reloadedPreferences;
   QVERIFY(reloadedPreferences.themeMode() == QStringLiteral("light") ||
           reloadedPreferences.themeMode() == QStringLiteral("dark"));
-  QCOMPARE(reloadedPreferences.compactMode(), true);
   QCOMPARE(reloadedPreferences.showAdvancedInfo(), false);
 }
 

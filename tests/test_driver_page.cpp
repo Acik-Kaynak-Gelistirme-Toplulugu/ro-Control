@@ -13,6 +13,8 @@ class DetectorMock : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool gpuFound READ gpuFound WRITE setGpuFound NOTIFY infoChanged)
   Q_PROPERTY(QString gpuName READ gpuName WRITE setGpuName NOTIFY infoChanged)
+  Q_PROPERTY(QString displayAdapterName READ displayAdapterName WRITE
+                 setDisplayAdapterName NOTIFY infoChanged)
   Q_PROPERTY(QString driverVersion READ driverVersion WRITE setDriverVersion
                  NOTIFY infoChanged)
   Q_PROPERTY(bool driverPackageInstalled READ driverPackageInstalled WRITE
@@ -37,6 +39,7 @@ class DetectorMock : public QObject {
 public:
   bool gpuFound() const { return m_gpuFound; }
   QString gpuName() const { return m_gpuName; }
+  QString displayAdapterName() const { return m_displayAdapterName; }
   QString driverVersion() const { return m_driverVersion; }
   bool driverPackageInstalled() const { return m_driverPackageInstalled; }
   bool driverLoaded() const { return m_driverLoaded; }
@@ -61,6 +64,14 @@ public:
       return;
     }
     m_gpuName = value;
+    emit infoChanged();
+  }
+
+  void setDisplayAdapterName(const QString &value) {
+    if (m_displayAdapterName == value) {
+      return;
+    }
+    m_displayAdapterName = value;
     emit infoChanged();
   }
 
@@ -152,6 +163,7 @@ signals:
 private:
   bool m_gpuFound = false;
   QString m_gpuName;
+  QString m_displayAdapterName;
   QString m_driverVersion;
   bool m_driverPackageInstalled = false;
   bool m_driverLoaded = false;

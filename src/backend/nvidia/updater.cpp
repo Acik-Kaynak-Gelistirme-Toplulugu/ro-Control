@@ -56,6 +56,18 @@ bool commandCanceled(const CommandRunner::Result &result) {
   return result.exitCode == -3;
 }
 
+QString missingNvidiaHardwareMessage() {
+  NvidiaDetector detector;
+  if (detector.hasNvidiaGpu() || detector.isDriverInstalled()) {
+    return {};
+  }
+
+  return NvidiaUpdater::tr(
+      "No NVIDIA GPU or installed NVIDIA driver was detected. In a virtual "
+      "machine, attach or passthrough an NVIDIA GPU before starting driver "
+      "updates.");
+}
+
 QString normalizedTransactionOutput(const CommandRunner::Result &result) {
   return (result.stdout + QLatin1Char('\n') + result.stderr).toLower();
 }
@@ -468,7 +480,6 @@ QStringList
 NvidiaUpdater::buildDriverTargets(const QString &version,
                                   const QString &sessionType,
                                   const QString &kernelPackageName) const {
-  Q_UNUSED(sessionType);
   QStringList targets;
   QStringList versionLockedPackages{kernelPackageName};
   versionLockedPackages << kCommonVersionLockedDriverPackages;
@@ -511,98 +522,6 @@ QStringList NvidiaUpdater::buildTransactionArguments(
 
   args << buildDriverTargets(targetVersion, sessionType, kernelPackageName);
   return args;
-}
-
-bool NvidiaUpdater::finalizeDriverChange(CommandRunner &runner,
-                                         const SessionUtil::SessionInfo
-                                             &sessionInfo,
-                                         QString *errorMessage) {
-  auto result =
-      runner.runAsRoot(QStringLiteral("akmods"), {QStringLiteral("--force")});
-  if (!result.success()) {
-    if (errorMessage != nullptr) {
-      *errorMessage = tr("Kernel module build failed: ") +
-                      commandError(result, tr("unknown error"));
-    }
-    return false;
-  }
-
-  const QString sessionType = sessionInfo.type.trimmed().toLower();
-  if (sessionType != QStringLiteral("wayland") &&
-      sessionType != QStringLiteral("x11")) {
-    if (errorMessage != nullptr) {
-      *errorMessage =
-          tr("The active display session could not be detected reliably. "
-             "ro-Control will not guess Wayland or X11 specific NVIDIA setup.");
-    }
-    return false;
-  }
-
-  emit progressMessage(
-      tr("Detected %1 session via %2.")
-          .arg(sessionType == QStringLiteral("wayland") ? tr("Wayland")
-                                                        : tr("X11"),
-               sessionInfo.source.isEmpty() ? tr("session probe")
-                                            : sessionInfo.source));
-
-  emit progressMessage(
-      tr("Adding NVIDIA kernel modules to the initramfs driver set..."));
-  result = runner.runAsRoot(
-      QStringLiteral("dracut"),
-      QStringList{QStringLiteral("--force"), QStringLiteral("--add-drivers"),
-                  kNvidiaKernelModules.join(QLatin1Char(' '))});
-  if (!result.success()) {
-    if (errorMessage != nullptr) {
-      *errorMessage = tr("Failed to prepare NVIDIA kernel modules: ") +
-                      commandError(result, tr("unknown error"));
-    }
-    return false;
-  }
-
-  if (sessionType == QStringLiteral("wayland")) {
-    emit progressMessage(tr("Wayland detected: installing EGL Wayland support "
-                            "and enabling NVIDIA DRM modeset..."));
-    result = runner.runAsRoot(
-        QStringLiteral("dnf"),
-        {QStringLiteral("install"), QStringLiteral("-y"),
-         QStringLiteral("egl-wayland")});
-    if (!result.success()) {
-      if (errorMessage != nullptr) {
-        *errorMessage =
-            tr("Failed to install Wayland NVIDIA support packages: ") +
-            commandError(result, tr("unknown error"));
-      }
-      return false;
-    }
-
-    result = runner.runAsRoot(QStringLiteral("grubby"),
-                              {QStringLiteral("--update-kernel=ALL"),
-                               QStringLiteral("--args=nvidia-drm.modeset=1 "
-                                              "nvidia-drm.fbdev=1")});
-    if (!result.success()) {
-      if (errorMessage != nullptr) {
-        *errorMessage = tr("Failed to update the Wayland kernel parameter: ") +
-                        commandError(result, tr("unknown error"));
-      }
-      return false;
-    }
-    return true;
-  }
-
-  emit progressMessage(tr("X11 detected: checking NVIDIA Xorg packages..."));
-  result = runner.runAsRoot(
-      QStringLiteral("dnf"),
-      {QStringLiteral("install"), QStringLiteral("-y"),
-       QStringLiteral("xorg-x11-drv-nvidia")});
-  if (!result.success()) {
-    if (errorMessage != nullptr) {
-      *errorMessage = tr("Failed to install the X11 NVIDIA package: ") +
-                      commandError(result, tr("unknown error"));
-    }
-    return false;
-  }
-
-  return true;
 }
 
 void NvidiaUpdater::refreshAvailableVersions() {
@@ -674,6 +593,12 @@ void NvidiaUpdater::applyUpdate() { applyVersion(QString()); }
 void NvidiaUpdater::applyVersion(const QString &version) {
   const QString trimmedVersion = version.trimmed();
   const QStringList knownVersions = m_availableVersions;
+  const QString hardwareMessage = missingNvidiaHardwareMessage();
+  if (!hardwareMessage.isEmpty()) {
+    emit updateFinished(false, hardwareMessage);
+    return;
+  }
+
   const QString architectureSupportMessage =
       CapabilityProbe::fedoraNvidiaDriverFlowSupportMessage();
 

@@ -52,7 +52,7 @@ ApplicationWindow {
             return qsTr("Dark");
         if (root.themeMode === "light")
             return qsTr("Light");
-        return qsTr("Automatic");
+        return qsTr("Light");
     }
 
     function sessionLabel() {
@@ -60,6 +60,15 @@ ApplicationWindow {
             return qsTr("Unknown");
         const value = root.nvidiaDetector.sessionType;
         return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+
+    function machineLabel() {
+        if (root.systemInfo && root.systemInfo.virtualMachine) {
+            return root.systemInfo.virtualizationType.length > 0
+                   ? root.systemInfo.virtualizationType
+                   : qsTr("Virtual Machine");
+        }
+        return qsTr("Physical Machine");
     }
 
     function openQuickMenu(mode, sourceButton) {
@@ -160,7 +169,7 @@ ApplicationWindow {
                     spacing: Math.round(10 * root.uiScale)
 
                     Rectangle {
-                        Layout.preferredWidth: Math.round(92 * root.uiScale)
+                        Layout.preferredWidth: Math.round(104 * root.uiScale)
                         Layout.preferredHeight: Math.round(34 * root.uiScale)
                         radius: Math.round(10 * root.uiScale)
                         color: colors.card
@@ -172,6 +181,26 @@ ApplicationWindow {
                             text: root.sessionLabel()
                             color: colors.text
                             font.pixelSize: Math.round(13 * root.uiScale)
+                            font.weight: Font.DemiBold
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.preferredWidth: Math.round(132 * root.uiScale)
+                        Layout.preferredHeight: Math.round(34 * root.uiScale)
+                        radius: Math.round(10 * root.uiScale)
+                        color: colors.card
+                        border.width: 1
+                        border.color: colors.border
+
+                        Label {
+                            anchors.centerIn: parent
+                            width: parent.width - Math.round(10 * root.uiScale)
+                            text: root.machineLabel()
+                            color: colors.text
+                            elide: Text.ElideRight
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pixelSize: Math.round(12 * root.uiScale)
                             font.weight: Font.DemiBold
                         }
                     }

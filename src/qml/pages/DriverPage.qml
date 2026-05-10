@@ -35,6 +35,9 @@ Item {
     readonly property bool canInstallLatestRemoteDriver: page.nvidiaDetector.gpuFound && remoteDriverCatalogAvailable
     readonly property bool confirmedDriverInstalledLocally: page.nvidiaDetector.driverVersion.length > 0 || page.nvidiaDetector.driverPackageInstalled || page.nvidiaUpdater.currentVersion.length > 0
     readonly property bool driverInstalledLocally: page.confirmedDriverInstalledLocally || page.pendingDriverStateText.length > 0
+    readonly property bool virtualMachine: page.systemInfo && page.systemInfo.virtualMachine
+    readonly property string virtualizationType: page.virtualMachine ? page.systemInfo.virtualizationType : ""
+    readonly property bool canManageDriverStack: page.nvidiaDetector.gpuFound || page.driverInstalledLocally
     readonly property string installedVersionLabel: page.nvidiaDetector.driverVersion.length > 0 ? page.nvidiaDetector.driverVersion : page.nvidiaUpdater.currentVersion
     readonly property bool catalogAvailable: page.nvidiaUpdater.latestVersion.length > 0 || page.nvidiaUpdater.availableVersions.length > 0
     readonly property color driverVersionStatusColor: page.pendingDriverStateText.length > 0
@@ -178,7 +181,19 @@ Item {
         return qsTr("Driver scan pending");
     }
 
+    function gpuMainLabel() {
+        if (page.nvidiaDetector.gpuFound)
+            return page.nvidiaDetector.gpuName;
+        if (page.nvidiaDetector.displayAdapterName.length > 0)
+            return page.nvidiaDetector.displayAdapterName;
+        return qsTr("No NVIDIA GPU");
+    }
+
     function driverVersionStatusLabel() {
+        if (!page.canManageDriverStack && page.virtualMachine)
+            return qsTr("Virtual machine detected (%1). Attach or passthrough an NVIDIA GPU before installing drivers.").arg(page.virtualizationType);
+        if (!page.canManageDriverStack)
+            return qsTr("No NVIDIA GPU or installed NVIDIA driver detected.");
         if (page.postOperationRefreshPending)
             return qsTr("Refreshing installed driver status...");
         if (page.pendingDriverStateText.length > 0)
@@ -259,7 +274,16 @@ Item {
                         spacing: 6
 
                         Label { text: qsTr("GPU"); color: page.softTextColor; font.weight: Font.DemiBold; font.pixelSize: Math.round(12 * page.uiScale) }
-                        Label { text: page.nvidiaDetector.gpuFound ? page.nvidiaDetector.gpuName : qsTr("No NVIDIA GPU"); color: page.textColor; font.pixelSize: Math.round(18 * page.uiScale); font.weight: Font.DemiBold; elide: Text.ElideRight; width: parent.width }
+                        Label { text: page.gpuMainLabel(); color: page.textColor; font.pixelSize: Math.round(18 * page.uiScale); font.weight: Font.DemiBold; elide: Text.ElideRight; width: parent.width }
+                        Label {
+                            width: parent.width
+                            visible: !page.nvidiaDetector.gpuFound
+                            text: page.virtualMachine ? qsTr("Virtual display detected. NVIDIA passthrough is required for driver management.")
+                                                      : qsTr("NVIDIA hardware is required for driver management.")
+                            color: page.softTextColor
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                        }
                     }
                 }
 
@@ -397,14 +421,14 @@ Item {
                         Button {
                             Layout.fillWidth: true
                             text: qsTr("Install Closed Source")
-                            enabled: !page.nvidiaInstaller.busy && !page.nvidiaUpdater.busy
+                            enabled: page.canManageDriverStack && !page.nvidiaInstaller.busy && !page.nvidiaUpdater.busy
                             onClicked: page.beginClosedSourceInstall()
                         }
 
                         Button {
                             Layout.fillWidth: true
                             text: qsTr("Use Open Source Driver")
-                            enabled: !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
+                            enabled: page.canManageDriverStack && !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
                             onClicked: {
                                 page.markDriverActionStarted("open-install");
                                 page.setOperationState(qsTr("Installer"), qsTr("Switching to the community open-source graphics driver stack..."), "info", true);
@@ -415,7 +439,7 @@ Item {
                         Button {
                             Layout.fillWidth: true
                             text: qsTr("Deep Clean")
-                            enabled: page.driverInstalledLocally && !page.nvidiaInstaller.busy && !page.nvidiaUpdater.busy
+                            enabled: page.canManageDriverStack && page.driverInstalledLocally && !page.nvidiaInstaller.busy && !page.nvidiaUpdater.busy
                             onClicked: {
                                 page.markDriverActionStarted("deep-clean");
                                 page.setOperationState(qsTr("Installer"), qsTr("Cleaning NVIDIA artifacts..."), "info", true);
