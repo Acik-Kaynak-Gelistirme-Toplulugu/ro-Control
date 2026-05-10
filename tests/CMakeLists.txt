@@ -1,9 +1,20 @@
 find_package(Qt6 REQUIRED COMPONENTS Test Qml Quick QuickControls2)
 
+set(RO_CONTROL_TEST_ENV
+    "QT_QPA_PLATFORM=offscreen;QT_QUICK_CONTROLS_STYLE=Basic"
+)
+
 function(ro_control_configure_test target_name)
     target_include_directories(${target_name} PRIVATE
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/src/backend
+    )
+endfunction()
+
+function(ro_control_register_test test_name)
+    add_test(NAME ${test_name} COMMAND ${test_name})
+    set_tests_properties(${test_name} PROPERTIES
+        ENVIRONMENT "${RO_CONTROL_TEST_ENV}"
     )
 endfunction()
 
@@ -19,7 +30,7 @@ target_link_libraries(test_detector PRIVATE
     ro-control-backend
 )
 
-add_test(NAME test_detector COMMAND test_detector)
+ro_control_register_test(test_detector)
 
 # ─── Updater/Version Parser Tests ────────────────────────────────────────────
 qt_add_executable(test_updater
@@ -33,7 +44,7 @@ target_link_libraries(test_updater PRIVATE
     ro-control-backend
 )
 
-add_test(NAME test_updater COMMAND test_updater)
+ro_control_register_test(test_updater)
 
 # ─── Monitor Tests ───────────────────────────────────────────────────────────
 qt_add_executable(test_monitor
@@ -47,7 +58,7 @@ target_link_libraries(test_monitor PRIVATE
     ro-control-backend
 )
 
-add_test(NAME test_monitor COMMAND test_monitor)
+ro_control_register_test(test_monitor)
 
 # ─── Preferences / Localization Tests ───────────────────────────────────────
 qt_add_executable(test_preferences
@@ -62,7 +73,7 @@ target_link_libraries(test_preferences PRIVATE
     ro-control-backend
 )
 
-add_test(NAME test_preferences COMMAND test_preferences)
+ro_control_register_test(test_preferences)
 
 # ─── System Integration Tests ───────────────────────────────────────────────
 qt_add_executable(test_system_integration
@@ -76,7 +87,7 @@ target_link_libraries(test_system_integration PRIVATE
     ro-control-backend
 )
 
-add_test(NAME test_system_integration COMMAND test_system_integration)
+ro_control_register_test(test_system_integration)
 
 # ─── Metadata Tests ──────────────────────────────────────────────────────────
 qt_add_executable(test_metadata
@@ -92,7 +103,7 @@ target_link_libraries(test_metadata PRIVATE
     Qt6::Test
 )
 
-add_test(NAME test_metadata COMMAND test_metadata)
+ro_control_register_test(test_metadata)
 
 # ─── CLI Tests ───────────────────────────────────────────────────────────────
 qt_add_executable(test_cli
@@ -107,7 +118,7 @@ target_link_libraries(test_cli PRIVATE
     ro-control-backend
 )
 
-add_test(NAME test_cli COMMAND test_cli)
+ro_control_register_test(test_cli)
 
 # ─── Driver Page QML Integration Tests ──────────────────────────────────────
 qt_add_executable(test_driver_page
@@ -127,7 +138,4 @@ target_link_libraries(test_driver_page PRIVATE
     Qt6::Test
 )
 
-add_test(NAME test_driver_page COMMAND test_driver_page)
-set_tests_properties(test_driver_page PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_CONTROLS_STYLE=Basic"
-)
+ro_control_register_test(test_driver_page)

@@ -56,6 +56,9 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Run tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QT_QUICK_CONTROLS_STYLE: Basic
         run: ctest --test-dir build --output-on-failure
 
       - name: Validate desktop metadata

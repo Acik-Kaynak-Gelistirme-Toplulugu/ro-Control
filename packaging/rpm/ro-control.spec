@@ -69,6 +69,8 @@ tar -xzf %{SOURCE0} --strip-components=1
 %cmake_install
 
 %check
+export QT_QPA_PLATFORM=offscreen
+export QT_QUICK_CONTROLS_STYLE=Basic
 %ctest --output-on-failure
 
 %files
@@ -90,7 +92,7 @@ tar -xzf %{SOURCE0} --strip-components=1
 %{_datadir}/polkit-1/actions/io.github.ProjectRoASD.rocontrol.policy
 
 %changelog
-* Sat May 10 2026 ro-Control Maintainers <noreply@github.com> - 1.1.0-1
+* Sun May 10 2026 ro-Control Maintainers <noreply@github.com> - 1.1.0-1
 - Target Fedora 43 for CI, RPM validation, and release builds
 - Validate RPM compatibility for x86_64 and aarch64 with store metadata checks
 - Align AppStream metadata with real application screenshots and improved package identity
