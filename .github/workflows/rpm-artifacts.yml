@@ -131,11 +131,11 @@ jobs:
             exit 1
           fi
 
-          cp "${MAIN_RPM_FILE}" dist/rpm/
+          cp "${MAIN_RPM_FILE}" "dist/rpm/ro-control-${RPM_ARCH}.rpm"
 
           COMMON_RPM_FILE="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${COMMON_RPM_PATTERN}" | head -n1)"
           if [[ -n "${COMMON_RPM_FILE}" ]]; then
-            cp "${COMMON_RPM_FILE}" dist/rpm/
+            cp "${COMMON_RPM_FILE}" "dist/rpm/ro-control-common-noarch.rpm"
           fi
 
       - name: Validate metadata and RPM dependency surface
@@ -145,8 +145,8 @@ jobs:
           desktop-file-validate data/icons/io.github.projectroasd.rocontrol.desktop
           appstreamcli validate --no-net data/icons/io.github.projectroasd.rocontrol.metainfo.xml
 
-          MAIN_RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "ro-control-*.${RPM_ARCH}.rpm" | head -n1)"
-          COMMON_RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name 'ro-control-common-*.noarch.rpm' | head -n1)"
+          MAIN_RPM_FILE="dist/rpm/ro-control-${RPM_ARCH}.rpm"
+          COMMON_RPM_FILE="dist/rpm/ro-control-common-noarch.rpm"
 
           rpm -qpR "${MAIN_RPM_FILE}" | tee /tmp/ro-control.requires
           if grep -E 'Qt_6\.10|PRIVATE_API' /tmp/ro-control.requires; then
@@ -155,7 +155,7 @@ jobs:
           fi
 
           rpm -qpl "${MAIN_RPM_FILE}" | grep -Fx '/usr/bin/ro-control'
-          if [[ -n "${COMMON_RPM_FILE}" ]] && rpm -qpl "${COMMON_RPM_FILE}" | grep -Fx '/usr/bin/ro-control'; then
+          if [[ -f "${COMMON_RPM_FILE}" ]] && rpm -qpl "${COMMON_RPM_FILE}" | grep -Fx '/usr/bin/ro-control'; then
             echo "/usr/bin/ro-control must only be shipped by the main RPM." >&2
             exit 1
           fi

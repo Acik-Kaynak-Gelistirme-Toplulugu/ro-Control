@@ -8,8 +8,8 @@
 #include <atomic>
 #include <memory>
 
-// CommandRunner: Tüm backend modüllerinin kullandığı shell komut çalıştırıcı.
-// Hiçbir modül doğrudan sistem çağrısı yapmaz — hepsi bu sınıfı kullanır.
+// CommandRunner is the shared process execution layer for backend modules.
+// Backend code routes system commands through this class instead of ad hoc calls.
 class CommandRunner : public QObject {
   Q_OBJECT
 
@@ -39,12 +39,12 @@ public:
   explicit CommandRunner(QObject *parent = nullptr);
   static QString resolveProgramPath(const QString &program);
 
-  // Bloklayan komut — sonuç dönene kadar bekler
+  // Blocking process execution that returns when the command completes.
   Result run(const QString &program, const QStringList &args = {});
   Result run(const QString &program, const QStringList &args,
              const RunOptions &options);
 
-  // Root gerektiren komut — pkexec ile çalıştırır
+  // Privileged command execution routed through pkexec.
   Result runAsRoot(const QString &program, const QStringList &args = {});
   Result runAsRoot(const QString &program, const QStringList &args,
                    const RunOptions &options);
@@ -53,7 +53,7 @@ public:
                         const RunOptions &options);
 
 signals:
-  // Uzun işlemler için anlık çıktı (DNF install vb.)
+  // Streaming output for long-running operations such as DNF transactions.
   void outputLine(const QString &line);
   void errorLine(const QString &line);
   void commandStarted(const QString &program, const QStringList &args,

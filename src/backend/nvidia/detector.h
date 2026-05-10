@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QString>
 
-// NvidiaDetector: Sistemdeki NVIDIA GPU ve surucu durumunu tespit eder.
+// NvidiaDetector inspects the local NVIDIA GPU and driver state.
 class NvidiaDetector : public QObject {
   Q_OBJECT
 

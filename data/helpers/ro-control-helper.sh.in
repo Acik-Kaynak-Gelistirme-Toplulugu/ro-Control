@@ -63,11 +63,13 @@ run_allowed_command() {
 if [ "$#" -ge 1 ] && [ "$1" = "--batch" ]; then
   tab="$(printf '\t')"
 
+  # Each batch line is tab-separated: command<TAB>arg1<TAB>arg2...
   while IFS= read -r command_line || [ -n "${command_line}" ]; do
     [ -z "${command_line}" ] && continue
 
     old_ifs="${IFS}"
     IFS="${tab}"
+    # shellcheck disable=SC2086
     set -- ${command_line}
     IFS="${old_ifs}"
 

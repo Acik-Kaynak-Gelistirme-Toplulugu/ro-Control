@@ -24,6 +24,29 @@
 		</p>
 	</description>
 
+	<screenshots>
+		<screenshot type="default">
+			<caption>Driver management view in the light theme</caption>
+			<caption xml:lang="tr">Açık temada sürücü yönetimi görünümü</caption>
+			<image type="source">https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/driver-light.png</image>
+		</screenshot>
+		<screenshot>
+			<caption>Hardware monitor view in the light theme</caption>
+			<caption xml:lang="tr">Açık temada donanım izleme görünümü</caption>
+			<image type="source">https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/monitor-light.png</image>
+		</screenshot>
+		<screenshot>
+			<caption>Driver management view in the dark theme</caption>
+			<caption xml:lang="tr">Koyu temada sürücü yönetimi görünümü</caption>
+			<image type="source">https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/driver-dark.png</image>
+		</screenshot>
+		<screenshot>
+			<caption>Hardware monitor view in the dark theme</caption>
+			<caption xml:lang="tr">Koyu temada donanım izleme görünümü</caption>
+			<image type="source">https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/monitor-dark.png</image>
+		</screenshot>
+	</screenshots>
+
 	<keywords>
 		<keyword>NVIDIA</keyword>
 		<keyword>Drivers</keyword>

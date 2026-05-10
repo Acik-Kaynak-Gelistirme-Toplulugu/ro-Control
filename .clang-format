@@ -1,7 +1,7 @@
 ---
 # ro-Control clang-format configuration
-# CI bu dosyayı kullanır; değişirse tüm C++ kaynakları yeniden formatlanmalıdır.
-# Kullanım:
+# CI uses this file. When it changes, reformat the full C++ source tree.
+# Usage:
 #   find src \( -name "*.cpp" -o -name "*.h" \) -print0 | xargs -0 clang-format -i
 
 BasedOnStyle: LLVM

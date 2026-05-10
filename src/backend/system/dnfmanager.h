@@ -5,7 +5,7 @@
 
 #include "commandrunner.h"
 
-// DNF paket yöneticisi wrapper
+// Thin wrapper around Fedora DNF package operations used by ro-control.
 class DnfManager : public QObject {
   Q_OBJECT
 

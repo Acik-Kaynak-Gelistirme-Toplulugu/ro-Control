@@ -69,8 +69,15 @@ private slots:
     QVERIFY(desktop.contains(QStringLiteral("Exec=ro-control")));
     QVERIFY(metainfo.contains(
         QStringLiteral("<id>io.github.projectroasd.rocontrol.desktop</id>")));
-
-    QVERIFY(!metainfo.contains(QStringLiteral("<screenshots>")));
+    QVERIFY(metainfo.contains(QStringLiteral("<screenshots>")));
+    QVERIFY(metainfo.contains(QStringLiteral(
+        "https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/driver-light.png")));
+    QVERIFY(metainfo.contains(QStringLiteral(
+        "https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/monitor-light.png")));
+    QVERIFY(metainfo.contains(QStringLiteral(
+        "https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/driver-dark.png")));
+    QVERIFY(metainfo.contains(QStringLiteral(
+        "https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/monitor-dark.png")));
   }
 
   void testAppStreamContainsCurrentReleaseVersion() {

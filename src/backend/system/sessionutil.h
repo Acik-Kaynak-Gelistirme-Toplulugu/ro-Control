@@ -12,8 +12,8 @@ struct SessionInfo {
   bool isCertain = false;
 };
 
-// Birden fazla sinyalden geçerli grafik oturumu tespit eder.
-// type "wayland", "x11" veya "unknown" doner.
+// Detect the effective desktop graphics session from multiple signals.
+// Returns "wayland", "x11", or "unknown".
 SessionInfo detectSessionInfo();
 QString detectSessionType();
 

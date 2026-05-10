@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# dev-watch.sh — Kaynak degisikliklerini izler, otomatik build alir ve uygulamayi yeniden baslatir.
-# Kullanim: ./scripts/dev-watch.sh
-# Gereksinim: sudo dnf install inotify-tools
+# Rebuild ro-control on source changes and restart the local binary.
+# Usage: ./scripts/dev-watch.sh
+# Requires: sudo dnf install inotify-tools
 
 set -euo pipefail
 
@@ -21,109 +21,93 @@ ok()   { echo -e "${GREEN}[dev-watch]${RESET} $*"; }
 warn() { echo -e "${YELLOW}[dev-watch]${RESET} $*"; }
 err()  { echo -e "${RED}[dev-watch]${RESET} $*"; }
 
-# --- Qt render backend otomatik sec ---
-# GPU olmadan calisan sistemlerde (NVIDIA surucusu kurulu degil, VM, vb.)
-# Qt'un EGL hatasi vermemesi icin fallback backend ayarla
 setup_qt_env() {
-    # Eger kullanici zaten bir backend secmisse dokunma
     if [[ -n "${QSG_RHI_BACKEND:-}" || -n "${QT_XCB_GL_INTEGRATION:-}" ]]; then
         return
     fi
 
-    # EGL/DRI2 kullanilabilir mi kontrol et
     if command -v glxinfo &>/dev/null && glxinfo 2>/dev/null | grep -q "direct rendering: Yes"; then
-        # Donanim hizlandirma var, varsayilan backend kullan
-        log "OpenGL donanim hizlandirma mevcut, varsayilan renderer kullaniliyor."
+        log "OpenGL hardware acceleration detected; using the default Qt renderer."
     else
-        # Yazilim renderer'a gec - GPU olmayan / surucusuz ortam
-        warn "GPU/EGL hizlandirma bulunamadi, yazilim renderer'a geciliyor."
-        warn "NVIDIA surucu kurulduktan sonra bu uyari kaybolacak."
+        warn "No GPU/EGL acceleration detected; falling back to the software-friendly Qt path."
         export QT_XCB_GL_INTEGRATION=none
         export LIBGL_ALWAYS_SOFTWARE=0
         export QSG_RENDERER_DEBUG=""
     fi
 }
 
-# --- Bagimlilik kontrolu ---
 if ! command -v inotifywait &>/dev/null; then
-    err "inotify-tools bulunamadi. Kurmak icin:"
+    err "Missing dependency: inotifywait"
     err "  sudo dnf install inotify-tools"
     exit 1
 fi
 
 if [[ ! -d "$BUILD_DIR" || ! -f "$BUILD_DIR/CMakeCache.txt" ]]; then
-    warn "Build dizini yok veya cmake yapilandirilmamis."
-    warn "Once sunu calistir: ./scripts/fedora-bootstrap.sh"
+    warn "Build directory is missing or not configured with CMake."
+    warn "Run ./scripts/fedora-bootstrap.sh first."
     exit 1
 fi
 
 if [[ ! -f "$BINARY" ]]; then
-    warn "Binary bulunamadi: $BINARY"
-    warn "Once sunu calistir: ./scripts/fedora-bootstrap.sh"
+    warn "Binary not found: $BINARY"
+    warn "Run ./scripts/fedora-bootstrap.sh first."
     exit 1
 fi
 
-# --- Uygulamayi durdur ---
 stop_app() {
     if [[ -n "$APP_PID" ]] && kill -0 "$APP_PID" 2>/dev/null; then
-        log "Uygulama durduruluyor (PID: $APP_PID)..."
+        log "Stopping ro-control (PID: $APP_PID)..."
         kill "$APP_PID" 2>/dev/null || true
         wait "$APP_PID" 2>/dev/null || true
         APP_PID=""
     fi
 }
 
-# --- Incremental build + yeniden basla ---
 build_and_run() {
     echo ""
-    log "Incremental build basliyor..."
+    log "Starting incremental build..."
     if cmake --build "$BUILD_DIR" -j"$(nproc)" 2>&1; then
-        ok "Build basarili"
+        ok "Build completed successfully."
         stop_app
-        log "Uygulama baslatiliyor..."
+        log "Launching ro-control..."
         "$BINARY" 2>/dev/null &
         APP_PID=$!
-        ok "ro-control calisiyor (PID: $APP_PID)"
+        ok "ro-control is running (PID: $APP_PID)."
     else
-        err "Build hatasi -- degisiklikleri kontrol et."
+        err "Build failed. Review the changes above."
     fi
     echo ""
 }
 
-# --- Temiz cikis ---
 cleanup() {
     echo ""
-    warn "Cikis sinyali alindi."
+    warn "Exit signal received."
     stop_app
     exit 0
 }
 trap cleanup SIGINT SIGTERM
 
-# --- Qt ortam degiskenlerini ayarla ---
 setup_qt_env
 
-# --- Baslangic ---
 echo ""
-log "ro-Control dev-watch modu"
-log "Proje dizini  : $ROOT_DIR"
-log "Build dizini  : $BUILD_DIR"
-log "Izlenen dizin : $ROOT_DIR/src"
-log "Cikmak icin   : Ctrl+C"
+log "ro-Control dev-watch mode"
+log "Project root : $ROOT_DIR"
+log "Build dir    : $BUILD_DIR"
+log "Watching     : $ROOT_DIR/src"
+log "Exit         : Ctrl+C"
 echo ""
 
 build_and_run
 
-# --- Degisiklik izleme dongusu ---
 inotifywait -m -r \
     --include '\.(cpp|h|qml|js|ts)$' \
     -e modify,create,delete,moved_to \
     --format "%w%f  [%e]" \
     "$ROOT_DIR/src" "$ROOT_DIR/i18n" 2>/dev/null \
 | while IFS= read -r line; do
-    log "Degisiklik algilandi: $line"
+    log "Change detected: $line"
     sleep 0.8
 
-    # Kuyruktaki diger olaylari bosalt (debounce)
     while IFS= read -t 0.1 -r _extra; do :; done <&0 2>/dev/null || true
 
     build_and_run

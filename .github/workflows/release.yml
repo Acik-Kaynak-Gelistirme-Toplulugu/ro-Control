@@ -168,8 +168,17 @@ jobs:
             --define "upstream_version ${VERSION}" \
             --define "dist .fc${FEDORA_VERSION}"
 
-          find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${MAIN_RPM_PATTERN}" -exec cp {} dist/rpm/ \;
-          find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${COMMON_RPM_PATTERN}" -exec cp {} dist/rpm/ \;
+          MAIN_RPM_FILE="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${MAIN_RPM_PATTERN}" | head -n1)"
+          if [[ -z "${MAIN_RPM_FILE}" ]]; then
+            echo "Failed to find built ${RPM_ARCH} main RPM." >&2
+            exit 1
+          fi
+          cp "${MAIN_RPM_FILE}" "dist/rpm/ro-control-${RPM_ARCH}.rpm"
+
+          COMMON_RPM_FILE="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${COMMON_RPM_PATTERN}" | head -n1)"
+          if [[ -n "${COMMON_RPM_FILE}" ]]; then
+            cp "${COMMON_RPM_FILE}" "dist/rpm/ro-control-common-noarch.rpm"
+          fi
 
           if [[ "${RPM_ARCH}" == "x86_64" ]]; then
             cp ~/rpmbuild/SRPMS/*.src.rpm dist/rpm/
@@ -180,9 +189,8 @@ jobs:
           VERSION: ${{ needs.metadata.outputs.version }}
           RPM_ARCH: ${{ matrix.arch }}
         run: |
-          RPM_PATTERN="*.${RPM_ARCH}.rpm"
-          RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "${RPM_PATTERN}" | head -n1)"
-          if [[ -z "${RPM_FILE}" ]]; then
+          RPM_FILE="dist/rpm/ro-control-${RPM_ARCH}.rpm"
+          if [[ ! -f "${RPM_FILE}" ]]; then
             echo "Failed to locate built ${RPM_ARCH} RPM." >&2
             exit 1
           fi
@@ -200,15 +208,15 @@ jobs:
         env:
           RPM_ARCH: ${{ matrix.arch }}
         run: |
-          MAIN_RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "ro-control-*.${RPM_ARCH}.rpm" | head -n1)"
-          COMMON_RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name 'ro-control-common-*.noarch.rpm' | head -n1)"
+          MAIN_RPM_FILE="dist/rpm/ro-control-${RPM_ARCH}.rpm"
+          COMMON_RPM_FILE="dist/rpm/ro-control-common-noarch.rpm"
 
-          if [[ -z "${MAIN_RPM_FILE}" ]]; then
+          if [[ ! -f "${MAIN_RPM_FILE}" ]]; then
             echo "Main ro-control RPM is missing." >&2
             exit 1
           fi
 
-          if [[ -z "${COMMON_RPM_FILE}" ]]; then
+          if [[ ! -f "${COMMON_RPM_FILE}" ]]; then
             echo "ro-control-common noarch RPM is missing." >&2
             exit 1
           fi
@@ -229,17 +237,15 @@ jobs:
           VERSION: ${{ needs.metadata.outputs.version }}
           RPM_ARCH: ${{ matrix.arch }}
         run: |
-          RPM_PATTERN="*.${RPM_ARCH}.rpm"
-          NOARCH_PATTERN="*.noarch.rpm"
-          RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "${RPM_PATTERN}" | head -n1)"
-          NOARCH_FILE="$(find dist/rpm -maxdepth 1 -type f -name "${NOARCH_PATTERN}" | head -n1)"
+          RPM_FILE="dist/rpm/ro-control-${RPM_ARCH}.rpm"
+          NOARCH_FILE="dist/rpm/ro-control-common-noarch.rpm"
 
-          if [[ -z "${RPM_FILE}" ]]; then
+          if [[ ! -f "${RPM_FILE}" ]]; then
             echo "Failed to locate built ${RPM_ARCH} RPM for smoke testing." >&2
             exit 1
           fi
 
-          if [[ -z "${NOARCH_FILE}" ]]; then
+          if [[ ! -f "${NOARCH_FILE}" ]]; then
             echo "Failed to locate ro-control-common noarch RPM for smoke testing." >&2
             exit 1
           fi

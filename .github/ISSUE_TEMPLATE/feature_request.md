@@ -8,7 +8,11 @@ assignees: ''
 
 ## Problem
 
+Describe the current limitation or workflow pain clearly.
+
 ## Proposed change
+
+Describe the expected user-facing behavior.
 
 ## Alternatives considered
 

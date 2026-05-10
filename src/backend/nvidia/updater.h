@@ -13,7 +13,7 @@ namespace SessionUtil {
 struct SessionInfo;
 }
 
-// NvidiaUpdater: Kurulu surucu ile mevcut en guncel surumu karsilastirir.
+// NvidiaUpdater compares the installed driver state with newer available builds.
 class NvidiaUpdater : public QObject {
   Q_OBJECT
 

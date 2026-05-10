@@ -5,7 +5,7 @@
 
 #include "commandrunner.h"
 
-// PolicyKit yetki yükseltme
+// PolicyKit helper utilities for privileged command execution.
 class PolkitHelper : public QObject {
   Q_OBJECT
 

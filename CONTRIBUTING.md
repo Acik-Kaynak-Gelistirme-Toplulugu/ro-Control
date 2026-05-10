@@ -29,6 +29,12 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
+Fedora contributors can use:
+
+```bash
+./scripts/fedora-bootstrap.sh
+```
+
 ## Style
 
 - keep English as the source language in code

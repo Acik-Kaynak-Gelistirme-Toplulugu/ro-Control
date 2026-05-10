@@ -1,4 +1,4 @@
-// Yetki yukseltme
+// PolicyKit helper wiring.
 
 #include "polkit.h"
 

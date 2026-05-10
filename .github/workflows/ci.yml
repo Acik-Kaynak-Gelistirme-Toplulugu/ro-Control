@@ -157,10 +157,13 @@ jobs:
             exit 1
           fi
 
+          cp "${MAIN_RPM}" /tmp/ro-control-x86_64.rpm
+          cp "${COMMON_RPM}" /tmp/ro-control-common-noarch.rpm
+
       - name: Install and smoke-test RPMs
         run: |
-          MAIN_RPM="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name 'ro-control-*.x86_64.rpm' | head -n1)"
-          COMMON_RPM="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name 'ro-control-common-*.noarch.rpm' | head -n1)"
+          MAIN_RPM=/tmp/ro-control-x86_64.rpm
+          COMMON_RPM=/tmp/ro-control-common-noarch.rpm
 
           dnf clean all
           dnf -y --refresh --setopt=install_weak_deps=False install "${MAIN_RPM}" "${COMMON_RPM}"

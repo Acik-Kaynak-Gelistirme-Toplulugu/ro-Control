@@ -23,9 +23,14 @@ Describe the bug clearly.
 ## Environment
 
 - Distribution:
+- Distribution version:
 - Desktop session:
 - GPU:
 - Driver version:
 - ro-Control version:
 
 ## Logs or screenshots
+
+## Regression?
+
+- [ ] This worked in an earlier ro-Control build

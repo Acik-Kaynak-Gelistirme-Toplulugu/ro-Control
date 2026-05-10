@@ -2,6 +2,11 @@
 
 Native Qt6/QML desktop application for NVIDIA driver management and Linux system monitoring.
 
+Primary packaging target:
+
+- Fedora 43 KDE Plasma
+- x86_64 and aarch64
+
 ## Overview
 
 ro-Control focuses on three things:
@@ -33,6 +38,12 @@ Quick local build:
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
+```
+
+On Fedora development hosts, you can also bootstrap dependencies with:
+
+```bash
+./scripts/fedora-bootstrap.sh
 ```
 
 ## Packaging

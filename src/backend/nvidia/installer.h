@@ -8,8 +8,8 @@
 
 class CommandRunner;
 
-// NvidiaInstaller: DNF üzerinden NVIDIA sürücü kurulum/kaldırma işlemleri.
-// Tüm işlemler root gerektirir — polkit üzerinden yetki alınır.
+// NvidiaInstaller manages NVIDIA driver install and removal flows via DNF.
+// Privileged operations are routed through polkit-backed helper execution.
 class NvidiaInstaller : public QObject {
   Q_OBJECT
 
@@ -30,35 +30,35 @@ public:
   }
   bool busy() const { return m_busy; }
 
-  // Sozlesme durumunu yeniden kontrol et
+  // Refresh the proprietary driver agreement state.
   Q_INVOKABLE void refreshProprietaryAgreement();
 
-  // Kapali kaynak kurulum (kullanici onayi bilgisiyle)
+  // Install the proprietary driver path after an explicit user confirmation.
   Q_INVOKABLE void installProprietary(bool agreementAccepted);
 
-  // Topluluk acik kaynak grafik surucusune gecis/kurulum
+  // Switch to the community open-source graphics stack.
   Q_INVOKABLE void installOpenSource();
 
-  // Sürücüyü kur (akmod-nvidia)
+  // Convenience wrapper for the default install path.
   Q_INVOKABLE void install();
 
-  // Sürücüyü kaldır
+  // Remove installed NVIDIA packages.
   Q_INVOKABLE void remove();
 
-  // Eski sürücü kalıntılarını temizle
+  // Remove legacy NVIDIA leftovers.
   Q_INVOKABLE void deepClean();
 
-  // Devam eden kurulum/kaldırma işlemini best-effort iptal et
+  // Best-effort cancellation for the active install or removal flow.
   Q_INVOKABLE void cancelOperation();
 
 signals:
-  // İşlem adımları — QML'e ilerleme göstermek için
+  // Progress updates surfaced to QML.
   void progressMessage(const QString &message);
 
   void proprietaryAgreementChanged();
   void busyChanged();
 
-  // İşlem tamamlandı
+  // Completion signals for the top-level driver operations.
   void installFinished(bool success, const QString &message);
   void removeFinished(bool success, const QString &message);
 
