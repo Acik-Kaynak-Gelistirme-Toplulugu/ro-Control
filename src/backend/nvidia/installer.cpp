@@ -370,12 +370,12 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
         NvidiaInstaller::tr(
             "Installing the closed-source NVIDIA driver with one privileged "
             "authorization..."));
-    emitProgressAsync(guard,
-                      NvidiaInstaller::tr(
-                          "Closed-source install packages for %1: %2")
-                          .arg(NvidiaInstaller::tr("Wayland"))
-                          .arg(quotedList(buildDriverInstallTargets(
-                              QStringLiteral("akmod-nvidia"), sessionType))));
+    const QString installPackagesMessage =
+        NvidiaInstaller::tr("Closed-source install packages for %1: %2")
+            .arg(NvidiaInstaller::tr("Wayland"))
+            .arg(quotedList(buildDriverInstallTargets(
+                QStringLiteral("akmod-nvidia"), sessionType)));
+    emitProgressAsync(guard, installPackagesMessage);
 
     QStringList installArgs{QStringLiteral("install"), QStringLiteral("-y"),
                             QStringLiteral("--refresh"),
@@ -399,13 +399,15 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
         {QStringLiteral("akmods"), {QStringLiteral("--force")}});
     rootCommands.append(buildSessionSpecificRootCommands(sessionType));
 
-    emitProgressAsync(guard, NvidiaInstaller::tr("Detected %1 session via %2.")
-                                 .arg(sessionType == QStringLiteral("wayland")
-                                          ? NvidiaInstaller::tr("Wayland")
-                                          : sessionType,
-                                      sessionInfo.source.isEmpty()
-                                          ? NvidiaInstaller::tr("session probe")
-                                          : sessionInfo.source));
+    const QString detectedSessionMessage =
+        NvidiaInstaller::tr("Detected %1 session via %2.")
+            .arg(sessionType == QStringLiteral("wayland")
+                     ? NvidiaInstaller::tr("Wayland")
+                     : sessionType,
+                 sessionInfo.source.isEmpty()
+                     ? NvidiaInstaller::tr("session probe")
+                     : sessionInfo.source);
+    emitProgressAsync(guard, detectedSessionMessage);
 
     auto result = runner.runAsRootBatch(rootCommands, runOptions);
     if (!result.success()) {
@@ -511,13 +513,15 @@ void NvidiaInstaller::installOpenSource() {
         {QStringLiteral("akmods"), {QStringLiteral("--force")}});
     rootCommands.append(buildSessionSpecificRootCommands(sessionType));
 
-    emitProgressAsync(guard, NvidiaInstaller::tr("Detected %1 session via %2.")
-                                 .arg(sessionType == QStringLiteral("wayland")
-                                          ? NvidiaInstaller::tr("Wayland")
-                                          : sessionType,
-                                      sessionInfo.source.isEmpty()
-                                          ? NvidiaInstaller::tr("session probe")
-                                          : sessionInfo.source));
+    const QString detectedSessionMessage =
+        NvidiaInstaller::tr("Detected %1 session via %2.")
+            .arg(sessionType == QStringLiteral("wayland")
+                     ? NvidiaInstaller::tr("Wayland")
+                     : sessionType,
+                 sessionInfo.source.isEmpty()
+                     ? NvidiaInstaller::tr("session probe")
+                     : sessionInfo.source);
+    emitProgressAsync(guard, detectedSessionMessage);
 
     auto result = runner.runAsRootBatch(rootCommands, runOptions);
     if (!result.success()) {

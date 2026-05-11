@@ -284,8 +284,9 @@ QString SystemInfoProvider::detectDeviceType() const {
       return QStringLiteral("Laptop");
     }
 
-    static const QList<int> desktopChassisTypes = {3,  4,  5,  6,  7,
-                                                   15, 16, 35, 36};
+    static const QList<int> desktopChassisTypes = {
+        3, 4, 5, 6, 7, 15, 16, 35, 36,
+    };
     if (desktopChassisTypes.contains(chassis)) {
       return QStringLiteral("Desktop");
     }
