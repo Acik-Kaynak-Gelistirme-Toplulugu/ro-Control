@@ -1,17 +1,12 @@
 # ro-Control
 
-Native Qt6/QML desktop application for NVIDIA driver management and Linux system monitoring.
-
-Primary packaging target:
-
-- Fedora 43 KDE Plasma
-- x86_64 and aarch64
+Native Qt6/QML desktop application for NVIDIA driver management and Ro-ASD system monitoring.
 
 ## Overview
 
 ro-Control focuses on three things:
 
-- installing, updating, and cleaning NVIDIA drivers on Fedora-oriented Linux systems
+- installing, updating, and cleaning NVIDIA drivers on Ro-ASD
 - monitoring CPU, GPU, and RAM telemetry in a native desktop UI
 - exposing a small CLI for diagnostics and scripted driver operations
 
