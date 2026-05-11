@@ -46,6 +46,8 @@ NvidiaDetector::GpuInfo NvidiaDetector::detect() const {
   info.nouveauActive = isModuleLoaded(QStringLiteral("nouveau"));
   info.openKernelModulesInstalled =
       isPackageInstalled(QStringLiteral("akmod-nvidia-open"));
+  info.closedSourceDriverInstalled = detectClosedSourceDriverInstalled();
+  info.openSourceDriverInstalled = detectOpenSourceDriverInstalled();
   info.secureBootEnabled = detectSecureBoot(&info.secureBootKnown);
   info.sessionType = SessionUtil::detectSessionType();
 
@@ -78,6 +80,33 @@ QString NvidiaDetector::activeDriver() const {
   if (m_info.nouveauActive)
     return tr("Fallback Open Driver");
   return tr("Not Installed");
+}
+
+QString NvidiaDetector::installedDriverSource() const {
+  if (m_info.closedSourceDriverInstalled && m_info.openSourceDriverInstalled) {
+    return QStringLiteral("mixed");
+  }
+  if (m_info.closedSourceDriverInstalled) {
+    return QStringLiteral("closed-source");
+  }
+  if (m_info.openSourceDriverInstalled) {
+    return QStringLiteral("open-source");
+  }
+  return QStringLiteral("none");
+}
+
+QString NvidiaDetector::installedDriverSourceLabel() const {
+  const QString source = installedDriverSource();
+  if (source == QStringLiteral("closed-source")) {
+    return tr("Closed-source driver detected");
+  }
+  if (source == QStringLiteral("open-source")) {
+    return tr("Open-source driver detected");
+  }
+  if (source == QStringLiteral("mixed")) {
+    return tr("Mixed driver state detected");
+  }
+  return tr("No driver source detected");
 }
 
 QString NvidiaDetector::verificationReport() const {
@@ -229,6 +258,19 @@ QString NvidiaDetector::detectDriverPackageVersion() const {
 bool NvidiaDetector::detectDriverPackageInstalled() const {
   return isPackageInstalled(QStringLiteral("akmod-nvidia")) ||
          isPackageInstalled(QStringLiteral("akmod-nvidia-open"));
+}
+
+bool NvidiaDetector::detectClosedSourceDriverInstalled() const {
+  if (isPackageInstalled(QStringLiteral("akmod-nvidia"))) {
+    return true;
+  }
+
+  return isModuleLoaded(QStringLiteral("nvidia")) &&
+         !isPackageInstalled(QStringLiteral("akmod-nvidia-open"));
+}
+
+bool NvidiaDetector::detectOpenSourceDriverInstalled() const {
+  return isPackageInstalled(QStringLiteral("akmod-nvidia-open"));
 }
 
 bool NvidiaDetector::isPackageInstalled(const QString &packageName) const {

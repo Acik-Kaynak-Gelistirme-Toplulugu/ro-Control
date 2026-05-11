@@ -53,10 +53,10 @@ private slots:
 
   void testSessionTypeUsesXdgSessionType() {
     const QByteArray previousXdgSessionType = qgetenv("XDG_SESSION_TYPE");
-    qputenv("XDG_SESSION_TYPE", QByteArrayLiteral("xorg"));
+    qputenv("XDG_SESSION_TYPE", QByteArrayLiteral("wayland"));
 
     const auto info = SessionUtil::detectSessionInfo();
-    QCOMPARE(info.type, QStringLiteral("x11"));
+    QCOMPARE(info.type, QStringLiteral("wayland"));
     QVERIFY(info.isCertain);
     QCOMPARE(info.source, QStringLiteral("XDG_SESSION_TYPE"));
 
@@ -86,14 +86,12 @@ private slots:
     const QByteArray previousXdgSessionType = qgetenv("XDG_SESSION_TYPE");
     const QByteArray previousXdgSessionId = qgetenv("XDG_SESSION_ID");
     const QByteArray previousWaylandDisplay = qgetenv("WAYLAND_DISPLAY");
-    const QByteArray previousDisplay = qgetenv("DISPLAY");
     const QByteArray previousQtPlatform = qgetenv("QT_QPA_PLATFORM");
 
     qputenv("RO_CONTROL_COMMAND_LOGINCTL", scriptPath.toUtf8());
     qunsetenv("XDG_SESSION_TYPE");
     qunsetenv("XDG_SESSION_ID");
     qputenv("WAYLAND_DISPLAY", QByteArrayLiteral("wayland-0"));
-    qunsetenv("DISPLAY");
     qunsetenv("QT_QPA_PLATFORM");
 
     auto info = SessionUtil::detectSessionInfo();
@@ -102,11 +100,9 @@ private slots:
     QCOMPARE(info.source, QStringLiteral("WAYLAND_DISPLAY"));
 
     qunsetenv("WAYLAND_DISPLAY");
-    qputenv("DISPLAY", QByteArrayLiteral(":0"));
+    qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("xcb"));
     info = SessionUtil::detectSessionInfo();
-    QCOMPARE(info.type, QStringLiteral("x11"));
-    QVERIFY(!info.isCertain);
-    QCOMPARE(info.source, QStringLiteral("DISPLAY"));
+    QCOMPARE(info.type, QStringLiteral("unknown"));
 
     if (previousLoginctlOverride.isNull()) {
       qunsetenv("RO_CONTROL_COMMAND_LOGINCTL");
@@ -127,11 +123,6 @@ private slots:
       qunsetenv("WAYLAND_DISPLAY");
     } else {
       qputenv("WAYLAND_DISPLAY", previousWaylandDisplay);
-    }
-    if (previousDisplay.isNull()) {
-      qunsetenv("DISPLAY");
-    } else {
-      qputenv("DISPLAY", previousDisplay);
     }
     if (previousQtPlatform.isNull()) {
       qunsetenv("QT_QPA_PLATFORM");

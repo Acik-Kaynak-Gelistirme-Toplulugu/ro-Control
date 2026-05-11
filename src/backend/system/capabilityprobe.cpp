@@ -65,19 +65,19 @@ QString missingToolsMessage(const QStringList &programs) {
       .arg(missing.join(QStringLiteral(", ")));
 }
 
-bool supportsFedoraNvidiaDriverFlow() {
+bool supportsRoAsdNvidiaDriverFlow() {
   const QString architecture = normalizedCpuArchitecture();
   return architecture == QStringLiteral("x86_64") ||
          architecture == QStringLiteral("aarch64");
 }
 
-QString fedoraNvidiaDriverFlowSupportMessage() {
-  if (supportsFedoraNvidiaDriverFlow()) {
+QString roAsdNvidiaDriverFlowSupportMessage() {
+  if (supportsRoAsdNvidiaDriverFlow()) {
     return {};
   }
 
   return QStringLiteral(
-             "Fedora NVIDIA driver management is currently supported only on "
+             "Ro-ASD NVIDIA driver management is currently supported only on "
              "x86_64 "
              "and aarch64 builds. The current build architecture is %1.")
       .arg(normalizedCpuArchitecture());

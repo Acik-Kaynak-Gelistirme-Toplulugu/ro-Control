@@ -6,7 +6,7 @@ Native Qt6/QML desktop application for NVIDIA driver management and Ro-ASD syste
 
 ro-Control focuses on three things:
 
-- installing, updating, and cleaning NVIDIA drivers on Ro-ASD
+- installing, updating, and cleaning NVIDIA drivers on Ro-ASD Linux systems
 - monitoring CPU, GPU, and RAM telemetry in a native desktop UI
 - exposing a small CLI for diagnostics and scripted driver operations
 

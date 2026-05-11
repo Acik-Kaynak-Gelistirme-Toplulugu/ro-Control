@@ -19,26 +19,26 @@ Rectangle {
                                      : theme.accentA
     readonly property color textTone: theme.text
 
-    radius: 20
+    radius: 8
     color: bannerColor
     border.width: 1
     border.color: borderTone
     visible: text.length > 0
 
-    implicitHeight: bannerLayout.implicitHeight + 26
+    implicitHeight: bannerLayout.implicitHeight + 16
 
     RowLayout {
         id: bannerLayout
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        anchors.margins: 14
-        spacing: 12
+        anchors.margins: 10
+        spacing: 8
 
         Rectangle {
-            implicitWidth: 10
-            implicitHeight: 10
-            radius: 5
+            implicitWidth: 8
+            implicitHeight: 8
+            radius: 4
             color: banner.borderTone
         }
 
@@ -47,7 +47,8 @@ Rectangle {
             text: banner.text
             wrapMode: Text.Wrap
             color: banner.textTone
-            font.pixelSize: 14
+            font.pixelSize: 12
+            maximumLineCount: 2
         }
     }
 }

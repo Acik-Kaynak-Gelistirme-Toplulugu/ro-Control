@@ -12,10 +12,6 @@ QString normalizeSessionType(const QString &value) {
   if (normalized == QStringLiteral("wayland")) {
     return normalized;
   }
-  if (normalized == QStringLiteral("x11") ||
-      normalized == QStringLiteral("xorg")) {
-    return QStringLiteral("x11");
-  }
   return {};
 }
 
@@ -130,24 +126,10 @@ SessionInfo detectSessionInfo() {
 
   const bool hasWaylandDisplay =
       !qEnvironmentVariable("WAYLAND_DISPLAY").trimmed().isEmpty();
-  const bool hasX11Display =
-      !qEnvironmentVariable("DISPLAY").trimmed().isEmpty();
-
-  if (hasWaylandDisplay && !hasX11Display) {
+  if (hasWaylandDisplay) {
     return infoFromType(QStringLiteral("wayland"),
                         QStringLiteral("WAYLAND_DISPLAY"),
                         QStringLiteral("WAYLAND_DISPLAY is set"), false);
-  }
-  if (hasX11Display && !hasWaylandDisplay) {
-    return infoFromType(QStringLiteral("x11"), QStringLiteral("DISPLAY"),
-                        QStringLiteral("DISPLAY is set"), false);
-  }
-  if (hasWaylandDisplay && hasX11Display) {
-    return infoFromType(QStringLiteral("wayland"),
-                        QStringLiteral("WAYLAND_DISPLAY and DISPLAY"),
-                        QStringLiteral("Both Wayland and X11 displays are set; "
-                                       "Wayland is the compositor session"),
-                        false);
   }
 
   const QString qtPlatform =
@@ -157,13 +139,6 @@ SessionInfo detectSessionInfo() {
         QStringLiteral("wayland"), QStringLiteral("QT_QPA_PLATFORM"),
         QStringLiteral("QT_QPA_PLATFORM=%1").arg(qtPlatform), false);
   }
-  if (qtPlatform == QStringLiteral("xcb") ||
-      qtPlatform.contains(QStringLiteral("x11"))) {
-    return infoFromType(
-        QStringLiteral("x11"), QStringLiteral("QT_QPA_PLATFORM"),
-        QStringLiteral("QT_QPA_PLATFORM=%1").arg(qtPlatform), false);
-  }
-
   SessionInfo unknown;
   unknown.evidence << QStringLiteral(
       "No reliable session signal was available");

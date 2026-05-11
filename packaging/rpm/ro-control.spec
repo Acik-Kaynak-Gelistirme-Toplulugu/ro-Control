@@ -98,10 +98,10 @@ export QT_QUICK_CONTROLS_STYLE=Basic
 * Mon Mar 30 2026 ro-Control Maintainers <noreply@github.com> - 0.2.0-1
 - Fix installed helper path resolution for privileged operations on system installs
 - Activate saved KDE-friendly interface preferences and theme switching in the UI
-- Harden Fedora CI and release validation for metadata and RPM packaging
+- Harden Ro-ASD CI and release validation for metadata and RPM packaging
 - Limit published RPM outputs to x86_64, aarch64, src, and noarch artifacts only
 
 * Sun Mar 22 2026 ro-Control Maintainers <noreply@github.com> - 0.1.0-1
 - Prepare first GitHub Release RPMs for x86_64 and aarch64
-- Add explicit Fedora runtime command dependencies and recommendations
+- Add explicit Ro-ASD runtime command dependencies and recommendations
 - Align RPM release automation with tagged versioned source archives

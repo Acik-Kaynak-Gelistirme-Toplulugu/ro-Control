@@ -7,6 +7,10 @@ project(ro-control
     LANGUAGES CXX
 )
 
+set(CPACK_PACKAGE_FILE_NAME
+    "${PROJECT_NAME}-${PROJECT_VERSION}-${CMAKE_SYSTEM_PROCESSOR}"
+)
+
 set(RO_CONTROL_POLICY_ID "io.github.ProjectRoASD.rocontrol.manage-drivers")
 set(RO_CONTROL_HELPER_NAME "ro-control-helper")
 set(RO_CONTROL_HELPER_BUILD_PATH
@@ -136,6 +140,10 @@ set_source_files_properties(src/qml/assets/icon-refresh.svg PROPERTIES
     QT_RESOURCE_ALIAS "assets/icon-refresh.svg"
 )
 
+set_source_files_properties(src/qml/assets/icon-refresh-light.svg PROPERTIES
+    QT_RESOURCE_ALIAS "assets/icon-refresh-light.svg"
+)
+
 set_source_files_properties(src/qml/assets/icon-theme.svg PROPERTIES
     QT_RESOURCE_ALIAS "assets/icon-theme.svg"
 )
@@ -159,6 +167,7 @@ qt_add_qml_module(ro-control
         src/qml/assets/ro-control-logo.svg
         src/qml/assets/icon-language.svg
         src/qml/assets/icon-refresh.svg
+        src/qml/assets/icon-refresh-light.svg
         src/qml/assets/icon-theme.svg
 )
 
@@ -303,3 +312,5 @@ message(STATUS "  CPU arch   : ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "  Qt version : ${Qt6_VERSION}")
 message(STATUS "  Install to : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "")
+
+include(CPack)

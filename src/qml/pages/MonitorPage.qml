@@ -15,6 +15,7 @@ Item {
     property bool showAdvancedInfo: true
     property real uiScale: 1.0
     property bool telemetryRefreshAnimating: false
+    property int telemetryRefreshStep: 0
 
     readonly property color bgColor: theme && theme.card ? theme.card : "#ffffff"
     readonly property color cardColor: theme && theme.cardStrong ? theme.cardStrong : "#f5f8ff"
@@ -25,7 +26,11 @@ Item {
     readonly property int summaryCardHeight: Math.round(138 * page.uiScale)
 
     function formatTemp(value) {
-        return value > 0 ? value + " C" : qsTr("Unavailable");
+        if (value > 0)
+            return value + " C";
+        if (page.systemInfo && page.systemInfo.virtualMachine)
+            return qsTr("VM sensor unavailable");
+        return qsTr("Unavailable");
     }
 
     function formatRam(used, total) {
@@ -36,26 +41,40 @@ Item {
         return value && value.length > 0 ? value : qsTr("Unavailable");
     }
 
-    function machineTypeLabel() {
+    function deviceTypeLabel() {
         if (!page.systemInfo)
             return qsTr("Unavailable");
-        if (page.systemInfo.virtualMachine) {
-            return page.systemInfo.virtualizationType.length > 0
-                   ? qsTr("Virtual Machine: %1").arg(page.systemInfo.virtualizationType)
-                   : qsTr("Virtual Machine");
-        }
-        return qsTr("Physical Machine");
+        return page.systemInfo.deviceType && page.systemInfo.deviceType.length > 0
+               ? page.systemInfo.deviceType
+               : qsTr("Unavailable");
     }
 
     function refreshTelemetry() {
-        if (page.systemInfo)
-            page.systemInfo.refresh();
-        if (page.cpuMonitor)
-            page.cpuMonitor.refresh();
-        if (page.gpuMonitor)
-            page.gpuMonitor.refresh();
-        if (page.ramMonitor)
+        if (page.telemetryRefreshAnimating)
+            return;
+        page.telemetryRefreshAnimating = true;
+        page.telemetryRefreshStep = 0;
+        telemetryRefreshQueue.restart();
+    }
+
+    function refreshTelemetryStep() {
+        if (page.telemetryRefreshStep === 0 && page.ramMonitor) {
+            page.ramMonitor.start();
             page.ramMonitor.refresh();
+        } else if (page.telemetryRefreshStep === 1 && page.cpuMonitor) {
+            page.cpuMonitor.start();
+            page.cpuMonitor.refresh();
+        } else if (page.telemetryRefreshStep === 2 && page.gpuMonitor) {
+            page.gpuMonitor.start();
+            page.gpuMonitor.refresh();
+        }
+
+        page.telemetryRefreshStep += 1;
+        if (page.telemetryRefreshStep < 3) {
+            telemetryRefreshQueue.restart();
+        } else {
+            telemetryRefreshPulse.restart();
+        }
     }
 
     ScrollView {
@@ -186,7 +205,7 @@ Item {
                                 { title: qsTr("Operating System"), value: page.safeText(page.systemInfo ? page.systemInfo.osName : "") },
                                 { title: qsTr("Desktop"), value: page.safeText(page.systemInfo ? page.systemInfo.desktopEnvironment : "") },
                                 { title: qsTr("Kernel"), value: page.safeText(page.systemInfo ? page.systemInfo.kernelVersion : "") },
-                                { title: qsTr("Machine"), value: page.machineTypeLabel() }
+                                { title: qsTr("Device Type"), value: page.deviceTypeLabel() }
                             ]
 
                             delegate: Rectangle {
@@ -257,17 +276,23 @@ Item {
                             id: telemetryRefreshButton
                             busy: page.telemetryRefreshAnimating
                             theme: page.theme
+                            darkMode: page.darkMode
                             uiScale: page.uiScale
                             tooltip: qsTr("Refresh telemetry")
-                            onClicked: {
-                                page.refreshTelemetry();
-                                page.telemetryRefreshAnimating = true;
-                                telemetryRefreshPulse.restart();
-                            }
+                            enabled: !page.telemetryRefreshAnimating
+                            onClicked: page.refreshTelemetry()
                         }
                     }
 
                     Label { text: qsTr("CPU"); color: page.softTextColor }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Usage: %1% | Temperature: %2")
+                              .arg(page.cpuMonitor ? page.cpuMonitor.usagePercent.toFixed(1) : "--")
+                              .arg(page.formatTemp(page.cpuMonitor ? page.cpuMonitor.temperatureC : -1))
+                        color: page.softTextColor
+                        font.pixelSize: Math.round(12 * page.uiScale)
+                    }
                     ProgressBar {
                         Layout.fillWidth: true
                         from: 0
@@ -276,6 +301,14 @@ Item {
                     }
 
                     Label { text: qsTr("GPU"); color: page.softTextColor }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Usage: %1% | Temperature: %2")
+                              .arg(page.gpuMonitor ? page.gpuMonitor.utilizationPercent : "--")
+                              .arg(page.formatTemp(page.gpuMonitor ? page.gpuMonitor.temperatureC : -1))
+                        color: page.softTextColor
+                        font.pixelSize: Math.round(12 * page.uiScale)
+                    }
                     ProgressBar {
                         Layout.fillWidth: true
                         from: 0
@@ -284,6 +317,14 @@ Item {
                     }
 
                     Label { text: qsTr("RAM"); color: page.softTextColor }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Usage: %1 (%2%)")
+                              .arg(page.formatRam(page.ramMonitor ? page.ramMonitor.usedMiB : 0, page.ramMonitor ? page.ramMonitor.totalMiB : 0))
+                              .arg(page.ramMonitor ? page.ramMonitor.usagePercent : "--")
+                        color: page.softTextColor
+                        font.pixelSize: Math.round(12 * page.uiScale)
+                    }
                     ProgressBar {
                         Layout.fillWidth: true
                         from: 0
@@ -309,8 +350,15 @@ Item {
 
     Timer {
         id: telemetryRefreshPulse
-        interval: 650
+        interval: 300
         repeat: false
         onTriggered: page.telemetryRefreshAnimating = false
+    }
+
+    Timer {
+        id: telemetryRefreshQueue
+        interval: 180
+        repeat: false
+        onTriggered: page.refreshTelemetryStep()
     }
 }

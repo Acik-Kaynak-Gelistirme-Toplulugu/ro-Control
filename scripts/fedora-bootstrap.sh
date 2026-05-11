@@ -45,9 +45,9 @@ case "$TARGET_ARCH" in
     ;;
 esac
 
-echo "Detected Fedora target architecture: $TARGET_ARCH"
+echo "Detected Ro-ASD target architecture: $TARGET_ARCH"
 
-echo "[1/4] Installing Fedora build dependencies..."
+echo "[1/4] Installing Ro-ASD build dependencies..."
 sudo dnf install -y "${build_reqs[@]}"
 
 echo "[2/4] Installing runtime utilities used by diagnostics/driver workflows..."

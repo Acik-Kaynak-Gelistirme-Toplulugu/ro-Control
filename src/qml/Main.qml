@@ -62,13 +62,10 @@ ApplicationWindow {
         return value.charAt(0).toUpperCase() + value.slice(1);
     }
 
-    function machineLabel() {
-        if (root.systemInfo && root.systemInfo.virtualMachine) {
-            return root.systemInfo.virtualizationType.length > 0
-                   ? root.systemInfo.virtualizationType
-                   : qsTr("Virtual Machine");
-        }
-        return qsTr("Physical Machine");
+    function deviceTypeLabel() {
+        if (root.systemInfo && root.systemInfo.deviceType && root.systemInfo.deviceType.length > 0)
+            return root.systemInfo.deviceType;
+        return qsTr("Desktop");
     }
 
     function openQuickMenu(mode, sourceButton) {
@@ -80,6 +77,37 @@ ApplicationWindow {
                                              root.width - quickMenuPopup.width - Math.round(16 * root.uiScale)));
         quickMenuPopup.y = sourceButton.mapToItem(root.contentItem, 0, sourceButton.height).y + Math.round(8 * root.uiScale);
         quickMenuPopup.open();
+    }
+
+    function refreshAfterResume() {
+        if (root.systemInfo)
+            root.systemInfo.refresh();
+        if (root.nvidiaDetector)
+            root.nvidiaDetector.refresh();
+        if (root.cpuMonitor) {
+            root.cpuMonitor.start();
+            root.cpuMonitor.refresh();
+        }
+        if (root.gpuMonitor) {
+            root.gpuMonitor.start();
+            root.gpuMonitor.refresh();
+        }
+        if (root.ramMonitor) {
+            root.ramMonitor.start();
+            root.ramMonitor.refresh();
+        }
+    }
+
+    onActiveChanged: {
+        if (active)
+            resumeRefreshTimer.restart();
+    }
+
+    Timer {
+        id: resumeRefreshTimer
+        interval: 350
+        repeat: false
+        onTriggered: root.refreshAfterResume()
     }
 
     QtObject {
@@ -132,36 +160,36 @@ ApplicationWindow {
 
         Rectangle {
             Layout.fillWidth: true
-            radius: Math.round(22 * root.uiScale)
+            radius: Math.round(14 * root.uiScale)
             color: colors.shellAlt
             border.width: 1
             border.color: colors.border
-            implicitHeight: topBar.implicitHeight + Math.round(26 * root.uiScale)
+            implicitHeight: topBar.implicitHeight + Math.round(20 * root.uiScale)
 
             RowLayout {
                 id: topBar
                 x: Math.round(16 * root.uiScale)
-                y: Math.round(13 * root.uiScale)
+                y: Math.round(10 * root.uiScale)
                 width: parent.width - Math.round(32 * root.uiScale)
                 spacing: Math.round(14 * root.uiScale)
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 2
+                    spacing: 1
 
                     Label {
                         text: qsTr("ro-Control")
                         color: colors.text
-                        font.pixelSize: Math.round(28 * root.uiScale)
+                        font.pixelSize: Math.round(24 * root.uiScale)
                         font.weight: Font.DemiBold
                     }
 
                     Label {
-                        text: qsTr("ro-ASD NVIDIA driver operations and system diagnostics")
+                        text: qsTr("Ro-ASD driver control and system diagnostics")
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         color: colors.textSoft
-                        font.pixelSize: Math.round(13 * root.uiScale)
+                        font.pixelSize: Math.round(12 * root.uiScale)
                     }
                 }
 
@@ -196,7 +224,7 @@ ApplicationWindow {
                         Label {
                             anchors.centerIn: parent
                             width: parent.width - Math.round(10 * root.uiScale)
-                            text: root.machineLabel()
+                            text: root.deviceTypeLabel()
                             color: colors.text
                             elide: Text.ElideRight
                             horizontalAlignment: Text.AlignHCenter

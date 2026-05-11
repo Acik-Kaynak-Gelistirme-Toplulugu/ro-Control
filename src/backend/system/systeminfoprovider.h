@@ -11,6 +11,7 @@ class SystemInfoProvider : public QObject {
       QString desktopEnvironment READ desktopEnvironment NOTIFY infoChanged)
   Q_PROPERTY(QString kernelVersion READ kernelVersion NOTIFY infoChanged)
   Q_PROPERTY(QString cpuModel READ cpuModel NOTIFY infoChanged)
+  Q_PROPERTY(QString deviceType READ deviceType NOTIFY infoChanged)
   Q_PROPERTY(bool virtualMachine READ virtualMachine NOTIFY infoChanged)
   Q_PROPERTY(
       QString virtualizationType READ virtualizationType NOTIFY infoChanged)
@@ -22,6 +23,7 @@ public:
   QString desktopEnvironment() const { return m_desktopEnvironment; }
   QString kernelVersion() const { return m_kernelVersion; }
   QString cpuModel() const { return m_cpuModel; }
+  QString deviceType() const { return m_deviceType; }
   bool virtualMachine() const { return !m_virtualizationType.isEmpty(); }
   QString virtualizationType() const { return m_virtualizationType; }
 
@@ -35,6 +37,7 @@ private:
   QString detectOsName() const;
   QString detectKernelVersion() const;
   QString detectCpuModel() const;
+  QString detectDeviceType() const;
   QString detectDesktopEnvironment() const;
   QString detectVirtualizationType() const;
 
@@ -42,5 +45,6 @@ private:
   QString m_desktopEnvironment;
   QString m_kernelVersion;
   QString m_cpuModel;
+  QString m_deviceType;
   QString m_virtualizationType;
 };

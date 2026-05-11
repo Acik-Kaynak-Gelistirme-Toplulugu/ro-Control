@@ -3,6 +3,7 @@
 #include "commandrunner.h"
 
 #include <QFile>
+#include <QList>
 #include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>
@@ -86,6 +87,15 @@ QString valueFromOsRelease(const QString &key) {
   return {};
 }
 
+QString valueFromFile(const QString &path) {
+  QFile file(path);
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    return {};
+  }
+
+  return QString::fromUtf8(file.readAll()).trimmed();
+}
+
 } // namespace
 
 SystemInfoProvider::SystemInfoProvider(QObject *parent) : QObject(parent) {
@@ -98,10 +108,12 @@ void SystemInfoProvider::refresh() {
   const QString nextKernelVersion = detectKernelVersion();
   const QString nextCpuModel = detectCpuModel();
   const QString nextVirtualizationType = detectVirtualizationType();
+  const QString nextDeviceType = detectDeviceType();
 
   if (m_osName == nextOsName &&
       m_desktopEnvironment == nextDesktopEnvironment &&
       m_kernelVersion == nextKernelVersion && m_cpuModel == nextCpuModel &&
+      m_deviceType == nextDeviceType &&
       m_virtualizationType == nextVirtualizationType) {
     return;
   }
@@ -110,6 +122,7 @@ void SystemInfoProvider::refresh() {
   m_desktopEnvironment = nextDesktopEnvironment;
   m_kernelVersion = nextKernelVersion;
   m_cpuModel = nextCpuModel;
+  m_deviceType = nextDeviceType;
   m_virtualizationType = nextVirtualizationType;
   emit infoChanged();
 }
@@ -246,6 +259,46 @@ QString SystemInfoProvider::detectVirtualizationType() const {
 #else
   return {};
 #endif
+}
+
+QString SystemInfoProvider::detectDeviceType() const {
+  const QString virtualizationType = detectVirtualizationType();
+  if (!virtualizationType.isEmpty()) {
+    if (virtualizationType.compare(QStringLiteral("QEMU"), Qt::CaseInsensitive) == 0 ||
+        virtualizationType.compare(QStringLiteral("KVM"), Qt::CaseInsensitive) == 0) {
+      return QStringLiteral("QEMU");
+    }
+    return virtualizationType;
+  }
+
+#if defined(Q_OS_LINUX)
+  const QString chassisType =
+      valueFromFile(QStringLiteral("/sys/class/dmi/id/chassis_type"));
+  bool ok = false;
+  const int chassis = chassisType.toInt(&ok);
+  if (ok) {
+    static const QList<int> laptopChassisTypes = {8, 9, 10, 14, 30, 31, 32};
+    if (laptopChassisTypes.contains(chassis)) {
+      return QStringLiteral("Laptop");
+    }
+
+    static const QList<int> desktopChassisTypes = {3, 4, 5, 6, 7, 15, 16, 35, 36};
+    if (desktopChassisTypes.contains(chassis)) {
+      return QStringLiteral("Desktop");
+    }
+  }
+
+  const QString chassisName =
+      valueFromFile(QStringLiteral("/sys/class/dmi/id/chassis_vendor")) +
+      QLatin1Char(' ') +
+      valueFromFile(QStringLiteral("/sys/class/dmi/id/product_name"));
+  if (chassisName.contains(QStringLiteral("laptop"), Qt::CaseInsensitive) ||
+      chassisName.contains(QStringLiteral("notebook"), Qt::CaseInsensitive)) {
+    return QStringLiteral("Laptop");
+  }
+#endif
+
+  return QStringLiteral("Desktop");
 }
 
 QString SystemInfoProvider::detectDesktopEnvironment() const {

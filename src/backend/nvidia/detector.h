@@ -16,6 +16,10 @@ class NvidiaDetector : public QObject {
                  infoChanged)
   Q_PROPERTY(bool driverLoaded READ driverLoaded NOTIFY infoChanged)
   Q_PROPERTY(bool nouveauActive READ nouveauActive NOTIFY infoChanged)
+  Q_PROPERTY(QString installedDriverSource READ installedDriverSource NOTIFY
+                 infoChanged)
+  Q_PROPERTY(QString installedDriverSourceLabel READ installedDriverSourceLabel
+                 NOTIFY infoChanged)
   Q_PROPERTY(bool secureBootEnabled READ secureBootEnabled NOTIFY infoChanged)
   Q_PROPERTY(bool secureBootKnown READ secureBootKnown NOTIFY infoChanged)
   Q_PROPERTY(QString sessionType READ sessionType NOTIFY infoChanged)
@@ -35,6 +39,8 @@ public:
     bool driverLoaded = false;
     bool nouveauActive = false;
     bool openKernelModulesInstalled = false;
+    bool closedSourceDriverInstalled = false;
+    bool openSourceDriverInstalled = false;
     bool secureBootEnabled = false;
     bool secureBootKnown = false;
     QString sessionType;
@@ -49,6 +55,8 @@ public:
   bool driverPackageInstalled() const { return m_info.driverPackageInstalled; }
   bool driverLoaded() const { return m_info.driverLoaded; }
   bool nouveauActive() const { return m_info.nouveauActive; }
+  QString installedDriverSource() const;
+  QString installedDriverSourceLabel() const;
   bool secureBootEnabled() const { return m_info.secureBootEnabled; }
   bool secureBootKnown() const { return m_info.secureBootKnown; }
   QString sessionType() const { return m_info.sessionType; }
@@ -75,6 +83,8 @@ private:
   QString detectDriverVersion() const;
   QString detectDriverPackageVersion() const;
   bool detectDriverPackageInstalled() const;
+  bool detectClosedSourceDriverInstalled() const;
+  bool detectOpenSourceDriverInstalled() const;
   bool isPackageInstalled(const QString &packageName) const;
   bool isModuleLoaded(const QString &moduleName) const;
   bool detectSecureBoot(bool *known = nullptr) const;

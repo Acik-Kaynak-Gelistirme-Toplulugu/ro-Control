@@ -16,7 +16,7 @@ bool isToolAvailable(const QString &program);
 QStringList missingTools(const QStringList &programs);
 QString missingToolsMessage(const QStringList &programs);
 QString normalizedCpuArchitecture();
-bool supportsFedoraNvidiaDriverFlow();
-QString fedoraNvidiaDriverFlowSupportMessage();
+bool supportsRoAsdNvidiaDriverFlow();
+QString roAsdNvidiaDriverFlowSupportMessage();
 
 } // namespace CapabilityProbe
