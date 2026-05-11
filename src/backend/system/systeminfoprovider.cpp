@@ -264,8 +264,10 @@ QString SystemInfoProvider::detectVirtualizationType() const {
 QString SystemInfoProvider::detectDeviceType() const {
   const QString virtualizationType = detectVirtualizationType();
   if (!virtualizationType.isEmpty()) {
-    if (virtualizationType.compare(QStringLiteral("QEMU"), Qt::CaseInsensitive) == 0 ||
-        virtualizationType.compare(QStringLiteral("KVM"), Qt::CaseInsensitive) == 0) {
+    if (virtualizationType.compare(QStringLiteral("QEMU"),
+                                   Qt::CaseInsensitive) == 0 ||
+        virtualizationType.compare(QStringLiteral("KVM"),
+                                   Qt::CaseInsensitive) == 0) {
       return QStringLiteral("QEMU");
     }
     return virtualizationType;
@@ -282,7 +284,8 @@ QString SystemInfoProvider::detectDeviceType() const {
       return QStringLiteral("Laptop");
     }
 
-    static const QList<int> desktopChassisTypes = {3, 4, 5, 6, 7, 15, 16, 35, 36};
+    static const QList<int> desktopChassisTypes = {3,  4,  5,  6,  7,
+                                                   15, 16, 35, 36};
     if (desktopChassisTypes.contains(chassis)) {
       return QStringLiteral("Desktop");
     }

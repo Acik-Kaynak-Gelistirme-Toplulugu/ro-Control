@@ -673,14 +673,15 @@ void NvidiaUpdater::applyVersion(const QString &version) {
     emitProgressAsync(
         guard, NvidiaUpdater::tr("Driver transaction kernel package: `%1`")
                    .arg(kernelPackageName));
-    emitProgressAsync(
-        guard,
-        NvidiaUpdater::tr("Driver transaction packages for %1: %2")
-            .arg(NvidiaUpdater::tr("Wayland"))
-            .arg(quotedList(guard->buildDriverTargets(
-                trimmedVersion.isEmpty() ? guard->m_latestPackageVersion
-                                         : trimmedVersion,
-                sessionType, kernelPackageName))));
+    emitProgressAsync(guard,
+                      NvidiaUpdater::tr(
+                          "Driver transaction packages for %1: %2")
+                          .arg(NvidiaUpdater::tr("Wayland"))
+                          .arg(quotedList(guard->buildDriverTargets(
+                              trimmedVersion.isEmpty()
+                                  ? guard->m_latestPackageVersion
+                                  : trimmedVersion,
+                              sessionType, kernelPackageName))));
 
     QList<CommandRunner::RootCommand> rootCommands;
     rootCommands.append({QStringLiteral("dnf"), args});
@@ -688,14 +689,13 @@ void NvidiaUpdater::applyVersion(const QString &version) {
         {QStringLiteral("akmods"), {QStringLiteral("--force")}});
     rootCommands.append(buildSessionSpecificRootCommands(sessionType));
 
-    emitProgressAsync(
-        guard, NvidiaUpdater::tr("Detected %1 session via %2.")
-                   .arg(sessionType == QStringLiteral("wayland")
-                            ? NvidiaUpdater::tr("Wayland")
-                            : sessionType,
-                        sessionInfo.source.isEmpty()
-                            ? NvidiaUpdater::tr("session probe")
-                            : sessionInfo.source));
+    emitProgressAsync(guard, NvidiaUpdater::tr("Detected %1 session via %2.")
+                                 .arg(sessionType == QStringLiteral("wayland")
+                                          ? NvidiaUpdater::tr("Wayland")
+                                          : sessionType,
+                                      sessionInfo.source.isEmpty()
+                                          ? NvidiaUpdater::tr("session probe")
+                                          : sessionInfo.source));
 
     auto result = runner.runAsRootBatch(rootCommands, runOptions);
     if (!result.success()) {
