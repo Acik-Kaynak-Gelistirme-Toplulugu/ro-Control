@@ -105,6 +105,27 @@ private slots:
     qunsetenv("RO_CONTROL_SECURE_BOOT_EFIVAR_PATH");
   }
 
+  void testSecureBootEfivarDisabledOverride() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString efivarPath =
+        tempDir.filePath(QStringLiteral("SecureBoot-disabled-test"));
+    QFile file(efivarPath);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    QVERIFY(file.write(QByteArray::fromHex("0700000000")) == 5);
+    file.close();
+
+    qputenv("RO_CONTROL_SECURE_BOOT_EFIVAR_PATH", efivarPath.toUtf8());
+
+    NvidiaDetector detector;
+    const auto info = detector.detect();
+    QVERIFY(info.secureBootKnown);
+    QVERIFY(!info.secureBootEnabled);
+
+    qunsetenv("RO_CONTROL_SECURE_BOOT_EFIVAR_PATH");
+  }
+
   void testCleanGpuName() {
     // 1. Bracketed NVIDIA GPU with chip code
     QCOMPARE(NvidiaDetector::cleanGpuName(

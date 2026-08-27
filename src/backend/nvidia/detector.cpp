@@ -44,10 +44,9 @@ NvidiaDetector::GpuInfo NvidiaDetector::detect() const {
   info.driverPackageInstalled = detectDriverPackageInstalled();
   info.driverLoaded = isModuleLoaded(QStringLiteral("nvidia"));
   info.nouveauActive = isModuleLoaded(QStringLiteral("nouveau"));
-  info.openKernelModulesInstalled =
-      isPackageInstalled(QStringLiteral("akmod-nvidia-open"));
-  info.closedSourceDriverInstalled = detectClosedSourceDriverInstalled();
   info.openSourceDriverInstalled = detectOpenSourceDriverInstalled();
+  info.closedSourceDriverInstalled = detectClosedSourceDriverInstalled();
+  info.openKernelModulesInstalled = info.openSourceDriverInstalled;
   info.secureBootEnabled = detectSecureBoot(&info.secureBootKnown);
   info.sessionType = SessionUtil::detectSessionType();
 
@@ -323,6 +322,28 @@ QString NvidiaDetector::detectGpuName() const {
 }
 
 QString NvidiaDetector::detectDriverVersion() const {
+  // 1. Direct sysfs module version
+  QFile sysModuleVersion(QStringLiteral("/sys/module/nvidia/version"));
+  if (sysModuleVersion.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    const QString ver = QString::fromUtf8(sysModuleVersion.readAll()).trimmed();
+    if (!ver.isEmpty()) {
+      return ver;
+    }
+  }
+
+  // 2. Direct proc driver nvidia version
+  QFile procVersion(QStringLiteral("/proc/driver/nvidia/version"));
+  if (procVersion.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    const QString content = QString::fromUtf8(procVersion.readAll());
+    static const QRegularExpression re(
+        QStringLiteral(R"(NVRM\s+version:.*?(\d+\.\d+(?:\.\d+)?))"),
+        QRegularExpression::CaseInsensitiveOption);
+    const auto match = re.match(content);
+    if (match.hasMatch()) {
+      return match.captured(1).trimmed();
+    }
+  }
+
   CommandRunner runner;
 
   if (CapabilityProbe::isToolAvailable(QStringLiteral("nvidia-smi"))) {
@@ -331,7 +352,7 @@ QString NvidiaDetector::detectDriverVersion() const {
                    {QStringLiteral("--query-gpu=driver_version"),
                     QStringLiteral("--format=csv,noheader")});
 
-    if (result.success())
+    if (result.success() && !result.stdout.trimmed().isEmpty())
       return result.stdout.trimmed();
   }
 
@@ -358,8 +379,11 @@ QString NvidiaDetector::detectDriverPackageVersion() const {
     return {};
   }
 
-  const QStringList packageNames = {QStringLiteral("akmod-nvidia"),
-                                    QStringLiteral("akmod-nvidia-open")};
+  const QStringList packageNames = {
+      QStringLiteral("akmod-nvidia"),
+      QStringLiteral("akmod-nvidia-open"),
+      QStringLiteral("xorg-x11-drv-nvidia"),
+      QStringLiteral("xorg-x11-drv-nvidia-open")};
   CommandRunner runner;
   for (const QString &packageName : packageNames) {
     const auto result = runner.run(
@@ -379,20 +403,59 @@ QString NvidiaDetector::detectDriverPackageVersion() const {
 
 bool NvidiaDetector::detectDriverPackageInstalled() const {
   return isPackageInstalled(QStringLiteral("akmod-nvidia")) ||
-         isPackageInstalled(QStringLiteral("akmod-nvidia-open"));
+         isPackageInstalled(QStringLiteral("akmod-nvidia-open")) ||
+         isPackageInstalled(QStringLiteral("xorg-x11-drv-nvidia")) ||
+         isPackageInstalled(QStringLiteral("xorg-x11-drv-nvidia-open"));
 }
 
 bool NvidiaDetector::detectClosedSourceDriverInstalled() const {
-  if (isPackageInstalled(QStringLiteral("akmod-nvidia"))) {
+  if (isPackageInstalled(QStringLiteral("akmod-nvidia")) ||
+      isPackageInstalled(QStringLiteral("xorg-x11-drv-nvidia"))) {
     return true;
   }
 
-  return isModuleLoaded(QStringLiteral("nvidia")) &&
-         !isPackageInstalled(QStringLiteral("akmod-nvidia-open"));
+  QFile openRm(QStringLiteral("/sys/module/nvidia/parameters/NVreg_OpenRm"));
+  if (openRm.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    const QString val = QString::fromUtf8(openRm.readAll()).trimmed();
+    if (val == QStringLiteral("0")) {
+      return true;
+    }
+    if (val == QStringLiteral("1")) {
+      return false;
+    }
+  }
+
+  // Nvidia module loaded but no package markers found — check that no
+  // open-source package is present before claiming closed-source.
+  const bool openPackageInstalled =
+      isPackageInstalled(QStringLiteral("akmod-nvidia-open")) ||
+      isPackageInstalled(QStringLiteral("xorg-x11-drv-nvidia-open"));
+  return isModuleLoaded(QStringLiteral("nvidia")) && !openPackageInstalled;
 }
 
 bool NvidiaDetector::detectOpenSourceDriverInstalled() const {
-  return isPackageInstalled(QStringLiteral("akmod-nvidia-open"));
+  if (isPackageInstalled(QStringLiteral("akmod-nvidia-open")) ||
+      isPackageInstalled(QStringLiteral("xorg-x11-drv-nvidia-open"))) {
+    return true;
+  }
+
+  QFile openRm(QStringLiteral("/sys/module/nvidia/parameters/NVreg_OpenRm"));
+  if (openRm.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    const QString val = QString::fromUtf8(openRm.readAll()).trimmed();
+    if (val == QStringLiteral("1")) {
+      return true;
+    }
+  }
+
+  QFile procVersion(QStringLiteral("/proc/driver/nvidia/version"));
+  if (procVersion.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    const QString content = QString::fromUtf8(procVersion.readAll());
+    if (content.contains(QStringLiteral("Open UNIX"), Qt::CaseInsensitive)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 bool NvidiaDetector::isPackageInstalled(const QString &packageName) const {
@@ -431,23 +494,47 @@ bool NvidiaDetector::detectSecureBoot(bool *known) const {
     return enabled;
   }
 
-  if (!CapabilityProbe::isToolAvailable(QStringLiteral("mokutil"))) {
-    if (known != nullptr) {
-      *known = false;
+  CommandRunner runner;
+
+  if (CapabilityProbe::isToolAvailable(QStringLiteral("mokutil"))) {
+    const auto result =
+        runner.run(QStringLiteral("mokutil"), {QStringLiteral("--sb-state")});
+    // mokutil outputs: "SecureBoot enabled\n" or "SecureBoot disabled\n"
+    // After toLower(): "secureboot enabled" or "secureboot disabled"
+    const QString combined =
+        (result.stdout + QLatin1Char(' ') + result.stderr).toLower().trimmed();
+
+    if (combined.contains(QStringLiteral("secureboot enabled"))) {
+      if (known != nullptr) {
+        *known = true;
+      }
+      return true;
     }
-    return false;
+    if (combined.contains(QStringLiteral("secureboot disabled"))) {
+      if (known != nullptr) {
+        *known = true;
+      }
+      return false;
+    }
+    // mokutil present but output unrecognized — do not mark as known
   }
 
-  CommandRunner runner;
-  const auto result =
-      runner.run(QStringLiteral("mokutil"), {QStringLiteral("--sb-state")});
-
-  if (result.success() || result.exitCode == 1) {
-    if (known != nullptr) {
-      *known = true;
+  if (CapabilityProbe::isToolAvailable(QStringLiteral("bootctl"))) {
+    const auto result =
+        runner.run(QStringLiteral("bootctl"), {QStringLiteral("status")});
+    if (result.success()) {
+      static const QRegularExpression sbRegex(
+          QStringLiteral(R"(Secure\s*Boot:\s*(enabled|disabled))"),
+          QRegularExpression::CaseInsensitiveOption);
+      const auto match = sbRegex.match(result.stdout);
+      if (match.hasMatch()) {
+        if (known != nullptr) {
+          *known = true;
+        }
+        return match.captured(1).compare(QStringLiteral("enabled"),
+                                         Qt::CaseInsensitive) == 0;
+      }
     }
-    return result.stdout.contains(QStringLiteral("enabled"),
-                                  Qt::CaseInsensitive);
   }
 
   if (known != nullptr) {
@@ -475,21 +562,28 @@ bool NvidiaDetector::detectSecureBootFromEfivars(bool *enabled,
     }
   }
 
-  if (secureBootPath.isEmpty()) {
-    return false;
+  if (!secureBootPath.isEmpty()) {
+    QFile file(secureBootPath);
+    if (file.open(QIODevice::ReadOnly)) {
+      const QByteArray raw = file.readAll();
+      if (raw.size() >= 5) {
+        *enabled = raw.at(4) != 0;
+        *known = true;
+        return true;
+      }
+    }
   }
 
-  QFile file(secureBootPath);
-  if (!file.open(QIODevice::ReadOnly)) {
-    return false;
+  // Legacy sysfs efivars (/sys/firmware/efi/vars/SecureBoot/data)
+  QFile legacyFile(QStringLiteral("/sys/firmware/efi/vars/SecureBoot/data"));
+  if (legacyFile.open(QIODevice::ReadOnly)) {
+    const QByteArray raw = legacyFile.readAll();
+    if (!raw.isEmpty()) {
+      *enabled = raw.at(0) != 0;
+      *known = true;
+      return true;
+    }
   }
 
-  const QByteArray raw = file.readAll();
-  if (raw.size() < 5) {
-    return false;
-  }
-
-  *enabled = raw.at(4) != 0;
-  *known = true;
-  return true;
+  return false;
 }
