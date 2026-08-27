@@ -7,6 +7,9 @@
 	<metadata_license>CC0-1.0</metadata_license>
 	<project_license>GPL-3.0-or-later</project_license>
 	<developer_name>Project Ro ASD</developer_name>
+	<developer id="io.github.projectroasd">
+		<name>Project Ro ASD</name>
+	</developer>
 	<content_rating type="oars-1.1" />
 
 	<description>
@@ -53,6 +56,8 @@
 		<keyword>Diagnostics</keyword>
 		<keyword>Telemetry</keyword>
 		<keyword>Ro-ASD</keyword>
+		<keyword>Cooling</keyword>
+		<keyword>Fans</keyword>
 	</keywords>
 
 	<categories>
@@ -62,8 +67,18 @@
 	</categories>
 
 	<releases>
-		<release version="1.2.0" date="2026-08-27" />
-		<release version="1.1.0" date="2026-05-10" />
+		<release version="1.2.0" date="2026-08-27">
+			<description>
+				<p>Major release adding advanced fan management and telemetry subsystem, dedicated CPU and GPU fan curves, and headless CI resilience.</p>
+				<p xml:lang="tr">Gelişmiş fan yönetimi ve telemetri alt sistemi, özel CPU ve GPU fan eğrileri ile headless CI kararlılığını getiren ana sürüm.</p>
+			</description>
+		</release>
+		<release version="1.1.0" date="2026-05-10">
+			<description>
+				<p>Standalone dual-architecture RPM releases for x86_64 and aarch64, updated AppStream metadata, and shell completions.</p>
+				<p xml:lang="tr">x86_64 ve aarch64 için bağımsız RPM paketleri, güncellenmiş AppStream metaverisi ve kabuk tamamlama betikleri.</p>
+			</description>
+		</release>
 		<release version="1.0.0" date="2026-04-29" />
 		<release version="0.2.1" date="2026-03-30" />
 	</releases>
@@ -77,10 +92,6 @@
 	<provides>
 		<binary>ro-control</binary>
 	</provides>
-
-	<developer id="io.github.projectroasd">
-		<name>Project Ro ASD</name>
-	</developer>
 
 	<url type="homepage">https://github.com/Project-Ro-ASD/ro-Control</url>
 	<url type="help">https://github.com/Project-Ro-ASD/ro-Control#readme</url>

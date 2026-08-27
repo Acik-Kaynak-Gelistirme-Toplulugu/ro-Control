@@ -14,4 +14,4 @@ Keywords=nvidia;driver;gpu;monitor;system;ro-asd;
 Keywords[tr]=nvidia;sürücü;gpu;monitör;sistem;ro-asd;
 StartupNotify=true
 StartupWMClass=io.github.projectroasd.rocontrol
-SingleMainWindow=true
+X-SingleMainWindow=true

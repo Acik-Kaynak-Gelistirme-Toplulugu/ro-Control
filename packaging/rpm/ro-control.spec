@@ -43,8 +43,11 @@ Recommends:     /usr/bin/dracut
 Recommends:     /usr/sbin/grubby
 
 %description
-ro-Control is a Qt6/KDE Plasma desktop application that helps users
-manage NVIDIA drivers and monitor core system metrics.
+ro-Control is a native Qt6 and KDE Plasma desktop application designed for
+Linux systems. It provides smart NVIDIA driver detection, installation, and
+updates through DNF, multi-fan cooling control with custom temperature curves,
+real-time hardware diagnostics (GPU, CPU, VRAM, and RAM telemetry), power threshold
+management, and secure Polkit privilege integration.
 
 %prep
 %autosetup -c -T -n %{name}-%{version}
