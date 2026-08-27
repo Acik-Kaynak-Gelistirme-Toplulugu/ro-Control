@@ -42,6 +42,9 @@ public:
   Q_INVOKABLE void applyVersion(const QString &version);
   Q_INVOKABLE void refreshAvailableVersions();
   Q_INVOKABLE void cancelOperation();
+  void setLatestPackageVersion(const QString &version) {
+    m_latestPackageVersion = version;
+  }
 
 signals:
   void updateAvailableChanged();

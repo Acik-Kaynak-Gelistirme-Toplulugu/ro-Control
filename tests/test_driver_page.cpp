@@ -541,9 +541,6 @@ void TestDriverPage::testCompletedInstallImmediatelyUpdatesDriverState() {
 }
 
 int main(int argc, char **argv) {
-  qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("offscreen"));
-  qputenv("QT_QUICK_CONTROLS_STYLE", QByteArrayLiteral("Basic"));
-
   QQuickStyle::setStyle(QStringLiteral("Basic"));
 
   QGuiApplication app(argc, argv);

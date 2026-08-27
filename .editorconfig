@@ -1,0 +1,36 @@
+# ro-Control editor configuration
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.{cpp,h,hpp}]
+indent_size = 2
+
+[*.{qml,js}]
+indent_size = 4
+
+[CMakeLists.txt]
+indent_size = 4
+
+[*.cmake]
+indent_size = 4
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{ts,xml}]
+indent_size = 4
+
+[*.sh]
+indent_size = 4
+
+[{Makefile,*.mk}]
+indent_style = tab

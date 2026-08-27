@@ -14,6 +14,7 @@ ApplicationWindow {
     required property var cpuMonitor
     required property var gpuMonitor
     required property var ramMonitor
+    required property var fanController
     required property var systemInfo
     required property var languageManager
     required property var uiPreferences
@@ -95,6 +96,10 @@ ApplicationWindow {
         if (root.ramMonitor) {
             root.ramMonitor.start();
             root.ramMonitor.refresh();
+        }
+        if (root.fanController) {
+            root.fanController.start();
+            root.fanController.refresh();
         }
     }
 
@@ -427,6 +432,7 @@ ApplicationWindow {
                     cpuMonitor: root.cpuMonitor
                     gpuMonitor: root.gpuMonitor
                     ramMonitor: root.ramMonitor
+                    fanController: root.fanController
                 }
 
             }

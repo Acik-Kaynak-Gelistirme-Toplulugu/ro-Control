@@ -1,12 +1,12 @@
 #include "updater.h"
+#include "asyncrunner.h"
 #include "detector.h"
 #include "system/capabilityprobe.h"
 #include "system/commandrunner.h"
 #include "system/sessionutil.h"
 #include "versionparser.h"
 
-#include <QMetaObject>
-#include <QPointer>
+#include <QCoreApplication>
 #include <QStandardPaths>
 #include <QThread>
 #include <QVersionNumber>
@@ -82,9 +82,11 @@ buildSessionSpecificRootCommands(const QString &sessionType) {
                    {QStringLiteral("--force"), QStringLiteral("--add-drivers"),
                     kNvidiaKernelModules.join(QLatin1Char(' '))}});
 
-  commands.append({QStringLiteral("dnf"),
-                   {QStringLiteral("install"), QStringLiteral("-y"),
-                    QStringLiteral("egl-wayland")}});
+  commands.append(
+      {QStringLiteral("env"),
+       {QStringLiteral("LANG=C"), QStringLiteral("dnf"),
+        QStringLiteral("install"), QStringLiteral("-y"),
+        QStringLiteral("egl-wayland")}});
   commands.append({QStringLiteral("grubby"),
                    {QStringLiteral("--update-kernel=ALL"),
                     QStringLiteral("--args=nvidia-drm.modeset=1 "
@@ -151,10 +153,14 @@ QString fetchTextFromUrl(CommandRunner &runner, const QString &url) {
   CommandRunner::RunOptions options;
   options.timeoutMs = 10000;
 
+  const QString userAgent =
+      QStringLiteral("ro-Control/%1").arg(QCoreApplication::applicationVersion());
+
   if (CapabilityProbe::isToolAvailable(QStringLiteral("curl"))) {
     const auto result = runner.run(
         QStringLiteral("curl"),
-        {QStringLiteral("-fsSL"), QStringLiteral("--compressed"), url},
+        {QStringLiteral("-fsSL"), QStringLiteral("--compressed"),
+         QStringLiteral("-A"), userAgent, url},
         options);
     if (result.success()) {
       return result.stdout;
@@ -162,8 +168,10 @@ QString fetchTextFromUrl(CommandRunner &runner, const QString &url) {
   }
 
   if (CapabilityProbe::isToolAvailable(QStringLiteral("wget"))) {
-    const auto result = runner.run(QStringLiteral("wget"),
-                                   {QStringLiteral("-qO-"), url}, options);
+    const auto result =
+        runner.run(QStringLiteral("wget"),
+                   {QStringLiteral("-qO-"), QStringLiteral("-U"), userAgent, url},
+                   options);
     if (result.success()) {
       return result.stdout;
     }
@@ -172,6 +180,9 @@ QString fetchTextFromUrl(CommandRunner &runner, const QString &url) {
   return {};
 }
 
+// Each call re-downloads and re-parses the NVIDIA page. Consider adding a
+// short-lived cache (e.g. 5-minute TTL) if this function is called
+// frequently.
 QStringList queryOfficialDriverVersions(CommandRunner &runner) {
   const QString pageText = fetchTextFromUrl(
       runner, QStringLiteral("https://www.nvidia.com/en-us/drivers/unix/"));
@@ -311,78 +322,6 @@ UpdateStatusSnapshot collectUpdateStatus() {
   }
 
   return snapshot;
-}
-
-void emitProgressAsync(const QPointer<NvidiaUpdater> &guard,
-                       const QString &message) {
-  QMetaObject::invokeMethod(
-      guard,
-      [guard, message]() {
-        if (guard) {
-          emit guard->progressMessage(message);
-        }
-      },
-      Qt::QueuedConnection);
-}
-
-void attachRunnerLogging(CommandRunner &runner,
-                         const QPointer<NvidiaUpdater> &guard) {
-  QObject::connect(
-      &runner, &CommandRunner::outputLine, guard,
-      [guard](const QString &message) { emitProgressAsync(guard, message); });
-
-  QObject::connect(
-      &runner, &CommandRunner::errorLine, guard,
-      [guard](const QString &message) { emitProgressAsync(guard, message); });
-
-  QObject::connect(
-      &runner, &CommandRunner::commandStarted, guard,
-      [guard](const QString &program, const QStringList &args, int attempt) {
-        QStringList visibleArgs = args;
-        bool privilegedBatch = false;
-        if (!visibleArgs.isEmpty() &&
-            visibleArgs.constFirst().contains(
-                QStringLiteral("ro-control-helper"))) {
-          visibleArgs.removeFirst();
-          privilegedBatch =
-              !visibleArgs.isEmpty() &&
-              visibleArgs.constFirst() == QStringLiteral("--batch");
-        }
-
-        if (program == QStringLiteral("pkexec") && privilegedBatch) {
-          emitProgressAsync(
-              guard, NvidiaUpdater::tr(
-                         "Starting privileged driver transaction batch "
-                         "(attempt %1). The exact commands and package manager "
-                         "output will appear below.")
-                         .arg(attempt));
-          return;
-        }
-
-        const QString commandLine = QStringLiteral("$ %1 %2").arg(
-            program, visibleArgs.join(QLatin1Char(' ')).trimmed());
-        emitProgressAsync(guard,
-                          NvidiaUpdater::tr("Starting command (attempt %1): %2")
-                              .arg(attempt)
-                              .arg(commandLine.trimmed()));
-      });
-
-  QObject::connect(
-      &runner, &CommandRunner::commandFinished, guard,
-      [guard](const QString &program, int exitCode, int attempt,
-              int elapsedMs) {
-        if (program == QStringLiteral("pkexec")) {
-          return;
-        }
-
-        emitProgressAsync(
-            guard, NvidiaUpdater::tr(
-                       "Command finished (attempt %1, exit %2, %3 ms): %4")
-                       .arg(attempt)
-                       .arg(exitCode)
-                       .arg(elapsedMs)
-                       .arg(program));
-      });
 }
 
 } // namespace
@@ -683,7 +622,11 @@ void NvidiaUpdater::applyVersion(const QString &version) {
     emitProgressAsync(guard, transactionPackagesMessage);
 
     QList<CommandRunner::RootCommand> rootCommands;
-    rootCommands.append({QStringLiteral("dnf"), args});
+    {
+      QStringList dnfLangArgs;
+      dnfLangArgs << QStringLiteral("LANG=C") << QStringLiteral("dnf") << args;
+      rootCommands.append({QStringLiteral("env"), dnfLangArgs});
+    }
     rootCommands.append(
         {QStringLiteral("akmods"), {QStringLiteral("--force")}});
     rootCommands.append(buildSessionSpecificRootCommands(sessionType));

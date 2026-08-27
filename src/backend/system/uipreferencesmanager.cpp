@@ -53,7 +53,6 @@ UiPreferencesManager::UiPreferencesManager(QObject *parent) : QObject(parent) {
 
   QSettings settings;
   m_themeMode = systemThemeMode();
-  settings.setValue(QStringLiteral("ui/themeMode"), m_themeMode);
   m_showAdvancedInfo =
       settings.value(QStringLiteral("ui/showAdvancedInfo"), m_showAdvancedInfo)
           .toBool();

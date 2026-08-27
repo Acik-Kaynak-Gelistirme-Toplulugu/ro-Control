@@ -129,17 +129,23 @@ void SystemInfoProvider::refresh() {
 
 bool SystemInfoProvider::requestRestart() {
 #if defined(Q_OS_LINUX)
-  const QString systemctl =
-      QStandardPaths::findExecutable(QStringLiteral("systemctl"));
-  if (!systemctl.isEmpty()) {
-    return QProcess::startDetached(systemctl, {QStringLiteral("reboot")});
+  CommandRunner runner;
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 30000;
+  const auto result =
+      runner.runAsRoot(QStringLiteral("systemctl"), {QStringLiteral("reboot")});
+  if (result.success()) {
+    return true;
   }
 
-  const QString reboot =
-      QStandardPaths::findExecutable(QStringLiteral("reboot"));
-  if (!reboot.isEmpty()) {
-    return QProcess::startDetached(reboot, {});
+  const auto rebootResult = runner.runAsRoot(QStringLiteral("reboot"), {});
+  if (rebootResult.success()) {
+    return true;
   }
+
+  return QProcess::startDetached(
+      QStandardPaths::findExecutable(QStringLiteral("systemctl")),
+      {QStringLiteral("--no-ask-password"), QStringLiteral("reboot")});
 #endif
   return false;
 }
@@ -242,15 +248,11 @@ QString SystemInfoProvider::detectVirtualizationType() const {
 #if defined(Q_OS_LINUX)
   CommandRunner runner;
   const auto virtResult =
-      runner.run(QStringLiteral("systemd-detect-virt"),
-                 {QStringLiteral("--quiet"), QStringLiteral("--vm")});
+      runner.run(QStringLiteral("systemd-detect-virt"));
   if (virtResult.success()) {
-    const auto virtName = runner.run(QStringLiteral("systemd-detect-virt"));
-    if (virtName.success()) {
-      const QString label = virtualizationLabel(virtName.stdout.trimmed());
-      if (!label.isEmpty()) {
-        return label;
-      }
+    const QString output = virtResult.stdout.trimmed();
+    if (!output.isEmpty() && output != QStringLiteral("none")) {
+      return virtualizationLabel(output);
     }
   }
 

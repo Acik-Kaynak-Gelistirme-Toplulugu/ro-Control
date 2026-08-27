@@ -27,6 +27,33 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
 endif()
 
+# ─── LTO (Release) ────────────────────────────────────────────────────────────
+option(ENABLE_LTO "Enable link-time optimization for release builds" ON)
+if(ENABLE_LTO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT has_lto)
+    if(has_lto AND CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
+endif()
+
+# ─── Sanitizers (Debug) ──────────────────────────────────────────────────────
+option(ENABLE_ASAN "Enable AddressSanitizer for debug builds" OFF)
+option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer for debug builds" OFF)
+
+if(ENABLE_ASAN OR ENABLE_UBSAN)
+    set(SANITIZER_FLAGS "")
+    if(ENABLE_ASAN)
+        string(APPEND SANITIZER_FLAGS " -fsanitize=address")
+    endif()
+    if(ENABLE_UBSAN)
+        string(APPEND SANITIZER_FLAGS " -fsanitize=undefined")
+    endif()
+    string(STRIP "${SANITIZER_FLAGS}" SANITIZER_FLAGS)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${SANITIZER_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${SANITIZER_FLAGS}")
+endif()
+
 # ─── Qt6 Setup ───────────────────────────────────────────────────────────────
 # Qt's MOC, UIC, RCC run automatically
 set(CMAKE_AUTOMOC ON)
@@ -80,6 +107,7 @@ set(BACKEND_SOURCES
     src/backend/system/languagemanager.cpp
     src/backend/system/uipreferencesmanager.cpp
     src/backend/system/systeminfoprovider.cpp
+    src/backend/fan/fancontroller.cpp
 )
 
 set(APP_SOURCES
@@ -226,7 +254,12 @@ configure_file(
     @ONLY
     NEWLINE_STYLE UNIX
 )
-execute_process(COMMAND chmod +x ${RO_CONTROL_HELPER_BUILD_PATH})
+
+file(CHMOD ${RO_CONTROL_HELPER_BUILD_PATH}
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                GROUP_READ GROUP_EXECUTE
+                WORLD_READ WORLD_EXECUTE
+)
 
 configure_file(
     data/polkit/io.github.ProjectRoASD.rocontrol.policy.in

@@ -15,6 +15,7 @@ function(ro_control_register_test test_name)
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES
         ENVIRONMENT "${RO_CONTROL_TEST_ENV}"
+        TIMEOUT 30
     )
 endfunction()
 
@@ -59,6 +60,20 @@ target_link_libraries(test_monitor PRIVATE
 )
 
 ro_control_register_test(test_monitor)
+
+# ─── Fan Controller Tests ───────────────────────────────────────────────────
+qt_add_executable(test_fan_controller
+    test_fan_controller.cpp
+)
+
+ro_control_configure_test(test_fan_controller)
+
+target_link_libraries(test_fan_controller PRIVATE
+    Qt6::Test
+    ro-control-backend
+)
+
+ro_control_register_test(test_fan_controller)
 
 # ─── Preferences / Localization Tests ───────────────────────────────────────
 qt_add_executable(test_preferences

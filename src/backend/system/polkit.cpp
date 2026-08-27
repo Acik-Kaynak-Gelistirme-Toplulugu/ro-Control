@@ -38,8 +38,8 @@ bool PolkitHelper::canAcquirePrivilege() {
       {QStringLiteral("--disable-internal-agent"), QStringLiteral("true")},
       options);
 
-  // Success means privilege is available, but interactive-denied/auth-failed
-  // cases can return non-zero and still indicate pkexec is functional.
-  return result.exitCode == 0 || result.exitCode == 126 ||
-         result.exitCode == 127;
+  // Success means privilege was acquired. Exit code 126 means "not executable"
+  // and 127 means "not found"; neither indicates pkexec is usable, so both are
+  // treated as not available.
+  return result.exitCode == 0;
 }

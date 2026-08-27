@@ -81,6 +81,7 @@ test_results/
 
 # Translation compiled files
 *.mo
+*.qm
 
 # Valgrind
 vgcore.*

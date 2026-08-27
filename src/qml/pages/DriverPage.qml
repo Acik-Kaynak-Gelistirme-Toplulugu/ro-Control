@@ -85,13 +85,10 @@ Item {
     }
 
     function recordOperationResult(source, success, message) {
-        const lowered = (message || "").toLowerCase();
-        const canceled = lowered.indexOf("cancel") >= 0 || lowered.indexOf("iptal") >= 0 || lowered.indexOf("abgebrochen") >= 0 || lowered.indexOf("cancelad") >= 0;
-        lastOperationTone = success ? "success" : (canceled ? "warning" : "error");
+        lastOperationTone = success ? "success" : "error";
         lastOperationText = success
                             ? qsTr("%1 completed: %2").arg(source).arg(message)
-                            : (canceled ? qsTr("%1 canceled: %2").arg(source).arg(message)
-                                        : qsTr("%1 failed: %2").arg(source).arg(message));
+                            : qsTr("%1 failed: %2").arg(source).arg(message);
     }
 
     function requestCancelDriverOperation() {

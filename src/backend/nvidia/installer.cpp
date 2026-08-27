@@ -1,12 +1,11 @@
 #include "installer.h"
 
+#include "asyncrunner.h"
 #include "detector.h"
 #include "system/capabilityprobe.h"
 #include "system/commandrunner.h"
 #include "system/sessionutil.h"
 
-#include <QMetaObject>
-#include <QPointer>
 #include <QThread>
 #include <QtGlobal>
 
@@ -117,87 +116,17 @@ buildSessionSpecificRootCommands(const QString &sessionType) {
                    {QStringLiteral("--force"), QStringLiteral("--add-drivers"),
                     kNvidiaKernelModules.join(QLatin1Char(' '))}});
 
-  commands.append({QStringLiteral("dnf"),
-                   {QStringLiteral("install"), QStringLiteral("-y"),
-                    QStringLiteral("egl-wayland")}});
+  commands.append(
+      {QStringLiteral("env"),
+       {QStringLiteral("LANG=C"), QStringLiteral("dnf"),
+        QStringLiteral("install"), QStringLiteral("-y"),
+        QStringLiteral("egl-wayland")}});
   commands.append({QStringLiteral("grubby"),
                    {QStringLiteral("--update-kernel=ALL"),
                     QStringLiteral("--args=nvidia-drm.modeset=1 "
                                    "nvidia-drm.fbdev=1")}});
 
   return commands;
-}
-
-void emitProgressAsync(const QPointer<NvidiaInstaller> &guard,
-                       const QString &message) {
-  QMetaObject::invokeMethod(
-      guard,
-      [guard, message]() {
-        if (guard) {
-          emit guard->progressMessage(message);
-        }
-      },
-      Qt::QueuedConnection);
-}
-
-void attachRunnerLogging(CommandRunner &runner,
-                         const QPointer<NvidiaInstaller> &guard) {
-  QObject::connect(
-      &runner, &CommandRunner::outputLine, guard,
-      [guard](const QString &message) { emitProgressAsync(guard, message); });
-
-  QObject::connect(
-      &runner, &CommandRunner::errorLine, guard,
-      [guard](const QString &message) { emitProgressAsync(guard, message); });
-
-  QObject::connect(
-      &runner, &CommandRunner::commandStarted, guard,
-      [guard](const QString &program, const QStringList &args, int attempt) {
-        QStringList visibleArgs = args;
-        bool privilegedBatch = false;
-        if (!visibleArgs.isEmpty() &&
-            visibleArgs.constFirst().contains(
-                QStringLiteral("ro-control-helper"))) {
-          visibleArgs.removeFirst();
-          privilegedBatch =
-              !visibleArgs.isEmpty() &&
-              visibleArgs.constFirst() == QStringLiteral("--batch");
-        }
-
-        if (program == QStringLiteral("pkexec") && privilegedBatch) {
-          emitProgressAsync(
-              guard, NvidiaInstaller::tr(
-                         "Starting privileged installation batch (attempt %1). "
-                         "The exact commands and package manager output will "
-                         "appear below.")
-                         .arg(attempt));
-          return;
-        }
-
-        const QString commandLine = QStringLiteral("$ %1 %2").arg(
-            program, visibleArgs.join(QLatin1Char(' ')).trimmed());
-        emitProgressAsync(
-            guard, NvidiaInstaller::tr("Starting command (attempt %1): %2")
-                       .arg(attempt)
-                       .arg(commandLine.trimmed()));
-      });
-
-  QObject::connect(
-      &runner, &CommandRunner::commandFinished, guard,
-      [guard](const QString &program, int exitCode, int attempt,
-              int elapsedMs) {
-        if (program == QStringLiteral("pkexec")) {
-          return;
-        }
-
-        emitProgressAsync(
-            guard, NvidiaInstaller::tr(
-                       "Command finished (attempt %1, exit %2, %3 ms): %4")
-                       .arg(attempt)
-                       .arg(exitCode)
-                       .arg(elapsedMs)
-                       .arg(program));
-      });
 }
 
 } // namespace
@@ -385,16 +314,24 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
                                              sessionType);
 
     QList<CommandRunner::RootCommand> rootCommands;
-    rootCommands.append(
-        {QStringLiteral("dnf"),
-         {QStringLiteral("install"), QStringLiteral("-y"),
+    {
+      QStringList rpmFusionLangArgs = {
+          QStringLiteral("LANG=C"), QStringLiteral("dnf"),
+          QStringLiteral("install"), QStringLiteral("-y"),
           QStringLiteral("https://mirrors.rpmfusion.org/free/fedora/"
                          "rpmfusion-free-release-%1.noarch.rpm")
               .arg(platformVersion),
           QStringLiteral("https://mirrors.rpmfusion.org/nonfree/fedora/"
                          "rpmfusion-nonfree-release-%1.noarch.rpm")
-              .arg(platformVersion)}});
-    rootCommands.append({QStringLiteral("dnf"), installArgs});
+              .arg(platformVersion)};
+      rootCommands.append({QStringLiteral("env"), rpmFusionLangArgs});
+    }
+    {
+      QStringList installLangArgs = {QStringLiteral("LANG=C"),
+                                     QStringLiteral("dnf")};
+      installLangArgs.append(installArgs);
+      rootCommands.append({QStringLiteral("env"), installLangArgs});
+    }
     rootCommands.append(
         {QStringLiteral("akmods"), {QStringLiteral("--force")}});
     rootCommands.append(buildSessionSpecificRootCommands(sessionType));
@@ -508,7 +445,12 @@ void NvidiaInstaller::installOpenSource() {
     installArgs << buildOpenSourceDriverInstallTargets(sessionType);
 
     QList<CommandRunner::RootCommand> rootCommands;
-    rootCommands.append({QStringLiteral("dnf"), installArgs});
+    {
+      QStringList installLangArgs = {QStringLiteral("LANG=C"),
+                                     QStringLiteral("dnf")};
+      installLangArgs.append(installArgs);
+      rootCommands.append({QStringLiteral("env"), installLangArgs});
+    }
     rootCommands.append(
         {QStringLiteral("akmods"), {QStringLiteral("--force")}});
     rootCommands.append(buildSessionSpecificRootCommands(sessionType));
