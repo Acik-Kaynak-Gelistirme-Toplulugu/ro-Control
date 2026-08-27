@@ -1,6 +1,6 @@
 # ro-Control
 
-**Native Qt6 / QML Desktop Application for NVIDIA Driver Management, Hardware Telemetry, and Multi-Fan Cooling Control on Linux.**
+**Native Qt6 / QML Desktop Application for NVIDIA Driver Management, Hardware Telemetry, and Multi-Fan Cooling Control on Ro-ASD.**
 
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux%20(Fedora%20%7C%20Wayland%20%7C%20X11)-green.svg)](https://github.com/Project-Ro-ASD)
