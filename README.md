@@ -1,4 +1,4 @@
-# 🚀 ro-Control
+# ro-Control
 
 **Native Qt6 / QML Desktop Application for NVIDIA Driver Management, Hardware Telemetry, and Multi-Fan Cooling Control on Linux.**
 
@@ -10,7 +10,7 @@
 
 ---
 
-## 📖 Overview
+## Overview
 
 **ro-Control** is a high-performance, native Linux system utility built with **C++20** and **Qt6/QML**. It serves as the primary GPU driver and cooling control center for the **Project-Ro-ASD** Linux ecosystem, providing:
 
@@ -21,15 +21,15 @@
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 🎮 1. NVIDIA Driver Manager
+### 1. NVIDIA Driver Manager
 - **Automated GPU Detection:** Scans PCI buses (`pciutils`) and kernel modules to detect GeForce, Quadro, and RTX series GPUs.
 - **One-Click Installation & Updates:** Interacts with PolKit (`pkexec`) to execute driver transactions securely without running the entire GUI as root.
 - **Secure Boot Awareness:** Inspects MOK keys and kernel signature enforcement to warn about unsigned driver modules before reboots.
 - **Deep Clean & Recovery:** Complete removal of broken DKMS/Akmods states and clean reinstallation.
 
-### ❄️ 2. Dedicated Cooling & Fan Suite
+### 2. Dedicated Cooling & Fan Suite
 - **Multi-Fan Discovery:** Automatically identifies GPU fans, CPU coolers via `coretemp`/sysfs, and motherboard chassis fans.
 - **6 Optimization Profiles:**
   - **Auto:** Default hardware VBIOS/BIOS curve.
@@ -41,21 +41,21 @@
 - **NVIDIA Coolbits Helper:** Automated detection and setup of `/etc/X11/xorg.conf.d/99-nvidia-coolbits.conf` to unlock manual GPU fan write privileges.
 - **Thermal Safety Guard:** Emergency override automatically locks fans to 100% if GPU or CPU temperatures exceed critical thresholds (85°C+).
 
-### 📊 3. Live System Telemetry Dashboard
+### 3. Live System Telemetry Dashboard
 - GPU Clock speeds (Core/Memory), VRAM allocation, power draw, and per-process GPU memory list.
 - CPU utilization percentage, per-core metrics, and package temperatures.
 - System RAM usage, available memory, and swap allocation.
 
-### 🎨 4. Modern Desktop UI & Accessibility
+### 4. Modern Desktop UI & Accessibility
 - **Fluid Layout & High-DPI Support:** Crisp rendering on 1080p, 2K, and 4K displays with stabilized window resizing and fullscreen transitions.
 - **Light & Dark Theme Parity:** Fully compliant WCAG AA contrast palettes for optimal readability in any lighting environment.
 - **Multilingual Support:** Runtime translations for English (`en`), Turkish (`tr`), German (`de`), and Spanish (`es`).
 
 ---
 
-## 🛠️ Build & Installation Guide
+## Build & Installation Guide
 
-### 📋 Prerequisites & Dependencies
+### Prerequisites & Dependencies
 
 #### Fedora / RHEL (Recommended)
 ```bash
@@ -82,7 +82,7 @@ sudo pacman -S --needed \
 
 ---
 
-### 🔨 Compiling from Source
+### Compiling from Source
 
 ```bash
 # 1. Clone the repository
@@ -103,7 +103,7 @@ ctest --test-dir build --output-on-failure
 
 ---
 
-### 🚀 Running the Application
+### Running the Application
 
 #### Launch Desktop GUI:
 ```bash
@@ -117,7 +117,7 @@ sudo cmake --install build --prefix /usr
 
 ---
 
-## 💻 CLI & Headless Usage Guide
+## CLI & Headless Usage Guide
 
 `ro-control` provides a rich command-line mode for diagnostics, automated server administration, and JSON piping.
 
@@ -148,7 +148,7 @@ sudo cmake --install build --prefix /usr
 
 ---
 
-## 🏛️ Project Architecture & Layout
+## Project Architecture & Layout
 
 ```text
 ro-Control/
@@ -173,7 +173,7 @@ ro-Control/
 
 ---
 
-## 🧪 Testing
+## Testing
 
 Run the automated test suite with CTest:
 
@@ -190,7 +190,7 @@ Test coverage includes:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions from the open-source community are welcome!
 1. Fork the repository on GitHub.
@@ -202,14 +202,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.
 
 ---
 
-## 🔒 Security
+## Security
 
 For security vulnerabilities and reporting procedures, see [SECURITY.md](SECURITY.md).
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **GNU General Public License v3.0 or later** (GPL-3.0-or-later). See [LICENSE](LICENSE) for full details.
-
-Developed with ❤️ by **Emir** and the **[Project-Ro-ASD](https://github.com/Project-Ro-ASD)** Open Source Community.
