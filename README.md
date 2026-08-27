@@ -12,12 +12,12 @@
 
 ## Overview
 
-**ro-Control** is a high-performance, native Linux system utility built with **C++20** and **Qt6/QML**. It serves as the primary GPU driver and cooling control center for the **Project-Ro-ASD** Linux ecosystem, providing:
+**ro-Control** is a high-performance, native Linux system utility built with **C++20** and **Qt6/QML**, engineered specifically as the central hardware and graphics control suite for the **Project-Ro-ASD** Linux ecosystem. It provides:
 
 1. **NVIDIA Driver Management:** Automated discovery, installation, updates, and deep-cleaning via distribution package managers (`dnf`, `akmods`, `kmod`).
-2. **Real-time Hardware Telemetry:** Sub-second monitoring of CPU, GPU (NVML), RAM, and VRAM with high-contrast, theme-aware visuals.
-3. **Advanced Cooling & Fan Suite:** Multi-fan hardware discovery (NVIDIA GPU Fan, Intel/AMD CPU Cooler, Chassis airflow fans), 6 optimization profiles, custom temperature-speed curves, and one-click Coolbits fan control unlock.
-4. **Headless CLI & Automation:** Rich command-line interface for headless server administration, JSON telemetry export, and automated driver maintenance scripts.
+2. **Real-time Hardware Telemetry:** Sub-second monitoring of CPU, GPU (NVML/NV-CONTROL), RAM, and VRAM with high-contrast, theme-aware visuals.
+3. **Advanced Cooling & Multi-Fan Suite:** Full hardware discovery across all system fans (NVIDIA GPU Fan with live RPM & 0dB Auto Idle detection, Intel/AMD CPU Cooler, Chassis airflow fans), dedicated per-fan tuning pop-up dialogs, 6 optimization profiles, custom temperature-speed curves, and one-click Coolbits activation.
+4. **Headless CLI & Automation:** Rich command-line interface for headless server administration, JSON telemetry export, and automated maintenance scripts.
 
 ---
 
@@ -29,14 +29,16 @@
 - **Secure Boot Awareness:** Inspects MOK keys and kernel signature enforcement to warn about unsigned driver modules before reboots.
 - **Deep Clean & Recovery:** Complete removal of broken DKMS/Akmods states and clean reinstallation.
 
-### 2. Dedicated Cooling & Fan Suite
-- **Multi-Fan Discovery:** Automatically identifies GPU fans, CPU coolers via `coretemp`/sysfs, and motherboard chassis fans.
+### 2. Dedicated Cooling & Multi-Fan Suite
+- **Multi-Fan Hardware Discovery:** Automatically identifies GPU fans, CPU coolers via `coretemp`/hwmon sysfs, and motherboard chassis fans.
+- **Live GPU Fan RPM & 0dB Auto Idle Telemetry:** Real-time RPM tracking directly from NV-CONTROL / sysfs, accurately reflecting live spinning speeds and 0 RPM zero-noise auto idle states.
+- **Dedicated Per-Fan Configuration Pop-Ups:** Interactive modal settings dialog for each individual fan with live telemetry strips, curve customization, and instant testing.
 - **6 Optimization Profiles:**
   - **Auto:** Default hardware VBIOS/BIOS curve.
   - **Silent:** Acoustic priority curve with delayed ramp-up for quiet desktop operation.
   - **Balanced:** Proportional thermal-acoustic equilibrium.
   - **Performance:** Aggressive high-airflow cooling for heavy compute/gaming workloads.
-  - **Manual:** Precise user-defined fixed fan speed slider (0–100%).
+  - **Manual:** Precise user-defined fixed fan speed slider (0–100%) with quick presets.
   - **Custom:** Multi-point interactive temperature-to-speed curve with hysteresis.
 - **NVIDIA Coolbits Helper:** Automated detection and setup of `/etc/X11/xorg.conf.d/99-nvidia-coolbits.conf` to unlock manual GPU fan write privileges.
 - **Thermal Safety Guard:** Emergency override automatically locks fans to 100% if GPU or CPU temperatures exceed critical thresholds (85°C+).

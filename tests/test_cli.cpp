@@ -14,169 +14,124 @@ class TestCli : public QObject {
 
 private slots:
   void testHelpOption() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("--help")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("--help")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::PrintHelp);
     QVERIFY(command.payload.contains(QStringLiteral("driver install")));
     QVERIFY(command.payload.contains(QStringLiteral("status [--json]")));
   }
 
   void testVersionOption() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("--version")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("--version")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::PrintVersion);
     QCOMPARE(command.payload, kAppVersion);
   }
 
   void testJsonRequiresDiagnostics() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("--json")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("--json")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::Invalid);
     QVERIFY(command.payload.contains(QStringLiteral("--json")));
   }
 
   void testStatusTextCommand() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("status")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("status")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::PrintStatusText);
   }
 
   void testStatusJsonCommand() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("status"),
-                                      QStringLiteral("--json")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("status"),
+         QStringLiteral("--json")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::PrintStatusJson);
   }
 
   void testDiagnosticsTextOption() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("diagnostics")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("diagnostics")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::PrintDiagnosticsText);
   }
 
   void testDiagnosticsJsonOption() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("diagnostics"),
-                                      QStringLiteral("--json")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("diagnostics"),
+         QStringLiteral("--json")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::PrintDiagnosticsJson);
   }
 
   void testLegacyDiagnosticsOptionStillWorks() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("--diagnostics"),
-                                      QStringLiteral("--json")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("--diagnostics"),
+         QStringLiteral("--json")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::PrintDiagnosticsJson);
   }
 
   void testDriverInstallDefaultsToProprietary() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("driver"),
-                                      QStringLiteral("install")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("driver"),
+         QStringLiteral("install")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action,
              RoControlCli::CommandAction::InstallProprietaryDriver);
     QCOMPARE(command.acceptLicense, false);
   }
 
   void testDriverInstallOpenSource() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("driver"),
-                                      QStringLiteral("install"),
-                                      QStringLiteral("--open-source")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("driver"),
+         QStringLiteral("install"), QStringLiteral("--open-source")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action,
              RoControlCli::CommandAction::InstallOpenSourceDriver);
   }
 
   void testDriverInstallAcceptLicense() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("driver"),
-                                      QStringLiteral("install"),
-                                      QStringLiteral("--proprietary"),
-                                      QStringLiteral("--accept-license")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("driver"),
+         QStringLiteral("install"), QStringLiteral("--proprietary"),
+         QStringLiteral("--accept-license")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action,
              RoControlCli::CommandAction::InstallProprietaryDriver);
     QCOMPARE(command.acceptLicense, true);
   }
 
   void testDriverUpdateCommand() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("driver"),
-                                      QStringLiteral("update")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("driver"),
+         QStringLiteral("update")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::UpdateDriver);
   }
 
   void testDriverInstallRejectsJson() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("driver"),
-                                      QStringLiteral("install"),
-                                      QStringLiteral("--json")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("driver"),
+         QStringLiteral("install"), QStringLiteral("--json")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::Invalid);
     QVERIFY(command.payload.contains(QStringLiteral("--json")));
   }
 
   void testDriverInstallRejectsConflictingModes() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("driver"),
-                                      QStringLiteral("install"),
-                                      QStringLiteral("--proprietary"),
-                                      QStringLiteral("--open-source")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("driver"),
+         QStringLiteral("install"), QStringLiteral("--proprietary"),
+         QStringLiteral("--open-source")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::Invalid);
-    QVERIFY(command.payload.contains(QStringLiteral("cannot be used together")));
+    QVERIFY(
+        command.payload.contains(QStringLiteral("cannot be used together")));
   }
 
   void testRenderDiagnosticsText() {
@@ -239,102 +194,71 @@ private slots:
   }
 
   void testFanStatusCliCommand() {
-    const auto commandText =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("fan"),
-                                      QStringLiteral("status")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
-    QCOMPARE(commandText.action, RoControlCli::CommandAction::PrintFanStatusText);
+    const auto commandText = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("fan"),
+         QStringLiteral("status")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
+    QCOMPARE(commandText.action,
+             RoControlCli::CommandAction::PrintFanStatusText);
 
-    const auto commandJson =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("fan"),
-                                      QStringLiteral("status"),
-                                      QStringLiteral("--json")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
-    QCOMPARE(commandJson.action, RoControlCli::CommandAction::PrintFanStatusJson);
+    const auto commandJson = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("fan"),
+         QStringLiteral("status"), QStringLiteral("--json")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
+    QCOMPARE(commandJson.action,
+             RoControlCli::CommandAction::PrintFanStatusJson);
   }
 
   void testFanSetSpeedCliCommand() {
-    const auto validCommand =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("fan"),
-                                      QStringLiteral("set-speed"),
-                                      QStringLiteral("75")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto validCommand = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("fan"),
+         QStringLiteral("set-speed"), QStringLiteral("75")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(validCommand.action, RoControlCli::CommandAction::FanSetSpeed);
     QCOMPARE(validCommand.payload, QStringLiteral("75"));
 
-    const auto invalidCommand =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("fan"),
-                                      QStringLiteral("set-speed"),
-                                      QStringLiteral("150")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto invalidCommand = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("fan"),
+         QStringLiteral("set-speed"), QStringLiteral("150")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(invalidCommand.action, RoControlCli::CommandAction::Invalid);
   }
 
   void testFanSetModeCliCommand() {
-    const auto validCommand =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("fan"),
-                                      QStringLiteral("set-mode"),
-                                      QStringLiteral("silent")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto validCommand = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("fan"),
+         QStringLiteral("set-mode"), QStringLiteral("silent")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(validCommand.action, RoControlCli::CommandAction::FanSetMode);
     QCOMPARE(validCommand.payload, QStringLiteral("silent"));
 
-    const auto invalidCommand =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("fan"),
-                                      QStringLiteral("set-mode"),
-                                      QStringLiteral("turbo-extreme-unsupported")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto invalidCommand = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("fan"),
+         QStringLiteral("set-mode"),
+         QStringLiteral("turbo-extreme-unsupported")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(invalidCommand.action, RoControlCli::CommandAction::Invalid);
   }
 
   void testFanSetSpeedValidation() {
-    const auto negCommand =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("fan"),
-                                      QStringLiteral("set-speed"),
-                                      QStringLiteral("-10")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto negCommand = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("fan"),
+         QStringLiteral("set-speed"), QStringLiteral("-10")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(negCommand.action, RoControlCli::CommandAction::Invalid);
 
-    const auto nonNumCommand =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("fan"),
-                                      QStringLiteral("set-speed"),
-                                      QStringLiteral("fast")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto nonNumCommand = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("fan"),
+         QStringLiteral("set-speed"), QStringLiteral("fast")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(nonNumCommand.action, RoControlCli::CommandAction::Invalid);
   }
 
   void testFanResetCliCommand() {
-    const auto command =
-        RoControlCli::parseArguments({QStringLiteral("ro-control"),
-                                      QStringLiteral("fan"),
-                                      QStringLiteral("reset")},
-                                     QStringLiteral("ro-control"),
-                                     kAppVersion,
-                                     QStringLiteral("CLI test"));
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("fan"),
+         QStringLiteral("reset")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::FanReset);
   }
 };

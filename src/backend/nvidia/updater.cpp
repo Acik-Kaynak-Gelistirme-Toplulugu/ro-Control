@@ -82,11 +82,10 @@ buildSessionSpecificRootCommands(const QString &sessionType) {
                    {QStringLiteral("--force"), QStringLiteral("--add-drivers"),
                     kNvidiaKernelModules.join(QLatin1Char(' '))}});
 
-  commands.append(
-      {QStringLiteral("env"),
-       {QStringLiteral("LANG=C"), QStringLiteral("dnf"),
-        QStringLiteral("install"), QStringLiteral("-y"),
-        QStringLiteral("egl-wayland")}});
+  commands.append({QStringLiteral("env"),
+                   {QStringLiteral("LANG=C"), QStringLiteral("dnf"),
+                    QStringLiteral("install"), QStringLiteral("-y"),
+                    QStringLiteral("egl-wayland")}});
   commands.append({QStringLiteral("grubby"),
                    {QStringLiteral("--update-kernel=ALL"),
                     QStringLiteral("--args=nvidia-drm.modeset=1 "
@@ -153,25 +152,25 @@ QString fetchTextFromUrl(CommandRunner &runner, const QString &url) {
   CommandRunner::RunOptions options;
   options.timeoutMs = 10000;
 
-  const QString userAgent =
-      QStringLiteral("ro-Control/%1").arg(QCoreApplication::applicationVersion());
+  const QString userAgent = QStringLiteral("ro-Control/%1")
+                                .arg(QCoreApplication::applicationVersion());
 
   if (CapabilityProbe::isToolAvailable(QStringLiteral("curl"))) {
-    const auto result = runner.run(
-        QStringLiteral("curl"),
-        {QStringLiteral("-fsSL"), QStringLiteral("--compressed"),
-         QStringLiteral("-A"), userAgent, url},
-        options);
+    const auto result =
+        runner.run(QStringLiteral("curl"),
+                   {QStringLiteral("-fsSL"), QStringLiteral("--compressed"),
+                    QStringLiteral("-A"), userAgent, url},
+                   options);
     if (result.success()) {
       return result.stdout;
     }
   }
 
   if (CapabilityProbe::isToolAvailable(QStringLiteral("wget"))) {
-    const auto result =
-        runner.run(QStringLiteral("wget"),
-                   {QStringLiteral("-qO-"), QStringLiteral("-U"), userAgent, url},
-                   options);
+    const auto result = runner.run(
+        QStringLiteral("wget"),
+        {QStringLiteral("-qO-"), QStringLiteral("-U"), userAgent, url},
+        options);
     if (result.success()) {
       return result.stdout;
     }

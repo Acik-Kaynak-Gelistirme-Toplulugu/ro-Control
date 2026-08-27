@@ -158,9 +158,17 @@ Item {
                         Label { text: qsTr("GPU"); color: page.softTextColor; font.weight: Font.DemiBold; font.pixelSize: Math.round(12 * page.uiScale) }
                         Label { text: page.gpuMonitor ? page.gpuMonitor.utilizationPercent + "%" : "--"; color: page.textColor; font.pixelSize: Math.round(22 * page.uiScale); font.weight: Font.DemiBold }
                         Label {
-                            text: qsTr("Temp: %1 | Fan: %2%")
-                                  .arg(page.formatTemp(page.gpuMonitor ? page.gpuMonitor.temperatureC : -1))
-                                  .arg(page.fanController ? page.fanController.currentFanSpeedPercent : (page.gpuMonitor ? page.gpuMonitor.fanSpeedPercent : 0))
+                            text: {
+                                var tempStr = page.formatTemp(page.gpuMonitor ? page.gpuMonitor.temperatureC : -1);
+                                var fanPct = page.fanController ? page.fanController.currentFanSpeedPercent : (page.gpuMonitor ? page.gpuMonitor.fanSpeedPercent : 0);
+                                var fanRpm = page.fanController ? page.fanController.currentRpm : 0;
+                                if (fanRpm > 0) {
+                                    return qsTr("Temp: %1 | Fan: %2% (%3 RPM)").arg(tempStr).arg(fanPct).arg(fanRpm);
+                                } else if (fanPct === 0) {
+                                    return qsTr("Temp: %1 | Fan: 0% (0 RPM)").arg(tempStr);
+                                }
+                                return qsTr("Temp: %1 | Fan: %2%").arg(tempStr).arg(fanPct);
+                            }
                             color: page.softTextColor
                         }
                     }

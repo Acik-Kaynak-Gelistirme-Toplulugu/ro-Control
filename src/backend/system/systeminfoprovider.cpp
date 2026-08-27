@@ -247,8 +247,7 @@ QString SystemInfoProvider::detectCpuModel() const {
 QString SystemInfoProvider::detectVirtualizationType() const {
 #if defined(Q_OS_LINUX)
   CommandRunner runner;
-  const auto virtResult =
-      runner.run(QStringLiteral("systemd-detect-virt"));
+  const auto virtResult = runner.run(QStringLiteral("systemd-detect-virt"));
   if (virtResult.success()) {
     const QString output = virtResult.stdout.trimmed();
     if (!output.isEmpty() && output != QStringLiteral("none")) {

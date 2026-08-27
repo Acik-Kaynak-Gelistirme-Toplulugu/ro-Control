@@ -180,7 +180,7 @@ Item {
                                 required property var modelData
                                 required property int index
                                 Layout.fillWidth: true
-                                implicitHeight: Math.round(136 * page.uiScale)
+                                implicitHeight: Math.round(144 * page.uiScale)
                                 radius: 10
                                 color: (page.fanController && page.fanController.selectedFanIndex === fanCard.index)
                                        ? (page.darkMode ? "#383152" : "#E0E7FF")
@@ -194,6 +194,7 @@ Item {
                                     onClicked: {
                                         if (page.fanController)
                                             page.fanController.selectFan(fanCard.index);
+                                        fanSettingsPopup.openForFan(fanCard.modelData);
                                     }
                                 }
 
@@ -229,24 +230,6 @@ Item {
                                             elide: Text.ElideRight
                                             Layout.fillWidth: true
                                         }
-
-                                        Rectangle {
-                                            implicitWidth: capLabel.implicitWidth + 12
-                                            implicitHeight: Math.round(22 * page.uiScale)
-                                            radius: 4
-                                            color: fanCard.modelData.controllable ? page.successBg : (page.darkMode ? "#1E2548" : "#EFF6FF")
-                                            border.width: 1
-                                            border.color: fanCard.modelData.controllable ? page.successText : (page.darkMode ? "#4D5B9E" : "#93C5FD")
-
-                                            Label {
-                                                id: capLabel
-                                                anchors.centerIn: parent
-                                                text: fanCard.modelData.statusLabel || (fanCard.modelData.controllable ? qsTr("Controllable") : qsTr("Active (Auto)"))
-                                                color: fanCard.modelData.controllable ? page.successText : (page.darkMode ? "#93C5FD" : "#2563EB")
-                                                font.pixelSize: Math.round(10 * page.uiScale)
-                                                font.weight: Font.DemiBold
-                                            }
-                                        }
                                     }
 
                                     RowLayout {
@@ -265,7 +248,7 @@ Item {
                                             Label {
                                                 text: (fanCard.modelData.speedPercent !== undefined ? fanCard.modelData.speedPercent : 0) + "%"
                                                 color: page.textColor
-                                                font.pixelSize: Math.round(16 * page.uiScale)
+                                                font.pixelSize: Math.round(15 * page.uiScale)
                                                 font.weight: Font.DemiBold
                                             }
                                         }
@@ -280,9 +263,15 @@ Item {
                                             }
 
                                             Label {
-                                                text: fanCard.modelData.rpm > 0 ? (fanCard.modelData.rpm + " RPM") : qsTr("Auto / Idle")
-                                                color: page.textColor
-                                                font.pixelSize: Math.round(14 * page.uiScale)
+                                                text: {
+                                                    if (!fanCard.modelData)
+                                                        return qsTr("--");
+                                                    if (fanCard.modelData.rpm > 0)
+                                                        return fanCard.modelData.rpm + " RPM";
+                                                    return qsTr("0 RPM");
+                                                }
+                                                color: (fanCard.modelData && fanCard.modelData.rpm > 0) ? page.textColor : page.accentColor
+                                                font.pixelSize: Math.round(13 * page.uiScale)
                                                 font.weight: Font.Medium
                                             }
                                         }
@@ -300,7 +289,7 @@ Item {
                                             Label {
                                                 text: fanCard.modelData.temperatureC > 0 ? (fanCard.modelData.temperatureC + " °C") : qsTr("--")
                                                 color: page.textColor
-                                                font.pixelSize: Math.round(14 * page.uiScale)
+                                                font.pixelSize: Math.round(13 * page.uiScale)
                                                 font.weight: Font.Medium
                                             }
                                         }
@@ -365,72 +354,6 @@ Item {
                                 color: page.fanController && page.fanController.controlSupported ? page.successText : page.accentColor
                                 font.pixelSize: Math.round(11 * page.uiScale)
                                 font.weight: Font.DemiBold
-                            }
-                        }
-                    }
-
-                    // Hardware Status / Setup Action Banner
-                    Rectangle {
-                        Layout.fillWidth: true
-                        radius: 8
-                        color: page.fanController && !page.fanController.controlSupported ? page.warningBg : page.infoBg
-                        border.width: 1
-                        border.color: page.fanController && !page.fanController.controlSupported ? page.warningText : page.borderColor
-                        implicitHeight: capNoticeLayout.implicitHeight + 20
-
-                        RowLayout {
-                            id: capNoticeLayout
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 3
-
-                                Label {
-                                    text: page.fanController && !page.fanController.controlSupported
-                                          ? qsTr("Hardware Fan Control Setup Required")
-                                          : qsTr("Hardware Fan Control Active")
-                                    color: page.fanController && !page.fanController.controlSupported ? page.warningText : page.textColor
-                                    font.pixelSize: Math.round(13 * page.uiScale)
-                                    font.weight: Font.DemiBold
-                                }
-
-                                Label {
-                                    text: page.fanController && !page.fanController.controlSupported
-                                          ? qsTr("The NVIDIA driver operates in read-only telemetry mode by default. Enable Coolbits in Xorg to unlock direct fan control and custom curves.")
-                                          : qsTr("Direct hardware fan control is enabled via NV-CONTROL / sysfs PWM interface.")
-                                    color: page.textColor
-                                    font.pixelSize: Math.round(12 * page.uiScale)
-                                    wrapMode: Text.Wrap
-                                    Layout.fillWidth: true
-                                }
-                            }
-
-                            Button {
-                                visible: page.fanController && !page.fanController.controlSupported
-                                text: qsTr("Enable Fan Control")
-                                implicitHeight: Math.round(36 * page.uiScale)
-
-                                background: Rectangle {
-                                    radius: 6
-                                    color: page.accentColor
-                                }
-
-                                contentItem: Text {
-                                    text: parent.text
-                                    color: page.accentButtonText
-                                    font.pixelSize: Math.round(12 * page.uiScale)
-                                    font.weight: Font.DemiBold
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-
-                                onClicked: {
-                                    if (page.fanController)
-                                        page.fanController.enableNvidiaCoolbits();
-                                }
                             }
                         }
                     }
@@ -683,6 +606,14 @@ Item {
                 }
             }
         }
+    }
+
+    Components.FanSettingsPopup {
+        id: fanSettingsPopup
+        fanController: page.fanController
+        theme: page.theme
+        darkMode: page.darkMode
+        uiScale: page.uiScale
     }
 
     Component.onCompleted: {

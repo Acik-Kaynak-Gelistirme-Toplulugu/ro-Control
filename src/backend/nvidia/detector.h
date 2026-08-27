@@ -74,6 +74,10 @@ public:
   bool isDriverInstalled() const;
   QString installedDriverVersion() const;
 
+  static QString cleanGpuName(const QString &rawName,
+                              const QString &vendor = QString());
+  static QString detectGpuNameFromProc();
+
 signals:
   void infoChanged();
 

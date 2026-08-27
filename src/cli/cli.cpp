@@ -67,10 +67,14 @@ QString buildHelpText(const QString &applicationName,
   stream
       << "  driver update              Update the installed NVIDIA driver.\n";
   stream << "  driver deep-clean          Remove legacy NVIDIA leftovers.\n";
-  stream << "  fan status [--json]        Print current GPU fan status and profile.\n";
-  stream << "  fan set-speed <percent>    Set manual fixed fan speed (0-100%).\n";
-  stream << "  fan set-mode <profile>     Set fan profile (auto, silent, balanced, performance, manual, custom).\n";
-  stream << "  fan reset                  Reset fan control to automatic mode.\n\n";
+  stream << "  fan status [--json]        Print current GPU fan status and "
+            "profile.\n";
+  stream
+      << "  fan set-speed <percent>    Set manual fixed fan speed (0-100%).\n";
+  stream << "  fan set-mode <profile>     Set fan profile (auto, silent, "
+            "balanced, performance, manual, custom).\n";
+  stream << "  fan reset                  Reset fan control to automatic "
+            "mode.\n\n";
   stream << "Driver install options:\n";
   stream << "  --proprietary              Install the proprietary akmod-nvidia "
             "stack.\n";
@@ -315,9 +319,9 @@ ParsedCommand parseArguments(const QStringList &arguments,
       }
       const QString mode = positional.at(2).toLower();
       const QStringList validModes = {
-          QStringLiteral("auto"),    QStringLiteral("silent"),
+          QStringLiteral("auto"),     QStringLiteral("silent"),
           QStringLiteral("balanced"), QStringLiteral("performance"),
-          QStringLiteral("manual"),  QStringLiteral("custom")};
+          QStringLiteral("manual"),   QStringLiteral("custom")};
       if (!validModes.contains(mode)) {
         return invalidCommand(QStringLiteral(
             "Invalid fan mode. Choose from: auto, silent, balanced, "

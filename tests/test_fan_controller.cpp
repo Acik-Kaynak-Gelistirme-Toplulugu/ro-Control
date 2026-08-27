@@ -114,11 +114,13 @@ private slots:
     QCOMPARE(FanController::calculateCurveFanSpeed({{60, 70}}, 80), 70);
 
     // 4. Duplicate temperature points (resolves to max speed)
-    const QVector<FanCurvePoint> duplicateCurve = {{50, 30}, {50, 60}, {80, 100}};
+    const QVector<FanCurvePoint> duplicateCurve = {
+        {50, 30}, {50, 60}, {80, 100}};
     QCOMPARE(FanController::calculateCurveFanSpeed(duplicateCurve, 50), 60);
 
     // 5. Out-of-order curve points (auto-sorted)
-    const QVector<FanCurvePoint> disorderedCurve = {{80, 100}, {40, 20}, {60, 50}};
+    const QVector<FanCurvePoint> disorderedCurve = {
+        {80, 100}, {40, 20}, {60, 50}};
     QCOMPARE(FanController::calculateCurveFanSpeed(disorderedCurve, 50), 35);
   }
 
@@ -158,8 +160,8 @@ private slots:
     const int initialSpeed = fan.targetFanSpeedPercent();
     QCOMPARE(initialSpeed, 65);
 
-    // Temperature drops slightly from 68°C to 67°C (delta = 1°C < 2°C hysteresis)
-    // Fan speed should NOT hunt down immediately
+    // Temperature drops slightly from 68°C to 67°C (delta = 1°C < 2°C
+    // hysteresis) Fan speed should NOT hunt down immediately
     fan.updateTemperature(67);
     QCOMPARE(fan.targetFanSpeedPercent(), 65);
 
@@ -236,7 +238,8 @@ private slots:
       fan.stop();
       QVERIFY(fan.supported());
       QVERIFY(fan.controlSupported());
-      QCOMPARE(fan.capability(), FanController::ControlCapability::Controllable);
+      QCOMPARE(fan.capability(),
+               FanController::ControlCapability::Controllable);
       QCOMPARE(fan.capabilityString(), QStringLiteral("controllable"));
     }
 
@@ -247,7 +250,8 @@ private slots:
       fan.stop();
       QVERIFY(fan.supported());
       QVERIFY(!fan.controlSupported());
-      QCOMPARE(fan.capability(), FanController::ControlCapability::TelemetryOnly);
+      QCOMPARE(fan.capability(),
+               FanController::ControlCapability::TelemetryOnly);
       QCOMPARE(fan.capabilityString(), QStringLiteral("telemetry_only"));
     }
 
@@ -258,7 +262,8 @@ private slots:
       fan.stop();
       QVERIFY(fan.supported());
       QVERIFY(!fan.controlSupported());
-      QCOMPARE(fan.capability(), FanController::ControlCapability::PermissionDenied);
+      QCOMPARE(fan.capability(),
+               FanController::ControlCapability::PermissionDenied);
       QCOMPARE(fan.capabilityString(), QStringLiteral("permission_denied"));
     }
 
@@ -303,9 +308,9 @@ private slots:
 
     // Make pwm writable
     QVERIFY(QFile::setPermissions(
-        pwmFile.fileName(),
-        QFileDevice::ReadOwner | QFileDevice::WriteOwner |
-            QFileDevice::ReadGroup | QFileDevice::WriteGroup));
+        pwmFile.fileName(), QFileDevice::ReadOwner | QFileDevice::WriteOwner |
+                                QFileDevice::ReadGroup |
+                                QFileDevice::WriteGroup));
 
     qputenv("RO_CONTROL_FAN_SYSFS_ROOT", tempDir.path().toUtf8());
 
@@ -344,8 +349,80 @@ private slots:
 
     qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS");
   }
+
+  void testPerFanConfigurationAndCustomization() {
+    FanController fan;
+    fan.stop();
+
+    QVERIFY(fan.systemFanCount() >= 3);
+
+    // 1. GPU Fan adjustments
+    QVERIFY(fan.setFanModeForFan(QStringLiteral("gpu_0"),
+                                 QStringLiteral("silent")));
+    QCOMPARE(fan.fanMode(), QStringLiteral("silent"));
+    QVERIFY(fan.setManualSpeedForFan(QStringLiteral("gpu_0"), 65));
+    QCOMPARE(fan.manualFanSpeedPercent(), 65);
+    QVERIFY(fan.setThermalThresholdForFan(QStringLiteral("gpu_0"), 80));
+    QCOMPARE(fan.thermalThresholdC(), 80);
+
+    // 2. CPU Fan adjustments
+    QVERIFY(fan.setFanModeForFan(QStringLiteral("cpu_fan_0"),
+                                 QStringLiteral("performance")));
+    QVERIFY(fan.setManualSpeedForFan(QStringLiteral("cpu_fan_0"), 75));
+    QVERIFY(fan.setThermalThresholdForFan(QStringLiteral("cpu_fan_0"), 92));
+    QVERIFY(
+        fan.setCustomCurvePointForFan(QStringLiteral("cpu_fan_0"), 0, 30, 25));
+
+    QVariantMap cpuCfg = fan.getFanConfig(QStringLiteral("cpu_fan_0"));
+    QCOMPARE(cpuCfg.value(QStringLiteral("mode")).toString(),
+             QStringLiteral("performance"));
+    QCOMPARE(cpuCfg.value(QStringLiteral("manualSpeedPercent")).toInt(), 75);
+    QCOMPARE(cpuCfg.value(QStringLiteral("thermalThresholdC")).toInt(), 92);
+
+    // 3. Chassis Fan adjustments
+    QVERIFY(fan.setFanModeForFan(QStringLiteral("sys_fan_0"),
+                                 QStringLiteral("manual")));
+    QVERIFY(fan.setManualSpeedForFan(QStringLiteral("sys_fan_0"), 40));
+    QVariantMap sysCfg = fan.getFanConfig(QStringLiteral("sys_fan_0"));
+    QCOMPARE(sysCfg.value(QStringLiteral("mode")).toString(),
+             QStringLiteral("manual"));
+    QCOMPARE(sysCfg.value(QStringLiteral("manualSpeedPercent")).toInt(), 40);
+
+    // 4. Reset fan to auto
+    QVERIFY(fan.resetFanToAuto(QStringLiteral("cpu_fan_0")));
+    cpuCfg = fan.getFanConfig(QStringLiteral("cpu_fan_0"));
+    QCOMPARE(cpuCfg.value(QStringLiteral("mode")).toString(),
+             QStringLiteral("auto"));
+  }
+
+  void testGpuLiveRpmAndAutoIdleTelemetry() {
+    // Test 0 RPM Auto Idle state
+    qputenv("RO_CONTROL_MOCK_FAN_RPM", "0");
+    {
+      FanController fan;
+      fan.stop();
+      fan.refresh();
+      QCOMPARE(fan.currentRpm(), 0);
+      QVariantMap gpuCfg = fan.getFanConfig(QStringLiteral("gpu_0"));
+      QCOMPARE(gpuCfg.value(QStringLiteral("rpm")).toInt(), 0);
+      QCOMPARE(gpuCfg.value(QStringLiteral("speedPercent")).toInt(), 0);
+      QVERIFY(gpuCfg.value(QStringLiteral("isZeroRpm")).toBool());
+    }
+
+    // Test live spinning RPM state
+    qputenv("RO_CONTROL_MOCK_FAN_RPM", "1450");
+    {
+      FanController fan;
+      fan.stop();
+      fan.refresh();
+      QCOMPARE(fan.currentRpm(), 1450);
+      QVariantMap gpuCfg = fan.getFanConfig(QStringLiteral("gpu_0"));
+      QCOMPARE(gpuCfg.value(QStringLiteral("rpm")).toInt(), 1450);
+      QVERIFY(!gpuCfg.value(QStringLiteral("isZeroRpm")).toBool());
+    }
+    qunsetenv("RO_CONTROL_MOCK_FAN_RPM");
+  }
 };
 
 QTEST_MAIN(TestFanController)
 #include "test_fan_controller.moc"
-

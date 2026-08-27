@@ -116,11 +116,10 @@ buildSessionSpecificRootCommands(const QString &sessionType) {
                    {QStringLiteral("--force"), QStringLiteral("--add-drivers"),
                     kNvidiaKernelModules.join(QLatin1Char(' '))}});
 
-  commands.append(
-      {QStringLiteral("env"),
-       {QStringLiteral("LANG=C"), QStringLiteral("dnf"),
-        QStringLiteral("install"), QStringLiteral("-y"),
-        QStringLiteral("egl-wayland")}});
+  commands.append({QStringLiteral("env"),
+                   {QStringLiteral("LANG=C"), QStringLiteral("dnf"),
+                    QStringLiteral("install"), QStringLiteral("-y"),
+                    QStringLiteral("egl-wayland")}});
   commands.append({QStringLiteral("grubby"),
                    {QStringLiteral("--update-kernel=ALL"),
                     QStringLiteral("--args=nvidia-drm.modeset=1 "
@@ -316,8 +315,10 @@ void NvidiaInstaller::installProprietary(bool agreementAccepted) {
     QList<CommandRunner::RootCommand> rootCommands;
     {
       QStringList rpmFusionLangArgs = {
-          QStringLiteral("LANG=C"), QStringLiteral("dnf"),
-          QStringLiteral("install"), QStringLiteral("-y"),
+          QStringLiteral("LANG=C"),
+          QStringLiteral("dnf"),
+          QStringLiteral("install"),
+          QStringLiteral("-y"),
           QStringLiteral("https://mirrors.rpmfusion.org/free/fedora/"
                          "rpmfusion-free-release-%1.noarch.rpm")
               .arg(platformVersion),

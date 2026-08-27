@@ -133,6 +133,104 @@ void NvidiaDetector::refresh() {
   emit infoChanged();
 }
 
+QString NvidiaDetector::cleanGpuName(const QString &rawName,
+                                     const QString &vendor) {
+  QString name = rawName.trimmed();
+  if (name.isEmpty()) {
+    return {};
+  }
+
+  // 1. If lspci bracket format like "TU106 [GeForce RTX 2060 SUPER]" or
+  // "[GeForce RTX 3080]"
+  static const QRegularExpression bracketRegex(
+      QStringLiteral("\\[([^\\]]+)\\]"));
+  const auto match = bracketRegex.match(name);
+  if (match.hasMatch()) {
+    name = match.captured(1).trimmed();
+  }
+
+  // 2. Strip revision suffixes like (rev a1), (rev 01), [rev a1], -ra1, etc.
+  static const QRegularExpression revRegex(
+      QStringLiteral(
+          "\\s*\\(rev\\s+[a-f0-9]+\\)|\\s*\\[rev\\s+[a-f0-9]+\\]|\\s+-r[a-"
+          "f0-9]+"),
+      QRegularExpression::CaseInsensitiveOption);
+  name.remove(revRegex);
+
+  // 3. Clean up redundant vendor prefixes
+  name.remove(QStringLiteral("NVIDIA Corporation "), Qt::CaseInsensitive);
+  name.remove(QStringLiteral("NVIDIA Corp "), Qt::CaseInsensitive);
+  name.remove(QStringLiteral("Intel Corporation "), Qt::CaseInsensitive);
+  name.remove(QStringLiteral("Advanced Micro Devices, Inc. "),
+              Qt::CaseInsensitive);
+  name.remove(QStringLiteral("AMD/ATI "), Qt::CaseInsensitive);
+  name = name.trimmed();
+
+  // 4. Properly prefix with canonical vendor name
+  const bool isNvidia =
+      vendor.contains(QStringLiteral("NVIDIA"), Qt::CaseInsensitive) ||
+      rawName.contains(QStringLiteral("NVIDIA"), Qt::CaseInsensitive) ||
+      name.startsWith(QStringLiteral("GeForce"), Qt::CaseInsensitive) ||
+      name.startsWith(QStringLiteral("RTX"), Qt::CaseInsensitive) ||
+      name.startsWith(QStringLiteral("GTX"), Qt::CaseInsensitive) ||
+      name.startsWith(QStringLiteral("Quadro"), Qt::CaseInsensitive) ||
+      name.startsWith(QStringLiteral("Tesla"), Qt::CaseInsensitive) ||
+      name.startsWith(QStringLiteral("Titan"), Qt::CaseInsensitive) ||
+      name.startsWith(QStringLiteral("A100"), Qt::CaseInsensitive) ||
+      name.startsWith(QStringLiteral("H100"), Qt::CaseInsensitive) ||
+      name.startsWith(QStringLiteral("B200"), Qt::CaseInsensitive) ||
+      name.startsWith(QStringLiteral("L40"), Qt::CaseInsensitive);
+
+  if (isNvidia) {
+    if (!name.startsWith(QStringLiteral("NVIDIA"), Qt::CaseInsensitive)) {
+      name.prepend(QStringLiteral("NVIDIA "));
+    }
+  } else if (vendor.contains(QStringLiteral("Intel"), Qt::CaseInsensitive) ||
+             rawName.contains(QStringLiteral("Intel"), Qt::CaseInsensitive)) {
+    if (!name.startsWith(QStringLiteral("Intel"), Qt::CaseInsensitive)) {
+      name.prepend(QStringLiteral("Intel "));
+    }
+  } else if (vendor.contains(QStringLiteral("AMD"), Qt::CaseInsensitive) ||
+             vendor.contains(QStringLiteral("ATI"), Qt::CaseInsensitive) ||
+             rawName.contains(QStringLiteral("Radeon"), Qt::CaseInsensitive)) {
+    if (!name.startsWith(QStringLiteral("AMD"), Qt::CaseInsensitive)) {
+      name.prepend(QStringLiteral("AMD "));
+    }
+  }
+
+  // Normalize duplicate spaces
+  static const QRegularExpression spacesRegex(QStringLiteral("\\s+"));
+  name = name.replace(spacesRegex, QStringLiteral(" ")).trimmed();
+
+  return name;
+}
+
+QString NvidiaDetector::detectGpuNameFromProc() {
+  const QDir nvidiaGpusDir(QStringLiteral("/proc/driver/nvidia/gpus"));
+  if (nvidiaGpusDir.exists()) {
+    const QStringList gpuDirs =
+        nvidiaGpusDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    for (const QString &dir : gpuDirs) {
+      const QString infoPath =
+          nvidiaGpusDir.filePath(dir) + QStringLiteral("/information");
+      QFile file(infoPath);
+      if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        while (!in.atEnd()) {
+          const QString line = in.readLine().trimmed();
+          if (line.startsWith(QStringLiteral("Model:"), Qt::CaseInsensitive)) {
+            const QString model = line.mid(6).trimmed();
+            if (!model.isEmpty()) {
+              return cleanGpuName(model, QStringLiteral("NVIDIA"));
+            }
+          }
+        }
+      }
+    }
+  }
+  return {};
+}
+
 QString NvidiaDetector::detectDisplayAdapterName() const {
   if (!CapabilityProbe::isToolAvailable(QStringLiteral("lspci"))) {
     return {};
@@ -158,8 +256,10 @@ QString NvidiaDetector::detectDisplayAdapterName() const {
       while (it.hasNext())
         parts << it.next().captured(1);
 
-      if (parts.size() >= 3)
-        return parts[2];
+      if (parts.size() >= 3) {
+        const QString vendor = parts.size() >= 2 ? parts[1] : QString();
+        return cleanGpuName(parts[2], vendor);
+      }
     }
   }
 
@@ -167,33 +267,55 @@ QString NvidiaDetector::detectDisplayAdapterName() const {
 }
 
 QString NvidiaDetector::detectGpuName() const {
-  if (!CapabilityProbe::isToolAvailable(QStringLiteral("lspci"))) {
-    return {};
+  // 1. Check direct Linux /proc/driver/nvidia/gpus/*/information (instant &
+  // kernel-backed)
+  const QString procName = detectGpuNameFromProc();
+  if (!procName.isEmpty()) {
+    return procName;
   }
 
   CommandRunner runner;
 
-  const auto result =
-      runner.run(QStringLiteral("lspci"), {QStringLiteral("-mm")});
+  // 2. Query nvidia-smi tool if available
+  if (CapabilityProbe::isToolAvailable(QStringLiteral("nvidia-smi"))) {
+    const auto result = runner.run(QStringLiteral("nvidia-smi"),
+                                   {QStringLiteral("--query-gpu=name"),
+                                    QStringLiteral("--format=csv,noheader")});
+    if (result.success() && !result.stdout.trimmed().isEmpty()) {
+      const QString name =
+          result.stdout.split(QLatin1Char('\n')).value(0).trimmed();
+      if (!name.isEmpty()) {
+        return cleanGpuName(name, QStringLiteral("NVIDIA"));
+      }
+    }
+  }
 
-  if (!result.success())
-    return {};
+  // 3. Fallback to lspci
+  if (CapabilityProbe::isToolAvailable(QStringLiteral("lspci"))) {
+    const auto result =
+        runner.run(QStringLiteral("lspci"), {QStringLiteral("-mm")});
+    if (result.success()) {
+      const QStringList lines = result.stdout.split(QLatin1Char('\n'));
+      for (const QString &line : lines) {
+        if (line.contains(QStringLiteral("NVIDIA"), Qt::CaseInsensitive) &&
+            (line.contains(QStringLiteral("VGA"), Qt::CaseInsensitive) ||
+             line.contains(QStringLiteral("3D controller"),
+                           Qt::CaseInsensitive) ||
+             line.contains(QStringLiteral("Display controller"),
+                           Qt::CaseInsensitive))) {
+          static const QRegularExpression re(QStringLiteral("\"([^\"]+)\""));
+          auto it = re.globalMatch(line);
+          QStringList parts;
+          while (it.hasNext())
+            parts << it.next().captured(1);
 
-  const QStringList lines = result.stdout.split(QLatin1Char('\n'));
-  for (const QString &line : lines) {
-    if (line.contains(QStringLiteral("NVIDIA"), Qt::CaseInsensitive) &&
-        (line.contains(QStringLiteral("VGA"), Qt::CaseInsensitive) ||
-         line.contains(QStringLiteral("3D controller"), Qt::CaseInsensitive) ||
-         line.contains(QStringLiteral("Display controller"),
-                       Qt::CaseInsensitive))) {
-      static const QRegularExpression re(QStringLiteral("\"([^\"]+)\""));
-      auto it = re.globalMatch(line);
-      QStringList parts;
-      while (it.hasNext())
-        parts << it.next().captured(1);
-
-      if (parts.size() >= 3)
-        return parts[2];
+          if (parts.size() >= 3) {
+            const QString vendor =
+                parts.size() >= 2 ? parts[1] : QStringLiteral("NVIDIA");
+            return cleanGpuName(parts[2], vendor);
+          }
+        }
+      }
     }
   }
 

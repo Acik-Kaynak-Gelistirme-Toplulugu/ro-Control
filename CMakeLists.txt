@@ -192,6 +192,7 @@ qt_add_qml_module(ro-control
         src/qml/components/StatusBanner.qml
         src/qml/components/StatCard.qml
         src/qml/components/SidebarMenu.qml
+        src/qml/components/FanSettingsPopup.qml
     RESOURCES
         src/qml/assets/ro-control-logo.svg
         src/qml/assets/icon-language.svg
@@ -328,6 +329,25 @@ install(FILES data/completions/_ro-control
 install(FILES data/completions/ro-control.fish
     DESTINATION ${CMAKE_INSTALL_DATADIR}/fish/vendor_completions.d
 )
+
+# ─── Formatting ──────────────────────────────────────────────────────────────
+find_program(CLANG_FORMAT_EXE clang-format)
+if(CLANG_FORMAT_EXE)
+    file(GLOB_RECURSE ALL_SOURCE_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.h
+    )
+    add_custom_target(format
+        COMMAND ${CLANG_FORMAT_EXE} -i ${ALL_SOURCE_FILES}
+        COMMENT "Running clang-format on all C++ source files"
+    )
+    add_custom_target(check-format
+        COMMAND ${CLANG_FORMAT_EXE} --dry-run --Werror ${ALL_SOURCE_FILES}
+        COMMENT "Verifying clang-format on all C++ source files"
+    )
+endif()
 
 # ─── Tests ───────────────────────────────────────────────────────────────────
 option(BUILD_TESTS "Build unit tests" OFF)

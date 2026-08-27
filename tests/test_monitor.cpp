@@ -1,7 +1,7 @@
-#include <QTest>
 #include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
+#include <QTest>
 #include <QTextStream>
 
 #include "monitor/cpumonitor.h"
@@ -54,7 +54,8 @@ private slots:
     QVERIFY(gpu.memoryUsagePercent() <= 100);
     QVERIFY(gpu.memoryTotalMiB() >= 0);
     QVERIFY(gpu.memoryUsedMiB() >= 0);
-    QVERIFY(gpu.memoryUsedMiB() <= gpu.memoryTotalMiB() || gpu.memoryTotalMiB() == 0);
+    QVERIFY(gpu.memoryUsedMiB() <= gpu.memoryTotalMiB() ||
+            gpu.memoryTotalMiB() == 0);
   }
 
   void testGpuLifecycleAndInterval() {
@@ -79,7 +80,8 @@ private slots:
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
 
-    const QString scriptPath = tempDir.filePath(QStringLiteral("fake-nvidia-smi.sh"));
+    const QString scriptPath =
+        tempDir.filePath(QStringLiteral("fake-nvidia-smi.sh"));
     QFile script(scriptPath);
     QVERIFY(script.open(QIODevice::WriteOnly | QIODevice::Text));
 
@@ -134,7 +136,8 @@ private slots:
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
 
-    const QString scriptPath = tempDir.filePath(QStringLiteral("fake-sensors.sh"));
+    const QString scriptPath =
+        tempDir.filePath(QStringLiteral("fake-sensors.sh"));
     QFile script(scriptPath);
     QVERIFY(script.open(QIODevice::WriteOnly | QIODevice::Text));
 

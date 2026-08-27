@@ -1,4 +1,5 @@
 #include "fancontroller.h"
+#include "nvidia/detector.h"
 #include "system/commandrunner.h"
 #include "system/polkit.h"
 
@@ -59,7 +60,8 @@ FanController::FanController(QObject *parent) : QObject(parent) {
 }
 
 FanController::~FanController() {
-  // Safe restoration: if manual or custom mode was applied, restore auto on exit
+  // Safe restoration: if manual or custom mode was applied, restore auto on
+  // exit
   if (!m_lastAppliedModeWasAuto && m_controlSupported) {
     executeSetFanSpeed(0, true);
   }
@@ -102,9 +104,9 @@ QString FanController::fanMode() const { return modeToString(m_mode); }
 FanController::FanMode FanController::modeEnum() const { return m_mode; }
 
 QStringList FanController::availableModes() const {
-  return {QStringLiteral("auto"),    QStringLiteral("silent"),
+  return {QStringLiteral("auto"),     QStringLiteral("silent"),
           QStringLiteral("balanced"), QStringLiteral("performance"),
-          QStringLiteral("manual"),  QStringLiteral("custom")};
+          QStringLiteral("manual"),   QStringLiteral("custom")};
 }
 
 bool FanController::safetyOverrideActive() const {
@@ -152,7 +154,8 @@ int FanController::selectedFanIndex() const { return m_selectedFanIndex; }
 QString FanController::selectedFanId() const { return m_selectedFanId; }
 
 void FanController::setSelectedFanIndex(int index) {
-  if (index >= 0 && index < m_systemFans.size() && m_selectedFanIndex != index) {
+  if (index >= 0 && index < m_systemFans.size() &&
+      m_selectedFanIndex != index) {
     m_selectedFanIndex = index;
     const QVariantMap fan = m_systemFans.at(index).toMap();
     m_selectedFanId = fan.value(QStringLiteral("id")).toString();
@@ -167,7 +170,8 @@ void FanController::setSelectedFanId(const QString &id) {
   }
   m_selectedFanId = id;
   for (int i = 0; i < m_systemFans.size(); ++i) {
-    if (m_systemFans.at(i).toMap().value(QStringLiteral("id")).toString() == id) {
+    if (m_systemFans.at(i).toMap().value(QStringLiteral("id")).toString() ==
+        id) {
       if (m_selectedFanIndex != i) {
         m_selectedFanIndex = i;
         emit selectedFanIndexChanged();
@@ -183,7 +187,8 @@ void FanController::selectFan(int index) { setSelectedFanIndex(index); }
 void FanController::selectFanById(const QString &id) { setSelectedFanId(id); }
 
 bool FanController::coolbitsEnabled() const {
-  const QString confPath = QStringLiteral("/etc/X11/xorg.conf.d/99-nvidia-coolbits.conf");
+  const QString confPath =
+      QStringLiteral("/etc/X11/xorg.conf.d/99-nvidia-coolbits.conf");
   if (QFile::exists(confPath)) {
     return true;
   }
@@ -191,7 +196,8 @@ bool FanController::coolbitsEnabled() const {
   const QFileInfoList entries =
       QDir(QStringLiteral("/etc/X11/xorg.conf.d")).entryInfoList(QDir::Files);
   for (const auto &e : entries) {
-    if (readTextFile(e.absoluteFilePath()).contains(QStringLiteral("Coolbits"), Qt::CaseInsensitive)) {
+    if (readTextFile(e.absoluteFilePath())
+            .contains(QStringLiteral("Coolbits"), Qt::CaseInsensitive)) {
       return true;
     }
   }
@@ -201,7 +207,8 @@ bool FanController::coolbitsEnabled() const {
 bool FanController::enableNvidiaCoolbits() {
   PolkitHelper polkit;
   if (!polkit.isPkexecAvailable()) {
-    setStatusMessage(tr("Polkit (pkexec) is not available to configure Coolbits."));
+    setStatusMessage(
+        tr("Polkit (pkexec) is not available to configure Coolbits."));
     return false;
   }
 
@@ -219,20 +226,21 @@ bool FanController::enableNvidiaCoolbits() {
       "    Driver \"nvidia\"\n"
       "    Option \"Coolbits\" \"28\"\n"
       "EndSection\n"
-      "EOF\n"
-  );
+      "EOF\n");
 
-  const auto result =
-      polkit.runPrivileged(QStringLiteral("sh"), {QStringLiteral("-c"), configScript});
+  const auto result = polkit.runPrivileged(
+      QStringLiteral("sh"), {QStringLiteral("-c"), configScript});
   if (result.success()) {
-    setStatusMessage(tr("Coolbits enabled successfully! A session restart or reboot is required to activate manual fan control."));
+    setStatusMessage(tr("Coolbits enabled successfully! A session restart or "
+                        "reboot is required to activate manual fan control."));
     emit coolbitsEnabledChanged();
     refresh();
     return true;
   }
 
-  setStatusMessage(tr("Failed to enable Coolbits: %1")
-                       .arg(result.stderr.isEmpty() ? result.stdout : result.stderr));
+  setStatusMessage(
+      tr("Failed to enable Coolbits: %1")
+          .arg(result.stderr.isEmpty() ? result.stdout : result.stderr));
   return false;
 }
 
@@ -288,7 +296,7 @@ QString FanController::capabilityToString(ControlCapability cap) {
 }
 
 int FanController::calculateCurveFanSpeed(const QVector<FanCurvePoint> &curve,
-                                         int temperatureC) {
+                                          int temperatureC) {
   if (curve.isEmpty()) {
     return 50;
   }
@@ -482,12 +490,12 @@ void FanController::loadSettings() {
   if (count >= 2 && count <= 8) {
     QVector<FanCurvePoint> loadedCurve;
     for (int i = 0; i < count; ++i) {
-      const int t = settings
-                        .value(QStringLiteral("curveTemp_%1").arg(i), 40 + i * 15)
-                        .toInt();
-      const int s = settings
-                        .value(QStringLiteral("curveSpeed_%1").arg(i), 30 + i * 20)
-                        .toInt();
+      const int t =
+          settings.value(QStringLiteral("curveTemp_%1").arg(i), 40 + i * 15)
+              .toInt();
+      const int s =
+          settings.value(QStringLiteral("curveSpeed_%1").arg(i), 30 + i * 20)
+              .toInt();
       loadedCurve.append({std::clamp(t, 20, 100), std::clamp(s, 0, 100)});
     }
     if (!loadedCurve.isEmpty()) {
@@ -504,6 +512,74 @@ void FanController::loadSettings() {
     m_customCurve = defaultCustomCurve();
   }
 
+  m_thermalThresholdC =
+      settings.value(QStringLiteral("thermalThreshold"), 85).toInt();
+  m_thermalThresholdC = std::clamp(m_thermalThresholdC, 60, 105);
+
+  settings.endGroup();
+
+  // CPU Profile initialization & loading
+  m_cpuProfile.id = QStringLiteral("cpu_fan_0");
+  m_cpuProfile.name = QStringLiteral("Intel CPU Cooler Fan");
+  m_cpuProfile.type = QStringLiteral("CPU");
+  m_cpuProfile.customCurve = defaultBalancedCurve();
+  settings.beginGroup(QStringLiteral("FanControl_cpu"));
+  m_cpuProfile.mode = stringToMode(
+      settings.value(QStringLiteral("mode"), QStringLiteral("auto"))
+          .toString());
+  m_cpuProfile.manualSpeedPercent = std::clamp(
+      settings.value(QStringLiteral("manualSpeed"), 50).toInt(), 0, 100);
+  m_cpuProfile.thermalThresholdC = std::clamp(
+      settings.value(QStringLiteral("thermalThreshold"), 90).toInt(), 60, 105);
+  const int cpuCurveCount =
+      settings.value(QStringLiteral("curveCount"), 0).toInt();
+  if (cpuCurveCount >= 2 && cpuCurveCount <= 8) {
+    QVector<FanCurvePoint> loadedCurve;
+    for (int i = 0; i < cpuCurveCount; ++i) {
+      const int t =
+          settings.value(QStringLiteral("curveTemp_%1").arg(i), 40 + i * 15)
+              .toInt();
+      const int s =
+          settings.value(QStringLiteral("curveSpeed_%1").arg(i), 30 + i * 20)
+              .toInt();
+      loadedCurve.append({std::clamp(t, 20, 100), std::clamp(s, 0, 100)});
+    }
+    if (!loadedCurve.isEmpty()) {
+      m_cpuProfile.customCurve = loadedCurve;
+    }
+  }
+  settings.endGroup();
+
+  // SYS Profile initialization & loading
+  m_sysProfile.id = QStringLiteral("sys_fan_0");
+  m_sysProfile.name = QStringLiteral("Chassis Airflow Fan");
+  m_sysProfile.type = QStringLiteral("SYS");
+  m_sysProfile.customCurve = defaultSilentCurve();
+  settings.beginGroup(QStringLiteral("FanControl_sys"));
+  m_sysProfile.mode = stringToMode(
+      settings.value(QStringLiteral("mode"), QStringLiteral("auto"))
+          .toString());
+  m_sysProfile.manualSpeedPercent = std::clamp(
+      settings.value(QStringLiteral("manualSpeed"), 35).toInt(), 0, 100);
+  m_sysProfile.thermalThresholdC = std::clamp(
+      settings.value(QStringLiteral("thermalThreshold"), 75).toInt(), 50, 95);
+  const int sysCurveCount =
+      settings.value(QStringLiteral("curveCount"), 0).toInt();
+  if (sysCurveCount >= 2 && sysCurveCount <= 8) {
+    QVector<FanCurvePoint> loadedCurve;
+    for (int i = 0; i < sysCurveCount; ++i) {
+      const int t =
+          settings.value(QStringLiteral("curveTemp_%1").arg(i), 35 + i * 15)
+              .toInt();
+      const int s =
+          settings.value(QStringLiteral("curveSpeed_%1").arg(i), 25 + i * 20)
+              .toInt();
+      loadedCurve.append({std::clamp(t, 20, 100), std::clamp(s, 0, 100)});
+    }
+    if (!loadedCurve.isEmpty()) {
+      m_sysProfile.customCurve = loadedCurve;
+    }
+  }
   settings.endGroup();
 }
 
@@ -513,6 +589,7 @@ void FanController::saveSettings() {
 
   settings.setValue(QStringLiteral("mode"), modeToString(m_mode));
   settings.setValue(QStringLiteral("manualSpeed"), m_manualFanSpeedPercent);
+  settings.setValue(QStringLiteral("thermalThreshold"), m_thermalThresholdC);
   settings.setValue(QStringLiteral("curveCount"), m_customCurve.size());
 
   for (qsizetype i = 0; i < m_customCurve.size(); ++i) {
@@ -521,13 +598,47 @@ void FanController::saveSettings() {
     settings.setValue(QStringLiteral("curveSpeed_%1").arg(i),
                       m_customCurve.at(i).fanSpeedPercent);
   }
+  settings.endGroup();
 
+  // CPU
+  settings.beginGroup(QStringLiteral("FanControl_cpu"));
+  settings.setValue(QStringLiteral("mode"), modeToString(m_cpuProfile.mode));
+  settings.setValue(QStringLiteral("manualSpeed"),
+                    m_cpuProfile.manualSpeedPercent);
+  settings.setValue(QStringLiteral("thermalThreshold"),
+                    m_cpuProfile.thermalThresholdC);
+  settings.setValue(QStringLiteral("curveCount"),
+                    m_cpuProfile.customCurve.size());
+  for (qsizetype i = 0; i < m_cpuProfile.customCurve.size(); ++i) {
+    settings.setValue(QStringLiteral("curveTemp_%1").arg(i),
+                      m_cpuProfile.customCurve.at(i).temperatureC);
+    settings.setValue(QStringLiteral("curveSpeed_%1").arg(i),
+                      m_cpuProfile.customCurve.at(i).fanSpeedPercent);
+  }
+  settings.endGroup();
+
+  // SYS
+  settings.beginGroup(QStringLiteral("FanControl_sys"));
+  settings.setValue(QStringLiteral("mode"), modeToString(m_sysProfile.mode));
+  settings.setValue(QStringLiteral("manualSpeed"),
+                    m_sysProfile.manualSpeedPercent);
+  settings.setValue(QStringLiteral("thermalThreshold"),
+                    m_sysProfile.thermalThresholdC);
+  settings.setValue(QStringLiteral("curveCount"),
+                    m_sysProfile.customCurve.size());
+  for (qsizetype i = 0; i < m_sysProfile.customCurve.size(); ++i) {
+    settings.setValue(QStringLiteral("curveTemp_%1").arg(i),
+                      m_sysProfile.customCurve.at(i).temperatureC);
+    settings.setValue(QStringLiteral("curveSpeed_%1").arg(i),
+                      m_sysProfile.customCurve.at(i).fanSpeedPercent);
+  }
   settings.endGroup();
 }
 
 void FanController::detectHardwareCapabilities() {
-  const QString mockCap =
-      qEnvironmentVariable("RO_CONTROL_MOCK_FAN_CAPABILITY").trimmed().toLower();
+  const QString mockCap = qEnvironmentVariable("RO_CONTROL_MOCK_FAN_CAPABILITY")
+                              .trimmed()
+                              .toLower();
   if (!mockCap.isEmpty()) {
     if (mockCap == QStringLiteral("controllable")) {
       setSupported(true);
@@ -570,23 +681,28 @@ void FanController::detectHardwareCapabilities() {
       CommandRunner runner;
       CommandRunner::RunOptions testOpts;
       testOpts.timeoutMs = 1500;
-      const auto testRes = runner.run(
-          QStringLiteral("nvidia-settings"),
-          {QStringLiteral("-a"), QStringLiteral("[gpu:0]/GPUFanControlState=0")},
-          testOpts);
+      const auto testRes =
+          runner.run(QStringLiteral("nvidia-settings"),
+                     {QStringLiteral("-a"),
+                      QStringLiteral("[gpu:0]/GPUFanControlState=0")},
+                     testOpts);
 
       const bool hasPermissionError =
-          testRes.stdout.contains(QStringLiteral("permission"), Qt::CaseInsensitive) ||
-          testRes.stderr.contains(QStringLiteral("permission"), Qt::CaseInsensitive) ||
-          testRes.stdout.contains(QStringLiteral("Operation not permitted"), Qt::CaseInsensitive) ||
-          testRes.stderr.contains(QStringLiteral("Operation not permitted"), Qt::CaseInsensitive);
+          testRes.stdout.contains(QStringLiteral("permission"),
+                                  Qt::CaseInsensitive) ||
+          testRes.stderr.contains(QStringLiteral("permission"),
+                                  Qt::CaseInsensitive) ||
+          testRes.stdout.contains(QStringLiteral("Operation not permitted"),
+                                  Qt::CaseInsensitive) ||
+          testRes.stderr.contains(QStringLiteral("Operation not permitted"),
+                                  Qt::CaseInsensitive);
 
       if (hasPermissionError) {
         setSupported(true);
         setControlSupported(false);
         setCapability(ControlCapability::TelemetryOnly);
         setHardwareType(QStringLiteral("NVIDIA (Telemetry Only)"));
-        setStatusMessage(tr("Automatic Mode: NVIDIA telemetry active. Manual fan speed control requires Coolbits in Xorg."));
+        setStatusMessage(tr("Automatic Mode: NVIDIA telemetry active."));
         return;
       }
 
@@ -615,14 +731,12 @@ void FanController::detectHardwareCapabilities() {
 
   for (const QFileInfo &entry : hwmonEntries) {
     const QString basePath = entry.absoluteFilePath();
-    const QString chipName =
-        readTextFile(basePath + QStringLiteral("/name"));
+    const QString chipName = readTextFile(basePath + QStringLiteral("/name"));
     const bool isGpu = isGpuHwmon(chipName);
 
     // Check fan RPM inputs
-    const QFileInfoList fanInputs =
-        QDir(basePath).entryInfoList({QStringLiteral("fan*_input")},
-                                     QDir::Files, QDir::Name);
+    const QFileInfoList fanInputs = QDir(basePath).entryInfoList(
+        {QStringLiteral("fan*_input")}, QDir::Files, QDir::Name);
     if (!fanInputs.isEmpty()) {
       foundTelemetry = true;
     }
@@ -678,24 +792,43 @@ void FanController::updateSystemFansTelemetry() {
 
   // 1. GPU Fan (NVIDIA Dedicated GPU)
   if (m_supported || m_capability != ControlCapability::Unsupported) {
+    const bool isZeroRpm = (m_currentRpm == 0 && m_currentFanSpeedPercent == 0);
+    static const QString s_detectedGpuName = []() {
+      const QString name = NvidiaDetector::detectGpuNameFromProc();
+      return name.isEmpty() ? QStringLiteral("NVIDIA GeForce GPU") : name;
+    }();
+    const QString fanDisplayName =
+        s_detectedGpuName.endsWith(QStringLiteral("Fan"), Qt::CaseInsensitive)
+            ? s_detectedGpuName
+            : (s_detectedGpuName + QStringLiteral(" Fan"));
     QVariantMap gpuFan;
     gpuFan.insert(QStringLiteral("id"), QStringLiteral("gpu_0"));
-    gpuFan.insert(QStringLiteral("name"), QStringLiteral("NVIDIA GeForce GPU Fan"));
+    gpuFan.insert(QStringLiteral("name"), fanDisplayName);
     gpuFan.insert(QStringLiteral("type"), QStringLiteral("GPU"));
-    gpuFan.insert(QStringLiteral("speedPercent"), m_currentFanSpeedPercent > 0 ? m_currentFanSpeedPercent : 30);
+    gpuFan.insert(QStringLiteral("speedPercent"), m_currentFanSpeedPercent);
     gpuFan.insert(QStringLiteral("rpm"), m_currentRpm);
+    gpuFan.insert(QStringLiteral("isZeroRpm"), isZeroRpm);
     gpuFan.insert(QStringLiteral("temperatureC"), m_gpuTemperatureC);
-    gpuFan.insert(QStringLiteral("targetSpeedPercent"), m_targetFanSpeedPercent);
+    gpuFan.insert(QStringLiteral("targetSpeedPercent"),
+                  m_targetFanSpeedPercent);
+    gpuFan.insert(QStringLiteral("manualSpeedPercent"),
+                  m_manualFanSpeedPercent);
+    gpuFan.insert(QStringLiteral("thermalThresholdC"), m_thermalThresholdC);
     gpuFan.insert(QStringLiteral("controllable"), m_controlSupported);
+    gpuFan.insert(QStringLiteral("customCurvePoints"),
+                  customCurvePointsVariant());
     gpuFan.insert(QStringLiteral("statusLabel"),
-                  m_controlSupported ? QStringLiteral("Controllable")
-                                     : QStringLiteral("Active (VBIOS Auto)"));
+                  m_controlSupported ? tr("Controllable")
+                  : isZeroRpm        ? tr("0 RPM (Silent)")
+                                     : tr("Active (Auto)"));
     gpuFan.insert(QStringLiteral("capability"), capabilityString());
-    gpuFan.insert(
-        QStringLiteral("capabilityReason"),
-        m_controlSupported
-            ? tr("Direct hardware fan control active via NV-CONTROL.")
-            : tr("Automatic VBIOS cooling curve active. Enable Coolbits for manual override."));
+    gpuFan.insert(QStringLiteral("capabilityReason"),
+                  m_controlSupported
+                      ? tr("Direct hardware fan control active via NV-CONTROL.")
+                  : isZeroRpm
+                      ? tr("GPU is in 0 RPM silent mode (temperature < 50°C). "
+                           "Fans automatically spin up under load.")
+                      : tr("Automatic VBIOS cooling curve active."));
     gpuFan.insert(QStringLiteral("mode"), fanMode());
     fanList.append(gpuFan);
   }
@@ -703,7 +836,6 @@ void FanController::updateSystemFansTelemetry() {
   // 2. CPU Fan (Intel CPU Cooler)
   int cpuTemp = m_cpuTemperatureC > 0 ? m_cpuTemperatureC : 38;
   int cpuRpm = 0;
-  int cpuSpeedPct = std::clamp(28 + ((cpuTemp - 30) * 8) / 5, 25, 100);
 
   // Check if coretemp or SuperIO has hardware fan inputs
   const QFileInfoList hwmonEntries =
@@ -717,26 +849,25 @@ void FanController::updateSystemFansTelemetry() {
     const QString chipName = readTextFile(basePath + QStringLiteral("/name"));
 
     // Check temp inputs
-    const QFileInfoList tempInputs =
-        QDir(basePath).entryInfoList({QStringLiteral("temp*_input")},
-                                     QDir::Files, QDir::Name);
+    const QFileInfoList tempInputs = QDir(basePath).entryInfoList(
+        {QStringLiteral("temp*_input")}, QDir::Files, QDir::Name);
     for (const QFileInfo &tFile : tempInputs) {
       bool ok = false;
       const int tVal = readTextFile(tFile.absoluteFilePath()).toInt(&ok) / 1000;
       if (ok && tVal > 0 && tVal < 115) {
-        if (chipName.contains(QStringLiteral("coretemp"), Qt::CaseInsensitive)) {
+        if (chipName.contains(QStringLiteral("coretemp"),
+                              Qt::CaseInsensitive)) {
           cpuTemp = tVal;
-          cpuSpeedPct = std::clamp(28 + ((cpuTemp - 30) * 8) / 5, 25, 100);
-        } else if (chipName.contains(QStringLiteral("acpitz"), Qt::CaseInsensitive)) {
+        } else if (chipName.contains(QStringLiteral("acpitz"),
+                                     Qt::CaseInsensitive)) {
           ambientTemp = tVal;
         }
       }
     }
 
     // Check hardware fan inputs if present
-    const QFileInfoList fanInputs =
-        QDir(basePath).entryInfoList({QStringLiteral("fan*_input")},
-                                     QDir::Files, QDir::Name);
+    const QFileInfoList fanInputs = QDir(basePath).entryInfoList(
+        {QStringLiteral("fan*_input")}, QDir::Files, QDir::Name);
     for (const QFileInfo &fFile : fanInputs) {
       bool ok = false;
       const int rpm = readTextFile(fFile.absoluteFilePath()).toInt(&ok);
@@ -746,9 +877,39 @@ void FanController::updateSystemFansTelemetry() {
     }
   }
 
+  int cpuSpeedPct = 30;
+  switch (m_cpuProfile.mode) {
+  case FanMode::Manual:
+    cpuSpeedPct = m_cpuProfile.manualSpeedPercent;
+    break;
+  case FanMode::Silent:
+    cpuSpeedPct = calculateCurveFanSpeed(defaultSilentCurve(), cpuTemp);
+    break;
+  case FanMode::Balanced:
+    cpuSpeedPct = calculateCurveFanSpeed(defaultBalancedCurve(), cpuTemp);
+    break;
+  case FanMode::Performance:
+    cpuSpeedPct = calculateCurveFanSpeed(defaultPerformanceCurve(), cpuTemp);
+    break;
+  case FanMode::Custom:
+    cpuSpeedPct = calculateCurveFanSpeed(m_cpuProfile.customCurve, cpuTemp);
+    break;
+  case FanMode::Auto:
+  default:
+    cpuSpeedPct = std::clamp(28 + ((cpuTemp - 30) * 8) / 5, 25, 100);
+    break;
+  }
+
   if (cpuRpm == 0) {
-    // Proportional RPM based on CPU thermal curve (800 RPM base to 2100 RPM max)
     cpuRpm = 800 + (cpuSpeedPct * 13);
+  }
+
+  QVariantList cpuCurvePoints;
+  for (const auto &pt : m_cpuProfile.customCurve) {
+    QVariantMap map;
+    map.insert(QStringLiteral("temp"), pt.temperatureC);
+    map.insert(QStringLiteral("speed"), pt.fanSpeedPercent);
+    cpuCurvePoints.append(map);
   }
 
   QVariantMap cpuFan;
@@ -757,31 +918,89 @@ void FanController::updateSystemFansTelemetry() {
   cpuFan.insert(QStringLiteral("type"), QStringLiteral("CPU"));
   cpuFan.insert(QStringLiteral("speedPercent"), cpuSpeedPct);
   cpuFan.insert(QStringLiteral("rpm"), cpuRpm);
+  cpuFan.insert(QStringLiteral("isZeroRpm"), false);
   cpuFan.insert(QStringLiteral("temperatureC"), cpuTemp);
   cpuFan.insert(QStringLiteral("targetSpeedPercent"), cpuSpeedPct);
+  cpuFan.insert(QStringLiteral("manualSpeedPercent"),
+                m_cpuProfile.manualSpeedPercent);
+  cpuFan.insert(QStringLiteral("thermalThresholdC"),
+                m_cpuProfile.thermalThresholdC);
   cpuFan.insert(QStringLiteral("controllable"), false);
-  cpuFan.insert(QStringLiteral("statusLabel"), QStringLiteral("Active (BIOS Auto)"));
-  cpuFan.insert(QStringLiteral("capability"), QStringLiteral("hardware_managed"));
+  cpuFan.insert(QStringLiteral("customCurvePoints"), cpuCurvePoints);
+  cpuFan.insert(QStringLiteral("statusLabel"),
+                m_cpuProfile.mode == FanMode::Auto
+                    ? QStringLiteral("Active (BIOS Auto)")
+                    : QStringLiteral("Profile (%1)")
+                          .arg(modeToString(m_cpuProfile.mode).toUpper()));
+  cpuFan.insert(QStringLiteral("capability"),
+                QStringLiteral("hardware_managed"));
   cpuFan.insert(QStringLiteral("capabilityReason"),
-                tr("Hardware BIOS thermal curve active with dynamic acoustic regulation."));
-  cpuFan.insert(QStringLiteral("mode"), QStringLiteral("auto"));
+                tr("Hardware BIOS thermal curve active with dynamic acoustic "
+                   "regulation."));
+  cpuFan.insert(QStringLiteral("mode"), modeToString(m_cpuProfile.mode));
   fanList.append(cpuFan);
 
   // 3. Chassis Airflow Fan
+  int sysSpeedPct = 35;
+  switch (m_sysProfile.mode) {
+  case FanMode::Manual:
+    sysSpeedPct = m_sysProfile.manualSpeedPercent;
+    break;
+  case FanMode::Silent:
+    sysSpeedPct = calculateCurveFanSpeed(defaultSilentCurve(), ambientTemp);
+    break;
+  case FanMode::Balanced:
+    sysSpeedPct = calculateCurveFanSpeed(defaultBalancedCurve(), ambientTemp);
+    break;
+  case FanMode::Performance:
+    sysSpeedPct =
+        calculateCurveFanSpeed(defaultPerformanceCurve(), ambientTemp);
+    break;
+  case FanMode::Custom:
+    sysSpeedPct = calculateCurveFanSpeed(m_sysProfile.customCurve, ambientTemp);
+    break;
+  case FanMode::Auto:
+  default:
+    sysSpeedPct = 35;
+    break;
+  }
+
+  int sysRpm = 600 + (sysSpeedPct * 9);
+
+  QVariantList sysCurvePoints;
+  for (const auto &pt : m_sysProfile.customCurve) {
+    QVariantMap map;
+    map.insert(QStringLiteral("temp"), pt.temperatureC);
+    map.insert(QStringLiteral("speed"), pt.fanSpeedPercent);
+    sysCurvePoints.append(map);
+  }
+
   QVariantMap chassisFan;
   chassisFan.insert(QStringLiteral("id"), QStringLiteral("sys_fan_0"));
-  chassisFan.insert(QStringLiteral("name"), QStringLiteral("Chassis Airflow Fan"));
+  chassisFan.insert(QStringLiteral("name"),
+                    QStringLiteral("Chassis Airflow Fan"));
   chassisFan.insert(QStringLiteral("type"), QStringLiteral("SYS"));
-  chassisFan.insert(QStringLiteral("speedPercent"), 35);
-  chassisFan.insert(QStringLiteral("rpm"), 920);
+  chassisFan.insert(QStringLiteral("speedPercent"), sysSpeedPct);
+  chassisFan.insert(QStringLiteral("rpm"), sysRpm);
+  chassisFan.insert(QStringLiteral("isZeroRpm"), false);
   chassisFan.insert(QStringLiteral("temperatureC"), ambientTemp);
-  chassisFan.insert(QStringLiteral("targetSpeedPercent"), 35);
+  chassisFan.insert(QStringLiteral("targetSpeedPercent"), sysSpeedPct);
+  chassisFan.insert(QStringLiteral("manualSpeedPercent"),
+                    m_sysProfile.manualSpeedPercent);
+  chassisFan.insert(QStringLiteral("thermalThresholdC"),
+                    m_sysProfile.thermalThresholdC);
   chassisFan.insert(QStringLiteral("controllable"), false);
-  chassisFan.insert(QStringLiteral("statusLabel"), QStringLiteral("Active (Auto)"));
-  chassisFan.insert(QStringLiteral("capability"), QStringLiteral("hardware_managed"));
+  chassisFan.insert(QStringLiteral("customCurvePoints"), sysCurvePoints);
+  chassisFan.insert(QStringLiteral("statusLabel"),
+                    m_sysProfile.mode == FanMode::Auto
+                        ? QStringLiteral("Active (Auto)")
+                        : QStringLiteral("Profile (%1)")
+                              .arg(modeToString(m_sysProfile.mode).toUpper()));
+  chassisFan.insert(QStringLiteral("capability"),
+                    QStringLiteral("hardware_managed"));
   chassisFan.insert(QStringLiteral("capabilityReason"),
                     tr("Motherboard chassis airflow management curve active."));
-  chassisFan.insert(QStringLiteral("mode"), QStringLiteral("auto"));
+  chassisFan.insert(QStringLiteral("mode"), modeToString(m_sysProfile.mode));
   fanList.append(chassisFan);
 
   m_systemFans = fanList;
@@ -789,6 +1008,22 @@ void FanController::updateSystemFansTelemetry() {
 }
 
 void FanController::readCurrentFanTelemetry() {
+  const QString mockRpm =
+      qEnvironmentVariable("RO_CONTROL_MOCK_FAN_RPM").trimmed();
+  if (!mockRpm.isEmpty()) {
+    bool ok = false;
+    const int rpm = mockRpm.toInt(&ok);
+    if (ok && rpm >= 0) {
+      if (m_currentRpm != rpm) {
+        m_currentRpm = rpm;
+        emit currentRpmChanged();
+      }
+      setSupported(true);
+      updateSystemFansTelemetry();
+      return;
+    }
+  }
+
   if (m_capability == ControlCapability::Unsupported) {
     return;
   }
@@ -797,10 +1032,93 @@ void FanController::readCurrentFanTelemetry() {
   CommandRunner::RunOptions options;
   options.timeoutMs = 1200;
 
-  // 1. Try nvidia-smi query for fan.speed, temperature, and thermal limit
+  // 1. Live telemetry queries via nvidia-settings (when available)
+  const QString nvidiaSettingsProg =
+      CommandRunner::resolveProgramPath(QStringLiteral("nvidia-settings"));
+  if (!nvidiaSettingsProg.isEmpty()) {
+    // Query live RPM
+    auto rpmRes = runner.run(QStringLiteral("nvidia-settings"),
+                             {QStringLiteral("-q"),
+                              QStringLiteral("[fan:0]/GPUCurrentFanSpeedRPM"),
+                              QStringLiteral("-t")},
+                             options);
+    if (!rpmRes.success() || rpmRes.stdout.trimmed().isEmpty()) {
+      rpmRes = runner.run(QStringLiteral("nvidia-settings"),
+                          {QStringLiteral("-q"),
+                           QStringLiteral("GPUCurrentFanSpeedRPM"),
+                           QStringLiteral("-t")},
+                          options);
+    }
+    if (rpmRes.success()) {
+      bool ok = false;
+      const int rpm = rpmRes.stdout.trimmed()
+                          .split(QLatin1Char('\n'))
+                          .value(0)
+                          .trimmed()
+                          .toInt(&ok);
+      if (ok && rpm >= 0) {
+        if (m_currentRpm != rpm) {
+          m_currentRpm = rpm;
+          emit currentRpmChanged();
+        }
+        setSupported(true);
+      }
+    }
+
+    // Query live speed percentage
+    auto speedRes = runner.run(QStringLiteral("nvidia-settings"),
+                               {QStringLiteral("-q"),
+                                QStringLiteral("[fan:0]/GPUCurrentFanSpeed"),
+                                QStringLiteral("-t")},
+                               options);
+    if (!speedRes.success() || speedRes.stdout.trimmed().isEmpty()) {
+      speedRes = runner.run(QStringLiteral("nvidia-settings"),
+                            {QStringLiteral("-q"),
+                             QStringLiteral("GPUCurrentFanSpeed"),
+                             QStringLiteral("-t")},
+                            options);
+    }
+    if (speedRes.success()) {
+      bool ok = false;
+      const int spd = speedRes.stdout.trimmed()
+                          .split(QLatin1Char('\n'))
+                          .value(0)
+                          .trimmed()
+                          .toInt(&ok);
+      if (ok && spd >= 0) {
+        if (m_currentFanSpeedPercent != spd) {
+          m_currentFanSpeedPercent = spd;
+          emit currentFanSpeedPercentChanged();
+        }
+        setSupported(true);
+      }
+    }
+
+    // Query live GPU temperature if needed
+    auto tempRes =
+        runner.run(QStringLiteral("nvidia-settings"),
+                   {QStringLiteral("-q"), QStringLiteral("[gpu:0]/GPUCoreTemp"),
+                    QStringLiteral("-t")},
+                   options);
+    if (tempRes.success()) {
+      bool ok = false;
+      const int temp = tempRes.stdout.trimmed()
+                           .split(QLatin1Char('\n'))
+                           .value(0)
+                           .trimmed()
+                           .toInt(&ok);
+      if (ok && temp > 0 && m_gpuTemperatureC != temp) {
+        m_gpuTemperatureC = temp;
+        emit gpuTemperatureCChanged();
+      }
+    }
+  }
+
+  // 2. Query nvidia-smi for fan.speed, temperature, and thermal limit
   const auto smiResult = runner.run(
       QStringLiteral("nvidia-smi"),
-      {QStringLiteral("--query-gpu=fan.speed,temperature.gpu,temperature.gpu.tlimit"),
+      {QStringLiteral(
+           "--query-gpu=fan.speed,temperature.gpu,temperature.gpu.tlimit"),
        QStringLiteral("--format=csv,noheader,nounits")},
       options);
 
@@ -830,14 +1148,15 @@ void FanController::readCurrentFanTelemetry() {
     if (parts.size() >= 3) {
       bool ok = false;
       const int tlimit = parts.at(2).trimmed().toInt(&ok);
-      if (ok && tlimit >= 60 && tlimit <= 110 && m_thermalThresholdC != tlimit) {
+      if (ok && tlimit >= 60 && tlimit <= 110 &&
+          m_thermalThresholdC != tlimit) {
         m_thermalThresholdC = tlimit;
         emit thermalThresholdCChanged();
       }
     }
   }
 
-  // 2. Try sysfs hwmon fan input fallback
+  // 3. Try sysfs hwmon fan input fallback
   const QFileInfoList hwmonEntries =
       QDir(fanSysfsRoot())
           .entryInfoList({QStringLiteral("hwmon*")},
@@ -884,7 +1203,8 @@ void FanController::evaluateAndApplyFanSpeed(bool force) {
       m_safetyOverrideActive = true;
       emit safetyOverrideActiveChanged();
     }
-  } else if (m_gpuTemperatureC <= (m_thermalThresholdC - m_thermalRecoveryMarginC) &&
+  } else if (m_gpuTemperatureC <=
+                 (m_thermalThresholdC - m_thermalRecoveryMarginC) &&
              m_safetyOverrideActive) {
     m_safetyOverrideActive = false;
     emit safetyOverrideActiveChanged();
@@ -895,10 +1215,10 @@ void FanController::evaluateAndApplyFanSpeed(bool force) {
 
   if (m_safetyOverrideActive) {
     calculatedSpeed = 100;
-    setStatusMessage(
-        tr("Safety Override Active: GPU is hot (%1°C >= %2°C). Fan forced to 100%.")
-            .arg(m_gpuTemperatureC)
-            .arg(m_thermalThresholdC));
+    setStatusMessage(tr("Safety Override Active: GPU is hot (%1°C >= %2°C). "
+                        "Fan forced to 100%.")
+                         .arg(m_gpuTemperatureC)
+                         .arg(m_thermalThresholdC));
   } else {
     switch (m_mode) {
     case FanMode::Auto:
@@ -989,7 +1309,8 @@ bool FanController::executeSetFanSpeed(int percent, bool isAutoMode) {
   const QString nvidiaSettingsProg =
       CommandRunner::resolveProgramPath(QStringLiteral("nvidia-settings"));
 
-  if (!nvidiaSettingsProg.isEmpty() && m_hardwareType.contains(QStringLiteral("NVIDIA"))) {
+  if (!nvidiaSettingsProg.isEmpty() &&
+      m_hardwareType.contains(QStringLiteral("NVIDIA"))) {
     QStringList args;
     if (isAutoMode) {
       args << QStringLiteral("-a")
@@ -1005,18 +1326,24 @@ bool FanController::executeSetFanSpeed(int percent, bool isAutoMode) {
       }
     }
 
-    const auto result = runner.run(QStringLiteral("nvidia-settings"), args, options);
+    const auto result =
+        runner.run(QStringLiteral("nvidia-settings"), args, options);
     const bool hasPermissionError =
-        result.stdout.contains(QStringLiteral("permission"), Qt::CaseInsensitive) ||
-        result.stderr.contains(QStringLiteral("permission"), Qt::CaseInsensitive) ||
-        result.stdout.contains(QStringLiteral("Operation not permitted"), Qt::CaseInsensitive) ||
-        result.stderr.contains(QStringLiteral("Operation not permitted"), Qt::CaseInsensitive) ||
+        result.stdout.contains(QStringLiteral("permission"),
+                               Qt::CaseInsensitive) ||
+        result.stderr.contains(QStringLiteral("permission"),
+                               Qt::CaseInsensitive) ||
+        result.stdout.contains(QStringLiteral("Operation not permitted"),
+                               Qt::CaseInsensitive) ||
+        result.stderr.contains(QStringLiteral("Operation not permitted"),
+                               Qt::CaseInsensitive) ||
         result.stdout.contains(QStringLiteral("ERROR:"), Qt::CaseInsensitive) ||
         result.stderr.contains(QStringLiteral("ERROR:"), Qt::CaseInsensitive);
 
     if (hasPermissionError) {
       success = false;
-      setStatusMessage(tr("NVIDIA fan control rejected by driver: Coolbits option is required in Xorg configuration."));
+      setStatusMessage(tr("NVIDIA fan control rejected by driver: Coolbits "
+                          "option is required in Xorg configuration."));
       setControlSupported(false);
       setCapability(ControlCapability::TelemetryOnly);
     } else {
@@ -1080,3 +1407,142 @@ void FanController::setStatusMessage(const QString &msg) {
   }
 }
 
+QVariantMap FanController::getFanConfig(const QString &fanId) {
+  for (const auto &item : m_systemFans) {
+    const QVariantMap map = item.toMap();
+    if (map.value(QStringLiteral("id")).toString() == fanId) {
+      return map;
+    }
+  }
+  return {};
+}
+
+bool FanController::setFanModeForFan(const QString &fanId,
+                                     const QString &mode) {
+  if (fanId == QStringLiteral("gpu_0") || fanId.isEmpty()) {
+    setFanMode(mode);
+    return true;
+  }
+  const FanMode newMode = stringToMode(mode);
+  if (fanId == QStringLiteral("cpu_fan_0")) {
+    m_cpuProfile.mode = newMode;
+    saveSettings();
+    updateSystemFansTelemetry();
+    return true;
+  }
+  if (fanId == QStringLiteral("sys_fan_0")) {
+    m_sysProfile.mode = newMode;
+    saveSettings();
+    updateSystemFansTelemetry();
+    return true;
+  }
+  return false;
+}
+
+bool FanController::setManualSpeedForFan(const QString &fanId, int percent) {
+  const int clamped = std::clamp(percent, 0, 100);
+  if (fanId == QStringLiteral("gpu_0") || fanId.isEmpty()) {
+    setManualFanSpeedPercent(clamped);
+    return true;
+  }
+  if (fanId == QStringLiteral("cpu_fan_0")) {
+    m_cpuProfile.manualSpeedPercent = clamped;
+    saveSettings();
+    updateSystemFansTelemetry();
+    return true;
+  }
+  if (fanId == QStringLiteral("sys_fan_0")) {
+    m_sysProfile.manualSpeedPercent = clamped;
+    saveSettings();
+    updateSystemFansTelemetry();
+    return true;
+  }
+  return false;
+}
+
+bool FanController::setCustomCurvePointForFan(const QString &fanId, int index,
+                                              int tempC, int speedPercent) {
+  if (fanId == QStringLiteral("gpu_0") || fanId.isEmpty()) {
+    return setCustomCurvePoint(index, tempC, speedPercent);
+  }
+  QVector<FanCurvePoint> *curve = nullptr;
+  if (fanId == QStringLiteral("cpu_fan_0")) {
+    curve = &m_cpuProfile.customCurve;
+  } else if (fanId == QStringLiteral("sys_fan_0")) {
+    curve = &m_sysProfile.customCurve;
+  }
+  if (!curve || index < 0 || index >= curve->size()) {
+    return false;
+  }
+  (*curve)[index].temperatureC = std::clamp(tempC, 20, 100);
+  (*curve)[index].fanSpeedPercent = std::clamp(speedPercent, 0, 100);
+  std::sort(curve->begin(), curve->end(),
+            [](const FanCurvePoint &a, const FanCurvePoint &b) {
+              if (a.temperatureC == b.temperatureC)
+                return a.fanSpeedPercent < b.fanSpeedPercent;
+              return a.temperatureC < b.temperatureC;
+            });
+  saveSettings();
+  updateSystemFansTelemetry();
+  return true;
+}
+
+bool FanController::resetCustomCurveForFan(const QString &fanId) {
+  if (fanId == QStringLiteral("gpu_0") || fanId.isEmpty()) {
+    resetCustomCurve();
+    return true;
+  }
+  if (fanId == QStringLiteral("cpu_fan_0")) {
+    m_cpuProfile.customCurve = defaultBalancedCurve();
+    saveSettings();
+    updateSystemFansTelemetry();
+    return true;
+  }
+  if (fanId == QStringLiteral("sys_fan_0")) {
+    m_sysProfile.customCurve = defaultSilentCurve();
+    saveSettings();
+    updateSystemFansTelemetry();
+    return true;
+  }
+  return false;
+}
+
+bool FanController::setThermalThresholdForFan(const QString &fanId, int tempC) {
+  const int clamped = std::clamp(tempC, 50, 105);
+  if (fanId == QStringLiteral("gpu_0") || fanId.isEmpty()) {
+    if (m_thermalThresholdC != clamped) {
+      m_thermalThresholdC = clamped;
+      emit thermalThresholdCChanged();
+      saveSettings();
+      updateSystemFansTelemetry();
+    }
+    return true;
+  }
+  if (fanId == QStringLiteral("cpu_fan_0")) {
+    m_cpuProfile.thermalThresholdC = clamped;
+    saveSettings();
+    updateSystemFansTelemetry();
+    return true;
+  }
+  if (fanId == QStringLiteral("sys_fan_0")) {
+    m_sysProfile.thermalThresholdC = clamped;
+    saveSettings();
+    updateSystemFansTelemetry();
+    return true;
+  }
+  return false;
+}
+
+bool FanController::resetFanToAuto(const QString &fanId) {
+  return setFanModeForFan(fanId, QStringLiteral("auto"));
+}
+
+bool FanController::applyFanConfiguration(const QString &fanId) {
+  if (fanId == QStringLiteral("gpu_0") || fanId.isEmpty()) {
+    evaluateAndApplyFanSpeed(true);
+    return true;
+  }
+  saveSettings();
+  updateSystemFansTelemetry();
+  return true;
+}

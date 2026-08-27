@@ -1,7 +1,7 @@
 #include <QDir>
 #include <QFile>
-#include <QTemporaryDir>
 #include <QStandardPaths>
+#include <QTemporaryDir>
 #include <QTest>
 #include <atomic>
 #include <chrono>
@@ -17,12 +17,12 @@
 namespace {
 
 QTemporaryDir createExecutableTempDir() {
-  const QString basePath =
-      QDir::cleanPath(QDir::currentPath() + QStringLiteral("/ro-control-test-XXXXXX"));
+  const QString basePath = QDir::cleanPath(
+      QDir::currentPath() + QStringLiteral("/ro-control-test-XXXXXX"));
   return QTemporaryDir(basePath);
 }
 
-}
+} // namespace
 
 class TestSystemIntegration : public QObject {
   Q_OBJECT
@@ -147,7 +147,8 @@ private slots:
 
     qputenv("RO_CONTROL_COMMAND_NVIDIA_SMI", scriptPath.toUtf8());
 
-    const auto status = CapabilityProbe::probeTool(QStringLiteral("nvidia-smi"));
+    const auto status =
+        CapabilityProbe::probeTool(QStringLiteral("nvidia-smi"));
     QVERIFY(status.available);
     QCOMPARE(QDir::cleanPath(status.resolvedPath), QDir::cleanPath(scriptPath));
 
@@ -275,7 +276,8 @@ private slots:
   }
 
   void testHelperPathsAreCompiledForBuildAndInstallModes() {
-    const QString helperBuildPath = QStringLiteral(RO_CONTROL_HELPER_BUILD_PATH);
+    const QString helperBuildPath =
+        QStringLiteral(RO_CONTROL_HELPER_BUILD_PATH);
     const QString helperInstallPath =
         QStringLiteral(RO_CONTROL_HELPER_INSTALL_PATH);
 

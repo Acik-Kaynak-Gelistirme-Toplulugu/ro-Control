@@ -22,7 +22,8 @@ private slots:
 void TestPreferences::init() {
   QCoreApplication::setOrganizationName(
       QStringLiteral("Project-Ro-ASD-TestSuite"));
-  QCoreApplication::setApplicationName(QStringLiteral("ro-control-preferences"));
+  QCoreApplication::setApplicationName(
+      QStringLiteral("ro-control-preferences"));
 
   QSettings settings;
   settings.clear();
@@ -73,9 +74,7 @@ void TestPreferences::testLanguageManagerExposesEffectiveLanguageMetadata() {
   QVERIFY(!languages.isEmpty());
   QCOMPARE(languages.first().toMap().value(QStringLiteral("code")).toString(),
            QStringLiteral("en"));
-  QVERIFY(languages.first()
-              .toMap()
-              .contains(QStringLiteral("nativeLabel")));
+  QVERIFY(languages.first().toMap().contains(QStringLiteral("nativeLabel")));
 
   manager.setCurrentLanguage(QStringLiteral("system"));
   QVERIFY(manager.currentLanguage() != QStringLiteral("system"));

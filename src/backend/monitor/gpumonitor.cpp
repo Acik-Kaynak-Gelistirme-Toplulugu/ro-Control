@@ -1,4 +1,5 @@
 #include "gpumonitor.h"
+#include "nvidia/detector.h"
 #include "system/commandrunner.h"
 
 #include <QDir>
@@ -403,6 +404,14 @@ void GpuMonitor::refresh() {
       emit memoryUsagePercentChanged();
     }
 
+    if (m_gpuName.isEmpty()) {
+      const QString detectedName = NvidiaDetector::detectGpuNameFromProc();
+      if (!detectedName.isEmpty() && m_gpuName != detectedName) {
+        m_gpuName = detectedName;
+        emit gpuNameChanged();
+      }
+    }
+
     setAvailable(true);
     setStatusMessage(
         hasGenericMetrics
@@ -422,7 +431,8 @@ void GpuMonitor::refresh() {
     return;
   }
 
-  const QString nextName = fields.at(0).trimmed();
+  const QString nextName = NvidiaDetector::cleanGpuName(
+      fields.at(0).trimmed(), QStringLiteral("NVIDIA"));
   int nextTemp = 0;
   int nextUtil = 0;
   int nextUsed = 0;

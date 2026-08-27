@@ -87,8 +87,8 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
       obj.insert(QStringLiteral("thermalThresholdC"),
                  snapshot.fanThermalThresholdC);
       obj.insert(QStringLiteral("gpuTemperatureC"), snapshot.gpuTemperatureC);
-      result.stdoutText = QString::fromUtf8(
-          QJsonDocument(obj).toJson(QJsonDocument::Indented));
+      result.stdoutText =
+          QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
     } else {
       result.stdoutText =
           QStringLiteral("fan_supported: %1\n"
@@ -129,8 +129,8 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
     FanController fanController;
     fanController.stop();
     if (!fanController.controlSupported()) {
-      result.stderrText =
-          QStringLiteral("Error: Fan control is unsupported or read-only on this hardware.\n");
+      result.stderrText = QStringLiteral(
+          "Error: Fan control is unsupported or read-only on this hardware.\n");
       result.exitCode = 1;
       return result;
     }
@@ -148,8 +148,8 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
     fanController.stop();
     if (command.payload != QStringLiteral("auto") &&
         !fanController.controlSupported()) {
-      result.stderrText =
-          QStringLiteral("Error: Fan control is unsupported or read-only on this hardware.\n");
+      result.stderrText = QStringLiteral(
+          "Error: Fan control is unsupported or read-only on this hardware.\n");
       result.exitCode = 1;
       return result;
     }
@@ -377,15 +377,13 @@ int main(int argc, char *argv[]) {
   FanController fanController;
   SystemInfoProvider systemInfo;
 
-  QObject::connect(&gpuMonitor, &GpuMonitor::temperatureCChanged,
-                   &fanController, [&]() {
-                     fanController.updateTemperature(gpuMonitor.temperatureC());
-                   });
+  QObject::connect(
+      &gpuMonitor, &GpuMonitor::temperatureCChanged, &fanController,
+      [&]() { fanController.updateTemperature(gpuMonitor.temperatureC()); });
 
-  QObject::connect(&cpuMonitor, &CpuMonitor::temperatureCChanged,
-                   &fanController, [&]() {
-                     fanController.updateCpuTemperature(cpuMonitor.temperatureC());
-                   });
+  QObject::connect(
+      &cpuMonitor, &CpuMonitor::temperatureCChanged, &fanController,
+      [&]() { fanController.updateCpuTemperature(cpuMonitor.temperatureC()); });
 
   detector.refresh();
 

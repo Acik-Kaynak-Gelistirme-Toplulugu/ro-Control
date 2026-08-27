@@ -22,7 +22,8 @@ class FanController : public QObject {
   Q_OBJECT
 
   Q_PROPERTY(bool supported READ supported NOTIFY supportedChanged)
-  Q_PROPERTY(bool controlSupported READ controlSupported NOTIFY controlSupportedChanged)
+  Q_PROPERTY(bool controlSupported READ controlSupported NOTIFY
+                 controlSupportedChanged)
   Q_PROPERTY(bool running READ running NOTIFY runningChanged)
   Q_PROPERTY(int fanCount READ fanCount NOTIFY fanCountChanged)
   Q_PROPERTY(int currentFanSpeedPercent READ currentFanSpeedPercent NOTIFY
@@ -42,20 +43,22 @@ class FanController : public QObject {
   Q_PROPERTY(
       QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
   Q_PROPERTY(QString hardwareType READ hardwareType NOTIFY hardwareTypeChanged)
-  Q_PROPERTY(QString capabilityString READ capabilityString NOTIFY capabilityChanged)
+  Q_PROPERTY(
+      QString capabilityString READ capabilityString NOTIFY capabilityChanged)
   Q_PROPERTY(QVariantList customCurvePoints READ customCurvePointsVariant NOTIFY
                  customCurvePointsChanged)
-  Q_PROPERTY(int gpuTemperatureC READ gpuTemperatureC NOTIFY
-                 gpuTemperatureCChanged)
-  Q_PROPERTY(int cpuTemperatureC READ cpuTemperatureC NOTIFY
-                 cpuTemperatureCChanged)
+  Q_PROPERTY(
+      int gpuTemperatureC READ gpuTemperatureC NOTIFY gpuTemperatureCChanged)
+  Q_PROPERTY(
+      int cpuTemperatureC READ cpuTemperatureC NOTIFY cpuTemperatureCChanged)
   Q_PROPERTY(QVariantList systemFans READ systemFans NOTIFY systemFansChanged)
   Q_PROPERTY(int systemFanCount READ systemFanCount NOTIFY systemFansChanged)
-  Q_PROPERTY(int selectedFanIndex READ selectedFanIndex WRITE setSelectedFanIndex
-                 NOTIFY selectedFanIndexChanged)
+  Q_PROPERTY(int selectedFanIndex READ selectedFanIndex WRITE
+                 setSelectedFanIndex NOTIFY selectedFanIndexChanged)
   Q_PROPERTY(QString selectedFanId READ selectedFanId WRITE setSelectedFanId
                  NOTIFY selectedFanIdChanged)
-  Q_PROPERTY(bool coolbitsEnabled READ coolbitsEnabled NOTIFY coolbitsEnabledChanged)
+  Q_PROPERTY(
+      bool coolbitsEnabled READ coolbitsEnabled NOTIFY coolbitsEnabledChanged)
 
 public:
   enum class FanMode {
@@ -135,6 +138,17 @@ public:
   Q_INVOKABLE void setSelectedFanId(const QString &id);
   Q_INVOKABLE bool enableNvidiaCoolbits();
 
+  // Per-fan management API for dedicated popup settings
+  Q_INVOKABLE QVariantMap getFanConfig(const QString &fanId);
+  Q_INVOKABLE bool setFanModeForFan(const QString &fanId, const QString &mode);
+  Q_INVOKABLE bool setManualSpeedForFan(const QString &fanId, int percent);
+  Q_INVOKABLE bool setCustomCurvePointForFan(const QString &fanId, int index,
+                                             int tempC, int speedPercent);
+  Q_INVOKABLE bool resetCustomCurveForFan(const QString &fanId);
+  Q_INVOKABLE bool setThermalThresholdForFan(const QString &fanId, int tempC);
+  Q_INVOKABLE bool resetFanToAuto(const QString &fanId);
+  Q_INVOKABLE bool applyFanConfiguration(const QString &fanId);
+
 signals:
   void supportedChanged();
   void controlSupportedChanged();
@@ -197,6 +211,18 @@ private:
   bool m_lastAppliedModeWasAuto = true;
   QString m_verifiedHwmonPwmPath;
   QString m_verifiedHwmonPwmEnablePath;
+  struct SystemFanProfile {
+    QString id;
+    QString name;
+    QString type;
+    FanMode mode = FanMode::Auto;
+    int manualSpeedPercent = 50;
+    int thermalThresholdC = 85;
+    QVector<FanCurvePoint> customCurve;
+  };
+
+  SystemFanProfile m_cpuProfile;
+  SystemFanProfile m_sysProfile;
   QVariantList m_systemFans;
   int m_selectedFanIndex = 0;
   QString m_selectedFanId = QStringLiteral("gpu_0");

@@ -1,6 +1,6 @@
-#include <QTest>
 #include <QFile>
 #include <QTemporaryDir>
+#include <QTest>
 
 #include "nvidia/detector.h"
 
@@ -44,9 +44,8 @@ private slots:
     NvidiaDetector detector;
     const bool installed = detector.isDriverInstalled();
     const auto info = detector.detect();
-    QCOMPARE(installed,
-             !detector.installedDriverVersion().isEmpty() ||
-                 info.driverPackageInstalled);
+    QCOMPARE(installed, !detector.installedDriverVersion().isEmpty() ||
+                            info.driverPackageInstalled);
   }
 
   void testInstalledDriverVersion() {
@@ -89,7 +88,8 @@ private slots:
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
 
-    const QString efivarPath = tempDir.filePath(QStringLiteral("SecureBoot-test"));
+    const QString efivarPath =
+        tempDir.filePath(QStringLiteral("SecureBoot-test"));
     QFile file(efivarPath);
     QVERIFY(file.open(QIODevice::WriteOnly));
     QVERIFY(file.write(QByteArray::fromHex("0700000001")) == 5);
@@ -103,6 +103,47 @@ private slots:
     QVERIFY(info.secureBootEnabled);
 
     qunsetenv("RO_CONTROL_SECURE_BOOT_EFIVAR_PATH");
+  }
+
+  void testCleanGpuName() {
+    // 1. Bracketed NVIDIA GPU with chip code
+    QCOMPARE(NvidiaDetector::cleanGpuName(
+                 QStringLiteral("TU106 [GeForce RTX 2060 SUPER]")),
+             QStringLiteral("NVIDIA GeForce RTX 2060 SUPER"));
+
+    // 2. Already clean NVIDIA GPU
+    QCOMPARE(NvidiaDetector::cleanGpuName(
+                 QStringLiteral("NVIDIA GeForce RTX 2060 SUPER")),
+             QStringLiteral("NVIDIA GeForce RTX 2060 SUPER"));
+
+    // 3. Bracketed with revision suffix and corporation prefix
+    QCOMPARE(
+        NvidiaDetector::cleanGpuName(
+            QStringLiteral(
+                "NVIDIA Corporation TU106 [GeForce RTX 2060 SUPER] (rev a1)"),
+            QStringLiteral("NVIDIA Corporation")),
+        QStringLiteral("NVIDIA GeForce RTX 2060 SUPER"));
+
+    // 4. Ada Lovelace RTX 4090
+    QCOMPARE(NvidiaDetector::cleanGpuName(
+                 QStringLiteral("AD102 [GeForce RTX 4090]")),
+             QStringLiteral("NVIDIA GeForce RTX 4090"));
+
+    // 5. Intel integrated graphics
+    QCOMPARE(NvidiaDetector::cleanGpuName(
+                 QStringLiteral("Raptor Lake-S GT1 [UHD Graphics 770]"),
+                 QStringLiteral("Intel Corporation")),
+             QStringLiteral("Intel UHD Graphics 770"));
+
+    // 6. AMD Radeon GPU
+    QCOMPARE(NvidiaDetector::cleanGpuName(
+                 QStringLiteral("Navi 21 [Radeon RX 6800/6800 XT / 6900 XT]"),
+                 QStringLiteral("Advanced Micro Devices, Inc. [AMD/ATI]")),
+             QStringLiteral("AMD Radeon RX 6800/6800 XT / 6900 XT"));
+
+    // 7. Quadro GPU
+    QCOMPARE(NvidiaDetector::cleanGpuName(QStringLiteral("Quadro RTX 4000")),
+             QStringLiteral("NVIDIA Quadro RTX 4000"));
   }
 };
 
