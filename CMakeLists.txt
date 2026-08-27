@@ -183,6 +183,7 @@ qt_add_qml_module(ro-control
         src/qml/Main.qml
         src/qml/pages/DriverPage.qml
         src/qml/pages/MonitorPage.qml
+        src/qml/pages/FanPage.qml
         src/qml/components/InfoBadge.qml
         src/qml/components/RefreshToolButton.qml
         src/qml/components/ActionButton.qml

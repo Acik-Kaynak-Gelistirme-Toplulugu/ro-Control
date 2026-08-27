@@ -19,10 +19,10 @@ ApplicationWindow {
     required property var languageManager
     required property var uiPreferences
     visible: true
-    width: 1320
-    height: 840
-    minimumWidth: 1024
-    minimumHeight: 700
+    width: 1280
+    height: 800
+    minimumWidth: 960
+    minimumHeight: 600
     title: qsTr("ro-Control")
     font.family: "Noto Sans"
 
@@ -35,7 +35,7 @@ ApplicationWindow {
     readonly property bool showAdvancedInfo: (hasUiPreferences && root.uiPreferences.showAdvancedInfo !== undefined)
                                              ? root.uiPreferences.showAdvancedInfo
                                              : true
-    readonly property real uiScale: Math.max(0.85, Math.min(width / 1320, 1.15))
+    readonly property real uiScale: 1.0
     property string quickMenuMode: ""
     readonly property var visibleLanguages: root.hasLanguageManager
                                             ? root.languageManager.availableLanguages
@@ -117,29 +117,28 @@ ApplicationWindow {
 
     QtObject {
         id: colors
-        // Light palette: #92C7CF #AAD7D9 #FBF9F1 #E5E1DA
-        // Dark palette:  #352F44 #5C5470 #B9B4C7 #FAF0E6
-        readonly property color window: root.darkMode ? "#352F44" : "#FBF9F1"
-        readonly property color shell: root.darkMode ? "#5C5470" : "#E5E1DA"
-        readonly property color shellAlt: root.darkMode ? "#352F44" : "#FBF9F1"
-        readonly property color card: root.darkMode ? "#5C5470" : "#FBF9F1"
-        readonly property color cardStrong: root.darkMode ? "#352F44" : "#AAD7D9"
-        readonly property color border: root.darkMode ? "#B9B4C7" : "#92C7CF"
-        readonly property color text: root.darkMode ? "#FAF0E6" : "#352F44"
-        readonly property color textMuted: root.darkMode ? "#B9B4C7" : "#5C5470"
-        readonly property color textSoft: root.darkMode ? "#B9B4C7" : "#5C5470"
-        readonly property color accentA: root.darkMode ? "#B9B4C7" : "#92C7CF"
-        readonly property color accentB: root.darkMode ? "#FAF0E6" : "#AAD7D9"
-        readonly property color accentC: root.darkMode ? "#5C5470" : "#E5E1DA"
-        readonly property color success: root.darkMode ? "#FAF0E6" : "#352F44"
-        readonly property color warning: root.darkMode ? "#B9B4C7" : "#5C5470"
-        readonly property color danger: root.darkMode ? "#FAF0E6" : "#352F44"
-        readonly property color successBg: root.darkMode ? "#5C5470" : "#AAD7D9"
-        readonly property color warningBg: root.darkMode ? "#352F44" : "#E5E1DA"
-        readonly property color dangerBg: root.darkMode ? "#5C5470" : "#E5E1DA"
-        readonly property color infoBg: root.darkMode ? "#5C5470" : "#AAD7D9"
-        readonly property color heroStart: root.darkMode ? "#352F44" : "#FBF9F1"
-        readonly property color heroEnd: root.darkMode ? "#5C5470" : "#E5E1DA"
+        // Clean high-contrast palettes for light and dark themes
+        readonly property color window: root.darkMode ? "#1A1625" : "#F4F6F8"
+        readonly property color shell: root.darkMode ? "#241F33" : "#EAEFF4"
+        readonly property color shellAlt: root.darkMode ? "#1F1B2B" : "#FFFFFF"
+        readonly property color card: root.darkMode ? "#29233B" : "#FFFFFF"
+        readonly property color cardStrong: root.darkMode ? "#342D4A" : "#F1F5F9"
+        readonly property color border: root.darkMode ? "#4D436B" : "#CBD5E1"
+        readonly property color text: root.darkMode ? "#F8FAFC" : "#0F172A"
+        readonly property color textMuted: root.darkMode ? "#CBD5E1" : "#475569"
+        readonly property color textSoft: root.darkMode ? "#94A3B8" : "#64748B"
+        readonly property color accentA: root.darkMode ? "#818CF8" : "#4F46E5"
+        readonly property color accentB: root.darkMode ? "#A5B4FC" : "#6366F1"
+        readonly property color accentC: root.darkMode ? "#312E81" : "#EEF2FF"
+        readonly property color success: root.darkMode ? "#4ADE80" : "#059669"
+        readonly property color warning: root.darkMode ? "#FBBF24" : "#D97706"
+        readonly property color danger: root.darkMode ? "#F87171" : "#DC2626"
+        readonly property color successBg: root.darkMode ? "#143828" : "#ECFDF5"
+        readonly property color warningBg: root.darkMode ? "#3A2E12" : "#FFFBEB"
+        readonly property color dangerBg: root.darkMode ? "#3D171E" : "#FEF2F2"
+        readonly property color infoBg: root.darkMode ? "#1E2548" : "#EFF6FF"
+        readonly property color heroStart: root.darkMode ? "#1A1625" : "#F4F6F8"
+        readonly property color heroEnd: root.darkMode ? "#241F33" : "#EAEFF4"
     }
 
     color: colors.window
@@ -365,36 +364,66 @@ ApplicationWindow {
                 border.color: colors.border
             }
 
+            contentItem: ListView {
+                model: tabBar.contentModel
+                currentIndex: tabBar.currentIndex
+                spacing: tabBar.spacing
+                orientation: ListView.Horizontal
+                boundsBehavior: Flickable.StopAtBounds
+                highlightMoveDuration: 0
+                highlightResizeDuration: 0
+                highlight: null
+            }
+
             TabButton {
                 id: driverTab
                 text: qsTr("Driver")
+                hoverEnabled: true
                 contentItem: Text {
                     text: driverTab.text
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
-                    color: tabBar.currentIndex === 0 ? colors.text : colors.textMuted
+                    color: tabBar.currentIndex === 0 ? "#FFFFFF" : colors.textMuted
                     font.pixelSize: Math.round(14 * root.uiScale)
-                    font.weight: tabBar.currentIndex === 0 ? Font.DemiBold : Font.Medium
+                    font.weight: tabBar.currentIndex === 0 ? Font.Bold : Font.Medium
                 }
                 background: Rectangle {
                     radius: Math.round(12 * root.uiScale)
-                    color: tabBar.currentIndex === 0 ? colors.accentA : "transparent"
+                    color: tabBar.currentIndex === 0 ? colors.accentA : (driverTab.hovered ? colors.cardStrong : "transparent")
                 }
             }
             TabButton {
                 id: monitorTab
                 text: qsTr("Monitor")
+                hoverEnabled: true
                 contentItem: Text {
                     text: monitorTab.text
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
-                    color: tabBar.currentIndex === 1 ? colors.text : colors.textMuted
+                    color: tabBar.currentIndex === 1 ? "#FFFFFF" : colors.textMuted
                     font.pixelSize: Math.round(14 * root.uiScale)
-                    font.weight: tabBar.currentIndex === 1 ? Font.DemiBold : Font.Medium
+                    font.weight: tabBar.currentIndex === 1 ? Font.Bold : Font.Medium
                 }
                 background: Rectangle {
                     radius: Math.round(12 * root.uiScale)
-                    color: tabBar.currentIndex === 1 ? colors.accentA : "transparent"
+                    color: tabBar.currentIndex === 1 ? colors.accentA : (monitorTab.hovered ? colors.cardStrong : "transparent")
+                }
+            }
+            TabButton {
+                id: fanTab
+                text: qsTr("Cooling & Fans")
+                hoverEnabled: true
+                contentItem: Text {
+                    text: fanTab.text
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    color: tabBar.currentIndex === 2 ? "#FFFFFF" : colors.textMuted
+                    font.pixelSize: Math.round(14 * root.uiScale)
+                    font.weight: tabBar.currentIndex === 2 ? Font.Bold : Font.Medium
+                }
+                background: Rectangle {
+                    radius: Math.round(12 * root.uiScale)
+                    color: tabBar.currentIndex === 2 ? colors.accentA : (fanTab.hovered ? colors.cardStrong : "transparent")
                 }
             }
         }
@@ -432,6 +461,17 @@ ApplicationWindow {
                     cpuMonitor: root.cpuMonitor
                     gpuMonitor: root.gpuMonitor
                     ramMonitor: root.ramMonitor
+                    fanController: root.fanController
+                }
+
+                Pages.FanPage {
+                    theme: colors
+                    darkMode: root.darkMode
+                    showAdvancedInfo: root.showAdvancedInfo
+                    uiScale: root.uiScale
+                    systemInfo: root.systemInfo
+                    cpuMonitor: root.cpuMonitor
+                    gpuMonitor: root.gpuMonitor
                     fanController: root.fanController
                 }
 

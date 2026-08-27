@@ -47,6 +47,13 @@ class FanController : public QObject {
                  customCurvePointsChanged)
   Q_PROPERTY(int gpuTemperatureC READ gpuTemperatureC NOTIFY
                  gpuTemperatureCChanged)
+  Q_PROPERTY(QVariantList systemFans READ systemFans NOTIFY systemFansChanged)
+  Q_PROPERTY(int systemFanCount READ systemFanCount NOTIFY systemFansChanged)
+  Q_PROPERTY(int selectedFanIndex READ selectedFanIndex WRITE setSelectedFanIndex
+                 NOTIFY selectedFanIndexChanged)
+  Q_PROPERTY(QString selectedFanId READ selectedFanId WRITE setSelectedFanId
+                 NOTIFY selectedFanIdChanged)
+  Q_PROPERTY(bool coolbitsEnabled READ coolbitsEnabled NOTIFY coolbitsEnabledChanged)
 
 public:
   enum class FanMode {
@@ -92,6 +99,11 @@ public:
   QVariantList customCurvePointsVariant() const;
   QVector<FanCurvePoint> customCurvePoints() const;
   int gpuTemperatureC() const;
+  QVariantList systemFans() const;
+  int systemFanCount() const;
+  int selectedFanIndex() const;
+  QString selectedFanId() const;
+  bool coolbitsEnabled() const;
 
   static QString modeToString(FanMode mode);
   static FanMode stringToMode(const QString &modeStr);
@@ -113,6 +125,11 @@ public:
   Q_INVOKABLE void resetCustomCurve();
   Q_INVOKABLE void resetToAuto();
   Q_INVOKABLE void updateTemperature(int tempC);
+  Q_INVOKABLE void selectFan(int index);
+  Q_INVOKABLE void selectFanById(const QString &id);
+  Q_INVOKABLE void setSelectedFanIndex(int index);
+  Q_INVOKABLE void setSelectedFanId(const QString &id);
+  Q_INVOKABLE bool enableNvidiaCoolbits();
 
 signals:
   void supportedChanged();
@@ -132,6 +149,10 @@ signals:
   void customCurvePointsChanged();
   void gpuTemperatureCChanged();
   void fanSpeedApplied(int targetPercent, bool success);
+  void systemFansChanged();
+  void selectedFanIndexChanged();
+  void selectedFanIdChanged();
+  void coolbitsEnabledChanged();
 
 private:
   void loadSettings();
@@ -140,6 +161,7 @@ private:
   void evaluateAndApplyFanSpeed(bool force = false);
   bool executeSetFanSpeed(int percent, bool isAutoMode);
   void readCurrentFanTelemetry();
+  void updateSystemFansTelemetry();
   void setSupported(bool value);
   void setControlSupported(bool value);
   void setCapability(ControlCapability cap);
@@ -169,4 +191,7 @@ private:
   bool m_lastAppliedModeWasAuto = true;
   QString m_verifiedHwmonPwmPath;
   QString m_verifiedHwmonPwmEnablePath;
+  QVariantList m_systemFans;
+  int m_selectedFanIndex = 0;
+  QString m_selectedFanId = QStringLiteral("gpu_0");
 };

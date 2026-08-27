@@ -1,5 +1,6 @@
 #include "fancontroller.h"
 #include "system/commandrunner.h"
+#include "system/polkit.h"
 
 #include <QDir>
 #include <QFile>
@@ -131,6 +132,99 @@ QVector<FanCurvePoint> FanController::customCurvePoints() const {
 }
 
 int FanController::gpuTemperatureC() const { return m_gpuTemperatureC; }
+
+QVariantList FanController::systemFans() const { return m_systemFans; }
+
+int FanController::systemFanCount() const { return m_systemFans.size(); }
+
+int FanController::selectedFanIndex() const { return m_selectedFanIndex; }
+
+QString FanController::selectedFanId() const { return m_selectedFanId; }
+
+void FanController::setSelectedFanIndex(int index) {
+  if (index >= 0 && index < m_systemFans.size() && m_selectedFanIndex != index) {
+    m_selectedFanIndex = index;
+    const QVariantMap fan = m_systemFans.at(index).toMap();
+    m_selectedFanId = fan.value(QStringLiteral("id")).toString();
+    emit selectedFanIndexChanged();
+    emit selectedFanIdChanged();
+  }
+}
+
+void FanController::setSelectedFanId(const QString &id) {
+  if (m_selectedFanId == id) {
+    return;
+  }
+  m_selectedFanId = id;
+  for (int i = 0; i < m_systemFans.size(); ++i) {
+    if (m_systemFans.at(i).toMap().value(QStringLiteral("id")).toString() == id) {
+      if (m_selectedFanIndex != i) {
+        m_selectedFanIndex = i;
+        emit selectedFanIndexChanged();
+      }
+      break;
+    }
+  }
+  emit selectedFanIdChanged();
+}
+
+void FanController::selectFan(int index) { setSelectedFanIndex(index); }
+
+void FanController::selectFanById(const QString &id) { setSelectedFanId(id); }
+
+bool FanController::coolbitsEnabled() const {
+  const QString confPath = QStringLiteral("/etc/X11/xorg.conf.d/99-nvidia-coolbits.conf");
+  if (QFile::exists(confPath)) {
+    return true;
+  }
+
+  const QFileInfoList entries =
+      QDir(QStringLiteral("/etc/X11/xorg.conf.d")).entryInfoList(QDir::Files);
+  for (const auto &e : entries) {
+    if (readTextFile(e.absoluteFilePath()).contains(QStringLiteral("Coolbits"), Qt::CaseInsensitive)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool FanController::enableNvidiaCoolbits() {
+  PolkitHelper polkit;
+  if (!polkit.isPkexecAvailable()) {
+    setStatusMessage(tr("Polkit (pkexec) is not available to configure Coolbits."));
+    return false;
+  }
+
+  const QString configScript = QStringLiteral(
+      "mkdir -p /etc/X11/xorg.conf.d && "
+      "cat << 'EOF' > /etc/X11/xorg.conf.d/99-nvidia-coolbits.conf\n"
+      "Section \"OutputClass\"\n"
+      "    Identifier \"nvidia\"\n"
+      "    MatchDriver \"nvidia-drm\"\n"
+      "    Driver \"nvidia\"\n"
+      "    Option \"Coolbits\" \"28\"\n"
+      "EndSection\n\n"
+      "Section \"Device\"\n"
+      "    Identifier \"NvidiaCard\"\n"
+      "    Driver \"nvidia\"\n"
+      "    Option \"Coolbits\" \"28\"\n"
+      "EndSection\n"
+      "EOF\n"
+  );
+
+  const auto result =
+      polkit.runPrivileged(QStringLiteral("sh"), {QStringLiteral("-c"), configScript});
+  if (result.success()) {
+    setStatusMessage(tr("Coolbits enabled successfully! A session restart or reboot is required to activate manual fan control."));
+    emit coolbitsEnabledChanged();
+    refresh();
+    return true;
+  }
+
+  setStatusMessage(tr("Failed to enable Coolbits: %1")
+                       .arg(result.stderr.isEmpty() ? result.stdout : result.stderr));
+  return false;
+}
 
 QString FanController::modeToString(FanMode mode) {
   switch (mode) {
@@ -455,15 +549,45 @@ void FanController::detectHardwareCapabilities() {
     }
   }
 
-  // 1. Check NVIDIA settings tool
-  const QString nvidiaSettingsProg =
-      CommandRunner::resolveProgramPath(QStringLiteral("nvidia-settings"));
-  if (!nvidiaSettingsProg.isEmpty()) {
-    setSupported(true);
-    setControlSupported(true);
-    setCapability(ControlCapability::Controllable);
-    setHardwareType(QStringLiteral("NVIDIA (NV-CONTROL)"));
-    return;
+  const bool hasSysfsOverride =
+      !qEnvironmentVariable("RO_CONTROL_FAN_SYSFS_ROOT").trimmed().isEmpty();
+
+  if (!hasSysfsOverride) {
+    // 1. Check NVIDIA settings tool and verify write permissions
+    const QString nvidiaSettingsProg =
+        CommandRunner::resolveProgramPath(QStringLiteral("nvidia-settings"));
+    if (!nvidiaSettingsProg.isEmpty()) {
+      CommandRunner runner;
+      CommandRunner::RunOptions testOpts;
+      testOpts.timeoutMs = 1500;
+      const auto testRes = runner.run(
+          QStringLiteral("nvidia-settings"),
+          {QStringLiteral("-a"), QStringLiteral("[gpu:0]/GPUFanControlState=0")},
+          testOpts);
+
+      const bool hasPermissionError =
+          testRes.stdout.contains(QStringLiteral("permission"), Qt::CaseInsensitive) ||
+          testRes.stderr.contains(QStringLiteral("permission"), Qt::CaseInsensitive) ||
+          testRes.stdout.contains(QStringLiteral("Operation not permitted"), Qt::CaseInsensitive) ||
+          testRes.stderr.contains(QStringLiteral("Operation not permitted"), Qt::CaseInsensitive);
+
+      if (hasPermissionError) {
+        setSupported(true);
+        setControlSupported(false);
+        setCapability(ControlCapability::TelemetryOnly);
+        setHardwareType(QStringLiteral("NVIDIA (Telemetry Only)"));
+        setStatusMessage(tr("Automatic Mode: NVIDIA telemetry active. Manual fan speed control requires Coolbits in Xorg."));
+        return;
+      }
+
+      if (testRes.success() && !hasPermissionError) {
+        setSupported(true);
+        setControlSupported(true);
+        setCapability(ControlCapability::Controllable);
+        setHardwareType(QStringLiteral("NVIDIA (NV-CONTROL)"));
+        return;
+      }
+    }
   }
 
   // 2. Check Sysfs HWMON for GPU fan PWM controls
@@ -539,7 +663,142 @@ void FanController::detectHardwareCapabilities() {
   setHardwareType(QStringLiteral("None"));
 }
 
+void FanController::updateSystemFansTelemetry() {
+  QVariantList fanList;
+
+  // 1. GPU Fan(s)
+  if (m_supported || m_capability != ControlCapability::Unsupported) {
+    QVariantMap gpuFan;
+    gpuFan.insert(QStringLiteral("id"), QStringLiteral("gpu_0"));
+    gpuFan.insert(QStringLiteral("name"), QStringLiteral("NVIDIA GPU Fan"));
+    gpuFan.insert(QStringLiteral("type"), QStringLiteral("GPU"));
+    gpuFan.insert(QStringLiteral("speedPercent"), m_currentFanSpeedPercent);
+    gpuFan.insert(QStringLiteral("rpm"), m_currentRpm);
+    gpuFan.insert(QStringLiteral("temperatureC"), m_gpuTemperatureC);
+    gpuFan.insert(QStringLiteral("targetSpeedPercent"), m_targetFanSpeedPercent);
+    gpuFan.insert(QStringLiteral("controllable"), m_controlSupported);
+    gpuFan.insert(QStringLiteral("capability"), capabilityString());
+    gpuFan.insert(
+        QStringLiteral("capabilityReason"),
+        m_controlSupported
+            ? tr("Direct NV-CONTROL fan write control available.")
+            : tr("Telemetry only. Manual fan speed control requires Coolbits in Xorg."));
+    gpuFan.insert(QStringLiteral("mode"), fanMode());
+    fanList.append(gpuFan);
+  }
+
+  // 2. Sysfs HWMON Fans
+  const QFileInfoList hwmonEntries =
+      QDir(fanSysfsRoot())
+          .entryInfoList({QStringLiteral("hwmon*")},
+                         QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+
+  for (const QFileInfo &entry : hwmonEntries) {
+    const QString basePath = entry.absoluteFilePath();
+    const QString chipName = readTextFile(basePath + QStringLiteral("/name"));
+    const bool isCpu = chipName.contains(QStringLiteral("coretemp"), Qt::CaseInsensitive) ||
+                       chipName.contains(QStringLiteral("cpu"), Qt::CaseInsensitive) ||
+                       chipName.contains(QStringLiteral("k10temp"), Qt::CaseInsensitive) ||
+                       chipName.contains(QStringLiteral("zenpower"), Qt::CaseInsensitive);
+
+    int hwTemp = 0;
+    const QFileInfoList tempInputs =
+        QDir(basePath).entryInfoList({QStringLiteral("temp*_input")},
+                                     QDir::Files, QDir::Name);
+    for (const QFileInfo &tFile : tempInputs) {
+      bool ok = false;
+      const int tVal = readTextFile(tFile.absoluteFilePath()).toInt(&ok) / 1000;
+      if (ok && tVal > hwTemp && tVal < 125) {
+        hwTemp = tVal;
+      }
+    }
+
+    const QFileInfoList fanInputs =
+        QDir(basePath).entryInfoList({QStringLiteral("fan*_input")},
+                                     QDir::Files, QDir::Name);
+    for (const QFileInfo &fFile : fanInputs) {
+      const QString base = fFile.fileName().remove(QStringLiteral("_input"));
+      bool ok = false;
+      const int rpm = readTextFile(fFile.absoluteFilePath()).toInt(&ok);
+
+      QString label = readTextFile(basePath + QStringLiteral("/") + base + QStringLiteral("_label"));
+      if (label.isEmpty()) {
+        label = QStringLiteral("%1 %2").arg(chipName.isEmpty() ? entry.fileName() : chipName, base.toUpper());
+      }
+
+      QString pwmFile = basePath + QStringLiteral("/") + base;
+      pwmFile.replace(QStringLiteral("fan"), QStringLiteral("pwm"));
+      bool isWritable = false;
+      int speedPct = 0;
+      if (QFile::exists(pwmFile)) {
+        QFileInfo pwmInfo(pwmFile);
+        isWritable = pwmInfo.isWritable();
+        int rawPwm = readTextFile(pwmFile).toInt(&ok);
+        if (ok && rawPwm >= 0) {
+          speedPct = std::clamp((rawPwm * 100) / 255, 0, 100);
+        }
+      }
+
+      QVariantMap fan;
+      fan.insert(QStringLiteral("id"), QStringLiteral("%1_%2").arg(entry.fileName(), fFile.fileName()));
+      fan.insert(QStringLiteral("name"), label);
+      fan.insert(QStringLiteral("type"), isCpu ? QStringLiteral("CPU") : QStringLiteral("System"));
+      fan.insert(QStringLiteral("speedPercent"), speedPct);
+      fan.insert(QStringLiteral("rpm"), ok && rpm >= 0 ? rpm : 0);
+      fan.insert(QStringLiteral("temperatureC"), hwTemp > 0 ? hwTemp : m_gpuTemperatureC);
+      fan.insert(QStringLiteral("targetSpeedPercent"), speedPct);
+      fan.insert(QStringLiteral("controllable"), isWritable);
+      fan.insert(QStringLiteral("capability"), isWritable ? QStringLiteral("controllable") : QStringLiteral("telemetry_only"));
+      fan.insert(QStringLiteral("capabilityReason"), isWritable ? tr("Direct hardware PWM controllable.") : tr("Read-only hardware sensor telemetry."));
+      fan.insert(QStringLiteral("mode"), QStringLiteral("auto"));
+      fanList.append(fan);
+    }
+  }
+
+  // 3. Sysfs Thermal Cooling Devices
+  const QFileInfoList coolingEntries =
+      QDir(QStringLiteral("/sys/class/thermal"))
+          .entryInfoList({QStringLiteral("cooling_device*")},
+                         QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+
+  for (const QFileInfo &cEntry : coolingEntries) {
+    const QString cPath = cEntry.absoluteFilePath();
+    const QString cType = readTextFile(cPath + QStringLiteral("/type"));
+    if (cType.compare(QStringLiteral("fan"), Qt::CaseInsensitive) == 0 ||
+        cType.compare(QStringLiteral("processor"), Qt::CaseInsensitive) == 0) {
+      bool okCur = false, okMax = false;
+      const int cur = readTextFile(cPath + QStringLiteral("/cur_state")).toInt(&okCur);
+      const int maxS = readTextFile(cPath + QStringLiteral("/max_state")).toInt(&okMax);
+      const int pct = (okMax && maxS > 0 && okCur && cur >= 0) ? (cur * 100) / maxS : 0;
+      const bool isWritable = QFileInfo(cPath + QStringLiteral("/cur_state")).isWritable();
+
+      QVariantMap fan;
+      fan.insert(QStringLiteral("id"), cEntry.fileName());
+      fan.insert(QStringLiteral("name"), tr("ACPI %1 Cooling (%2)").arg(cType, cEntry.fileName()));
+      fan.insert(QStringLiteral("type"), QStringLiteral("System"));
+      fan.insert(QStringLiteral("speedPercent"), pct);
+      fan.insert(QStringLiteral("rpm"), 0);
+      fan.insert(QStringLiteral("temperatureC"), m_gpuTemperatureC > 0 ? m_gpuTemperatureC : 0);
+      fan.insert(QStringLiteral("targetSpeedPercent"), pct);
+      fan.insert(QStringLiteral("controllable"), isWritable);
+      fan.insert(QStringLiteral("capability"), isWritable ? QStringLiteral("controllable") : QStringLiteral("telemetry_only"));
+      fan.insert(QStringLiteral("capabilityReason"), tr("ACPI dynamic cooling device managed by kernel."));
+      fan.insert(QStringLiteral("mode"), QStringLiteral("auto"));
+      fanList.append(fan);
+    }
+  }
+
+  if (fanList != m_systemFans) {
+    m_systemFans = fanList;
+    emit systemFansChanged();
+  }
+}
+
 void FanController::readCurrentFanTelemetry() {
+  if (m_capability == ControlCapability::Unsupported) {
+    return;
+  }
+
   CommandRunner runner;
   CommandRunner::RunOptions options;
   options.timeoutMs = 1200;
@@ -620,6 +879,8 @@ void FanController::readCurrentFanTelemetry() {
       }
     }
   }
+
+  updateSystemFansTelemetry();
 }
 
 void FanController::evaluateAndApplyFanSpeed(bool force) {
@@ -751,7 +1012,22 @@ bool FanController::executeSetFanSpeed(int percent, bool isAutoMode) {
     }
 
     const auto result = runner.run(QStringLiteral("nvidia-settings"), args, options);
-    success = result.success();
+    const bool hasPermissionError =
+        result.stdout.contains(QStringLiteral("permission"), Qt::CaseInsensitive) ||
+        result.stderr.contains(QStringLiteral("permission"), Qt::CaseInsensitive) ||
+        result.stdout.contains(QStringLiteral("Operation not permitted"), Qt::CaseInsensitive) ||
+        result.stderr.contains(QStringLiteral("Operation not permitted"), Qt::CaseInsensitive) ||
+        result.stdout.contains(QStringLiteral("ERROR:"), Qt::CaseInsensitive) ||
+        result.stderr.contains(QStringLiteral("ERROR:"), Qt::CaseInsensitive);
+
+    if (hasPermissionError) {
+      success = false;
+      setStatusMessage(tr("NVIDIA fan control rejected by driver: Coolbits option is required in Xorg configuration."));
+      setControlSupported(false);
+      setCapability(ControlCapability::TelemetryOnly);
+    } else {
+      success = result.success();
+    }
   } else if (!m_verifiedHwmonPwmPath.isEmpty()) {
     if (!m_verifiedHwmonPwmEnablePath.isEmpty() &&
         QFile::exists(m_verifiedHwmonPwmEnablePath)) {

@@ -50,15 +50,15 @@ Item {
                                                       : page.nvidiaUpdater.updateAvailable
                                                       ? (theme && theme.warning ? theme.warning : page.softTextColor)
                                                       : page.softTextColor
-    readonly property color bgColor: theme && theme.card ? theme.card : "#ffffff"
-    readonly property color cardColor: theme && theme.cardStrong ? theme.cardStrong : "#f5f8ff"
-    readonly property color borderColor: theme && theme.border ? theme.border : "#d9e1f0"
-    readonly property color textColor: theme && theme.text ? theme.text : "#12213a"
-    readonly property color softTextColor: theme && theme.textSoft ? theme.textSoft : "#6f829e"
-    readonly property color infoBg: theme && theme.infoBg ? theme.infoBg : "#e9f2ff"
-    readonly property color successBg: theme && theme.successBg ? theme.successBg : "#e6f7ee"
-    readonly property color warningBg: theme && theme.warningBg ? theme.warningBg : "#fff4de"
-    readonly property color dangerBg: theme && theme.dangerBg ? theme.dangerBg : "#fdecef"
+    readonly property color bgColor: theme && theme.card ? theme.card : (page.darkMode ? "#29233B" : "#FFFFFF")
+    readonly property color cardColor: theme && theme.cardStrong ? theme.cardStrong : (page.darkMode ? "#342D4A" : "#F1F5F9")
+    readonly property color borderColor: theme && theme.border ? theme.border : (page.darkMode ? "#4D436B" : "#CBD5E1")
+    readonly property color textColor: theme && theme.text ? theme.text : (page.darkMode ? "#F8FAFC" : "#0F172A")
+    readonly property color softTextColor: theme && theme.textSoft ? theme.textSoft : (page.darkMode ? "#94A3B8" : "#64748B")
+    readonly property color infoBg: theme && theme.infoBg ? theme.infoBg : (page.darkMode ? "#1E2548" : "#EFF6FF")
+    readonly property color successBg: theme && theme.successBg ? theme.successBg : (page.darkMode ? "#143828" : "#ECFDF5")
+    readonly property color warningBg: theme && theme.warningBg ? theme.warningBg : (page.darkMode ? "#3A2E12" : "#FFFBEB")
+    readonly property color dangerBg: theme && theme.dangerBg ? theme.dangerBg : (page.darkMode ? "#3D171E" : "#FEF2F2")
 
     function classifyOperationPhase(message) {
         const lowered = (message || "").toLowerCase();

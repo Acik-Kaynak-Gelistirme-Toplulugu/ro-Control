@@ -258,7 +258,8 @@ private slots:
     }
 
     // Functional probe should not crash and should report a meaningful state.
-    QVERIFY(polkit.canAcquirePrivilege() || !polkit.canAcquirePrivilege());
+    const bool canAcquire = polkit.canAcquirePrivilege();
+    QVERIFY(canAcquire || !canAcquire);
   }
 
   void testNvidiaSmiOptionalProbe() {
