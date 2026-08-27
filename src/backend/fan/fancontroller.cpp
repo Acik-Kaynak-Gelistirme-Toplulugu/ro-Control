@@ -1025,6 +1025,7 @@ void FanController::readCurrentFanTelemetry() {
   }
 
   if (m_capability == ControlCapability::Unsupported) {
+    updateSystemFansTelemetry();
     return;
   }
 
