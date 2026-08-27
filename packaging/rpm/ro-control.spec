@@ -1,9 +1,9 @@
-%global upstream_version %{!?upstream_version:1.1.0}%{?upstream_version}
+%global upstream_version %{!?upstream_version:1.2.0}%{?upstream_version}
 %global debug_package %{nil}
 
 Name:           ro-control
 Version:        %{upstream_version}
-Release:        2%{?dist}
+Release:        1%{?dist}
 Summary:        Smart NVIDIA driver manager and system monitor
 
 License:        GPL-3.0-or-later
@@ -81,6 +81,12 @@ export QT_QUICK_CONTROLS_STYLE=Basic
 %{_datadir}/polkit-1/actions/io.github.ProjectRoASD.rocontrol.policy
 
 %changelog
+* Thu Aug 27 2026 ro-Control Maintainers <noreply@github.com> - 1.2.0-1
+- Add advanced fan management and telemetry subsystem
+- Implement dedicated per-fan control, curves, and mode presets
+- Hardware-aware GPU and CPU fan topology discovery
+- Robust CI and headless test stabilization
+
 * Sun May 10 2026 ro-Control Maintainers <noreply@github.com> - 1.1.0-2
 - Merge runtime assets back into the main architecture RPM
 - Make each release RPM installable on its own without a companion noarch package

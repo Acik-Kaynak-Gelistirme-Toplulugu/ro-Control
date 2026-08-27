@@ -5,7 +5,7 @@
 
 namespace {
 
-const QString kAppVersion = QStringLiteral("1.1.0");
+const QString kAppVersion = QStringLiteral("1.2.0");
 
 }
 

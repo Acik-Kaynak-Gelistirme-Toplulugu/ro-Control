@@ -172,14 +172,14 @@ jobs:
             echo "Failed to find built ${RPM_ARCH} main RPM." >&2
             exit 1
           fi
-          cp "${MAIN_RPM_FILE}" "dist/rpm/ro-control-${RPM_ARCH}.rpm"
+          cp "${MAIN_RPM_FILE}" "dist/rpm/ro-control-v${VERSION}.${RPM_ARCH}.rpm"
 
       - name: Verify package metadata
         env:
           VERSION: ${{ needs.metadata.outputs.version }}
           RPM_ARCH: ${{ matrix.arch }}
         run: |
-          RPM_FILE="dist/rpm/ro-control-${RPM_ARCH}.rpm"
+          RPM_FILE="dist/rpm/ro-control-v${VERSION}.${RPM_ARCH}.rpm"
           if [[ ! -f "${RPM_FILE}" ]]; then
             echo "Failed to locate built ${RPM_ARCH} RPM." >&2
             exit 1
@@ -196,9 +196,10 @@ jobs:
 
       - name: Verify package payload
         env:
+          VERSION: ${{ needs.metadata.outputs.version }}
           RPM_ARCH: ${{ matrix.arch }}
         run: |
-          MAIN_RPM_FILE="dist/rpm/ro-control-${RPM_ARCH}.rpm"
+          MAIN_RPM_FILE="dist/rpm/ro-control-v${VERSION}.${RPM_ARCH}.rpm"
 
           if [[ ! -f "${MAIN_RPM_FILE}" ]]; then
             echo "Main ro-control RPM is missing." >&2
@@ -218,7 +219,7 @@ jobs:
           VERSION: ${{ needs.metadata.outputs.version }}
           RPM_ARCH: ${{ matrix.arch }}
         run: |
-          RPM_FILE="dist/rpm/ro-control-${RPM_ARCH}.rpm"
+          RPM_FILE="dist/rpm/ro-control-v${VERSION}.${RPM_ARCH}.rpm"
 
           if [[ ! -f "${RPM_FILE}" ]]; then
             echo "Failed to locate built ${RPM_ARCH} RPM for smoke testing." >&2
@@ -254,7 +255,7 @@ jobs:
         with:
           name: ro-control-rpm-${{ matrix.arch }}-${{ needs.metadata.outputs.version }}
           path: |
-            dist/rpm/ro-control-${{ matrix.arch }}.rpm
+            dist/rpm/ro-control-v${{ needs.metadata.outputs.version }}.${{ matrix.arch }}.rpm
 
   release:
     name: Create GitHub Release
