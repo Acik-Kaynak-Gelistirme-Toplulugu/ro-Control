@@ -7,6 +7,10 @@ project(ro-control
     LANGUAGES CXX
 )
 
+set(CPACK_PACKAGE_FILE_NAME
+    "${PROJECT_NAME}-${PROJECT_VERSION}-${CMAKE_SYSTEM_PROCESSOR}"
+)
+
 set(RO_CONTROL_POLICY_ID "io.github.ProjectRoASD.rocontrol.manage-drivers")
 set(RO_CONTROL_HELPER_NAME "ro-control-helper")
 set(RO_CONTROL_HELPER_BUILD_PATH
@@ -21,6 +25,33 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # ─── Build type default ───────────────────────────────────────────────────────
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+endif()
+
+# ─── LTO (Release) ────────────────────────────────────────────────────────────
+option(ENABLE_LTO "Enable link-time optimization for release builds" ON)
+if(ENABLE_LTO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT has_lto)
+    if(has_lto AND CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
+endif()
+
+# ─── Sanitizers (Debug) ──────────────────────────────────────────────────────
+option(ENABLE_ASAN "Enable AddressSanitizer for debug builds" OFF)
+option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer for debug builds" OFF)
+
+if(ENABLE_ASAN OR ENABLE_UBSAN)
+    set(SANITIZER_FLAGS "")
+    if(ENABLE_ASAN)
+        string(APPEND SANITIZER_FLAGS " -fsanitize=address")
+    endif()
+    if(ENABLE_UBSAN)
+        string(APPEND SANITIZER_FLAGS " -fsanitize=undefined")
+    endif()
+    string(STRIP "${SANITIZER_FLAGS}" SANITIZER_FLAGS)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${SANITIZER_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${SANITIZER_FLAGS}")
 endif()
 
 # ─── Qt6 Setup ───────────────────────────────────────────────────────────────
@@ -76,6 +107,7 @@ set(BACKEND_SOURCES
     src/backend/system/languagemanager.cpp
     src/backend/system/uipreferencesmanager.cpp
     src/backend/system/systeminfoprovider.cpp
+    src/backend/fan/fancontroller.cpp
 )
 
 set(APP_SOURCES
@@ -136,6 +168,10 @@ set_source_files_properties(src/qml/assets/icon-refresh.svg PROPERTIES
     QT_RESOURCE_ALIAS "assets/icon-refresh.svg"
 )
 
+set_source_files_properties(src/qml/assets/icon-refresh-light.svg PROPERTIES
+    QT_RESOURCE_ALIAS "assets/icon-refresh-light.svg"
+)
+
 set_source_files_properties(src/qml/assets/icon-theme.svg PROPERTIES
     QT_RESOURCE_ALIAS "assets/icon-theme.svg"
 )
@@ -147,6 +183,7 @@ qt_add_qml_module(ro-control
         src/qml/Main.qml
         src/qml/pages/DriverPage.qml
         src/qml/pages/MonitorPage.qml
+        src/qml/pages/FanPage.qml
         src/qml/components/InfoBadge.qml
         src/qml/components/RefreshToolButton.qml
         src/qml/components/ActionButton.qml
@@ -159,6 +196,7 @@ qt_add_qml_module(ro-control
         src/qml/assets/ro-control-logo.svg
         src/qml/assets/icon-language.svg
         src/qml/assets/icon-refresh.svg
+        src/qml/assets/icon-refresh-light.svg
         src/qml/assets/icon-theme.svg
 )
 
@@ -217,7 +255,12 @@ configure_file(
     @ONLY
     NEWLINE_STYLE UNIX
 )
-execute_process(COMMAND chmod +x ${RO_CONTROL_HELPER_BUILD_PATH})
+
+file(CHMOD ${RO_CONTROL_HELPER_BUILD_PATH}
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                GROUP_READ GROUP_EXECUTE
+                WORLD_READ WORLD_EXECUTE
+)
 
 configure_file(
     data/polkit/io.github.ProjectRoASD.rocontrol.policy.in
@@ -303,3 +346,5 @@ message(STATUS "  CPU arch   : ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "  Qt version : ${Qt6_VERSION}")
 message(STATUS "  Install to : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "")
+
+include(CPack)

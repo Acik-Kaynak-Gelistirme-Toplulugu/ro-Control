@@ -13,7 +13,7 @@ struct SessionInfo {
 };
 
 // Detect the effective desktop graphics session from multiple signals.
-// Returns "wayland", "x11", or "unknown".
+// Returns "wayland" or "unknown".
 SessionInfo detectSessionInfo();
 QString detectSessionType();
 

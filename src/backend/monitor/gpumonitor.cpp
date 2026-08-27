@@ -332,6 +332,8 @@ int GpuMonitor::memoryTotalMiB() const { return m_memoryTotalMiB; }
 
 int GpuMonitor::memoryUsagePercent() const { return m_memoryUsagePercent; }
 
+int GpuMonitor::fanSpeedPercent() const { return m_fanSpeedPercent; }
+
 QString GpuMonitor::statusMessage() const { return m_statusMessage; }
 
 int GpuMonitor::updateInterval() const { return m_timer.interval(); }
@@ -345,7 +347,7 @@ void GpuMonitor::refresh() {
       QStringLiteral("nvidia-smi"),
       {QStringLiteral(
            "--query-gpu=name,temperature.gpu,utilization.gpu,memory.used,"
-           "memory.total"),
+           "memory.total,fan.speed"),
        QStringLiteral("--format=csv,noheader,nounits")},
       options);
 
@@ -425,11 +427,15 @@ void GpuMonitor::refresh() {
   int nextUtil = 0;
   int nextUsed = 0;
   int nextTotal = 0;
+  int nextFanSpeed = 0;
 
   bool tempAvailable = parseMetricInt(fields.at(1), &nextTemp);
   const bool utilAvailable = parseMetricInt(fields.at(2), &nextUtil);
   const bool usedAvailable = parseMetricInt(fields.at(3), &nextUsed);
   const bool totalAvailable = parseMetricInt(fields.at(4), &nextTotal);
+  if (fields.size() >= 6) {
+    parseMetricInt(fields.at(5), &nextFanSpeed);
+  }
   if (!tempAvailable) {
     tempAvailable = readNvidiaTemperatureFallback(runner, &nextTemp);
   }
@@ -487,6 +493,11 @@ void GpuMonitor::refresh() {
   if (m_memoryUsagePercent != usagePercent) {
     m_memoryUsagePercent = usagePercent;
     emit memoryUsagePercentChanged();
+  }
+
+  if (m_fanSpeedPercent != nextFanSpeed) {
+    m_fanSpeedPercent = nextFanSpeed;
+    emit fanSpeedPercentChanged();
   }
 
   setAvailable(true);
@@ -549,6 +560,11 @@ void GpuMonitor::clearMetrics() {
   if (m_memoryUsagePercent != 0) {
     m_memoryUsagePercent = 0;
     emit memoryUsagePercentChanged();
+  }
+
+  if (m_fanSpeedPercent != 0) {
+    m_fanSpeedPercent = 0;
+    emit fanSpeedPercentChanged();
   }
 }
 

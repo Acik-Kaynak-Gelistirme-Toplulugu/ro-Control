@@ -18,411 +18,565 @@
     <name>DriverPage</name>
     <message>
         <location filename="../src/qml/pages/DriverPage.qml" line="18"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="75"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="620"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="78"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="679"/>
         <source>Ready</source>
         <translation>Listo</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="63"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="66"/>
         <source>Update</source>
         <translation>Actualización</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="65"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="68"/>
         <source>Package</source>
         <translation>Paquete</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="67"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="70"/>
         <source>Kernel</source>
         <translation>Kernel</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="89"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="92"/>
         <source>%1 completed: %2</source>
         <translation>%1 completado: %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="90"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="93"/>
         <source>%1 canceled: %2</source>
         <translation>%1 cancelado: %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="91"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="94"/>
         <source>%1 failed: %2</source>
         <translation>%1 falló: %2</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="99"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="100"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="102"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="103"/>
         <source>Cancel requested. Waiting for the active command to stop safely...</source>
         <translation>Cancelación solicitada. Esperando a que el comando activo se detenga de forma segura...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="105"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="106"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="108"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="109"/>
         <source>Restart request failed. Please restart the computer manually.</source>
         <translation>No se pudo solicitar el reinicio. Reinicie el equipo manualmente.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="110"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="111"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="113"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="114"/>
         <source>Restart requested.</source>
         <translation>Reinicio solicitado.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="128"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="131"/>
         <source>Closed-source driver prepared: %1. Restart required.</source>
         <translation>Controlador cerrado preparado: %1. Se requiere reiniciar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="129"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="132"/>
         <source>Closed-source driver prepared. Restart required.</source>
         <translation>Controlador cerrado preparado. Se requiere reiniciar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="132"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="135"/>
         <source>Open-source graphics stack prepared. Restart required.</source>
         <translation>Pila gráfica abierta preparada. Se requiere reiniciar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="135"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="138"/>
         <source>NVIDIA driver cleanup completed. Restart recommended.</source>
         <translation>Limpieza del controlador NVIDIA completada. Se recomienda reiniciar.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="142"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="145"/>
         <source>Refreshing driver status shown on this page...</source>
         <translation>Actualizando el estado del controlador mostrado en esta página...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="178"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="179"/>
+        <source>Switching to the open-source NVIDIA driver stack...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="199"/>
         <source>Latest available: %1</source>
         <translation>Más reciente disponible: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="180"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="201"/>
         <source>Driver catalog loaded</source>
         <translation>Catálogo de controladores cargado</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="181"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="202"/>
         <source>Driver scan pending</source>
         <translation>Escaneo de controladores pendiente</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="194"/>
         <source>Virtual machine detected (%1). Attach or passthrough an NVIDIA GPU before installing drivers.</source>
-        <translation>Máquina virtual detectada (%1). Conecte o haga passthrough de una GPU NVIDIA antes de instalar controladores.</translation>
+        <translation type="vanished">Máquina virtual detectada (%1). Conecte o haga passthrough de una GPU NVIDIA antes de instalar controladores.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="196"/>
         <source>No NVIDIA GPU or installed NVIDIA driver detected.</source>
-        <translation>No se detectó una GPU NVIDIA ni un controlador NVIDIA instalado.</translation>
+        <translation type="vanished">No se detectó una GPU NVIDIA ni un controlador NVIDIA instalado.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="198"/>
         <source>Refreshing installed driver status...</source>
-        <translation>Actualizando el estado del controlador instalado...</translation>
+        <translation type="vanished">Actualizando el estado del controlador instalado...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="200"/>
         <source>The page has recorded the completed operation; system activation may require a restart.</source>
-        <translation>La página registró la operación completada; la activación en el sistema puede requerir un reinicio.</translation>
+        <translation type="vanished">La página registró la operación completada; la activación en el sistema puede requerir un reinicio.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="203"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="224"/>
         <source>New version available: %1</source>
         <translation>Nueva version disponible: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="204"/>
         <source>Installed version is up to date.</source>
-        <translation>La version instalada esta actualizada.</translation>
+        <translation type="vanished">La version instalada esta actualizada.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="207"/>
         <source>Installed version detected.</source>
-        <translation>Se detecto una version instalada.</translation>
+        <translation type="vanished">Se detecto una version instalada.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="209"/>
         <source>Not installed. Latest available version: %1</source>
-        <translation>No esta instalado. Ultima version disponible: %1</translation>
+        <translation type="vanished">No esta instalado. Ultima version disponible: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="211"/>
         <source>Driver catalog loaded.</source>
-        <translation>Catalogo de controladores cargado.</translation>
+        <translation type="vanished">Catalogo de controladores cargado.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="212"/>
         <source>Checking whether a newer driver is available...</source>
-        <translation>Comprobando si hay una version mas reciente del controlador...</translation>
+        <translation type="vanished">Comprobando si hay una version mas reciente del controlador...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="99"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="100"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="105"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="106"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="110"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="111"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="142"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="223"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="626"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="102"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="103"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="108"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="109"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="113"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="114"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="145"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="244"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="687"/>
         <source>System</source>
         <translation>Sistema</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="361"/>
         <source>Kernel module signing may be required.</source>
-        <translation>Puede ser necesario firmar el módulo del kernel.</translation>
+        <translation type="vanished">Puede ser necesario firmar el módulo del kernel.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="362"/>
         <source>No Secure Boot signing requirement detected.</source>
-        <translation>No se detectó ningún requisito de firma para el arranque seguro.</translation>
+        <translation type="vanished">No se detectó ningún requisito de firma para el arranque seguro.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="410"/>
         <source>Install, update, deep-clean, or rescan the NVIDIA driver stack. The closed-source path installs the official NVIDIA RPM Fusion driver; the open-source path switches to the community open-source graphics stack.</source>
-        <translation>Instala, actualiza, limpia en profundidad o vuelve a analizar la pila de controladores NVIDIA. La ruta cerrada instala el controlador oficial de NVIDIA desde RPM Fusion; la ruta abierta cambia a la pila comunitaria de gráficos abiertos.</translation>
+        <translation type="vanished">Instala, actualiza, limpia en profundidad o vuelve a analizar la pila de controladores NVIDIA. La ruta cerrada instala el controlador oficial de NVIDIA desde RPM Fusion; la ruta abierta cambia a la pila comunitaria de gráficos abiertos.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="167"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="848"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="188"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="972"/>
         <source>Installing closed-source NVIDIA driver...</source>
         <translation>Instalando controlador NVIDIA de código cerrado...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="281"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="270"/>
+        <source>Closed-source</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="272"/>
+        <source>Open-source</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="274"/>
+        <source>Mixed driver state</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="275"/>
+        <source>Not detected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Virtual display detected. NVIDIA passthrough is required for driver management.</source>
-        <translation>Pantalla virtual detectada. Se requiere passthrough de NVIDIA para gestionar controladores.</translation>
+        <translation type="vanished">Pantalla virtual detectada. Se requiere passthrough de NVIDIA para gestionar controladores.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="282"/>
         <source>NVIDIA hardware is required for driver management.</source>
-        <translation>Se requiere hardware NVIDIA para gestionar controladores.</translation>
+        <translation type="vanished">Se requiere hardware NVIDIA para gestionar controladores.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="452"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="348"/>
+        <source>Driver</source>
+        <translation type="unfinished">Controlador</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="372"/>
+        <source>Stack: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="471"/>
+        <source>Deep Clean is required before switching from open-source to closed-source.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="480"/>
+        <source>Deep Clean is required before switching from closed-source to open-source.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Restart System</source>
-        <translation>Reiniciar sistema</translation>
+        <translation type="vanished">Reiniciar sistema</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="490"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="545"/>
         <source>Live</source>
         <translation>En vivo</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="490"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="545"/>
         <source>Reading</source>
         <translation>Leyendo</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="555"/>
         <source>Following live output</source>
-        <translation>Siguiendo salida en vivo</translation>
+        <translation type="vanished">Siguiendo salida en vivo</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="555"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="614"/>
         <source>Paused for reading</source>
         <translation>Pausado para lectura</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="561"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="620"/>
         <source>Follow</source>
         <translation>Seguir</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="626"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="684"/>
+        <source>Driver is already up to date.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="687"/>
         <source>Driver page status refreshed.</source>
         <translation>Estado de la página del controlador actualizado.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="626"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="687"/>
         <source>Driver page status refresh failed.</source>
         <translation>No se pudo actualizar el estado de la página del controlador.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="668"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="729"/>
         <source>Restart Computer</source>
         <translation>Reiniciar equipo</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="676"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="737"/>
         <source>A driver operation has completed and the computer must restart before the new graphics stack is active.</source>
         <translation>Una operación del controlador se completó y el equipo debe reiniciarse antes de que la nueva pila gráfica esté activa.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="693"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="754"/>
         <source>Restart Now</source>
         <translation>Reiniciar ahora</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="725"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="786"/>
         <source>Driver Is Already Current</source>
         <translation>El controlador ya está actualizado</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="733"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="794"/>
         <source>The installed NVIDIA driver already matches the latest version available from the configured driver sources. Reinstall only if you want to rebuild the driver packages and kernel module.</source>
         <translation>El controlador NVIDIA instalado ya coincide con la versión más reciente disponible en las fuentes de controladores configuradas. Reinstálelo solo si desea reconstruir los paquetes del controlador y el módulo del kernel.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="567"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="687"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="744"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="626"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="748"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="805"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="865"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="750"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="215"/>
+        <source>VM detected. NVIDIA passthrough required.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="217"/>
+        <source>No NVIDIA GPU or driver.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="219"/>
+        <source>Refreshing status...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="221"/>
+        <source>Restart may be required.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="225"/>
+        <source>Up to date.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="228"/>
+        <source>Installed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="230"/>
+        <source>Latest: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="232"/>
+        <source>Catalog loaded.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="233"/>
+        <source>Checking updates...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="280"/>
+        <source>State unreadable.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="282"/>
+        <source>Signing may be required.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="283"/>
+        <source>No signing required.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="320"/>
+        <source>VM display. Use NVIDIA passthrough.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="321"/>
+        <source>NVIDIA hardware required.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="434"/>
+        <source>Driver Stack</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="454"/>
+        <source>Manage closed-source and open-source NVIDIA stacks. Switching stacks requires Deep Clean first.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="467"/>
+        <source>Closed Source</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="476"/>
+        <source>Open Source</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="496"/>
+        <source>Restart</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="613"/>
+        <source>Command output is being captured.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="614"/>
+        <source>Following output</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="811"/>
         <source>Reinstall Anyway</source>
         <translation>Reinstalar de todos modos</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="787"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="844"/>
+        <source>Deep Clean Required</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="853"/>
+        <source>An open-source driver stack is currently detected. Run Deep Clean before installing the closed-source driver.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="854"/>
+        <source>A closed-source driver stack is currently detected. Run Deep Clean before installing the open-source driver.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/DriverPage.qml" line="911"/>
         <source>NVIDIA License Review</source>
         <translation>Revisión de licencia NVIDIA</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="803"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="927"/>
         <source>Close</source>
         <translation>Cerrar</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="836"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="960"/>
         <source>Reject</source>
         <translation>Rechazar</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="844"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="968"/>
         <source>Accept</source>
         <translation>Aceptar</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="276"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="315"/>
         <source>GPU</source>
         <translation>GPU</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="430"/>
         <source>Use Open Source Driver</source>
-        <translation>Usar controlador abierto</translation>
+        <translation type="vanished">Usar controlador abierto</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="434"/>
         <source>Switching to the community open-source graphics driver stack...</source>
-        <translation>Cambiando a la pila comunitaria de controladores gráficos abiertos...</translation>
+        <translation type="vanished">Cambiando a la pila comunitaria de controladores gráficos abiertos...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="445"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="489"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="876"/>
         <source>Cleaning NVIDIA artifacts...</source>
         <translation>Limpiando restos de NVIDIA...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="483"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="528"/>
         <source>Activity</source>
         <translation>Actividad</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="573"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="632"/>
         <source>Clear</source>
         <translation>Limpiar</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="68"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="71"/>
         <source>General</source>
         <translation>General</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="219"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="240"/>
         <source>Closed-source NVIDIA driver installation requires reviewing and accepting the NVIDIA license terms before ro-Control can start the closed-source install workflow.</source>
         <translation>La instalación del controlador NVIDIA de código cerrado requiere revisar y aceptar los términos de licencia de NVIDIA antes de que ro-Control pueda iniciar el flujo de instalación de código cerrado.</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="240"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="261"/>
         <source>Checking official NVIDIA driver sources...</source>
         <translation>Comprobando fuentes oficiales de controladores NVIDIA...</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="189"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="210"/>
         <source>No NVIDIA GPU</source>
         <translation>Sin GPU NVIDIA</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="309"/>
         <source>Driver Version</source>
-        <translation>Versión del controlador</translation>
+        <translation type="vanished">Versión del controlador</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="347"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="393"/>
         <source>Secure Boot</source>
         <translation>Arranque seguro</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="350"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="396"/>
         <source>Enabled</source>
         <translation>Activado</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="351"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="397"/>
         <source>Disabled</source>
         <translation>Desactivado</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="352"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="398"/>
         <source>Unknown</source>
         <translation>Desconocido</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="391"/>
         <source>Driver Actions</source>
-        <translation>Acciones del controlador</translation>
+        <translation type="vanished">Acciones del controlador</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="403"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="447"/>
         <source>Rescan and check updates</source>
         <translation>Volver a escanear y buscar actualizaciones</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="423"/>
         <source>Install Closed Source</source>
-        <translation>Instalar código cerrado</translation>
+        <translation type="vanished">Instalar código cerrado</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="167"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="434"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="445"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="589"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="590"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="594"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="595"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="597"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="602"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="603"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="605"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="848"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="179"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="188"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="489"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="648"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="649"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="653"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="654"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="656"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="661"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="662"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="664"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="876"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="972"/>
         <source>Installer</source>
         <translation>Instalador</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="240"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="614"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="615"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="620"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="622"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="623"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="632"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="633"/>
-        <location filename="../src/qml/pages/DriverPage.qml" line="637"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="261"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="673"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="674"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="679"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="681"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="682"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="684"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="693"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="694"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="698"/>
         <source>Updater</source>
         <translation>Actualizador</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/DriverPage.qml" line="441"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="485"/>
+        <location filename="../src/qml/pages/DriverPage.qml" line="871"/>
         <source>Deep Clean</source>
         <translation>Limpieza profunda</translation>
     </message>
@@ -492,7 +646,7 @@
     <name>Main</name>
     <message>
         <location filename="../src/qml/Main.qml" line="25"/>
-        <location filename="../src/qml/Main.qml" line="153"/>
+        <location filename="../src/qml/Main.qml" line="181"/>
         <source>ro-Control</source>
         <translation>ro-Control</translation>
     </message>
@@ -518,27 +672,34 @@
         <translation>Desconocido</translation>
     </message>
     <message>
-        <location filename="../src/qml/Main.qml" line="69"/>
+        <location filename="../src/qml/Main.qml" line="68"/>
+        <source>Desktop</source>
+        <translation type="unfinished">Escritorio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/Main.qml" line="188"/>
+        <source>Ro-ASD driver control and system diagnostics</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Virtual Machine</source>
-        <translation>Máquina virtual</translation>
+        <translation type="vanished">Máquina virtual</translation>
     </message>
     <message>
-        <location filename="../src/qml/Main.qml" line="71"/>
         <source>Physical Machine</source>
-        <translation>Máquina física</translation>
+        <translation type="vanished">Máquina física</translation>
     </message>
     <message>
-        <location filename="../src/qml/Main.qml" line="160"/>
         <source>ro-ASD NVIDIA driver operations and system diagnostics</source>
-        <translation>Operaciones de controladores NVIDIA y diagnóstico del sistema ro-ASD</translation>
+        <translation type="vanished">Operaciones de controladores NVIDIA y diagnóstico del sistema ro-ASD</translation>
     </message>
     <message>
-        <location filename="../src/qml/Main.qml" line="337"/>
+        <location filename="../src/qml/Main.qml" line="365"/>
         <source>Driver</source>
         <translation>Controlador</translation>
     </message>
     <message>
-        <location filename="../src/qml/Main.qml" line="353"/>
+        <location filename="../src/qml/Main.qml" line="381"/>
         <source>Monitor</source>
         <translation>Monitor</translation>
     </message>
@@ -546,93 +707,111 @@
 <context>
     <name>MonitorPage</name>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="28"/>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="32"/>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="36"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="33"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="37"/>
         <location filename="../src/qml/pages/MonitorPage.qml" line="41"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="46"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="49"/>
         <source>Unavailable</source>
         <translation>No disponible</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="44"/>
         <source>Virtual Machine: %1</source>
-        <translation>Máquina virtual: %1</translation>
+        <translation type="vanished">Máquina virtual: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="45"/>
         <source>Virtual Machine</source>
-        <translation>Máquina virtual</translation>
+        <translation type="vanished">Máquina virtual</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="47"/>
         <source>Physical Machine</source>
-        <translation>Máquina física</translation>
+        <translation type="vanished">Máquina física</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="91"/>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="270"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="32"/>
+        <source>VM sensor unavailable</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="110"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="287"/>
         <source>CPU</source>
         <translation>CPU</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="93"/>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="113"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="112"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="132"/>
         <source>Temperature: %1</source>
         <translation>Temperatura: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="111"/>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="278"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="130"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="303"/>
         <source>GPU</source>
         <translation>GPU</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="137"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="156"/>
         <source>Memory</source>
         <translation>Memoria</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="145"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="164"/>
         <source>Usage: %1</source>
         <translation>Uso: %1</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="171"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="190"/>
         <source>System</source>
         <translation>Sistema</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="186"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="205"/>
         <source>Operating System</source>
         <translation>Sistema operativo</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="187"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="206"/>
         <source>Desktop</source>
         <translation>Escritorio</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="188"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="207"/>
         <source>Kernel</source>
         <translation>Kernel</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="189"/>
-        <source>Machine</source>
-        <translation>Máquina</translation>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="208"/>
+        <source>Device Type</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="250"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="322"/>
+        <source>Usage: %1 (%2%)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Machine</source>
+        <translation type="vanished">Máquina</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="269"/>
         <source>Live Resource Bars</source>
         <translation>Barras de recursos en vivo</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="261"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="281"/>
         <source>Refresh telemetry</source>
         <translation>Actualizar telemetría</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/MonitorPage.qml" line="286"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="290"/>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="306"/>
+        <source>Usage: %1% | Temperature: %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="319"/>
         <source>RAM</source>
         <translation>RAM</translation>
     </message>
@@ -640,38 +819,58 @@
 <context>
     <name>NvidiaDetector</name>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="72"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="74"/>
         <source>NVIDIA Open Kernel Modules</source>
         <translation>Módulos abiertos del kernel NVIDIA</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="74"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="76"/>
         <source>NVIDIA Driver</source>
         <translation>Controlador NVIDIA</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="77"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="79"/>
         <source>Installed, Restart Required</source>
         <translation>Instalado, reinicio requerido</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="79"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="81"/>
         <source>Fallback Open Driver</source>
         <translation>Controlador abierto alternativo</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="80"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="82"/>
         <source>Not Installed</source>
         <translation>No instalado</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="86"/>
-        <location filename="../src/backend/nvidia/detector.cpp" line="89"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="101"/>
+        <source>Closed-source driver detected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/backend/nvidia/detector.cpp" line="104"/>
+        <source>Open-source driver detected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/backend/nvidia/detector.cpp" line="107"/>
+        <source>Mixed driver state detected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/backend/nvidia/detector.cpp" line="109"/>
+        <source>No driver source detected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/backend/nvidia/detector.cpp" line="115"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="118"/>
         <source>Unavailable</source>
         <translation>No disponible</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="91"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="120"/>
         <source>GPU: %1
 Driver Version: %2
 Secure Boot: %3
@@ -686,28 +885,28 @@ Pila activa: %5
 Controlador abierto alternativo: %6</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="95"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="124"/>
         <source>Enabled</source>
         <translation>Activado</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="95"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="124"/>
         <source>Disabled</source>
         <translation>Desactivado</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="96"/>
-        <location filename="../src/backend/nvidia/detector.cpp" line="97"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="125"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="126"/>
         <source>Unknown</source>
         <translation>Desconocido</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="99"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="128"/>
         <source>Active</source>
         <translation>Activo</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/detector.cpp" line="99"/>
+        <location filename="../src/backend/nvidia/detector.cpp" line="128"/>
         <source>Inactive</source>
         <translation>Inactivo</translation>
     </message>
@@ -715,27 +914,27 @@ Controlador abierto alternativo: %6</translation>
 <context>
     <name>NvidiaInstaller</name>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="210"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="180"/>
         <source>Starting command (attempt %1): %2</source>
         <translation>Iniciando comando (intento %1): %2</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="224"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="194"/>
         <source>Command finished (attempt %1, exit %2, %3 ms): %4</source>
         <translation>Comando finalizado (intento %1, salida %2, %3 ms): %4</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="268"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="238"/>
         <source>No driver operation is running.</source>
         <translation>No hay ninguna operación de controlador en curso.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="273"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="243"/>
         <source>Cancel requested. Waiting for the active command to stop safely...</source>
         <translation>Cancelación solicitada. Esperando a que el comando activo se detenga de forma segura...</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="291"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="261"/>
         <source>Closed-source NVIDIA driver license summary
 
 This closed-source NVIDIA driver is provided under NVIDIA&apos;s driver software license. By accepting, you confirm that you have authority to accept the license terms and that ro-Control may start installing the closed-source driver packages.
@@ -764,163 +963,189 @@ Puntos importantes:
 Elija Aceptar para continuar con la instalación de código cerrado o Rechazar para cancelar.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="325"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="302"/>
         <source>NVIDIA license review confirmation is required before installation.</source>
         <translation>Se requiere confirmar la revisión de la licencia NVIDIA antes de la instalación.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="349"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="326"/>
         <source>Checking RPM Fusion repositories...</source>
         <translation>Comprobando repositorios RPM Fusion...</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="363"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="340"/>
         <source>Platform version could not be detected.</source>
         <translation>No se pudo detectar la versión de la plataforma.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="397"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="356"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="485"/>
+        <source>The active display session could not be detected as Wayland. ro-Control supports Wayland driver setup only.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/backend/nvidia/installer.cpp" line="373"/>
         <source>Closed-source install packages for %1: %2</source>
         <translation>Paquetes de instalación de código cerrado para %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="438"/>
-        <location filename="../src/backend/nvidia/installer.cpp" line="541"/>
-        <location filename="../src/backend/nvidia/installer.cpp" line="604"/>
-        <location filename="../src/backend/nvidia/installer.cpp" line="650"/>
-        <location filename="../src/backend/nvidia/installer.cpp" line="671"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="412"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="525"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="587"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="633"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="654"/>
         <source>Operation canceled by user.</source>
         <translation>Operación cancelada por el usuario.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="439"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="413"/>
         <source>Installation failed: </source>
         <translation>La instalación falló: </translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="457"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="431"/>
         <source>The closed-source NVIDIA driver was installed successfully. Please restart the system.</source>
         <translation>El controlador NVIDIA de código cerrado se instaló correctamente. Reinicie el sistema.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="493"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="474"/>
+        <source>Switching to the open-source NVIDIA driver stack...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/backend/nvidia/installer.cpp" line="497"/>
+        <source>Open-source NVIDIA install packages: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/backend/nvidia/installer.cpp" line="526"/>
+        <source>Open-source NVIDIA driver installation failed: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/backend/nvidia/installer.cpp" line="545"/>
+        <source>The open-source NVIDIA driver stack was prepared successfully. Please restart the system.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Switching to the community open-source graphics driver stack...</source>
-        <translation>Cambiando a la pila comunitaria de controladores gráficos abiertos...</translation>
+        <translation type="vanished">Cambiando a la pila comunitaria de controladores gráficos abiertos...</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="521"/>
         <source>NVIDIA official/RPM Fusion packages to remove before enabling the open-source driver: %1</source>
-        <translation>Paquetes oficiales de NVIDIA/RPM Fusion que se eliminarán antes de activar el controlador abierto: %1</translation>
+        <translation type="vanished">Paquetes oficiales de NVIDIA/RPM Fusion que se eliminarán antes de activar el controlador abierto: %1</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="544"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="528"/>
         <source>unknown error</source>
         <translation>error desconocido</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="561"/>
         <source>The community open-source graphics driver stack was prepared successfully. Please restart the system.</source>
-        <translation>La pila comunitaria de controladores gráficos abiertos se preparó correctamente. Reinicia el sistema.</translation>
+        <translation type="vanished">La pila comunitaria de controladores gráficos abiertos se preparó correctamente. Reinicia el sistema.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="590"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="574"/>
         <source>Removing the NVIDIA driver...</source>
         <translation>Eliminando el controlador NVIDIA...</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="602"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="585"/>
         <source>Driver removed successfully.</source>
         <translation>Controlador eliminado correctamente.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="605"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="588"/>
         <source>Removal failed: </source>
         <translation>La eliminación falló: </translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="638"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="621"/>
         <source>Cleaning legacy driver leftovers...</source>
         <translation>Limpiando restos de controladores antiguos...</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="651"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="634"/>
         <source>Deep clean failed: </source>
         <translation>La limpieza profunda falló: </translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="672"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="655"/>
         <source>DNF cache cleanup failed: </source>
         <translation>La limpieza de caché de DNF falló: </translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="690"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="673"/>
         <source>Deep clean completed.</source>
         <translation>Limpieza profunda completada.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="251"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="221"/>
         <source>Another driver operation is already running.</source>
         <translation>Ya hay otra operación de controlador en curso.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="199"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="75"/>
+        <source>Open-source driver stack detected. Run Deep Clean before installing the closed-source driver.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/backend/nvidia/installer.cpp" line="81"/>
+        <source>Closed-source driver stack detected. Run Deep Clean before installing the open-source driver.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/backend/nvidia/installer.cpp" line="169"/>
         <source>Starting privileged installation batch (attempt %1). The exact commands and package manager output will appear below.</source>
         <translation>Iniciando lote de instalación privilegiada (intento %1). Los comandos exactos y la salida del gestor de paquetes aparecerán abajo.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="380"/>
-        <location filename="../src/backend/nvidia/installer.cpp" line="505"/>
         <source>The active display session could not be detected reliably. ro-Control will not guess Wayland or X11 specific NVIDIA setup.</source>
-        <translation>No se pudo detectar de forma fiable la sesión gráfica activa. ro-Control no adivinará una configuración NVIDIA específica para Wayland o X11.</translation>
+        <translation type="vanished">No se pudo detectar de forma fiable la sesión gráfica activa. ro-Control no adivinará una configuración NVIDIA específica para Wayland o X11.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="392"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="368"/>
         <source>Installing the closed-source NVIDIA driver with one privileged authorization...</source>
         <translation>Instalando el controlador NVIDIA cerrado con una única autorización privilegiada...</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="427"/>
-        <location filename="../src/backend/nvidia/installer.cpp" line="529"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="401"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="513"/>
         <source>Detected %1 session via %2.</source>
         <translation>Sesión %1 detectada mediante %2.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="399"/>
-        <location filename="../src/backend/nvidia/installer.cpp" line="429"/>
-        <location filename="../src/backend/nvidia/installer.cpp" line="531"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="374"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="403"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="515"/>
         <source>Wayland</source>
         <translation>Wayland</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="79"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="63"/>
         <source>No NVIDIA GPU or installed NVIDIA driver was detected. In a virtual machine, attach or passthrough an NVIDIA GPU before starting driver installation.</source>
         <translation>No se detectó una GPU NVIDIA ni un controlador NVIDIA instalado. En una máquina virtual, conecte o haga passthrough de una GPU NVIDIA antes de iniciar la instalación del controlador.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="400"/>
-        <location filename="../src/backend/nvidia/installer.cpp" line="430"/>
-        <location filename="../src/backend/nvidia/installer.cpp" line="532"/>
         <source>X11</source>
-        <translation>X11</translation>
+        <translation type="vanished">X11</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="432"/>
-        <location filename="../src/backend/nvidia/installer.cpp" line="534"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="406"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="518"/>
         <source>session probe</source>
         <translation>sondeo de sesión</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="517"/>
         <source>Community open-source install packages: %1</source>
-        <translation>Paquetes de instalación abiertos de la comunidad: %1</translation>
+        <translation type="vanished">Paquetes de instalación abiertos de la comunidad: %1</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="542"/>
         <source>Community open-source driver installation failed: </source>
-        <translation>Falló la instalación del controlador abierto de la comunidad: </translation>
+        <translation type="vanished">Falló la instalación del controlador abierto de la comunidad: </translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/installer.cpp" line="692"/>
+        <location filename="../src/backend/nvidia/installer.cpp" line="675"/>
         <source>Legacy NVIDIA cleanup completed.</source>
         <translation>Limpieza de NVIDIA antiguo completada.</translation>
     </message>
@@ -928,186 +1153,188 @@ Elija Aceptar para continuar con la instalación de código cerrado o Rechazar p
 <context>
     <name>NvidiaUpdater</name>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="718"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="704"/>
         <source>Update failed: </source>
         <translation>La actualización falló: </translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="771"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="757"/>
         <source>Driver updated successfully. Please restart the system.</source>
         <translation>Controlador actualizado correctamente. Reinicie el sistema.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="272"/>
-        <location filename="../src/backend/nvidia/updater.cpp" line="290"/>
-        <location filename="../src/backend/nvidia/updater.cpp" line="629"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="264"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="282"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="618"/>
         <source>dnf not found.</source>
         <translation>dnf no encontrado.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="65"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="58"/>
         <source>No NVIDIA GPU or installed NVIDIA driver was detected. In a virtual machine, attach or passthrough an NVIDIA GPU before starting driver updates.</source>
         <translation>No se detectó una GPU NVIDIA ni un controlador NVIDIA instalado. En una máquina virtual, conecte o haga passthrough de una GPU NVIDIA antes de iniciar actualizaciones del controlador.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="264"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="256"/>
         <source>Official NVIDIA driver sources are reachable. You can install the driver now.</source>
         <translation>Las fuentes oficiales de controladores NVIDIA son accesibles. Puede instalar el controlador ahora.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="266"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="258"/>
         <source>Latest official NVIDIA driver version: %1</source>
         <translation>Última versión oficial del controlador NVIDIA: %1</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="270"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="262"/>
         <source>No official NVIDIA driver version could be retrieved.</source>
         <translation>No se pudo obtener ninguna versión oficial del controlador NVIDIA.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="281"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="273"/>
         <source>Official NVIDIA update found: %1</source>
         <translation>Actualización oficial de NVIDIA encontrada: %1</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="283"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="275"/>
         <source>Driver matches the latest official NVIDIA production branch.</source>
         <translation>El controlador coincide con la rama oficial de producción más reciente de NVIDIA.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="308"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="300"/>
         <source>Update found (version details unavailable).</source>
         <translation>Actualización encontrada (detalles de versión no disponibles).</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="309"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="301"/>
         <source>Update found: %1</source>
         <translation>Actualización encontrada: %1</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="312"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="304"/>
         <source>Driver is up to date. No new version found.</source>
         <translation>El controlador está actualizado. No se encontró una versión nueva.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="314"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="306"/>
         <source>Update check failed: %1</source>
         <translation>Falló la comprobación de actualizaciones: %1</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="361"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="353"/>
         <source>Starting privileged driver transaction batch (attempt %1). The exact commands and package manager output will appear below.</source>
         <translation>Iniciando lote de transacción privilegiada del controlador (intento %1). Los comandos exactos y la salida del gestor de paquetes aparecerán abajo.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="372"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="364"/>
         <source>Starting command (attempt %1): %2</source>
         <translation>Iniciando comando (intento %1): %2</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="386"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="378"/>
         <source>Command finished (attempt %1, exit %2, %3 ms): %4</source>
         <translation>Comando finalizado (intento %1, salida %2, %3 ms): %4</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="412"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="404"/>
         <source>Another driver operation is already running.</source>
         <translation>Ya hay otra operación de controlador en curso.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="429"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="421"/>
         <source>No driver operation is running.</source>
         <translation>No hay ninguna operación de controlador en curso.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="434"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="426"/>
         <source>Cancel requested. Waiting for the active command to stop safely...</source>
         <translation>Cancelación solicitada. Esperando a que el comando activo se detenga de forma segura...</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="719"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="637"/>
+        <source>The active display session could not be detected as Wayland. ro-Control supports Wayland driver setup only.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/backend/nvidia/updater.cpp" line="705"/>
         <source>unknown error</source>
         <translation>error desconocido</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="649"/>
         <source>The active display session could not be detected reliably. ro-Control will not guess Wayland or X11 specific NVIDIA setup.</source>
-        <translation>No se pudo detectar de forma fiable la sesión gráfica activa. ro-Control no adivinará una configuración NVIDIA específica para Wayland o X11.</translation>
+        <translation type="vanished">No se pudo detectar de forma fiable la sesión gráfica activa. ro-Control no adivinará una configuración NVIDIA específica para Wayland o X11.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="705"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="691"/>
         <source>Detected %1 session via %2.</source>
         <translation>Sesión %1 detectada mediante %2.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="691"/>
-        <location filename="../src/backend/nvidia/updater.cpp" line="707"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="678"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="693"/>
         <source>Wayland</source>
         <translation>Wayland</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="692"/>
-        <location filename="../src/backend/nvidia/updater.cpp" line="708"/>
         <source>X11</source>
-        <translation>X11</translation>
+        <translation type="vanished">X11</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="710"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="696"/>
         <source>session probe</source>
         <translation>sondeo de sesión</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="553"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="542"/>
         <source>Starting update check...</source>
         <translation>Iniciando comprobación de actualizaciones...</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="665"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="653"/>
         <source>Selected version not found in the repository.</source>
         <translation>La versión seleccionada no se encontró en el repositorio.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="675"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="663"/>
         <source>Updating NVIDIA driver to the latest version...</source>
         <translation>Actualizando el controlador NVIDIA a la versión más reciente...</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="677"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="665"/>
         <source>Switching NVIDIA driver to selected version: %1</source>
         <translation>Cambiando el controlador NVIDIA a la versión seleccionada: %1</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="685"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="673"/>
         <source>Driver transaction kernel package: `%1`</source>
         <translation>Paquete de kernel de la transacción del controlador: `%1`</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="689"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="677"/>
         <source>Driver transaction packages for %1: %2</source>
         <translation>Paquetes de transacción del controlador para %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="717"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="703"/>
         <source>Operation canceled by user.</source>
         <translation>Operación cancelada por el usuario.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="735"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="721"/>
         <source>Driver is already at the latest available version.</source>
         <translation>El controlador ya está en la versión más reciente disponible.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="737"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="723"/>
         <source>Selected driver version is already installed.</source>
         <translation>La versión seleccionada del controlador ya está instalada.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="769"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="755"/>
         <source>Latest version installed successfully. Please restart the system.</source>
         <translation>La versión más reciente se instaló correctamente. Reinicie el sistema.</translation>
     </message>
     <message>
-        <location filename="../src/backend/nvidia/updater.cpp" line="773"/>
+        <location filename="../src/backend/nvidia/updater.cpp" line="759"/>
         <source>Selected version applied successfully. Please restart the system.</source>
         <translation>La versión seleccionada se aplicó correctamente. Reinicie el sistema.</translation>
     </message>
@@ -1115,7 +1342,7 @@ Elija Aceptar para continuar con la instalación de código cerrado o Rechazar p
 <context>
     <name>RefreshToolButton</name>
     <message>
-        <location filename="../src/qml/components/RefreshToolButton.qml" line="10"/>
+        <location filename="../src/qml/components/RefreshToolButton.qml" line="11"/>
         <source>Refresh</source>
         <translation>Actualizar</translation>
     </message>

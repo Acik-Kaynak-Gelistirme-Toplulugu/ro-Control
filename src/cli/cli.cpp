@@ -9,6 +9,7 @@
 #include <QTextStream>
 #include <QThread>
 
+#include "backend/fan/fancontroller.h"
 #include "backend/monitor/cpumonitor.h"
 #include "backend/monitor/gpumonitor.h"
 #include "backend/monitor/rammonitor.h"
@@ -27,6 +28,9 @@ QString commandActionToString(CommandAction action) {
   case CommandAction::PrintDiagnosticsText:
   case CommandAction::PrintDiagnosticsJson:
     return QStringLiteral("diagnostics");
+  case CommandAction::PrintFanStatusText:
+  case CommandAction::PrintFanStatusJson:
+    return QStringLiteral("fan-status");
   default:
     return QStringLiteral("unknown");
   }
@@ -62,7 +66,11 @@ QString buildHelpText(const QString &applicationName,
   stream << "  driver remove              Remove installed NVIDIA packages.\n";
   stream
       << "  driver update              Update the installed NVIDIA driver.\n";
-  stream << "  driver deep-clean          Remove legacy NVIDIA leftovers.\n\n";
+  stream << "  driver deep-clean          Remove legacy NVIDIA leftovers.\n";
+  stream << "  fan status [--json]        Print current GPU fan status and profile.\n";
+  stream << "  fan set-speed <percent>    Set manual fixed fan speed (0-100%).\n";
+  stream << "  fan set-mode <profile>     Set fan profile (auto, silent, balanced, performance, manual, custom).\n";
+  stream << "  fan reset                  Reset fan control to automatic mode.\n\n";
   stream << "Driver install options:\n";
   stream << "  --proprietary              Install the proprietary akmod-nvidia "
             "stack.\n";
@@ -150,8 +158,6 @@ ParsedCommand parseArguments(const QStringList &arguments,
   if (!parser.parse(arguments)) {
     return invalidCommand(parser.errorText());
   }
-
-  parser.process(arguments);
 
   const QString helpText = buildHelpText(applicationName, applicationVersion,
                                          applicationDescription);
@@ -257,6 +263,84 @@ ParsedCommand parseArguments(const QStringList &arguments,
     command.action = json ? CommandAction::PrintDiagnosticsJson
                           : CommandAction::PrintDiagnosticsText;
     return command;
+  }
+
+  if (commandName == QStringLiteral("fan")) {
+    if (positional.size() < 2) {
+      return invalidCommand(
+          QStringLiteral("`fan` requires a subcommand: status, set-speed, "
+                         "set-mode, reset."));
+    }
+
+    const QString fanAction = positional.at(1).toLower();
+    if (fanAction == QStringLiteral("status")) {
+      if (positional.size() != 2) {
+        return invalidCommand(
+            QStringLiteral("`fan status` does not take extra arguments."));
+      }
+      ParsedCommand command;
+      command.action = json ? CommandAction::PrintFanStatusJson
+                            : CommandAction::PrintFanStatusText;
+      return command;
+    }
+
+    if (json) {
+      return invalidCommand(QStringLiteral(
+          "--json is only supported by `status`, `diagnostics`, and `fan "
+          "status`."));
+    }
+
+    if (fanAction == QStringLiteral("set-speed")) {
+      if (positional.size() != 3) {
+        return invalidCommand(QStringLiteral(
+            "`fan set-speed` requires a percentage argument (0-100)."));
+      }
+      bool ok = false;
+      const int speed = positional.at(2).toInt(&ok);
+      if (!ok || speed < 0 || speed > 100) {
+        return invalidCommand(
+            QStringLiteral("Fan speed must be an integer between 0 and 100."));
+      }
+      ParsedCommand command;
+      command.action = CommandAction::FanSetSpeed;
+      command.payload = QString::number(speed);
+      return command;
+    }
+
+    if (fanAction == QStringLiteral("set-mode")) {
+      if (positional.size() != 3) {
+        return invalidCommand(QStringLiteral(
+            "`fan set-mode` requires a profile argument (auto, silent, "
+            "balanced, performance, manual, custom)."));
+      }
+      const QString mode = positional.at(2).toLower();
+      const QStringList validModes = {
+          QStringLiteral("auto"),    QStringLiteral("silent"),
+          QStringLiteral("balanced"), QStringLiteral("performance"),
+          QStringLiteral("manual"),  QStringLiteral("custom")};
+      if (!validModes.contains(mode)) {
+        return invalidCommand(QStringLiteral(
+            "Invalid fan mode. Choose from: auto, silent, balanced, "
+            "performance, manual, custom."));
+      }
+      ParsedCommand command;
+      command.action = CommandAction::FanSetMode;
+      command.payload = mode;
+      return command;
+    }
+
+    if (fanAction == QStringLiteral("reset")) {
+      if (positional.size() != 2) {
+        return invalidCommand(
+            QStringLiteral("`fan reset` does not take extra arguments."));
+      }
+      ParsedCommand command;
+      command.action = CommandAction::FanReset;
+      return command;
+    }
+
+    return invalidCommand(
+        QStringLiteral("Unknown `fan` subcommand: %1").arg(fanAction));
   }
 
   if (commandName != QStringLiteral("driver")) {
@@ -386,6 +470,20 @@ DiagnosticsSnapshot collectDiagnostics(const QString &applicationName,
   snapshot.gpuMemoryUsedMiB = gpuMonitor.memoryUsedMiB();
   snapshot.gpuMemoryTotalMiB = gpuMonitor.memoryTotalMiB();
   snapshot.gpuMemoryUsagePercent = gpuMonitor.memoryUsagePercent();
+  snapshot.gpuFanSpeedPercent = gpuMonitor.fanSpeedPercent();
+
+  FanController fanController;
+  fanController.stop();
+  fanController.refresh();
+  snapshot.fanSupported = fanController.supported();
+  snapshot.fanControlSupported = fanController.controlSupported();
+  snapshot.fanCapability = fanController.capabilityString();
+  snapshot.fanHardwareType = fanController.hardwareType();
+  snapshot.fanMode = fanController.fanMode();
+  snapshot.fanTargetSpeedPercent = fanController.targetFanSpeedPercent();
+  snapshot.fanRpm = fanController.currentRpm();
+  snapshot.fanSafetyOverride = fanController.safetyOverrideActive();
+  snapshot.fanThermalThresholdC = fanController.thermalThresholdC();
 
   RamMonitor ramMonitor;
   ramMonitor.stop();
@@ -416,6 +514,11 @@ QString renderStatusText(const DiagnosticsSnapshot &snapshot) {
                 .arg(boolText(snapshot.updateAvailable));
   output += QStringLiteral("latest_driver_version: %1\n")
                 .arg(dashIfEmpty(snapshot.latestDriverVersion));
+  output += QStringLiteral("gpu_fan_speed_percent: %1\n")
+                .arg(snapshot.gpuFanSpeedPercent);
+  output += QStringLiteral("fan_control_supported: %1\n")
+                .arg(boolText(snapshot.fanControlSupported));
+  output += QStringLiteral("fan_mode: %1\n").arg(dashIfEmpty(snapshot.fanMode));
   return output;
 }
 
@@ -445,6 +548,24 @@ QString renderDiagnosticsText(const DiagnosticsSnapshot &snapshot) {
                 .arg(snapshot.gpuMemoryTotalMiB);
   output += QStringLiteral("gpu_memory_usage_percent: %1\n")
                 .arg(snapshot.gpuMemoryUsagePercent);
+  output += QStringLiteral("gpu_fan_speed_percent: %1\n")
+                .arg(snapshot.gpuFanSpeedPercent);
+  output += QStringLiteral("fan_supported: %1\n")
+                .arg(boolText(snapshot.fanSupported));
+  output += QStringLiteral("fan_control_supported: %1\n")
+                .arg(boolText(snapshot.fanControlSupported));
+  output += QStringLiteral("fan_capability: %1\n")
+                .arg(dashIfEmpty(snapshot.fanCapability));
+  output += QStringLiteral("fan_hardware_type: %1\n")
+                .arg(dashIfEmpty(snapshot.fanHardwareType));
+  output += QStringLiteral("fan_mode: %1\n").arg(dashIfEmpty(snapshot.fanMode));
+  output += QStringLiteral("fan_target_speed_percent: %1\n")
+                .arg(snapshot.fanTargetSpeedPercent);
+  output += QStringLiteral("fan_rpm: %1\n").arg(snapshot.fanRpm);
+  output += QStringLiteral("fan_safety_override: %1\n")
+                .arg(boolText(snapshot.fanSafetyOverride));
+  output += QStringLiteral("fan_thermal_threshold_c: %1\n")
+                .arg(snapshot.fanThermalThresholdC);
   output += QStringLiteral("ram_available: %1\n")
                 .arg(boolText(snapshot.ramAvailable));
   output += QStringLiteral("ram_total_mib: %1\n").arg(snapshot.ramTotalMiB);
@@ -476,6 +597,11 @@ QJsonObject renderStatusJsonObject(const DiagnosticsSnapshot &snapshot) {
   object.insert(QStringLiteral("updateAvailable"), snapshot.updateAvailable);
   object.insert(QStringLiteral("latestDriverVersion"),
                 snapshot.latestDriverVersion);
+  object.insert(QStringLiteral("gpuFanSpeedPercent"),
+                snapshot.gpuFanSpeedPercent);
+  object.insert(QStringLiteral("fanControlSupported"),
+                snapshot.fanControlSupported);
+  object.insert(QStringLiteral("fanMode"), snapshot.fanMode);
   return object;
 }
 
@@ -502,6 +628,21 @@ QJsonObject renderDiagnosticsJsonObject(const DiagnosticsSnapshot &snapshot) {
                 snapshot.gpuMemoryTotalMiB);
   object.insert(QStringLiteral("gpuMemoryUsagePercent"),
                 snapshot.gpuMemoryUsagePercent);
+  object.insert(QStringLiteral("gpuFanSpeedPercent"),
+                snapshot.gpuFanSpeedPercent);
+  object.insert(QStringLiteral("fanSupported"), snapshot.fanSupported);
+  object.insert(QStringLiteral("fanControlSupported"),
+                snapshot.fanControlSupported);
+  object.insert(QStringLiteral("fanCapability"), snapshot.fanCapability);
+  object.insert(QStringLiteral("fanHardwareType"), snapshot.fanHardwareType);
+  object.insert(QStringLiteral("fanMode"), snapshot.fanMode);
+  object.insert(QStringLiteral("fanTargetSpeedPercent"),
+                snapshot.fanTargetSpeedPercent);
+  object.insert(QStringLiteral("fanRpm"), snapshot.fanRpm);
+  object.insert(QStringLiteral("fanSafetyOverride"),
+                snapshot.fanSafetyOverride);
+  object.insert(QStringLiteral("fanThermalThresholdC"),
+                snapshot.fanThermalThresholdC);
   object.insert(QStringLiteral("ramAvailable"), snapshot.ramAvailable);
   object.insert(QStringLiteral("ramTotalMiB"), snapshot.ramTotalMiB);
   object.insert(QStringLiteral("ramUsedMiB"), snapshot.ramUsedMiB);

@@ -46,13 +46,13 @@ private slots:
 
   void testBuildVersionedPackageSpecs() {
     const QStringList specs = NvidiaVersionParser::buildVersionedPackageSpecs(
-        {QStringLiteral("akmod-nvidia"), QStringLiteral("xorg-x11-drv-nvidia")},
+        {QStringLiteral("akmod-nvidia"), QStringLiteral("nvidia-settings")},
         QStringLiteral("3:570.153.02-1.fc42"));
 
     QCOMPARE(specs.size(), 2);
     QCOMPARE(specs.at(0), QStringLiteral("akmod-nvidia-3:570.153.02-1.fc42"));
     QCOMPARE(specs.at(1),
-             QStringLiteral("xorg-x11-drv-nvidia-3:570.153.02-1.fc42"));
+             QStringLiteral("nvidia-settings-3:570.153.02-1.fc42"));
   }
 
   void testBuildTransactionArgumentsForFreshInstallStaysScoped() {
@@ -71,8 +71,7 @@ private slots:
     QVERIFY(!args.contains(QStringLiteral("upgrade")));
     QVERIFY(!args.contains(QStringLiteral("system-upgrade")));
     QVERIFY(args.contains(QStringLiteral("akmod-nvidia-3:570.153.02-1.fc42")));
-    QVERIFY(!args.contains(
-        QStringLiteral("xorg-x11-drv-nvidia-3:570.153.02-1.fc42")));
+    QVERIFY(!args.contains(QStringLiteral("xorg-x11-drv-nvidia")));
   }
 
   void testBuildTransactionArgumentsForInstalledDriverAvoidsBroadUpdate() {
@@ -80,7 +79,7 @@ private slots:
     updater.m_latestPackageVersion = QStringLiteral("3:570.153.02-1.fc42");
 
     const QStringList args = updater.buildTransactionArguments(
-        QString(), QStringLiteral("3:565.77-1.fc42"), QStringLiteral("x11"),
+        QString(), QStringLiteral("3:565.77-1.fc42"), QStringLiteral("wayland"),
         QStringLiteral("akmod-nvidia"));
 
     QCOMPARE(args.value(0), QStringLiteral("distro-sync"));
@@ -89,8 +88,7 @@ private slots:
     QVERIFY(!args.contains(QStringLiteral("upgrade")));
     QVERIFY(!args.contains(QStringLiteral("system-upgrade")));
     QVERIFY(args.contains(QStringLiteral("akmod-nvidia-3:570.153.02-1.fc42")));
-    QVERIFY(args.contains(
-        QStringLiteral("xorg-x11-drv-nvidia-3:570.153.02-1.fc42")));
+    QVERIFY(!args.contains(QStringLiteral("xorg-x11-drv-nvidia")));
   }
 
   void testTransactionChangedReturnsFalseForNoopOutput() {

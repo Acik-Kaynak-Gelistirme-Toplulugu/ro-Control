@@ -14,6 +14,7 @@
 #include <QTranslator>
 #include <QVariant>
 
+#include "backend/fan/fancontroller.h"
 #include "backend/monitor/cpumonitor.h"
 #include "backend/monitor/gpumonitor.h"
 #include "backend/monitor/rammonitor.h"
@@ -60,6 +61,112 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
       result.stdoutText = RoControlCli::renderDiagnosticsText(snapshot);
     }
 
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::PrintFanStatusText ||
+      command.action == RoControlCli::CommandAction::PrintFanStatusJson) {
+    const auto snapshot =
+        RoControlCli::collectDiagnostics(applicationName, applicationVersion);
+    if (command.action == RoControlCli::CommandAction::PrintFanStatusJson) {
+      QJsonObject obj;
+      obj.insert(QStringLiteral("command"), QStringLiteral("fan-status"));
+      obj.insert(QStringLiteral("supported"), snapshot.fanSupported);
+      obj.insert(QStringLiteral("controlSupported"),
+                 snapshot.fanControlSupported);
+      obj.insert(QStringLiteral("capability"), snapshot.fanCapability);
+      obj.insert(QStringLiteral("hardwareType"), snapshot.fanHardwareType);
+      obj.insert(QStringLiteral("gpuFanSpeedPercent"),
+                 snapshot.gpuFanSpeedPercent);
+      obj.insert(QStringLiteral("fanRpm"), snapshot.fanRpm);
+      obj.insert(QStringLiteral("mode"), snapshot.fanMode);
+      obj.insert(QStringLiteral("targetFanSpeedPercent"),
+                 snapshot.fanTargetSpeedPercent);
+      obj.insert(QStringLiteral("safetyOverrideActive"),
+                 snapshot.fanSafetyOverride);
+      obj.insert(QStringLiteral("thermalThresholdC"),
+                 snapshot.fanThermalThresholdC);
+      obj.insert(QStringLiteral("gpuTemperatureC"), snapshot.gpuTemperatureC);
+      result.stdoutText = QString::fromUtf8(
+          QJsonDocument(obj).toJson(QJsonDocument::Indented));
+    } else {
+      result.stdoutText =
+          QStringLiteral("fan_supported: %1\n"
+                         "fan_control_supported: %2\n"
+                         "fan_capability: %3\n"
+                         "fan_hardware_type: %4\n"
+                         "gpu_fan_speed_percent: %5%\n"
+                         "fan_rpm: %6\n"
+                         "fan_mode: %7\n"
+                         "fan_target_speed_percent: %8%\n"
+                         "gpu_temperature_c: %9 C\n"
+                         "thermal_threshold_c: %10 C\n"
+                         "safety_override: %11\n")
+              .arg(snapshot.fanSupported ? QStringLiteral("yes")
+                                         : QStringLiteral("no"))
+              .arg(snapshot.fanControlSupported ? QStringLiteral("yes")
+                                                : QStringLiteral("no"))
+              .arg(snapshot.fanCapability.isEmpty()
+                       ? QStringLiteral("unsupported")
+                       : snapshot.fanCapability)
+              .arg(snapshot.fanHardwareType.isEmpty()
+                       ? QStringLiteral("None")
+                       : snapshot.fanHardwareType)
+              .arg(snapshot.gpuFanSpeedPercent)
+              .arg(snapshot.fanRpm)
+              .arg(snapshot.fanMode.isEmpty() ? QStringLiteral("auto")
+                                              : snapshot.fanMode)
+              .arg(snapshot.fanTargetSpeedPercent)
+              .arg(snapshot.gpuTemperatureC)
+              .arg(snapshot.fanThermalThresholdC)
+              .arg(snapshot.fanSafetyOverride ? QStringLiteral("active")
+                                              : QStringLiteral("inactive"));
+    }
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::FanSetSpeed) {
+    FanController fanController;
+    fanController.stop();
+    if (!fanController.controlSupported()) {
+      result.stderrText =
+          QStringLiteral("Error: Fan control is unsupported or read-only on this hardware.\n");
+      result.exitCode = 1;
+      return result;
+    }
+    const int speed = command.payload.toInt();
+    fanController.setFanMode(QStringLiteral("manual"));
+    fanController.setManualFanSpeedPercent(speed);
+    result.stdoutText =
+        QStringLiteral("Fan speed set to %1% (manual mode).\n").arg(speed);
+    result.exitCode = 0;
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::FanSetMode) {
+    FanController fanController;
+    fanController.stop();
+    if (command.payload != QStringLiteral("auto") &&
+        !fanController.controlSupported()) {
+      result.stderrText =
+          QStringLiteral("Error: Fan control is unsupported or read-only on this hardware.\n");
+      result.exitCode = 1;
+      return result;
+    }
+    fanController.setFanMode(command.payload);
+    result.stdoutText =
+        QStringLiteral("Fan mode set to '%1'.\n").arg(command.payload);
+    result.exitCode = 0;
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::FanReset) {
+    FanController fanController;
+    fanController.stop();
+    fanController.resetToAuto();
+    result.stdoutText =
+        QStringLiteral("Fan control reset to automatic driver/VBIOS mode.\n");
+    result.exitCode = 0;
     return result;
   }
 
@@ -169,23 +276,16 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
 
 void configureGuiGraphicsEnvironment() {
 #if defined(Q_OS_LINUX)
-  const QByteArray sessionType =
-      qgetenv("XDG_SESSION_TYPE").trimmed().toLower();
-
   // ro-Control is a driver management tool, not a GPU-accelerated UI. Using
   // Qt Quick's software renderer on Linux avoids EGL/DRI startup warnings and
   // keeps the app usable while the graphics driver stack is broken or changing.
   if (qEnvironmentVariableIsEmpty("RO_CONTROL_USE_HARDWARE_RENDER")) {
+    if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) {
+      qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("wayland"));
+    }
     qputenv("QT_QUICK_BACKEND", QByteArrayLiteral("software"));
     QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
     return;
-  }
-
-  // NVIDIA on Fedora/X11 is generally more stable through the GLX path than
-  // the EGL/DRI2 integration that can emit startup errors.
-  if (sessionType == "x11" &&
-      qEnvironmentVariableIsEmpty("QT_XCB_GL_INTEGRATION")) {
-    qputenv("QT_XCB_GL_INTEGRATION", QByteArrayLiteral("glx"));
   }
 
   // Keep an explicit escape hatch for hosts that still need software rendering.
@@ -274,7 +374,18 @@ int main(int argc, char *argv[]) {
   CpuMonitor cpuMonitor;
   GpuMonitor gpuMonitor;
   RamMonitor ramMonitor;
+  FanController fanController;
   SystemInfoProvider systemInfo;
+
+  QObject::connect(&gpuMonitor, &GpuMonitor::temperatureCChanged,
+                   &fanController, [&]() {
+                     fanController.updateTemperature(gpuMonitor.temperatureC());
+                   });
+
+  QObject::connect(&cpuMonitor, &CpuMonitor::temperatureCChanged,
+                   &fanController, [&]() {
+                     fanController.updateCpuTemperature(cpuMonitor.temperatureC());
+                   });
 
   detector.refresh();
 
@@ -295,6 +406,8 @@ int main(int argc, char *argv[]) {
                            QVariant::fromValue(&gpuMonitor));
   initialProperties.insert(QStringLiteral("ramMonitor"),
                            QVariant::fromValue(&ramMonitor));
+  initialProperties.insert(QStringLiteral("fanController"),
+                           QVariant::fromValue(&fanController));
   initialProperties.insert(QStringLiteral("systemInfo"),
                            QVariant::fromValue(&systemInfo));
   initialProperties.insert(QStringLiteral("languageManager"),

@@ -23,6 +23,10 @@ class DetectorMock : public QObject {
                  infoChanged)
   Q_PROPERTY(bool nouveauActive READ nouveauActive WRITE setNouveauActive
                  NOTIFY infoChanged)
+  Q_PROPERTY(QString installedDriverSource READ installedDriverSource WRITE
+                 setInstalledDriverSource NOTIFY infoChanged)
+  Q_PROPERTY(QString installedDriverSourceLabel READ installedDriverSourceLabel
+                 WRITE setInstalledDriverSourceLabel NOTIFY infoChanged)
   Q_PROPERTY(bool secureBootEnabled READ secureBootEnabled WRITE
                  setSecureBootEnabled NOTIFY infoChanged)
   Q_PROPERTY(bool secureBootKnown READ secureBootKnown WRITE setSecureBootKnown
@@ -44,6 +48,10 @@ public:
   bool driverPackageInstalled() const { return m_driverPackageInstalled; }
   bool driverLoaded() const { return m_driverLoaded; }
   bool nouveauActive() const { return m_nouveauActive; }
+  QString installedDriverSource() const { return m_installedDriverSource; }
+  QString installedDriverSourceLabel() const {
+    return m_installedDriverSourceLabel;
+  }
   bool secureBootEnabled() const { return m_secureBootEnabled; }
   bool secureBootKnown() const { return m_secureBootKnown; }
   bool waylandSession() const { return m_waylandSession; }
@@ -104,6 +112,22 @@ public:
       return;
     }
     m_nouveauActive = value;
+    emit infoChanged();
+  }
+
+  void setInstalledDriverSource(const QString &value) {
+    if (m_installedDriverSource == value) {
+      return;
+    }
+    m_installedDriverSource = value;
+    emit infoChanged();
+  }
+
+  void setInstalledDriverSourceLabel(const QString &value) {
+    if (m_installedDriverSourceLabel == value) {
+      return;
+    }
+    m_installedDriverSourceLabel = value;
     emit infoChanged();
   }
 
@@ -168,6 +192,8 @@ private:
   bool m_driverPackageInstalled = false;
   bool m_driverLoaded = false;
   bool m_nouveauActive = false;
+  QString m_installedDriverSource = QStringLiteral("none");
+  QString m_installedDriverSourceLabel = QStringLiteral("No driver source detected");
   bool m_secureBootEnabled = false;
   bool m_secureBootKnown = false;
   bool m_waylandSession = false;
@@ -515,9 +541,6 @@ void TestDriverPage::testCompletedInstallImmediatelyUpdatesDriverState() {
 }
 
 int main(int argc, char **argv) {
-  qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("offscreen"));
-  qputenv("QT_QUICK_CONTROLS_STYLE", QByteArrayLiteral("Basic"));
-
   QQuickStyle::setStyle(QStringLiteral("Basic"));
 
   QGuiApplication app(argc, argv);

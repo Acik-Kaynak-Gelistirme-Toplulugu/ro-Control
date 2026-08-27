@@ -1,0 +1,351 @@
+#include <QDir>
+#include <QFile>
+#include <QTemporaryDir>
+#include <QTest>
+#include <QTextStream>
+
+#include "fan/fancontroller.h"
+
+class TestFanController : public QObject {
+  Q_OBJECT
+
+private slots:
+  void initTestCase() {
+    QCoreApplication::setOrganizationName("Project-Ro-ASD-Test");
+    QCoreApplication::setApplicationName("ro-control-test");
+    QSettings settings;
+    settings.clear();
+  }
+
+  void init() {
+    QSettings settings;
+    settings.clear();
+    qunsetenv("RO_CONTROL_MOCK_FAN_CAPABILITY");
+    qunsetenv("RO_CONTROL_FAN_SYSFS_ROOT");
+    qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS");
+  }
+
+  void testConstructionAndDefaults() {
+    FanController fan;
+    QVERIFY(fan.running());
+    QCOMPARE(fan.fanMode(), QStringLiteral("auto"));
+    QCOMPARE(fan.modeEnum(), FanController::FanMode::Auto);
+    QCOMPARE(fan.availableModes().size(), 6);
+    QVERIFY(fan.customCurvePoints().size() >= 4);
+    QVERIFY(!fan.safetyOverrideActive());
+    QCOMPARE(fan.thermalThresholdC(), 85);
+  }
+
+  void testModeTransitions() {
+    FanController fan;
+    fan.stop();
+
+    fan.setFanMode(QStringLiteral("silent"));
+    QCOMPARE(fan.fanMode(), QStringLiteral("silent"));
+    QCOMPARE(fan.modeEnum(), FanController::FanMode::Silent);
+
+    fan.setFanMode(QStringLiteral("balanced"));
+    QCOMPARE(fan.fanMode(), QStringLiteral("balanced"));
+    QCOMPARE(fan.modeEnum(), FanController::FanMode::Balanced);
+
+    fan.setFanMode(QStringLiteral("performance"));
+    QCOMPARE(fan.fanMode(), QStringLiteral("performance"));
+    QCOMPARE(fan.modeEnum(), FanController::FanMode::Performance);
+
+    fan.setFanMode(QStringLiteral("manual"));
+    QCOMPARE(fan.fanMode(), QStringLiteral("manual"));
+    QCOMPARE(fan.modeEnum(), FanController::FanMode::Manual);
+
+    fan.setFanMode(QStringLiteral("custom"));
+    QCOMPARE(fan.fanMode(), QStringLiteral("custom"));
+    QCOMPARE(fan.modeEnum(), FanController::FanMode::Custom);
+
+    fan.resetToAuto();
+    QCOMPARE(fan.fanMode(), QStringLiteral("auto"));
+    QCOMPARE(fan.modeEnum(), FanController::FanMode::Auto);
+  }
+
+  void testManualSpeedClamping() {
+    FanController fan;
+    fan.stop();
+
+    fan.setManualFanSpeedPercent(65);
+    QCOMPARE(fan.manualFanSpeedPercent(), 65);
+
+    fan.setManualFanSpeedPercent(150);
+    QCOMPARE(fan.manualFanSpeedPercent(), 100);
+
+    fan.setManualFanSpeedPercent(-20);
+    QCOMPARE(fan.manualFanSpeedPercent(), 0);
+  }
+
+  void testCurveInterpolationCompleteMath() {
+    // 1. Balanced curve standard points
+    const auto balanced = FanController::defaultBalancedCurve();
+    QVERIFY(!balanced.isEmpty());
+
+    // Below min temperature (40°C -> 30%)
+    QCOMPARE(FanController::calculateCurveFanSpeed(balanced, 20), 30);
+    QCOMPARE(FanController::calculateCurveFanSpeed(balanced, -10), 30);
+
+    // Exact min point
+    QCOMPARE(FanController::calculateCurveFanSpeed(balanced, 40), 30);
+
+    // Midpoint between 40°C (30%) and 55°C (45%)
+    // delta temp = 15, delta speed = 15. At 47°C -> 30 + 7 = 37%
+    const int mid1 = FanController::calculateCurveFanSpeed(balanced, 47);
+    QCOMPARE(mid1, 37);
+
+    // Exact intermediate point (68°C -> 65%)
+    QCOMPARE(FanController::calculateCurveFanSpeed(balanced, 68), 65);
+
+    // Exact max point (85°C -> 100%)
+    QCOMPARE(FanController::calculateCurveFanSpeed(balanced, 85), 100);
+
+    // Above max point
+    QCOMPARE(FanController::calculateCurveFanSpeed(balanced, 95), 100);
+    QCOMPARE(FanController::calculateCurveFanSpeed(balanced, 150), 100);
+
+    // 2. Empty curve fallback
+    QCOMPARE(FanController::calculateCurveFanSpeed({}, 50), 50);
+
+    // 3. Single point curve
+    QCOMPARE(FanController::calculateCurveFanSpeed({{60, 70}}, 40), 70);
+    QCOMPARE(FanController::calculateCurveFanSpeed({{60, 70}}, 80), 70);
+
+    // 4. Duplicate temperature points (resolves to max speed)
+    const QVector<FanCurvePoint> duplicateCurve = {{50, 30}, {50, 60}, {80, 100}};
+    QCOMPARE(FanController::calculateCurveFanSpeed(duplicateCurve, 50), 60);
+
+    // 5. Out-of-order curve points (auto-sorted)
+    const QVector<FanCurvePoint> disorderedCurve = {{80, 100}, {40, 20}, {60, 50}};
+    QCOMPARE(FanController::calculateCurveFanSpeed(disorderedCurve, 50), 35);
+  }
+
+  void testThermalSafetyDynamicWatchdogAndHysteresisMargin() {
+    FanController fan;
+    fan.stop();
+    fan.setFanMode(QStringLiteral("silent"));
+
+    // Safe normal temp
+    fan.updateTemperature(60);
+    QVERIFY(!fan.safetyOverrideActive());
+    QVERIFY(fan.targetFanSpeedPercent() < 100);
+
+    // Critical temp reached (>= 85°C) -> triggers safety override
+    fan.updateTemperature(86);
+    QVERIFY(fan.safetyOverrideActive());
+    QCOMPARE(fan.targetFanSpeedPercent(), 100);
+
+    // Slightly cooled to 82°C -> still in safety margin (< 85°C but > 80°C)
+    fan.updateTemperature(82);
+    QVERIFY(fan.safetyOverrideActive());
+    QCOMPARE(fan.targetFanSpeedPercent(), 100);
+
+    // Cooled down below recovery margin (85 - 5 = 80°C) -> safety deactivated
+    fan.updateTemperature(78);
+    QVERIFY(!fan.safetyOverrideActive());
+    QVERIFY(fan.targetFanSpeedPercent() < 100);
+  }
+
+  void testDirectionalHysteresisAndAntiHunting() {
+    FanController fan;
+    fan.stop();
+    fan.setFanMode(QStringLiteral("balanced"));
+
+    // Set initial temperature at 68°C (speed is 65%)
+    fan.updateTemperature(68);
+    const int initialSpeed = fan.targetFanSpeedPercent();
+    QCOMPARE(initialSpeed, 65);
+
+    // Temperature drops slightly from 68°C to 67°C (delta = 1°C < 2°C hysteresis)
+    // Fan speed should NOT hunt down immediately
+    fan.updateTemperature(67);
+    QCOMPARE(fan.targetFanSpeedPercent(), 65);
+
+    // Temperature drops further to 64°C (delta = 4°C >= 2°C hysteresis)
+    // Fan speed steps down smoothly
+    fan.updateTemperature(64);
+    QVERIFY(fan.targetFanSpeedPercent() < 65);
+
+    // Temperature rises to 70°C -> immediate cooling reaction
+    fan.updateTemperature(70);
+    QVERIFY(fan.targetFanSpeedPercent() > 65);
+  }
+
+  void testCustomCurveEditingAndMonotonicSorting() {
+    FanController fan;
+    fan.stop();
+
+    fan.resetCustomCurve();
+    const auto initialPoints = fan.customCurvePoints();
+    QVERIFY(initialPoints.size() >= 4);
+
+    QVERIFY(fan.setCustomCurvePoint(0, 35, 25));
+    QVERIFY(!fan.setCustomCurvePoint(-1, 50, 50)); // Out of bounds
+    QVERIFY(!fan.setCustomCurvePoint(99, 50, 50)); // Out of bounds
+
+    const auto updated = fan.customCurvePoints();
+    QCOMPARE(updated.at(0).temperatureC, 35);
+    QCOMPARE(updated.at(0).fanSpeedPercent, 25);
+
+    // Variant representation test
+    const auto variantList = fan.customCurvePointsVariant();
+    QCOMPARE(variantList.size(), updated.size());
+  }
+
+  void testPersistenceAndCorruptedDataRecovery() {
+    {
+      FanController fan;
+      fan.stop();
+      fan.setFanMode(QStringLiteral("performance"));
+      fan.setManualFanSpeedPercent(85);
+      fan.setCustomCurvePoint(0, 30, 20);
+    }
+
+    // New instance loads persisted configuration
+    {
+      FanController fan;
+      fan.stop();
+      QCOMPARE(fan.fanMode(), QStringLiteral("performance"));
+      QCOMPARE(fan.manualFanSpeedPercent(), 85);
+      QCOMPARE(fan.customCurvePoints().at(0).temperatureC, 30);
+    }
+
+    // Corrupted curveCount in QSettings
+    {
+      QSettings settings;
+      settings.beginGroup(QStringLiteral("FanControl"));
+      settings.setValue(QStringLiteral("curveCount"), 999);
+      settings.endGroup();
+    }
+
+    // Should recover safely to default curve without crashing
+    {
+      FanController fan;
+      fan.stop();
+      QVERIFY(fan.customCurvePoints().size() >= 4);
+    }
+  }
+
+  void testCapabilityDetectionSeparation() {
+    // 1. Mock Controllable
+    qputenv("RO_CONTROL_MOCK_FAN_CAPABILITY", "controllable");
+    {
+      FanController fan;
+      fan.stop();
+      QVERIFY(fan.supported());
+      QVERIFY(fan.controlSupported());
+      QCOMPARE(fan.capability(), FanController::ControlCapability::Controllable);
+      QCOMPARE(fan.capabilityString(), QStringLiteral("controllable"));
+    }
+
+    // 2. Mock Telemetry Only (Read-Only)
+    qputenv("RO_CONTROL_MOCK_FAN_CAPABILITY", "telemetry_only");
+    {
+      FanController fan;
+      fan.stop();
+      QVERIFY(fan.supported());
+      QVERIFY(!fan.controlSupported());
+      QCOMPARE(fan.capability(), FanController::ControlCapability::TelemetryOnly);
+      QCOMPARE(fan.capabilityString(), QStringLiteral("telemetry_only"));
+    }
+
+    // 3. Mock Permission Denied
+    qputenv("RO_CONTROL_MOCK_FAN_CAPABILITY", "permission_denied");
+    {
+      FanController fan;
+      fan.stop();
+      QVERIFY(fan.supported());
+      QVERIFY(!fan.controlSupported());
+      QCOMPARE(fan.capability(), FanController::ControlCapability::PermissionDenied);
+      QCOMPARE(fan.capabilityString(), QStringLiteral("permission_denied"));
+    }
+
+    // 4. Mock Unsupported
+    qputenv("RO_CONTROL_MOCK_FAN_CAPABILITY", "unsupported");
+    {
+      FanController fan;
+      fan.stop();
+      QVERIFY(!fan.supported());
+      QVERIFY(!fan.controlSupported());
+      QCOMPARE(fan.capability(), FanController::ControlCapability::Unsupported);
+      QCOMPARE(fan.capabilityString(), QStringLiteral("unsupported"));
+    }
+  }
+
+  void testSysfsHwmonCapabilityAndWritableValidation() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hwmonDir = tempDir.filePath(QStringLiteral("hwmon0"));
+    QVERIFY(QDir().mkpath(hwmonDir));
+
+    QFile nameFile(hwmonDir + QStringLiteral("/name"));
+    QVERIFY(nameFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    nameFile.write("nouveau\n");
+    nameFile.close();
+
+    QFile fanInput(hwmonDir + QStringLiteral("/fan1_input"));
+    QVERIFY(fanInput.open(QIODevice::WriteOnly | QIODevice::Text));
+    fanInput.write("1850\n");
+    fanInput.close();
+
+    QFile pwmFile(hwmonDir + QStringLiteral("/pwm1"));
+    QVERIFY(pwmFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    pwmFile.write("128\n");
+    pwmFile.close();
+
+    QFile pwmEnable(hwmonDir + QStringLiteral("/pwm1_enable"));
+    QVERIFY(pwmEnable.open(QIODevice::WriteOnly | QIODevice::Text));
+    pwmEnable.write("2\n");
+    pwmEnable.close();
+
+    // Make pwm writable
+    QVERIFY(QFile::setPermissions(
+        pwmFile.fileName(),
+        QFileDevice::ReadOwner | QFileDevice::WriteOwner |
+            QFileDevice::ReadGroup | QFileDevice::WriteGroup));
+
+    qputenv("RO_CONTROL_FAN_SYSFS_ROOT", tempDir.path().toUtf8());
+
+    FanController fan;
+    fan.stop();
+    fan.refresh();
+
+    QVERIFY(fan.supported());
+    QVERIFY(fan.controlSupported());
+    QCOMPARE(fan.currentRpm(), 1850);
+  }
+
+  void testMockNvidiaSettingsCommand() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString scriptPath =
+        tempDir.filePath(QStringLiteral("fake-nvidia-settings.sh"));
+    QFile script(scriptPath);
+    QVERIFY(script.open(QIODevice::WriteOnly | QIODevice::Text));
+    script.write("#!/bin/sh\nexit 0\n");
+    script.close();
+    QVERIFY(QFile::setPermissions(scriptPath, QFileDevice::ReadOwner |
+                                                  QFileDevice::WriteOwner |
+                                                  QFileDevice::ExeOwner));
+
+    qputenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS", scriptPath.toUtf8());
+
+    FanController fan;
+    fan.stop();
+    fan.setFanMode(QStringLiteral("manual"));
+    fan.setManualFanSpeedPercent(70);
+
+    QVERIFY(fan.supported());
+    QVERIFY(fan.controlSupported());
+
+    qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS");
+  }
+};
+
+QTEST_MAIN(TestFanController)
+#include "test_fan_controller.moc"
+

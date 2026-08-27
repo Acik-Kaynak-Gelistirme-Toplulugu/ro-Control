@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Rebuild ro-control on source changes and restart the local binary.
-# Usage: ./scripts/dev-watch.sh
-# Requires: sudo dnf install inotify-tools
+# dev-watch.sh — Kaynak degisikliklerini izler, otomatik build alir ve uygulamayi yeniden baslatir.
+# Kullanim: ./scripts/dev-watch.sh
+# Gereksinim: Ro-ASD gelistirme ortaminda inotify-tools
 
 set -euo pipefail
 
@@ -37,8 +37,8 @@ setup_qt_env() {
 }
 
 if ! command -v inotifywait &>/dev/null; then
-    err "Missing dependency: inotifywait"
-    err "  sudo dnf install inotify-tools"
+    err "inotify-tools bulunamadi. Kurmak icin:"
+    err "  Ro-ASD paket yoneticisi ile inotify-tools kur"
     exit 1
 fi
 

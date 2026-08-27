@@ -20,6 +20,11 @@ enum class CommandAction {
   RemoveDriver,
   UpdateDriver,
   DeepCleanDriver,
+  FanSetMode,
+  FanSetSpeed,
+  FanReset,
+  PrintFanStatusText,
+  PrintFanStatusJson,
   Invalid,
 };
 
@@ -57,6 +62,17 @@ struct DiagnosticsSnapshot {
   int gpuMemoryUsedMiB = 0;
   int gpuMemoryTotalMiB = 0;
   int gpuMemoryUsagePercent = 0;
+  int gpuFanSpeedPercent = 0;
+
+  bool fanSupported = false;
+  bool fanControlSupported = false;
+  QString fanCapability;
+  QString fanHardwareType;
+  QString fanMode;
+  int fanTargetSpeedPercent = 0;
+  int fanRpm = 0;
+  bool fanSafetyOverride = false;
+  int fanThermalThresholdC = 85;
 
   bool ramAvailable = false;
   int ramTotalMiB = 0;

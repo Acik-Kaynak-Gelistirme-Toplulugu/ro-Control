@@ -11,13 +11,13 @@
 
 	<description>
 		<p>
-			ro-Control is a Fedora-oriented desktop utility for NVIDIA driver
+			ro-Control is a Ro-ASD desktop utility for NVIDIA driver
 			management and live system diagnostics. It helps users detect GPUs,
 			install or update drivers through DNF, and inspect GPU, CPU, and RAM
 			telemetry from a native Qt interface.
 		</p>
 		<p xml:lang="tr">
-			ro-Control, Fedora odaklı bir NVIDIA sürücü yönetimi ve canlı sistem
+			ro-Control, Ro-ASD odaklı bir NVIDIA sürücü yönetimi ve canlı sistem
 			tanılama masaüstü aracıdır. Kullanıcıların GPU'ları tespit etmesine,
 			sürücüleri DNF üzerinden kurup güncellemesine ve GPU, CPU, RAM
 			telemetrisini yerel bir Qt arayüzünden izlemesine yardımcı olur.
@@ -52,7 +52,7 @@
 		<keyword>Drivers</keyword>
 		<keyword>Diagnostics</keyword>
 		<keyword>Telemetry</keyword>
-		<keyword>Fedora</keyword>
+		<keyword>Ro-ASD</keyword>
 	</keywords>
 
 	<categories>

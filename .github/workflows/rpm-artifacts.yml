@@ -118,7 +118,6 @@ jobs:
           cp packaging/rpm/ro-control.spec "${HOME}/rpmbuild/SPECS/ro-control.spec"
           FEDORA_VERSION=43
           MAIN_RPM_PATTERN="ro-control-[0-9]*.${RPM_ARCH}.rpm"
-          COMMON_RPM_PATTERN="ro-control-common-[0-9]*.noarch.rpm"
 
           rpmbuild -ba "${HOME}/rpmbuild/SPECS/ro-control.spec" \
             --define "_topdir ${HOME}/rpmbuild" \
@@ -133,11 +132,6 @@ jobs:
 
           cp "${MAIN_RPM_FILE}" "dist/rpm/ro-control-${RPM_ARCH}.rpm"
 
-          COMMON_RPM_FILE="$(find ~/rpmbuild/RPMS -maxdepth 2 -type f -name "${COMMON_RPM_PATTERN}" | head -n1)"
-          if [[ -n "${COMMON_RPM_FILE}" ]]; then
-            cp "${COMMON_RPM_FILE}" "dist/rpm/ro-control-common-noarch.rpm"
-          fi
-
       - name: Validate metadata and RPM dependency surface
         env:
           RPM_ARCH: ${{ matrix.arch }}
@@ -146,7 +140,6 @@ jobs:
           appstreamcli validate --no-net data/icons/io.github.projectroasd.rocontrol.metainfo.xml
 
           MAIN_RPM_FILE="dist/rpm/ro-control-${RPM_ARCH}.rpm"
-          COMMON_RPM_FILE="dist/rpm/ro-control-common-noarch.rpm"
 
           rpm -qpR "${MAIN_RPM_FILE}" | tee /tmp/ro-control.requires
           if grep -E 'PRIVATE_API' /tmp/ro-control.requires; then
@@ -155,14 +148,10 @@ jobs:
           fi
 
           rpm -qpl "${MAIN_RPM_FILE}" | grep -Fx '/usr/bin/ro-control'
-          if [[ -f "${COMMON_RPM_FILE}" ]] && rpm -qpl "${COMMON_RPM_FILE}" | grep -Fx '/usr/bin/ro-control'; then
-            echo "/usr/bin/ro-control must only be shipped by the main RPM." >&2
-            exit 1
-          fi
 
       - name: Upload RPM artifacts
         uses: actions/upload-artifact@v7
         with:
           name: ro-control-${{ matrix.arch }}-rpm
           path: |
-            dist/rpm/*
+            dist/rpm/ro-control-${{ matrix.arch }}.rpm

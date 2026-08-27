@@ -57,7 +57,6 @@ LanguageManager::LanguageManager(QCoreApplication *application,
       m_translator(translator) {
   QSettings settings;
   const QString systemLanguage = normalizeLanguageCode(systemLanguageCode());
-  settings.setValue(QStringLiteral("ui/language"), systemLanguage);
   setCurrentLanguage(systemLanguage);
 }
 
@@ -93,8 +92,7 @@ QVariantList LanguageManager::availableLanguages() const {
 
 void LanguageManager::setCurrentLanguage(const QString &languageCode) {
   const QString normalizedLanguage = normalizeLanguageCode(languageCode);
-  if (normalizedLanguage == m_currentLanguage &&
-      loadLanguage(normalizedLanguage)) {
+  if (normalizedLanguage == m_currentLanguage) {
     return;
   }
 

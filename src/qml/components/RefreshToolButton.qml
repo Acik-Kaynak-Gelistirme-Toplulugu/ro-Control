@@ -7,10 +7,11 @@ ToolButton {
     required property var theme
     property real uiScale: 1.0
     property bool busy: false
+    property bool darkMode: false
     property string tooltip: qsTr("Refresh")
 
-    implicitWidth: Math.round(40 * uiScale)
-    implicitHeight: Math.round(40 * uiScale)
+    implicitWidth: Math.round((darkMode ? 40 : 42) * uiScale)
+    implicitHeight: Math.round((darkMode ? 40 : 42) * uiScale)
     display: AbstractButton.IconOnly
     opacity: enabled ? 1.0 : 0.55
 
@@ -26,7 +27,8 @@ ToolButton {
             anchors.centerIn: parent
             width: Math.round(20 * control.uiScale)
             height: Math.round(20 * control.uiScale)
-            source: "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
+            source: control.darkMode ? "qrc:/qt/qml/rocontrol/assets/icon-refresh-light.svg"
+                                     : "qrc:/qt/qml/rocontrol/assets/icon-refresh.svg"
             fillMode: Image.PreserveAspectFit
             smooth: true
             antialiasing: true
@@ -55,22 +57,38 @@ ToolButton {
         }
     }
 
-    background: Rectangle {
-        radius: width / 2
-        color: !control.enabled ? "transparent"
-              : control.down ? Qt.tint(control.theme.infoBg, "#18ffffff")
-              : control.hovered ? Qt.tint(control.theme.infoBg, "#22ffffff")
-              : control.theme.card
-        border.width: 1
-        border.color: control.hovered && control.enabled ? control.theme.accentA
-                                                         : control.theme.border
-
-        Behavior on color {
-            ColorAnimation { duration: 140 }
+    background: Item {
+        Rectangle {
+            anchors.fill: parent
+            visible: !control.darkMode
+            radius: width / 2
+            color: "transparent"
+            border.width: control.enabled ? Math.max(1, Math.round(2 * control.uiScale)) : 1
+            border.color: control.enabled
+                          ? (control.darkMode ? control.theme.accentB : control.theme.accentA)
+                          : control.theme.border
+            opacity: control.enabled ? 0.95 : 0.45
         }
 
-        Behavior on border.color {
-            ColorAnimation { duration: 140 }
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: control.darkMode ? 0 : Math.max(3, Math.round(3 * control.uiScale))
+            radius: width / 2
+            color: !control.enabled ? "transparent"
+                  : control.down ? Qt.tint(control.theme.infoBg, control.darkMode ? "#30ffffff" : "#18000000")
+                  : control.hovered ? Qt.tint(control.theme.infoBg, control.darkMode ? "#40ffffff" : "#12000000")
+                  : control.theme.infoBg
+            border.width: 1
+            border.color: control.hovered && control.enabled ? control.theme.accentA
+                                                             : control.theme.accentB
+
+            Behavior on color {
+                ColorAnimation { duration: 140 }
+            }
+
+            Behavior on border.color {
+                ColorAnimation { duration: 140 }
+            }
         }
     }
 
