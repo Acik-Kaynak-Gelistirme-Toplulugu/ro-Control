@@ -791,7 +791,7 @@ void FanController::updateSystemFansTelemetry() {
   QVariantList fanList;
 
   // 1. GPU Fan (NVIDIA Dedicated GPU)
-  if (m_supported || m_capability != ControlCapability::Unsupported) {
+  {
     const bool isZeroRpm = (m_currentRpm == 0 && m_currentFanSpeedPercent == 0);
     static const QString s_detectedGpuName = []() {
       const QString name = NvidiaDetector::detectGpuNameFromProc();

@@ -379,11 +379,10 @@ QString NvidiaDetector::detectDriverPackageVersion() const {
     return {};
   }
 
-  const QStringList packageNames = {
-      QStringLiteral("akmod-nvidia"),
-      QStringLiteral("akmod-nvidia-open"),
-      QStringLiteral("xorg-x11-drv-nvidia"),
-      QStringLiteral("xorg-x11-drv-nvidia-open")};
+  const QStringList packageNames = {QStringLiteral("akmod-nvidia"),
+                                    QStringLiteral("akmod-nvidia-open"),
+                                    QStringLiteral("xorg-x11-drv-nvidia"),
+                                    QStringLiteral("xorg-x11-drv-nvidia-open")};
   CommandRunner runner;
   for (const QString &packageName : packageNames) {
     const auto result = runner.run(
