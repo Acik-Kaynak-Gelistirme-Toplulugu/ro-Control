@@ -47,6 +47,8 @@ class FanController : public QObject {
                  customCurvePointsChanged)
   Q_PROPERTY(int gpuTemperatureC READ gpuTemperatureC NOTIFY
                  gpuTemperatureCChanged)
+  Q_PROPERTY(int cpuTemperatureC READ cpuTemperatureC NOTIFY
+                 cpuTemperatureCChanged)
   Q_PROPERTY(QVariantList systemFans READ systemFans NOTIFY systemFansChanged)
   Q_PROPERTY(int systemFanCount READ systemFanCount NOTIFY systemFansChanged)
   Q_PROPERTY(int selectedFanIndex READ selectedFanIndex WRITE setSelectedFanIndex
@@ -99,6 +101,7 @@ public:
   QVariantList customCurvePointsVariant() const;
   QVector<FanCurvePoint> customCurvePoints() const;
   int gpuTemperatureC() const;
+  int cpuTemperatureC() const;
   QVariantList systemFans() const;
   int systemFanCount() const;
   int selectedFanIndex() const;
@@ -125,6 +128,7 @@ public:
   Q_INVOKABLE void resetCustomCurve();
   Q_INVOKABLE void resetToAuto();
   Q_INVOKABLE void updateTemperature(int tempC);
+  Q_INVOKABLE void updateCpuTemperature(int tempC);
   Q_INVOKABLE void selectFan(int index);
   Q_INVOKABLE void selectFanById(const QString &id);
   Q_INVOKABLE void setSelectedFanIndex(int index);
@@ -148,6 +152,7 @@ signals:
   void statusMessageChanged();
   void customCurvePointsChanged();
   void gpuTemperatureCChanged();
+  void cpuTemperatureCChanged();
   void fanSpeedApplied(int targetPercent, bool success);
   void systemFansChanged();
   void selectedFanIndexChanged();
@@ -187,6 +192,7 @@ private:
   QString m_statusMessage;
   QVector<FanCurvePoint> m_customCurve;
   int m_gpuTemperatureC = 0;
+  int m_cpuTemperatureC = 38;
   int m_lastAppliedPercent = -1;
   bool m_lastAppliedModeWasAuto = true;
   QString m_verifiedHwmonPwmPath;

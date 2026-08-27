@@ -382,6 +382,11 @@ int main(int argc, char *argv[]) {
                      fanController.updateTemperature(gpuMonitor.temperatureC());
                    });
 
+  QObject::connect(&cpuMonitor, &CpuMonitor::temperatureCChanged,
+                   &fanController, [&]() {
+                     fanController.updateCpuTemperature(cpuMonitor.temperatureC());
+                   });
+
   detector.refresh();
 
   QQmlApplicationEngine engine;

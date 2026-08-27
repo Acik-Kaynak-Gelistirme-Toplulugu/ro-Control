@@ -234,15 +234,15 @@ Item {
                                             implicitWidth: capLabel.implicitWidth + 12
                                             implicitHeight: Math.round(22 * page.uiScale)
                                             radius: 4
-                                            color: fanCard.modelData.controllable ? page.successBg : (page.darkMode ? "#2D263D" : "#E2E8F0")
+                                            color: fanCard.modelData.controllable ? page.successBg : (page.darkMode ? "#1E2548" : "#EFF6FF")
                                             border.width: 1
-                                            border.color: fanCard.modelData.controllable ? page.successText : page.borderColor
+                                            border.color: fanCard.modelData.controllable ? page.successText : (page.darkMode ? "#4D5B9E" : "#93C5FD")
 
                                             Label {
                                                 id: capLabel
                                                 anchors.centerIn: parent
-                                                text: fanCard.modelData.controllable ? qsTr("Controllable") : qsTr("Telemetry Only")
-                                                color: fanCard.modelData.controllable ? page.successText : page.softTextColor
+                                                text: fanCard.modelData.statusLabel || (fanCard.modelData.controllable ? qsTr("Controllable") : qsTr("Active (Auto)"))
+                                                color: fanCard.modelData.controllable ? page.successText : (page.darkMode ? "#93C5FD" : "#2563EB")
                                                 font.pixelSize: Math.round(10 * page.uiScale)
                                                 font.weight: Font.DemiBold
                                             }
@@ -352,17 +352,17 @@ Item {
                             radius: 6
                             color: page.fanController && page.fanController.controlSupported ? page.successBg : page.infoBg
                             border.width: 1
-                            border.color: page.fanController && page.fanController.controlSupported ? page.successText : page.borderColor
+                            border.color: page.fanController && page.fanController.controlSupported ? page.successText : (page.darkMode ? "#4D5B9E" : "#93C5FD")
 
                             Label {
                                 id: statusBadgeText
                                 anchors.centerIn: parent
                                 text: {
-                                    if (page.fanController && !page.fanController.controlSupported)
-                                        return qsTr("TELEMETRY ONLY");
-                                    return page.fanController ? page.fanController.fanMode.toUpperCase() : qsTr("AUTO");
+                                    if (page.fanController && page.fanController.controlSupported)
+                                        return qsTr("ACTIVE: %1").arg(page.fanController.fanMode.toUpperCase());
+                                    return qsTr("MANAGED: %1").arg(page.fanController ? page.fanController.fanMode.toUpperCase() : "AUTO");
                                 }
-                                color: page.fanController && page.fanController.controlSupported ? page.successText : page.textColor
+                                color: page.fanController && page.fanController.controlSupported ? page.successText : page.accentColor
                                 font.pixelSize: Math.round(11 * page.uiScale)
                                 font.weight: Font.DemiBold
                             }

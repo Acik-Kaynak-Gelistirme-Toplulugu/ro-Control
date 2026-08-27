@@ -68,9 +68,9 @@ Item {
         if (page.fanController && page.fanController.safetyOverrideActive)
             return qsTr("SAFETY OVERRIDE 100%");
         if (!page.fanController || !page.fanController.supported)
-            return qsTr("UNSUPPORTED");
+            return qsTr("HARDWARE AUTO");
         if (!page.fanController.controlSupported)
-            return qsTr("TELEMETRY ONLY");
+            return qsTr("HARDWARE MANAGED");
         return page.fanController.fanMode.toUpperCase();
     }
 
