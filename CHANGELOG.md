@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.2.1] - 2026-08-31
+
+### Fixed
+- Isolated GPU monitor tests from host `hwmon` and PCI device state.
+- Validated native Fedora 44 RPM builds on both x86_64 and aarch64 runners.
+
+### Packaging
+- Restored canonical NVRA filenames for binary RPM artifacts.
+- Added source RPM, exact source archive, and release checksum publication.
+- Enabled install and CLI smoke tests for both supported architectures.
+
+---
+
 ## [v1.2.0] - 2026-08-27
 
 ### Added

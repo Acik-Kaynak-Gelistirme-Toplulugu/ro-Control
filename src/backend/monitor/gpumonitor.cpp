@@ -48,6 +48,20 @@ QString drmRootPath() {
                                 : overridePath;
 }
 
+QString hwmonRootPath() {
+  const QString overridePath =
+      qEnvironmentVariable("RO_CONTROL_HWMON_ROOT").trimmed();
+  return overridePath.isEmpty() ? QStringLiteral("/sys/class/hwmon")
+                                : overridePath;
+}
+
+QString pciDevicesRootPath() {
+  const QString overridePath =
+      qEnvironmentVariable("RO_CONTROL_PCI_DEVICES_ROOT").trimmed();
+  return overridePath.isEmpty() ? QStringLiteral("/sys/bus/pci/devices")
+                                : overridePath;
+}
+
 QString readFileText(const QString &path) {
   QFile file(path);
   if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -116,7 +130,7 @@ bool isGpuHwmonName(const QString &name) {
 
 bool readNvidiaTemperatureFromHwmonClass(int *value) {
   const QFileInfoList hwmonEntries =
-      QDir(QStringLiteral("/sys/class/hwmon"))
+      QDir(hwmonRootPath())
           .entryInfoList({QStringLiteral("hwmon*")},
                          QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
   for (const QFileInfo &entry : hwmonEntries) {
@@ -135,7 +149,7 @@ bool readNvidiaTemperatureFromHwmonClass(int *value) {
 
 bool readNvidiaTemperatureFromPciHwmon(int *value) {
   const QFileInfoList deviceEntries =
-      QDir(QStringLiteral("/sys/bus/pci/devices"))
+      QDir(pciDevicesRootPath())
           .entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
   for (const QFileInfo &deviceEntry : deviceEntries) {
     const QString devicePath = deviceEntry.absoluteFilePath();
@@ -236,7 +250,7 @@ bool readNvidiaTemperatureFallback(CommandRunner &runner, int *value) {
 
 bool hasNvidiaPciDevice() {
   const QFileInfoList deviceEntries =
-      QDir(QStringLiteral("/sys/bus/pci/devices"))
+      QDir(pciDevicesRootPath())
           .entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
   for (const QFileInfo &deviceEntry : deviceEntries) {
     if (readFileText(deviceEntry.absoluteFilePath() + QStringLiteral("/vendor"))

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(ro-control
-    VERSION 1.2.0
+    VERSION 1.2.1
     DESCRIPTION "Smart NVIDIA driver manager and system monitor for Fedora KDE Plasma"
     HOMEPAGE_URL "https://github.com/Project-Ro-ASD/ro-Control"
     LANGUAGES CXX

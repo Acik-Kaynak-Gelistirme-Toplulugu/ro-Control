@@ -67,6 +67,12 @@
 	</categories>
 
 	<releases>
+		<release version="1.2.1" date="2026-08-31">
+			<description>
+				<p>Fedora 44 maintenance release with native x86_64 and aarch64 RPM validation, source artifacts, and deterministic hardware-monitor tests.</p>
+				<p xml:lang="tr">Yerel x86_64 ve aarch64 RPM doğrulaması, kaynak paketleri ve kararlı donanım izleme testleri sunan Fedora 44 bakım sürümü.</p>
+			</description>
+		</release>
 		<release version="1.2.0" date="2026-08-27">
 			<description>
 				<p>Major release adding advanced fan management and telemetry subsystem, dedicated CPU and GPU fan curves, and headless CI resilience.</p>

@@ -4,9 +4,6 @@ name: Release
   push:
     tags:
       - "v*"
-  release:
-    types:
-      - published
   workflow_dispatch:
     inputs:
       version:
@@ -120,7 +117,7 @@ jobs:
           - arch: aarch64
             runs_on: ubuntu-24.04-arm
     container:
-      image: fedora:43
+      image: fedora:44
 
     steps:
       - name: Checkout repository
@@ -159,7 +156,7 @@ jobs:
           mkdir -p ~/rpmbuild/SOURCES ~/rpmbuild/SPECS dist/rpm
           cp "dist/${ARCHIVE_PREFIX}.tar.gz" "${HOME}/rpmbuild/SOURCES/"
           cp packaging/rpm/ro-control.spec "${HOME}/rpmbuild/SPECS/ro-control.spec"
-          FEDORA_VERSION=43
+          FEDORA_VERSION=44
           MAIN_RPM_PATTERN="ro-control-[0-9]*.${RPM_ARCH}.rpm"
 
           rpmbuild -ba "${HOME}/rpmbuild/SPECS/ro-control.spec" \
@@ -172,18 +169,23 @@ jobs:
             echo "Failed to find built ${RPM_ARCH} main RPM." >&2
             exit 1
           fi
-          cp "${MAIN_RPM_FILE}" "dist/rpm/ro-control-v${VERSION}.${RPM_ARCH}.rpm"
+          cp "${MAIN_RPM_FILE}" dist/rpm/
+          if [[ "${RPM_ARCH}" == "x86_64" ]]; then
+            cp ~/rpmbuild/SRPMS/*.src.rpm dist/rpm/
+          fi
 
       - name: Verify package metadata
         env:
           VERSION: ${{ needs.metadata.outputs.version }}
           RPM_ARCH: ${{ matrix.arch }}
         run: |
-          RPM_FILE="dist/rpm/ro-control-v${VERSION}.${RPM_ARCH}.rpm"
+          RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "ro-control-*.${RPM_ARCH}.rpm" | head -n1)"
           if [[ ! -f "${RPM_FILE}" ]]; then
             echo "Failed to locate built ${RPM_ARCH} RPM." >&2
             exit 1
           fi
+          [[ "$(basename "${RPM_FILE}")" == "$(rpm -qp --qf '%{NVRA}.rpm' "${RPM_FILE}")" ]]
+          [[ "$(rpm -qp --qf '%{RELEASE}' "${RPM_FILE}")" == "1.fc44" ]]
 
           rpm -qp --info "${RPM_FILE}" > "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-info.txt"
           rpm -qp --requires "${RPM_FILE}" | sort > "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-requires.txt"
@@ -199,7 +201,7 @@ jobs:
           VERSION: ${{ needs.metadata.outputs.version }}
           RPM_ARCH: ${{ matrix.arch }}
         run: |
-          MAIN_RPM_FILE="dist/rpm/ro-control-v${VERSION}.${RPM_ARCH}.rpm"
+          MAIN_RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "ro-control-*.${RPM_ARCH}.rpm" | head -n1)"
 
           if [[ ! -f "${MAIN_RPM_FILE}" ]]; then
             echo "Main ro-control RPM is missing." >&2
@@ -214,12 +216,11 @@ jobs:
           appstreamcli validate --no-net data/icons/io.github.projectroasd.rocontrol.metainfo.xml
 
       - name: Install and smoke-test RPM
-        if: matrix.arch == 'x86_64'
         env:
           VERSION: ${{ needs.metadata.outputs.version }}
           RPM_ARCH: ${{ matrix.arch }}
         run: |
-          RPM_FILE="dist/rpm/ro-control-v${VERSION}.${RPM_ARCH}.rpm"
+          RPM_FILE="$(find dist/rpm -maxdepth 1 -type f -name "ro-control-*.${RPM_ARCH}.rpm" | head -n1)"
 
           if [[ ! -f "${RPM_FILE}" ]]; then
             echo "Failed to locate built ${RPM_ARCH} RPM for smoke testing." >&2
@@ -240,22 +241,12 @@ jobs:
           ldd -r /usr/bin/ro-control
           ro-control --help > /dev/null
 
-      - name: Generate per-arch checksums
-        env:
-          VERSION: ${{ needs.metadata.outputs.version }}
-          RPM_ARCH: ${{ matrix.arch }}
-        run: |
-          (
-            cd dist/rpm
-            sha256sum * > "ro-control-${VERSION}-${RPM_ARCH}-SHA256SUMS.txt"
-          )
-
       - name: Upload RPM artifacts
         uses: actions/upload-artifact@v7
         with:
           name: ro-control-rpm-${{ matrix.arch }}-${{ needs.metadata.outputs.version }}
           path: |
-            dist/rpm/ro-control-v${{ needs.metadata.outputs.version }}.${{ matrix.arch }}.rpm
+            dist/rpm/*
 
   release:
     name: Create GitHub Release
@@ -270,6 +261,23 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Generate release checksums
+        env:
+          VERSION: ${{ needs.metadata.outputs.version }}
+        run: |
+          cd dist
+          mapfile -t RELEASE_FILES < <(
+            find . -maxdepth 1 -type f \
+              \( -name '*.rpm' -o -name "ro-control-${VERSION}.tar.gz" \) \
+              -printf '%f\n' | sort
+          )
+          if [[ "${#RELEASE_FILES[@]}" -ne 4 ]]; then
+            echo "Expected two binary RPMs, one source RPM, and one source archive." >&2
+            printf 'Found: %s\n' "${RELEASE_FILES[@]}" >&2
+            exit 1
+          fi
+          sha256sum "${RELEASE_FILES[@]}" > "ro-control-${VERSION}-SHA256SUMS.txt"
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
@@ -279,3 +287,6 @@ jobs:
           files: |
             dist/*x86_64.rpm
             dist/*aarch64.rpm
+            dist/*.src.rpm
+            dist/ro-control-${{ needs.metadata.outputs.version }}.tar.gz
+            dist/ro-control-${{ needs.metadata.outputs.version }}-SHA256SUMS.txt

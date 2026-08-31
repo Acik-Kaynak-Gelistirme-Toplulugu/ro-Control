@@ -118,6 +118,10 @@ private slots:
             QByteArrayLiteral("/definitely/missing/nvidia-settings"));
     qputenv("RO_CONTROL_DRM_ROOT",
             QByteArrayLiteral("/definitely/missing/drm-root"));
+    qputenv("RO_CONTROL_HWMON_ROOT",
+            QByteArrayLiteral("/definitely/missing/hwmon-root"));
+    qputenv("RO_CONTROL_PCI_DEVICES_ROOT",
+            QByteArrayLiteral("/definitely/missing/pci-devices-root"));
 
     GpuMonitor gpu;
     gpu.stop();
@@ -130,6 +134,8 @@ private slots:
     qunsetenv("RO_CONTROL_COMMAND_SENSORS");
     qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS");
     qunsetenv("RO_CONTROL_DRM_ROOT");
+    qunsetenv("RO_CONTROL_HWMON_ROOT");
+    qunsetenv("RO_CONTROL_PCI_DEVICES_ROOT");
   }
 
   void testGpuTemperatureFallsBackToSensors() {
@@ -161,6 +167,10 @@ private slots:
             QByteArrayLiteral("/definitely/missing/nvidia-settings"));
     qputenv("RO_CONTROL_DRM_ROOT",
             QByteArrayLiteral("/definitely/missing/drm-root"));
+    qputenv("RO_CONTROL_HWMON_ROOT",
+            QByteArrayLiteral("/definitely/missing/hwmon-root"));
+    qputenv("RO_CONTROL_PCI_DEVICES_ROOT",
+            QByteArrayLiteral("/definitely/missing/pci-devices-root"));
 
     GpuMonitor gpu;
     gpu.stop();
@@ -176,6 +186,8 @@ private slots:
     qunsetenv("RO_CONTROL_COMMAND_SENSORS");
     qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS");
     qunsetenv("RO_CONTROL_DRM_ROOT");
+    qunsetenv("RO_CONTROL_HWMON_ROOT");
+    qunsetenv("RO_CONTROL_PCI_DEVICES_ROOT");
   }
 
   void testRamConstruction() {
