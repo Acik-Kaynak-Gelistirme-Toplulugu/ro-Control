@@ -131,9 +131,20 @@ sudo cmake --install build --prefix /usr
 | `ro-control status --json` | Exports complete system and GPU telemetry as JSON. |
 | `ro-control fan-status` | Displays active fan modes, speeds, RPMs, and temperatures. |
 | `ro-control fan-status --json` | Exports multi-fan telemetry as JSON. |
+| `ro-control fan set-smoothing <on\|off> [ramp_up] [ramp_down] [hysteresis]` | Configures fan ramp rate smoothing and directional hysteresis. |
+| `ro-control power status [--json]` | Displays current GPU power limits, clock offsets, and persistence mode. |
+| `ro-control power set-limit <watts>` | Sets GPU maximum power draw limit in Watts. |
+| `ro-control power set-clocks <core_mhz> <mem_mhz>` | Configures GPU core and memory clock offsets in MHz. |
+| `ro-control power set-preset <eco\|balanced\|perf\|custom>` | Applies predefined power and clock profiles. |
+| `ro-control power set-persistence <on\|off>` | Controls NVIDIA driver persistence daemon state. |
+| `ro-control processes [--json]` | Lists active GPU computing and display processes with VRAM usage. |
+| `ro-control kill-process <pid>` | Terminates a running GPU process via PolKit helper. |
+| `ro-control gpus [--json]` | Enumerates all detected GPU devices with index and bus IDs. |
+| `ro-control select-gpu <index>` | Selects active GPU target device for monitoring and tuning. |
 | `ro-control diagnostics` | Comprehensive hardware, Secure Boot, kernel, and driver report. |
 | `ro-control check-updates` | Checks repository for available NVIDIA driver packages. |
 | `ro-control install-driver` | Triggers non-interactive driver installation via PolKit. |
+| `ro-control --daemon` | Launches headless background D-Bus service (`org.roproject.Control`). |
 
 ### CLI Examples
 
@@ -141,12 +152,31 @@ sudo cmake --install build --prefix /usr
 # Get quick fan telemetry
 ./build/ro-control fan-status
 
+# Inspect active GPU processes
+./build/ro-control processes
+
+# Set fan smoothing with 25%/s ramp-up, 10%/s ramp-down, and 3°C hysteresis
+./build/ro-control fan set-smoothing on 25 10 3
+
+# Apply GPU overclocking offsets (+50 MHz Core, +200 MHz Memory)
+./build/ro-control power set-clocks 50 200
+
 # Export structured JSON diagnostics
 ./build/ro-control diagnostics --json | jq .
 
 # Check GPU status in terminal
 ./build/ro-control status
 ```
+
+---
+
+## D-Bus IPC Interface
+
+`ro-control` provides a D-Bus service on `org.roproject.Control` (`/org/roproject/Control`):
+
+- **Query Methods:** `GetTelemetry()`, `GetGpuDevices()`, `GetGpuProcesses()`, `GetThermalStatus()`, `GetGpuHealth()`
+- **Control Methods:** `SelectGpu(int index)`, `SetFanMode(QString mode)`, `SetFanSpeed(int percent)`, `SetFanSmoothing(bool enabled, int rampUp, int rampDown, int hysteresis)`, `SetPowerLimit(double watts)`, `SetClockOffsets(int coreMhz, int memMhz)`, `SetPersistenceMode(bool enabled)`
+- **Signals:** `TelemetryUpdated(QString jsonPayload)`, `ThermalAlert(QString level, QString message)`
 
 ---
 

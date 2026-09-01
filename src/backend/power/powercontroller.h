@@ -25,9 +25,12 @@ class PowerController : public QObject {
   Q_PROPERTY(QString powerPreset READ powerPreset WRITE applyPowerPreset NOTIFY
                  powerPresetChanged)
   Q_PROPERTY(QStringList availablePresets READ availablePresets CONSTANT)
-  Q_PROPERTY(int coreClockOffsetMHz READ coreClockOffsetMHz NOTIFY clockOffsetsChanged)
-  Q_PROPERTY(int memoryClockOffsetMHz READ memoryClockOffsetMHz NOTIFY clockOffsetsChanged)
-  Q_PROPERTY(bool clockOffsetSupported READ clockOffsetSupported NOTIFY clockOffsetSupportedChanged)
+  Q_PROPERTY(
+      int coreClockOffsetMHz READ coreClockOffsetMHz NOTIFY clockOffsetsChanged)
+  Q_PROPERTY(int memoryClockOffsetMHz READ memoryClockOffsetMHz NOTIFY
+                 clockOffsetsChanged)
+  Q_PROPERTY(bool clockOffsetSupported READ clockOffsetSupported NOTIFY
+                 clockOffsetSupportedChanged)
   Q_PROPERTY(int minCoreOffsetMHz READ minCoreOffsetMHz CONSTANT)
   Q_PROPERTY(int maxCoreOffsetMHz READ maxCoreOffsetMHz CONSTANT)
   Q_PROPERTY(int minMemoryOffsetMHz READ minMemoryOffsetMHz CONSTANT)
@@ -79,7 +82,8 @@ signals:
   void clockOffsetSupportedChanged();
   void statusMessageChanged();
   void powerLimitApplied(double targetWatts, bool success);
-  void clockOffsetsApplied(int coreOffsetMHz, int memoryOffsetMHz, bool success);
+  void clockOffsetsApplied(int coreOffsetMHz, int memoryOffsetMHz,
+                           bool success);
 
 private:
   void detectCapabilities();

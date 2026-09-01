@@ -62,12 +62,12 @@ class FanController : public QObject {
   Q_PROPERTY(
       bool batteryProfileSyncEnabled READ batteryProfileSyncEnabled WRITE
           setBatteryProfileSyncEnabled NOTIFY batteryProfileSyncEnabledChanged)
-  Q_PROPERTY(bool smoothingEnabled READ smoothingEnabled WRITE setSmoothingEnabled
-                 NOTIFY smoothingEnabledChanged)
-  Q_PROPERTY(int rampUpRatePercent READ rampUpRatePercent WRITE setRampUpRatePercent
-                 NOTIFY rampRateChanged)
-  Q_PROPERTY(int rampDownRatePercent READ rampDownRatePercent WRITE setRampDownRatePercent
-                 NOTIFY rampRateChanged)
+  Q_PROPERTY(bool smoothingEnabled READ smoothingEnabled WRITE
+                 setSmoothingEnabled NOTIFY smoothingEnabledChanged)
+  Q_PROPERTY(int rampUpRatePercent READ rampUpRatePercent WRITE
+                 setRampUpRatePercent NOTIFY rampRateChanged)
+  Q_PROPERTY(int rampDownRatePercent READ rampDownRatePercent WRITE
+                 setRampDownRatePercent NOTIFY rampRateChanged)
   Q_PROPERTY(int hysteresisTempC READ hysteresisTempC WRITE setHysteresisTempC
                  NOTIFY hysteresisTempCChanged)
 

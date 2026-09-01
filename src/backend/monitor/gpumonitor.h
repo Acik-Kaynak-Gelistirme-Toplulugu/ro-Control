@@ -36,8 +36,8 @@ class GpuMonitor : public QObject {
   Q_PROPERTY(
       int gpuProcessCount READ gpuProcessCount NOTIFY gpuProcessesChanged)
   Q_PROPERTY(int gpuCount READ gpuCount NOTIFY gpuDevicesChanged)
-  Q_PROPERTY(int selectedGpuIndex READ selectedGpuIndex WRITE setSelectedGpuIndex
-                 NOTIFY selectedGpuIndexChanged)
+  Q_PROPERTY(int selectedGpuIndex READ selectedGpuIndex WRITE
+                 setSelectedGpuIndex NOTIFY selectedGpuIndexChanged)
   Q_PROPERTY(QVariantList gpuDevices READ gpuDevices NOTIFY gpuDevicesChanged)
   Q_PROPERTY(
       QString statusMessage READ statusMessage NOTIFY statusMessageChanged)

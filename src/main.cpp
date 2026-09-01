@@ -296,7 +296,8 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
     const int mem = parts.value(1).toInt();
     if (powerController.setClockOffsets(core, mem)) {
       result.stdoutText =
-          QStringLiteral("GPU clock offsets set to Core: %+1 MHz, Memory: %+2 MHz.\n")
+          QStringLiteral(
+              "GPU clock offsets set to Core: %+1 MHz, Memory: %+2 MHz.\n")
               .arg(core)
               .arg(mem);
       result.exitCode = 0;
@@ -324,7 +325,8 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
       fanController.setHysteresisTempC(parts.at(3).toInt());
     }
     result.stdoutText =
-        QStringLiteral("Fan smoothing %1 (RampUp: %2%/s, RampDown: %3%/s, Hysteresis: %4 C).\n")
+        QStringLiteral("Fan smoothing %1 (RampUp: %2%/s, RampDown: %3%/s, "
+                       "Hysteresis: %4 C).\n")
             .arg(on ? QStringLiteral("enabled") : QStringLiteral("disabled"))
             .arg(fanController.rampUpRatePercent())
             .arg(fanController.rampDownRatePercent())
@@ -352,11 +354,13 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
           QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
     } else {
       if (procs.isEmpty()) {
-        result.stdoutText = QStringLiteral("No active GPU processes detected.\n");
+        result.stdoutText =
+            QStringLiteral("No active GPU processes detected.\n");
       } else {
         result.stdoutText = QStringLiteral("PID\tNAME\t\t\tTYPE\t\t\tVRAM\n");
         result.stdoutText +=
-            QStringLiteral("───────────────────────────────────────────────────────────────────\n");
+            QStringLiteral("───────────────────────────────────────────────────"
+                           "────────────────\n");
         for (const auto &p : procs) {
           const auto m = p.toMap();
           result.stdoutText +=
@@ -401,7 +405,8 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
       }
       obj.insert(QStringLiteral("command"), QStringLiteral("gpus"));
       obj.insert(QStringLiteral("count"), gpus.size());
-      obj.insert(QStringLiteral("selectedIndex"), gpuMonitor.selectedGpuIndex());
+      obj.insert(QStringLiteral("selectedIndex"),
+                 gpuMonitor.selectedGpuIndex());
       obj.insert(QStringLiteral("devices"), arr);
       result.stdoutText =
           QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
@@ -409,7 +414,8 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
       result.stdoutText =
           QStringLiteral("INDEX\tNAME\t\t\t\tPCI BUS ID\t\tUUID\n");
       result.stdoutText +=
-          QStringLiteral("─────────────────────────────────────────────────────────────────────────────\n");
+          QStringLiteral("─────────────────────────────────────────────────────"
+                         "────────────────────────\n");
       for (const auto &g : gpus) {
         const auto m = g.toMap();
         const int idx = m.value(QStringLiteral("index")).toInt();

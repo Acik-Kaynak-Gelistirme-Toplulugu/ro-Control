@@ -199,7 +199,8 @@ int FanController::rampDownRatePercent() const { return m_rampDownRatePercent; }
 int FanController::hysteresisTempC() const { return m_hysteresisTempC; }
 
 void FanController::setSmoothingEnabled(bool enabled) {
-  if (m_smoothingEnabled == enabled) return;
+  if (m_smoothingEnabled == enabled)
+    return;
   m_smoothingEnabled = enabled;
   saveSettings();
   emit smoothingEnabledChanged();
@@ -207,7 +208,8 @@ void FanController::setSmoothingEnabled(bool enabled) {
 
 void FanController::setRampUpRatePercent(int percent) {
   const int clamped = std::clamp(percent, 1, 100);
-  if (m_rampUpRatePercent == clamped) return;
+  if (m_rampUpRatePercent == clamped)
+    return;
   m_rampUpRatePercent = clamped;
   saveSettings();
   emit rampRateChanged();
@@ -215,7 +217,8 @@ void FanController::setRampUpRatePercent(int percent) {
 
 void FanController::setRampDownRatePercent(int percent) {
   const int clamped = std::clamp(percent, 1, 100);
-  if (m_rampDownRatePercent == clamped) return;
+  if (m_rampDownRatePercent == clamped)
+    return;
   m_rampDownRatePercent = clamped;
   saveSettings();
   emit rampRateChanged();
@@ -223,7 +226,8 @@ void FanController::setRampDownRatePercent(int percent) {
 
 void FanController::setHysteresisTempC(int degrees) {
   const int clamped = std::clamp(degrees, 0, 15);
-  if (m_hysteresisTempC == clamped) return;
+  if (m_hysteresisTempC == clamped)
+    return;
   m_hysteresisTempC = clamped;
   saveSettings();
   emit hysteresisTempCChanged();
@@ -1348,11 +1352,11 @@ void FanController::evaluateAndApplyFanSpeed(bool force) {
     if (!isAuto && !force && m_smoothingEnabled && m_lastAppliedPercent > 0 &&
         !m_lastAppliedModeWasAuto) {
       if (calculatedSpeed > m_lastAppliedPercent) {
-        calculatedSpeed =
-            std::min(calculatedSpeed, m_lastAppliedPercent + m_rampUpRatePercent);
+        calculatedSpeed = std::min(calculatedSpeed,
+                                   m_lastAppliedPercent + m_rampUpRatePercent);
       } else if (calculatedSpeed < m_lastAppliedPercent) {
-        calculatedSpeed =
-            std::max(calculatedSpeed, m_lastAppliedPercent - m_rampDownRatePercent);
+        calculatedSpeed = std::max(calculatedSpeed, m_lastAppliedPercent -
+                                                        m_rampDownRatePercent);
       }
     }
   }

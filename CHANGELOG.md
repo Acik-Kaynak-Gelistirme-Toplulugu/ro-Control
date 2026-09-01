@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v1.3.0] - 2026-09-01
 
 ### Added
+- **Multi-GPU & Process Management Subsystem:**
+  - Multi-GPU enumeration, dynamic device selection, and per-card monitoring (`ro-control gpus [--json]`, `ro-control select-gpu <index>`).
+  - Active GPU compute and display process tracking with VRAM consumption (`ro-control processes [--json]`).
+  - Safe GPU process termination helper via PolKit (`ro-control kill-process <pid>`).
+- **GPU Clock Offsetting & Tuning:**
+  - Core and memory clock offset adjustment via `PowerController` (`ro-control power set-clocks <core_mhz> <mem_mhz>`).
+  - D-Bus slot `SetClockOffsets(int coreMhz, int memMhz)`.
+- **Fan Smoothing & Anti-Hunting Engine:**
+  - Configurable ramp-up/ramp-down rate limits and directional hysteresis in `FanController` to eliminate rapid fan acoustic cycling (`ro-control fan set-smoothing <on|off> [ramp_up] [ramp_down] [hysteresis]`).
+  - D-Bus slot `SetFanSmoothing(bool enabled, int rampUp, int rampDown, int hysteresis)`.
+- **Extended Hardware Telemetry:**
+  - Real-time Hotspot and Memory Junction temperature sensors across NVML backend, D-Bus telemetry payload, and QML dashboard.
+- **Modernized Driver UI Experience:**
+  - Replaced legacy button layouts with modern typography-driven `DriverActionTile` components.
+  - Accurate stack descriptions for **NVIDIA Official Release** (`akmod-nvidia`) and **Community Open-Source Release** (`akmod-nvidia-open`).
+  - Streamlined `ModernMiniButton` and `ModernDialogButton` controls for activity log and confirmation modals.
 - **GPU Power & TDP Management Subsystem:**
   - Dynamic power limit control (`PowerController`) via Polkit and `nvidia-smi`.
   - Power preset switching (`Eco`, `Balanced`, `Performance`, `Custom`).
@@ -19,12 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Live tooltip with GPU temperature, fan RPM, and live power draw.
   - Context menu with quick Fan profile and Power preset switching.
 - **Sentinel D-Bus IPC Service & Daemon Mode:**
-  - Native D-Bus service registered at `io.github.ProjectRoASD.rocontrol` (`/io/github/ProjectRoASD/rocontrol`).
-  - Methods for external telemetry queries (`GetTelemetry`, `GetThermalStatus`, `GetGpuHealth`) and hardware control (`SetFanMode`, `SetFanSpeed`, `SetPowerLimit`, `SetPersistenceMode`).
+  - Native D-Bus service registered at `org.roproject.Control` (`/org/roproject/Control`).
+  - Methods for external telemetry queries (`GetTelemetry`, `GetGpuDevices`, `GetGpuProcesses`, `GetThermalStatus`, `GetGpuHealth`) and hardware control (`SelectGpu`, `SetFanMode`, `SetFanSpeed`, `SetFanSmoothing`, `SetPowerLimit`, `SetClockOffsets`, `SetPersistenceMode`).
   - Signals: `ThermalAlert`, `TelemetryUpdated`.
   - Headless daemon CLI command: `ro-control --daemon`.
 - **Test Suite Expansion:**
-  - Added unit test suites for `PowerController`, `HealthGuard`, and `RoControlDBusService` (12/12 test targets passing 100%).
+  - Comprehensive unit test suites for `PowerController`, `HealthGuard`, `GpuMonitor` multi-GPU/process features, and `RoControlDBusService` (12/12 test targets passing 100%).
 
 ---
 

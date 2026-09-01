@@ -431,7 +431,8 @@ void GpuMonitor::refresh() {
     queryArgs.prepend(QStringLiteral("--id=%1").arg(m_selectedGpuIndex));
   }
 
-  const auto result = runner.run(QStringLiteral("nvidia-smi"), queryArgs, options);
+  const auto result =
+      runner.run(QStringLiteral("nvidia-smi"), queryArgs, options);
 
   if (!result.success()) {
     int nextTemp = 0;
@@ -868,11 +869,11 @@ void GpuMonitor::queryGpuDevices() {
   CommandRunner::RunOptions options;
   options.timeoutMs = 1200;
 
-  const auto result = runner.run(
-      QStringLiteral("nvidia-smi"),
-      {QStringLiteral("--query-gpu=index,name,uuid,pci.bus_id"),
-       QStringLiteral("--format=csv,noheader,nounits")},
-      options);
+  const auto result =
+      runner.run(QStringLiteral("nvidia-smi"),
+                 {QStringLiteral("--query-gpu=index,name,uuid,pci.bus_id"),
+                  QStringLiteral("--format=csv,noheader,nounits")},
+                 options);
 
   QVariantList devices;
   if (result.success()) {

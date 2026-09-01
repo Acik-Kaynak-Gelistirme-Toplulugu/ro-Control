@@ -77,7 +77,8 @@ QString buildHelpText(const QString &applicationName,
       << "  fan set-speed <percent>    Set manual fixed fan speed (0-100%).\n";
   stream << "  fan set-mode <profile>     Set fan profile (auto, silent, "
             "balanced, performance, manual, custom).\n";
-  stream << "  fan set-smoothing <on|off> [ramp_up] [ramp_down] [hysteresis] Set fan smoothing and ramp rates.\n";
+  stream << "  fan set-smoothing <on|off> [ramp_up] [ramp_down] [hysteresis] "
+            "Set fan smoothing and ramp rates.\n";
   stream << "  fan reset                  Reset fan control to automatic "
             "mode.\n";
   stream << "  power status [--json]      Print GPU power draw, limits and "
@@ -85,13 +86,16 @@ QString buildHelpText(const QString &applicationName,
   stream << "  power set-limit <watts>    Set GPU power limit in Watts.\n";
   stream << "  power set-preset <preset>  Set power preset (eco, balanced, "
             "performance, custom).\n";
-  stream << "  power set-clocks <core> <mem> Set GPU core and memory clock offsets in MHz.\n";
+  stream << "  power set-clocks <core> <mem> Set GPU core and memory clock "
+            "offsets in MHz.\n";
   stream << "  power set-persistence <on|off> Enable or disable persistence "
             "mode.\n";
-  stream << "  processes [--json]         List active GPU compute and display processes.\n";
+  stream << "  processes [--json]         List active GPU compute and display "
+            "processes.\n";
   stream << "  kill-process <pid>         Terminate a running GPU process.\n";
   stream << "  gpus [--json]              List detected GPU adapters.\n";
-  stream << "  select-gpu <index>         Select active GPU device by index.\n\n";
+  stream
+      << "  select-gpu <index>         Select active GPU device by index.\n\n";
   stream << "Driver install options:\n";
   stream << "  --proprietary              Install the proprietary akmod-nvidia "
             "stack.\n";
@@ -367,10 +371,13 @@ ParsedCommand parseArguments(const QStringList &arguments,
     if (fanAction == QStringLiteral("set-smoothing")) {
       if (positional.size() < 3) {
         return invalidCommand(QStringLiteral(
-            "`fan set-smoothing` requires a state argument (on|off) and optional [ramp_up] [ramp_down] [hysteresis]."));
+            "`fan set-smoothing` requires a state argument (on|off) and "
+            "optional [ramp_up] [ramp_down] [hysteresis]."));
       }
       const QString state = positional.at(2).toLower();
-      const bool on = (state == QStringLiteral("on") || state == QStringLiteral("1") || state == QStringLiteral("true"));
+      const bool on =
+          (state == QStringLiteral("on") || state == QStringLiteral("1") ||
+           state == QStringLiteral("true"));
       QStringList params;
       params << (on ? QStringLiteral("1") : QStringLiteral("0"));
       for (int i = 3; i < positional.size(); ++i) {
@@ -440,14 +447,16 @@ ParsedCommand parseArguments(const QStringList &arguments,
 
     if (powerAction == QStringLiteral("set-clocks")) {
       if (positional.size() != 4) {
-        return invalidCommand(QStringLiteral(
-            "`power set-clocks` requires <core_mhz> and <mem_mhz> arguments (e.g. 50 200)."));
+        return invalidCommand(
+            QStringLiteral("`power set-clocks` requires <core_mhz> and "
+                           "<mem_mhz> arguments (e.g. 50 200)."));
       }
       bool ok1 = false, ok2 = false;
       const int core = positional.at(2).toInt(&ok1);
       const int mem = positional.at(3).toInt(&ok2);
       if (!ok1 || !ok2) {
-        return invalidCommand(QStringLiteral("Clock offsets must be integers."));
+        return invalidCommand(
+            QStringLiteral("Clock offsets must be integers."));
       }
       ParsedCommand command;
       command.action = CommandAction::PowerSetClocks;
@@ -518,7 +527,8 @@ ParsedCommand parseArguments(const QStringList &arguments,
     bool ok = false;
     const int pid = positional.at(1).toInt(&ok);
     if (!ok || pid <= 1) {
-      return invalidCommand(QStringLiteral("PID must be a valid process ID > 1."));
+      return invalidCommand(
+          QStringLiteral("PID must be a valid process ID > 1."));
     }
     ParsedCommand command;
     command.action = CommandAction::KillProcess;
@@ -535,8 +545,8 @@ ParsedCommand parseArguments(const QStringList &arguments,
 
   if (commandName == QStringLiteral("select-gpu")) {
     if (positional.size() != 2) {
-      return invalidCommand(
-          QStringLiteral("`select-gpu` requires a GPU index argument (e.g. 0)."));
+      return invalidCommand(QStringLiteral(
+          "`select-gpu` requires a GPU index argument (e.g. 0)."));
     }
     bool ok = false;
     const int idx = positional.at(1).toInt(&ok);
@@ -780,8 +790,8 @@ QString renderDiagnosticsText(const DiagnosticsSnapshot &snapshot) {
                 .arg(snapshot.gpuMemoryUsagePercent);
   output += QStringLiteral("gpu_fan_speed_percent: %1\n")
                 .arg(snapshot.gpuFanSpeedPercent);
-  output += QStringLiteral("gpu_process_count: %1\n")
-                .arg(snapshot.gpuProcessCount);
+  output +=
+      QStringLiteral("gpu_process_count: %1\n").arg(snapshot.gpuProcessCount);
   output += QStringLiteral("fan_supported: %1\n")
                 .arg(boolText(snapshot.fanSupported));
   output += QStringLiteral("fan_control_supported: %1\n")

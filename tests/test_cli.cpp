@@ -326,12 +326,14 @@ private slots:
     QCOMPARE(procText.action, RoControlCli::CommandAction::PrintProcessesText);
 
     const auto procJson = RoControlCli::parseArguments(
-        {QStringLiteral("ro-control"), QStringLiteral("processes"), QStringLiteral("--json")},
+        {QStringLiteral("ro-control"), QStringLiteral("processes"),
+         QStringLiteral("--json")},
         QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(procJson.action, RoControlCli::CommandAction::PrintProcessesJson);
 
     const auto killCmd = RoControlCli::parseArguments(
-        {QStringLiteral("ro-control"), QStringLiteral("kill-process"), QStringLiteral("1234")},
+        {QStringLiteral("ro-control"), QStringLiteral("kill-process"),
+         QStringLiteral("1234")},
         QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(killCmd.action, RoControlCli::CommandAction::KillProcess);
     QCOMPARE(killCmd.payload, QStringLiteral("1234"));
@@ -342,7 +344,8 @@ private slots:
     QCOMPARE(gpusText.action, RoControlCli::CommandAction::PrintGpusText);
 
     const auto selectGpu = RoControlCli::parseArguments(
-        {QStringLiteral("ro-control"), QStringLiteral("select-gpu"), QStringLiteral("1")},
+        {QStringLiteral("ro-control"), QStringLiteral("select-gpu"),
+         QStringLiteral("1")},
         QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(selectGpu.action, RoControlCli::CommandAction::SelectGpu);
     QCOMPARE(selectGpu.payload, QStringLiteral("1"));
@@ -350,15 +353,17 @@ private slots:
 
   void testPowerSetClocksAndFanSmoothingCli() {
     const auto clockCmd = RoControlCli::parseArguments(
-        {QStringLiteral("ro-control"), QStringLiteral("power"), QStringLiteral("set-clocks"),
-         QStringLiteral("50"), QStringLiteral("200")},
+        {QStringLiteral("ro-control"), QStringLiteral("power"),
+         QStringLiteral("set-clocks"), QStringLiteral("50"),
+         QStringLiteral("200")},
         QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(clockCmd.action, RoControlCli::CommandAction::PowerSetClocks);
     QCOMPARE(clockCmd.payload, QStringLiteral("50:200"));
 
     const auto smoothCmd = RoControlCli::parseArguments(
-        {QStringLiteral("ro-control"), QStringLiteral("fan"), QStringLiteral("set-smoothing"),
-         QStringLiteral("on"), QStringLiteral("25"), QStringLiteral("10"), QStringLiteral("3")},
+        {QStringLiteral("ro-control"), QStringLiteral("fan"),
+         QStringLiteral("set-smoothing"), QStringLiteral("on"),
+         QStringLiteral("25"), QStringLiteral("10"), QStringLiteral("3")},
         QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(smoothCmd.action, RoControlCli::CommandAction::FanSetSmoothing);
     QCOMPARE(smoothCmd.payload, QStringLiteral("1:25:10:3"));
