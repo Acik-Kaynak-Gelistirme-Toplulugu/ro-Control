@@ -2,12 +2,6 @@
 
 **Central Hardware, Graphics, and Thermal Management Suite for Ro-ASD.**
 
-[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
-[![Platform: Ro-ASD / Linux](https://img.shields.io/badge/Platform-Ro--ASD%20%7C%20Fedora%20%7C%20Wayland-green.svg)](https://github.com/Project-Ro-ASD)
-[![Desktop: KDE Plasma 6](https://img.shields.io/badge/Desktop-KDE%20Plasma%206%20(KF6)-blue.svg)](https://kde.org)
-[![IPC: D-Bus](https://img.shields.io/badge/IPC-D--Bus%20Native-orange.svg)](docs/ARCHITECTURE.md)
-[![Ecosystem: Ro-ASD](https://img.shields.io/badge/Ecosystem-Project--Ro--ASD-red.svg)](https://github.com/Project-Ro-ASD)
-
 ---
 
 ## Overview
