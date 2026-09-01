@@ -28,7 +28,7 @@ private slots:
     QVERIFY(desktop.contains(
         QStringLiteral("Icon=io.github.projectroasd.rocontrol")));
     QVERIFY(desktop.contains(
-        QStringLiteral("Categories=System;Settings;HardwareSettings;")));
+        QStringLiteral("Categories=Settings;HardwareSettings;")));
     QVERIFY(desktop.contains(QStringLiteral("Name[tr]=ro-Control")));
     QVERIFY(desktop.contains(QStringLiteral("SingleMainWindow=true")));
   }

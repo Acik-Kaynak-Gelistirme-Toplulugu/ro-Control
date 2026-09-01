@@ -179,6 +179,10 @@ set_source_files_properties(src/qml/assets/icon-theme.svg PROPERTIES
     QT_RESOURCE_ALIAS "assets/icon-theme.svg"
 )
 
+set_source_files_properties(src/qml/assets/icon-settings.svg PROPERTIES
+    QT_RESOURCE_ALIAS "assets/icon-settings.svg"
+)
+
 qt_add_qml_module(ro-control
     URI "rocontrol"
     VERSION 1.0
@@ -187,6 +191,7 @@ qt_add_qml_module(ro-control
         src/qml/pages/DriverPage.qml
         src/qml/pages/MonitorPage.qml
         src/qml/pages/FanPage.qml
+        src/qml/pages/SystemPage.qml
         src/qml/components/InfoBadge.qml
         src/qml/components/RefreshToolButton.qml
         src/qml/components/ActionButton.qml
@@ -196,12 +201,14 @@ qt_add_qml_module(ro-control
         src/qml/components/StatCard.qml
         src/qml/components/SidebarMenu.qml
         src/qml/components/FanSettingsPopup.qml
+        src/qml/components/FanRescanPopup.qml
     RESOURCES
         src/qml/assets/ro-control-logo.svg
         src/qml/assets/icon-language.svg
         src/qml/assets/icon-refresh.svg
         src/qml/assets/icon-refresh-light.svg
         src/qml/assets/icon-theme.svg
+        src/qml/assets/icon-settings.svg
 )
 
 # Keep QML cache generation on the public bytecode path so RPM dependencies do
