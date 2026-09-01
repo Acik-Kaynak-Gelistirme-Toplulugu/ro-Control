@@ -422,6 +422,52 @@ private slots:
     }
     qunsetenv("RO_CONTROL_MOCK_FAN_RPM");
   }
+
+  void testProfileExportAndImport() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString filePath =
+        tempDir.filePath(QStringLiteral("my_gaming_profile.json"));
+
+    FanController fan;
+    fan.stop();
+    fan.setFanMode(QStringLiteral("performance"));
+    fan.setManualFanSpeedPercent(82);
+    fan.setCustomCurvePoint(0, 35, 25);
+
+    QVERIFY(fan.exportProfile(QStringLiteral("GamingProfile"), filePath));
+    QVERIFY(QFile::exists(filePath));
+
+    // Change fan settings
+    fan.setFanMode(QStringLiteral("silent"));
+    fan.setManualFanSpeedPercent(40);
+    fan.setCustomCurvePoint(0, 50, 45);
+
+    // Import saved profile
+    QVERIFY(fan.importProfile(filePath));
+    QCOMPARE(fan.fanMode(), QStringLiteral("performance"));
+    QCOMPARE(fan.manualFanSpeedPercent(), 82);
+    QCOMPARE(fan.customCurvePoints().at(0).temperatureC, 35);
+    QCOMPARE(fan.customCurvePoints().at(0).fanSpeedPercent, 25);
+  }
+
+  void testBatteryProfileSync() {
+    FanController fan;
+    fan.stop();
+    fan.setBatteryProfileSyncEnabled(true);
+    QVERIFY(fan.batteryProfileSyncEnabled());
+
+    fan.setFanMode(QStringLiteral("performance"));
+    QCOMPARE(fan.fanMode(), QStringLiteral("performance"));
+
+    // On Battery -> should switch to silent
+    fan.syncPowerSource(true);
+    QCOMPARE(fan.fanMode(), QStringLiteral("silent"));
+
+    // Back to AC Power -> should restore performance
+    fan.syncPowerSource(false);
+    QCOMPARE(fan.fanMode(), QStringLiteral("performance"));
+  }
 };
 
 QTEST_MAIN(TestFanController)

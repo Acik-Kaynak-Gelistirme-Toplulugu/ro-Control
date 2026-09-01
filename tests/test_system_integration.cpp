@@ -1,5 +1,6 @@
 #include <QDir>
 #include <QFile>
+#include <QSignalSpy>
 #include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QTest>
@@ -8,11 +9,13 @@
 #include <memory>
 #include <thread>
 
+#include "nvidia/installer.h"
 #include "system/capabilityprobe.h"
 #include "system/commandrunner.h"
 #include "system/dnfmanager.h"
 #include "system/polkit.h"
 #include "system/sessionutil.h"
+#include "system/systeminfoprovider.h"
 
 namespace {
 
@@ -284,6 +287,73 @@ private slots:
     QVERIFY(!helperBuildPath.trimmed().isEmpty());
     QVERIFY(!helperInstallPath.trimmed().isEmpty());
     QVERIFY(helperInstallPath.contains(QStringLiteral("ro-control-helper")));
+  }
+
+  void testSystemInfoProviderDefaultsAndProperties() {
+    SystemInfoProvider provider;
+    QVERIFY(!provider.osName().isEmpty());
+    QVERIFY(!provider.kernelVersion().isEmpty());
+    QVERIFY(!provider.cpuModel().isEmpty());
+    QVERIFY(!provider.deviceType().isEmpty());
+    QCOMPARE(provider.virtualMachine(),
+             !provider.virtualizationType().isEmpty());
+
+    QSignalSpy spy(&provider, &SystemInfoProvider::infoChanged);
+    provider.refresh();
+    QCOMPARE(spy.count(), 0);
+  }
+
+  void testSystemInfoProviderDesktopEnvironmentParsing() {
+    const QByteArray prevDesktop = qgetenv("XDG_CURRENT_DESKTOP");
+    const QByteArray prevSession = qgetenv("DESKTOP_SESSION");
+
+    qputenv("XDG_CURRENT_DESKTOP", QByteArrayLiteral("KDE"));
+    qunsetenv("DESKTOP_SESSION");
+
+    SystemInfoProvider kdeProvider;
+    QCOMPARE(kdeProvider.desktopEnvironment(), QStringLiteral("KDE Plasma"));
+
+    qputenv("XDG_CURRENT_DESKTOP", QByteArrayLiteral("GNOME"));
+    SystemInfoProvider gnomeProvider;
+    QCOMPARE(gnomeProvider.desktopEnvironment(), QStringLiteral("GNOME"));
+
+    if (prevDesktop.isNull()) {
+      qunsetenv("XDG_CURRENT_DESKTOP");
+    } else {
+      qputenv("XDG_CURRENT_DESKTOP", prevDesktop);
+    }
+    if (prevSession.isNull()) {
+      qunsetenv("DESKTOP_SESSION");
+    } else {
+      qputenv("DESKTOP_SESSION", prevSession);
+    }
+  }
+
+  void testSystemInfoProviderPowerSupplyDetection() {
+    qputenv("RO_CONTROL_POWER_SUPPLY_ONLINE", "0");
+    {
+      SystemInfoProvider batProvider;
+      QVERIFY(batProvider.onBattery());
+      QCOMPARE(batProvider.powerSource(), QStringLiteral("Battery"));
+    }
+
+    qputenv("RO_CONTROL_POWER_SUPPLY_ONLINE", "1");
+    {
+      SystemInfoProvider acProvider;
+      QVERIFY(!acProvider.onBattery());
+      QCOMPARE(acProvider.powerSource(), QStringLiteral("AC Power"));
+    }
+    qunsetenv("RO_CONTROL_POWER_SUPPLY_ONLINE");
+  }
+
+  void testNvidiaInstallerDefaultsAndCancel() {
+    NvidiaInstaller installer;
+    QCOMPARE(installer.busy(), false);
+    QCOMPARE(installer.proprietaryAgreementRequired(), true);
+    QVERIFY(!installer.proprietaryAgreementText().isEmpty());
+
+    installer.cancelOperation();
+    QCOMPARE(installer.busy(), false);
   }
 };
 

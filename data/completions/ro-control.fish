@@ -5,6 +5,7 @@ complete -c ro-control -n "__fish_use_subcommand" -a version -d "Show applicatio
 complete -c ro-control -n "__fish_use_subcommand" -a status -d "Show concise system and driver status"
 complete -c ro-control -n "__fish_use_subcommand" -a diagnostics -d "Show full diagnostics snapshot"
 complete -c ro-control -n "__fish_use_subcommand" -a driver -d "Manage NVIDIA drivers"
+complete -c ro-control -n "__fish_use_subcommand" -a fan -d "Manage cooling and fan profiles"
 
 complete -c ro-control -l help -d "Show usage information"
 complete -c ro-control -s h -d "Show usage information"
@@ -21,3 +22,11 @@ complete -c ro-control -n "__fish_seen_subcommand_from driver; and not __fish_se
 complete -c ro-control -n "__fish_seen_subcommand_from install" -l proprietary -d "Use the proprietary NVIDIA driver install path"
 complete -c ro-control -n "__fish_seen_subcommand_from install" -l open-source -d "Use the community open-source graphics path"
 complete -c ro-control -n "__fish_seen_subcommand_from install" -l accept-license -d "Confirm NVIDIA license review for the proprietary install path"
+
+complete -c ro-control -n "__fish_seen_subcommand_from fan; and not __fish_seen_subcommand_from status set-speed set-mode reset" -a status -d "Show fan status"
+complete -c ro-control -n "__fish_seen_subcommand_from fan; and not __fish_seen_subcommand_from status set-speed set-mode reset" -a set-speed -d "Set fan speed percentage"
+complete -c ro-control -n "__fish_seen_subcommand_from fan; and not __fish_seen_subcommand_from status set-speed set-mode reset" -a set-mode -d "Set fan operating mode profile"
+complete -c ro-control -n "__fish_seen_subcommand_from fan; and not __fish_seen_subcommand_from status set-speed set-mode reset" -a reset -d "Restore default automatic fan profile"
+
+complete -c ro-control -n "__fish_seen_subcommand_from fan; and __fish_seen_subcommand_from status" -l json -d "Render fan status output as JSON"
+complete -c ro-control -n "__fish_seen_subcommand_from fan; and __fish_seen_subcommand_from set-mode" -a "auto silent balanced performance manual custom" -d "Fan operating profile"

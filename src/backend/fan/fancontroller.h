@@ -59,6 +59,9 @@ class FanController : public QObject {
                  NOTIFY selectedFanIdChanged)
   Q_PROPERTY(
       bool coolbitsEnabled READ coolbitsEnabled NOTIFY coolbitsEnabledChanged)
+  Q_PROPERTY(
+      bool batteryProfileSyncEnabled READ batteryProfileSyncEnabled WRITE
+          setBatteryProfileSyncEnabled NOTIFY batteryProfileSyncEnabledChanged)
 
 public:
   enum class FanMode {
@@ -110,6 +113,8 @@ public:
   int selectedFanIndex() const;
   QString selectedFanId() const;
   bool coolbitsEnabled() const;
+  bool batteryProfileSyncEnabled() const;
+  void setBatteryProfileSyncEnabled(bool enabled);
 
   static QString modeToString(FanMode mode);
   static FanMode stringToMode(const QString &modeStr);
@@ -137,6 +142,13 @@ public:
   Q_INVOKABLE void setSelectedFanIndex(int index);
   Q_INVOKABLE void setSelectedFanId(const QString &id);
   Q_INVOKABLE bool enableNvidiaCoolbits();
+  Q_INVOKABLE void syncPowerSource(bool onBattery);
+
+  // Profile JSON export / import API
+  Q_INVOKABLE bool exportProfile(const QString &profileName,
+                                 const QString &filePath = QString());
+  Q_INVOKABLE bool importProfile(const QString &filePath);
+  Q_INVOKABLE QStringList listSavedProfiles() const;
 
   // Per-fan management API for dedicated popup settings
   Q_INVOKABLE QVariantMap getFanConfig(const QString &fanId);
@@ -172,6 +184,9 @@ signals:
   void selectedFanIndexChanged();
   void selectedFanIdChanged();
   void coolbitsEnabledChanged();
+  void batteryProfileSyncEnabledChanged();
+  void profileExported(const QString &profileName, bool success);
+  void profileImported(const QString &profileName, bool success);
 
 private:
   void loadSettings();
@@ -226,4 +241,6 @@ private:
   QVariantList m_systemFans;
   int m_selectedFanIndex = 0;
   QString m_selectedFanId = QStringLiteral("gpu_0");
+  bool m_batteryProfileSyncEnabled = false;
+  QString m_preBatteryFanMode;
 };

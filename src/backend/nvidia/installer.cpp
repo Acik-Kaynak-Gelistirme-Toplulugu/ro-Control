@@ -624,3 +624,68 @@ void NvidiaInstaller::deepClean() {
         Qt::QueuedConnection);
   });
 }
+
+void NvidiaInstaller::rebuildKernelModules() {
+  const QString architectureSupportMessage =
+      CapabilityProbe::roAsdNvidiaDriverFlowSupportMessage();
+  if (!architectureSupportMessage.isEmpty()) {
+    emit installFinished(false, architectureSupportMessage);
+    return;
+  }
+
+  QPointer<NvidiaInstaller> guard(this);
+  runAsyncTask([guard]() {
+    if (!guard) {
+      return;
+    }
+
+    CommandRunner runner;
+    attachRunnerLogging(runner, guard);
+    CommandRunner::RunOptions runOptions;
+    runOptions.timeoutMs = 180000;
+    runOptions.cancelRequested = guard->m_cancelRequested;
+
+    emitProgressAsync(guard,
+                      NvidiaInstaller::tr(
+                          "Rebuilding NVIDIA kernel modules and initramfs..."));
+
+    QList<CommandRunner::RootCommand> commands;
+    commands.append({QStringLiteral("akmods"),
+                     {QStringLiteral("--force"), QStringLiteral("--rebuild")}});
+    commands.append(
+        {QStringLiteral("dracut"),
+         {QStringLiteral("--force"), QStringLiteral("--add-drivers"),
+          kNvidiaKernelModules.join(QLatin1Char(' '))}});
+
+    const auto batchResult = runner.runAsRootBatch(commands, runOptions);
+    if (!batchResult.success()) {
+      const QString error =
+          commandCanceled(batchResult)
+              ? NvidiaInstaller::tr("Kernel module rebuild canceled by user.")
+              : NvidiaInstaller::tr("Kernel module rebuild failed: ") +
+                    batchResult.stderr.trimmed();
+      QMetaObject::invokeMethod(
+          guard,
+          [guard, error]() {
+            if (guard) {
+              emit guard->installFinished(false, error);
+            }
+          },
+          Qt::QueuedConnection);
+      return;
+    }
+
+    QMetaObject::invokeMethod(
+        guard,
+        [guard]() {
+          if (guard) {
+            emit guard->progressMessage(NvidiaInstaller::tr(
+                "Kernel modules and initramfs rebuilt successfully."));
+            emit guard->installFinished(
+                true, NvidiaInstaller::tr(
+                          "NVIDIA kernel modules rebuilt successfully."));
+          }
+        },
+        Qt::QueuedConnection);
+  });
+}

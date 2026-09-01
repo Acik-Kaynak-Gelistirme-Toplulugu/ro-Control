@@ -14,6 +14,9 @@
 #include <QTranslator>
 #include <QVariant>
 
+#include <QMenu>
+#include <QSystemTrayIcon>
+
 #include "backend/fan/fancontroller.h"
 #include "backend/monitor/cpumonitor.h"
 #include "backend/monitor/gpumonitor.h"
@@ -21,6 +24,9 @@
 #include "backend/nvidia/detector.h"
 #include "backend/nvidia/installer.h"
 #include "backend/nvidia/updater.h"
+#include "backend/power/powercontroller.h"
+#include "backend/system/dbusservice.h"
+#include "backend/system/healthguard.h"
 #include "backend/system/languagemanager.h"
 #include "backend/system/systeminfoprovider.h"
 #include "backend/system/uipreferencesmanager.h"
@@ -167,6 +173,110 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
     result.stdoutText =
         QStringLiteral("Fan control reset to automatic driver/VBIOS mode.\n");
     result.exitCode = 0;
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::PrintPowerStatusText ||
+      command.action == RoControlCli::CommandAction::PrintPowerStatusJson) {
+    const auto snapshot =
+        RoControlCli::collectDiagnostics(applicationName, applicationVersion);
+    if (command.action == RoControlCli::CommandAction::PrintPowerStatusJson) {
+      QJsonObject obj;
+      obj.insert(QStringLiteral("command"), QStringLiteral("power-status"));
+      obj.insert(QStringLiteral("supported"), snapshot.powerSupported);
+      obj.insert(QStringLiteral("controlSupported"),
+                 snapshot.powerControlSupported);
+      obj.insert(QStringLiteral("powerDrawW"), snapshot.powerDrawW);
+      obj.insert(QStringLiteral("powerLimitW"), snapshot.powerLimitW);
+      obj.insert(QStringLiteral("minPowerLimitW"), snapshot.minPowerLimitW);
+      obj.insert(QStringLiteral("maxPowerLimitW"), snapshot.maxPowerLimitW);
+      obj.insert(QStringLiteral("defaultPowerLimitW"),
+                 snapshot.defaultPowerLimitW);
+      obj.insert(QStringLiteral("persistenceMode"),
+                 snapshot.persistenceModeEnabled);
+      obj.insert(QStringLiteral("powerPreset"), snapshot.powerPreset);
+      result.stdoutText =
+          QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
+    } else {
+      result.stdoutText =
+          QStringLiteral("power_supported: %1\n"
+                         "power_control_supported: %2\n"
+                         "power_draw_w: %3 W\n"
+                         "power_limit_w: %4 W\n"
+                         "min_power_limit_w: %5 W\n"
+                         "max_power_limit_w: %6 W\n"
+                         "default_power_limit_w: %7 W\n"
+                         "persistence_mode: %8\n"
+                         "power_preset: %9\n")
+              .arg(snapshot.powerSupported ? QStringLiteral("yes")
+                                           : QStringLiteral("no"))
+              .arg(snapshot.powerControlSupported ? QStringLiteral("yes")
+                                                  : QStringLiteral("no"))
+              .arg(snapshot.powerDrawW, 0, 'f', 1)
+              .arg(snapshot.powerLimitW, 0, 'f', 1)
+              .arg(snapshot.minPowerLimitW, 0, 'f', 1)
+              .arg(snapshot.maxPowerLimitW, 0, 'f', 1)
+              .arg(snapshot.defaultPowerLimitW, 0, 'f', 1)
+              .arg(snapshot.persistenceModeEnabled ? QStringLiteral("enabled")
+                                                   : QStringLiteral("disabled"))
+              .arg(snapshot.powerPreset.isEmpty() ? QStringLiteral("balanced")
+                                                  : snapshot.powerPreset);
+    }
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::PowerSetLimit) {
+    PowerController powerController;
+    powerController.refresh();
+    if (!powerController.controlSupported()) {
+      result.stderrText =
+          QStringLiteral("Error: GPU power control is unsupported or read-only "
+                         "on this hardware.\n");
+      result.exitCode = 1;
+      return result;
+    }
+    const double watts = command.payload.toDouble();
+    if (powerController.setPowerLimit(watts)) {
+      result.stdoutText = QStringLiteral("GPU power limit set to %1 W.\n")
+                              .arg(watts, 0, 'f', 0);
+      result.exitCode = 0;
+    } else {
+      result.stderrText =
+          QStringLiteral("Error: %1\n").arg(powerController.statusMessage());
+      result.exitCode = 1;
+    }
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::PowerSetPreset) {
+    PowerController powerController;
+    powerController.refresh();
+    if (powerController.applyPowerPreset(command.payload)) {
+      result.stdoutText =
+          QStringLiteral("Power preset set to '%1'.\n").arg(command.payload);
+      result.exitCode = 0;
+    } else {
+      result.stderrText =
+          QStringLiteral("Error: %1\n").arg(powerController.statusMessage());
+      result.exitCode = 1;
+    }
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::PowerSetPersistence) {
+    PowerController powerController;
+    powerController.refresh();
+    const bool enable = (command.payload == QStringLiteral("1"));
+    if (powerController.setPersistenceMode(enable)) {
+      result.stdoutText = QStringLiteral("Persistence mode set to %1.\n")
+                              .arg(enable ? QStringLiteral("enabled")
+                                          : QStringLiteral("disabled"));
+      result.exitCode = 0;
+    } else {
+      result.stderrText =
+          QStringLiteral("Error: %1\n").arg(powerController.statusMessage());
+      result.exitCode = 1;
+    }
     return result;
   }
 
@@ -333,6 +443,45 @@ int main(int argc, char *argv[]) {
     return 2;
   }
 
+  if (command.action == RoControlCli::CommandAction::RunDaemon) {
+    QCoreApplication daemonApp(argc, argv);
+    daemonApp.setApplicationName(QString::fromLatin1(kApplicationName));
+    daemonApp.setApplicationVersion(QString::fromLatin1(kApplicationVersion));
+
+    CpuMonitor cpuMonitor;
+    GpuMonitor gpuMonitor;
+    RamMonitor ramMonitor;
+    FanController fanController;
+    PowerController powerController;
+    HealthGuard healthGuard;
+
+    QObject::connect(
+        &gpuMonitor, &GpuMonitor::temperatureCChanged, &fanController,
+        [&]() { fanController.updateTemperature(gpuMonitor.temperatureC()); });
+    QObject::connect(
+        &cpuMonitor, &CpuMonitor::temperatureCChanged, &fanController, [&]() {
+          fanController.updateCpuTemperature(cpuMonitor.temperatureC());
+        });
+    QObject::connect(
+        &gpuMonitor, &GpuMonitor::temperatureCChanged, &healthGuard,
+        [&]() { healthGuard.updateGpuTemperature(gpuMonitor.temperatureC()); });
+    QObject::connect(
+        &cpuMonitor, &CpuMonitor::temperatureCChanged, &healthGuard,
+        [&]() { healthGuard.updateCpuTemperature(cpuMonitor.temperatureC()); });
+    QObject::connect(
+        &gpuMonitor, &GpuMonitor::powerDrawWChanged, &powerController,
+        [&]() { powerController.updatePowerDraw(gpuMonitor.powerDrawW()); });
+
+    RoControlDBusService dbusService(&daemonApp, &cpuMonitor, &gpuMonitor,
+                                     &ramMonitor, &fanController,
+                                     &powerController, &healthGuard);
+
+    out << "ro-Control daemon active. D-Bus interface: "
+           "io.github.ProjectRoASD.rocontrol"
+        << Qt::endl;
+    return daemonApp.exec();
+  }
+
   if (command.action != RoControlCli::CommandAction::LaunchGui) {
     QCoreApplication cliApp(argc, argv);
     cliApp.setApplicationName(QString::fromLatin1(kApplicationName));
@@ -375,7 +524,13 @@ int main(int argc, char *argv[]) {
   GpuMonitor gpuMonitor;
   RamMonitor ramMonitor;
   FanController fanController;
+  PowerController powerController;
+  HealthGuard healthGuard;
   SystemInfoProvider systemInfo;
+
+  RoControlDBusService dbusService(&app, &cpuMonitor, &gpuMonitor, &ramMonitor,
+                                   &fanController, &powerController,
+                                   &healthGuard);
 
   QObject::connect(
       &gpuMonitor, &GpuMonitor::temperatureCChanged, &fanController,
@@ -385,11 +540,132 @@ int main(int argc, char *argv[]) {
       &cpuMonitor, &CpuMonitor::temperatureCChanged, &fanController,
       [&]() { fanController.updateCpuTemperature(cpuMonitor.temperatureC()); });
 
+  QObject::connect(
+      &gpuMonitor, &GpuMonitor::powerDrawWChanged, &powerController,
+      [&]() { powerController.updatePowerDraw(gpuMonitor.powerDrawW()); });
+
+  QObject::connect(
+      &gpuMonitor, &GpuMonitor::temperatureCChanged, &healthGuard,
+      [&]() { healthGuard.updateGpuTemperature(gpuMonitor.temperatureC()); });
+
+  QObject::connect(
+      &cpuMonitor, &CpuMonitor::temperatureCChanged, &healthGuard,
+      [&]() { healthGuard.updateCpuTemperature(cpuMonitor.temperatureC()); });
+
   detector.refresh();
 
   QQmlApplicationEngine engine;
   LanguageManager languageManager(&app, &engine, &translator);
   UiPreferencesManager uiPreferencesManager;
+
+  // System Tray Setup
+  QSystemTrayIcon trayIcon(
+      QIcon::fromTheme(QStringLiteral("ro-control"),
+                       QIcon(QStringLiteral(
+                           ":/qt/qml/rocontrol/assets/ro-control-logo.svg"))),
+      &app);
+
+  auto updateTrayTooltip = [&]() {
+    const QString tooltip =
+        QStringLiteral("ro-Control\nGPU: %1°C | Fan: %2 RPM\nPower: %3 W")
+            .arg(gpuMonitor.temperatureC())
+            .arg(fanController.currentRpm())
+            .arg(gpuMonitor.powerDrawW(), 0, 'f', 1);
+    trayIcon.setToolTip(tooltip);
+  };
+
+  QObject::connect(&gpuMonitor, &GpuMonitor::temperatureCChanged, &trayIcon,
+                   updateTrayTooltip);
+  QObject::connect(&fanController, &FanController::currentRpmChanged, &trayIcon,
+                   updateTrayTooltip);
+
+  QMenu trayMenu;
+  auto *restoreAction = trayMenu.addAction(QStringLiteral("Open ro-Control"));
+  trayMenu.addSeparator();
+
+  auto *fanMenu = trayMenu.addMenu(QStringLiteral("Fan Profile"));
+  auto *autoFanAction = fanMenu->addAction(QStringLiteral("Auto"));
+  auto *silentFanAction = fanMenu->addAction(QStringLiteral("Silent"));
+  auto *balancedFanAction = fanMenu->addAction(QStringLiteral("Balanced"));
+  auto *perfFanAction = fanMenu->addAction(QStringLiteral("Performance"));
+
+  QObject::connect(autoFanAction, &QAction::triggered, &fanController,
+                   [&]() { fanController.setFanMode(QStringLiteral("auto")); });
+  QObject::connect(silentFanAction, &QAction::triggered, &fanController, [&]() {
+    fanController.setFanMode(QStringLiteral("silent"));
+  });
+  QObject::connect(
+      balancedFanAction, &QAction::triggered, &fanController,
+      [&]() { fanController.setFanMode(QStringLiteral("balanced")); });
+  QObject::connect(perfFanAction, &QAction::triggered, &fanController, [&]() {
+    fanController.setFanMode(QStringLiteral("performance"));
+  });
+
+  auto *powerMenu = trayMenu.addMenu(QStringLiteral("Power Preset"));
+  auto *ecoPowerAction = powerMenu->addAction(QStringLiteral("Eco"));
+  auto *balancedPowerAction = powerMenu->addAction(QStringLiteral("Balanced"));
+  auto *perfPowerAction = powerMenu->addAction(QStringLiteral("Performance"));
+
+  QObject::connect(
+      ecoPowerAction, &QAction::triggered, &powerController,
+      [&]() { powerController.applyPowerPreset(QStringLiteral("eco")); });
+  QObject::connect(
+      balancedPowerAction, &QAction::triggered, &powerController,
+      [&]() { powerController.applyPowerPreset(QStringLiteral("balanced")); });
+  QObject::connect(
+      perfPowerAction, &QAction::triggered, &powerController, [&]() {
+        powerController.applyPowerPreset(QStringLiteral("performance"));
+      });
+
+  trayMenu.addSeparator();
+  auto *quitAction = trayMenu.addAction(QStringLiteral("Quit"));
+  QObject::connect(quitAction, &QAction::triggered, &app, &QApplication::quit);
+
+  trayIcon.setContextMenu(&trayMenu);
+
+  QObject::connect(restoreAction, &QAction::triggered, [&engine]() {
+    const auto rootObjects = engine.rootObjects();
+    if (!rootObjects.isEmpty()) {
+      if (auto *window = qobject_cast<QQuickWindow *>(rootObjects.first())) {
+        window->show();
+        window->raise();
+        window->requestActivate();
+      }
+    }
+  });
+
+  QObject::connect(&trayIcon, &QSystemTrayIcon::activated,
+                   [&engine](QSystemTrayIcon::ActivationReason reason) {
+                     if (reason == QSystemTrayIcon::Trigger ||
+                         reason == QSystemTrayIcon::DoubleClick) {
+                       const auto rootObjects = engine.rootObjects();
+                       if (!rootObjects.isEmpty()) {
+                         if (auto *window = qobject_cast<QQuickWindow *>(
+                                 rootObjects.first())) {
+                           if (window->isVisible()) {
+                             window->raise();
+                             window->requestActivate();
+                           } else {
+                             window->show();
+                           }
+                         }
+                       }
+                     }
+                   });
+
+  QObject::connect(&healthGuard, &HealthGuard::thermalAlertTriggered, &trayIcon,
+                   [&](const QString &title, const QString &message,
+                       const QString &severity) {
+                     const auto iconType =
+                         (severity == QStringLiteral("critical"))
+                             ? QSystemTrayIcon::Critical
+                             : QSystemTrayIcon::Warning;
+                     trayIcon.showMessage(title, message, iconType, 5000);
+                   });
+
+  if (QSystemTrayIcon::isSystemTrayAvailable()) {
+    trayIcon.show();
+  }
 
   QVariantMap initialProperties;
   initialProperties.insert(QStringLiteral("nvidiaDetector"),
@@ -406,6 +682,10 @@ int main(int argc, char *argv[]) {
                            QVariant::fromValue(&ramMonitor));
   initialProperties.insert(QStringLiteral("fanController"),
                            QVariant::fromValue(&fanController));
+  initialProperties.insert(QStringLiteral("powerController"),
+                           QVariant::fromValue(&powerController));
+  initialProperties.insert(QStringLiteral("healthGuard"),
+                           QVariant::fromValue(&healthGuard));
   initialProperties.insert(QStringLiteral("systemInfo"),
                            QVariant::fromValue(&systemInfo));
   initialProperties.insert(QStringLiteral("languageManager"),

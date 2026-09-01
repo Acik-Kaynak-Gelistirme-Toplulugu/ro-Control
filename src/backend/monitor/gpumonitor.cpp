@@ -14,6 +14,11 @@ QString normalizedMetricField(const QString &field) {
   QString normalized = field.trimmed();
   normalized.remove(QRegularExpression(QStringLiteral(R"(\s*\[[^\]]+\]\s*)")));
   normalized.remove(QRegularExpression(QStringLiteral(R"(\s*%\s*)")));
+  normalized.remove(QRegularExpression(
+      QStringLiteral(R"(\s*w\b)"), QRegularExpression::CaseInsensitiveOption));
+  normalized.remove(
+      QRegularExpression(QStringLiteral(R"(\s*mhz\b)"),
+                         QRegularExpression::CaseInsensitiveOption));
   return normalized.trimmed();
 }
 
@@ -41,24 +46,39 @@ bool parseMetricInt(const QString &field, int *value) {
   return true;
 }
 
+bool parseMetricDouble(const QString &field, double *value) {
+  if (value == nullptr) {
+    return false;
+  }
+
+  QString normalized = normalizedMetricField(field);
+  normalized.remove(QRegularExpression(
+      QStringLiteral(R"(\s*w\b)"), QRegularExpression::CaseInsensitiveOption));
+  normalized.remove(
+      QRegularExpression(QStringLiteral(R"(\s*mhz\b)"),
+                         QRegularExpression::CaseInsensitiveOption));
+  if (normalized.isEmpty() ||
+      normalized.compare(QStringLiteral("n/a"), Qt::CaseInsensitive) == 0 ||
+      normalized.compare(QStringLiteral("not supported"),
+                         Qt::CaseInsensitive) == 0 ||
+      normalized.compare(QStringLiteral("unknown"), Qt::CaseInsensitive) == 0) {
+    return false;
+  }
+
+  bool ok = false;
+  const double parsedValue = normalized.toDouble(&ok);
+  if (!ok) {
+    return false;
+  }
+
+  *value = parsedValue;
+  return true;
+}
+
 QString drmRootPath() {
   const QString overridePath =
       qEnvironmentVariable("RO_CONTROL_DRM_ROOT").trimmed();
   return overridePath.isEmpty() ? QStringLiteral("/sys/class/drm")
-                                : overridePath;
-}
-
-QString hwmonRootPath() {
-  const QString overridePath =
-      qEnvironmentVariable("RO_CONTROL_HWMON_ROOT").trimmed();
-  return overridePath.isEmpty() ? QStringLiteral("/sys/class/hwmon")
-                                : overridePath;
-}
-
-QString pciDevicesRootPath() {
-  const QString overridePath =
-      qEnvironmentVariable("RO_CONTROL_PCI_DEVICES_ROOT").trimmed();
-  return overridePath.isEmpty() ? QStringLiteral("/sys/bus/pci/devices")
                                 : overridePath;
 }
 
@@ -130,7 +150,7 @@ bool isGpuHwmonName(const QString &name) {
 
 bool readNvidiaTemperatureFromHwmonClass(int *value) {
   const QFileInfoList hwmonEntries =
-      QDir(hwmonRootPath())
+      QDir(QStringLiteral("/sys/class/hwmon"))
           .entryInfoList({QStringLiteral("hwmon*")},
                          QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
   for (const QFileInfo &entry : hwmonEntries) {
@@ -149,7 +169,7 @@ bool readNvidiaTemperatureFromHwmonClass(int *value) {
 
 bool readNvidiaTemperatureFromPciHwmon(int *value) {
   const QFileInfoList deviceEntries =
-      QDir(pciDevicesRootPath())
+      QDir(QStringLiteral("/sys/bus/pci/devices"))
           .entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
   for (const QFileInfo &deviceEntry : deviceEntries) {
     const QString devicePath = deviceEntry.absoluteFilePath();
@@ -250,7 +270,7 @@ bool readNvidiaTemperatureFallback(CommandRunner &runner, int *value) {
 
 bool hasNvidiaPciDevice() {
   const QFileInfoList deviceEntries =
-      QDir(pciDevicesRootPath())
+      QDir(QStringLiteral("/sys/bus/pci/devices"))
           .entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
   for (const QFileInfo &deviceEntry : deviceEntries) {
     if (readFileText(deviceEntry.absoluteFilePath() + QStringLiteral("/vendor"))
@@ -349,6 +369,20 @@ int GpuMonitor::memoryUsagePercent() const { return m_memoryUsagePercent; }
 
 int GpuMonitor::fanSpeedPercent() const { return m_fanSpeedPercent; }
 
+double GpuMonitor::powerDrawW() const { return m_powerDrawW; }
+
+double GpuMonitor::powerLimitW() const { return m_powerLimitW; }
+
+int GpuMonitor::graphicsClockMHz() const { return m_graphicsClockMHz; }
+
+int GpuMonitor::memoryClockMHz() const { return m_memoryClockMHz; }
+
+QString GpuMonitor::pcieLinkStatus() const { return m_pcieLinkStatus; }
+
+QVariantList GpuMonitor::gpuProcesses() const { return m_gpuProcesses; }
+
+int GpuMonitor::gpuProcessCount() const { return m_gpuProcesses.size(); }
+
 QString GpuMonitor::statusMessage() const { return m_statusMessage; }
 
 int GpuMonitor::updateInterval() const { return m_timer.interval(); }
@@ -362,7 +396,10 @@ void GpuMonitor::refresh() {
       QStringLiteral("nvidia-smi"),
       {QStringLiteral(
            "--query-gpu=name,temperature.gpu,utilization.gpu,memory.used,"
-           "memory.total,fan.speed"),
+           "memory.total,fan.speed,power.draw,power.limit,"
+           "clocks.current.graphics,clocks.current.memory,"
+           "pcie.link.gen.current,pcie.link.gen.max,"
+           "pcie.link.width.current,pcie.link.width.max"),
        QStringLiteral("--format=csv,noheader,nounits")},
       options);
 
@@ -452,6 +489,10 @@ void GpuMonitor::refresh() {
   int nextUsed = 0;
   int nextTotal = 0;
   int nextFanSpeed = 0;
+  double nextPowerDraw = 0.0;
+  double nextPowerLimit = 0.0;
+  int nextGraphicsClock = 0;
+  int nextMemoryClock = 0;
 
   bool tempAvailable = parseMetricInt(fields.at(1), &nextTemp);
   const bool utilAvailable = parseMetricInt(fields.at(2), &nextUtil);
@@ -460,6 +501,43 @@ void GpuMonitor::refresh() {
   if (fields.size() >= 6) {
     parseMetricInt(fields.at(5), &nextFanSpeed);
   }
+  if (fields.size() >= 7) {
+    parseMetricDouble(fields.at(6), &nextPowerDraw);
+  }
+  if (fields.size() >= 8) {
+    parseMetricDouble(fields.at(7), &nextPowerLimit);
+  }
+  if (fields.size() >= 9) {
+    parseMetricInt(fields.at(8), &nextGraphicsClock);
+  }
+  if (fields.size() >= 10) {
+    parseMetricInt(fields.at(9), &nextMemoryClock);
+  }
+
+  QString nextPcieLink;
+  if (fields.size() >= 14) {
+    int curGen = 0;
+    int maxGen = 0;
+    int curWidth = 0;
+    int maxWidth = 0;
+    parseMetricInt(fields.at(10), &curGen);
+    parseMetricInt(fields.at(11), &maxGen);
+    parseMetricInt(fields.at(12), &curWidth);
+    parseMetricInt(fields.at(13), &maxWidth);
+    if (curGen > 0 && curWidth > 0) {
+      if (maxGen > 0 && maxWidth > 0 &&
+          (curGen != maxGen || curWidth != maxWidth)) {
+        nextPcieLink = QStringLiteral("Gen %1 x%2 (Max: Gen %3 x%4)")
+                           .arg(curGen)
+                           .arg(curWidth)
+                           .arg(maxGen)
+                           .arg(maxWidth);
+      } else {
+        nextPcieLink = QStringLiteral("Gen %1 x%2").arg(curGen).arg(curWidth);
+      }
+    }
+  }
+
   if (!tempAvailable) {
     tempAvailable = readNvidiaTemperatureFallback(runner, &nextTemp);
   }
@@ -523,6 +601,33 @@ void GpuMonitor::refresh() {
     m_fanSpeedPercent = nextFanSpeed;
     emit fanSpeedPercentChanged();
   }
+
+  if (!qFuzzyCompare(m_powerDrawW, nextPowerDraw)) {
+    m_powerDrawW = nextPowerDraw;
+    emit powerDrawWChanged();
+  }
+
+  if (!qFuzzyCompare(m_powerLimitW, nextPowerLimit)) {
+    m_powerLimitW = nextPowerLimit;
+    emit powerLimitWChanged();
+  }
+
+  if (m_graphicsClockMHz != nextGraphicsClock) {
+    m_graphicsClockMHz = nextGraphicsClock;
+    emit graphicsClockMHzChanged();
+  }
+
+  if (m_memoryClockMHz != nextMemoryClock) {
+    m_memoryClockMHz = nextMemoryClock;
+    emit memoryClockMHzChanged();
+  }
+
+  if (m_pcieLinkStatus != nextPcieLink) {
+    m_pcieLinkStatus = nextPcieLink;
+    emit pcieLinkStatusChanged();
+  }
+
+  queryGpuProcesses();
 
   setAvailable(true);
   setStatusMessage(tr("GPU telemetry is being read from nvidia-smi."));
@@ -589,6 +694,132 @@ void GpuMonitor::clearMetrics() {
   if (m_fanSpeedPercent != 0) {
     m_fanSpeedPercent = 0;
     emit fanSpeedPercentChanged();
+  }
+
+  if (!qFuzzyIsNull(m_powerDrawW)) {
+    m_powerDrawW = 0.0;
+    emit powerDrawWChanged();
+  }
+
+  if (!qFuzzyIsNull(m_powerLimitW)) {
+    m_powerLimitW = 0.0;
+    emit powerLimitWChanged();
+  }
+
+  if (m_graphicsClockMHz != 0) {
+    m_graphicsClockMHz = 0;
+    emit graphicsClockMHzChanged();
+  }
+
+  if (m_memoryClockMHz != 0) {
+    m_memoryClockMHz = 0;
+    emit memoryClockMHzChanged();
+  }
+
+  if (!m_pcieLinkStatus.isEmpty()) {
+    m_pcieLinkStatus.clear();
+    emit pcieLinkStatusChanged();
+  }
+
+  if (!m_gpuProcesses.isEmpty()) {
+    m_gpuProcesses.clear();
+    emit gpuProcessesChanged();
+  }
+}
+
+bool GpuMonitor::killProcess(int pid) {
+  if (pid <= 1) {
+    return false;
+  }
+  CommandRunner runner;
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 1500;
+  const auto res =
+      runner.run(QStringLiteral("kill"),
+                 {QStringLiteral("-15"), QString::number(pid)}, options);
+  queryGpuProcesses();
+  return res.success();
+}
+
+void GpuMonitor::queryGpuProcesses() {
+  CommandRunner runner;
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 1200;
+
+  QVariantList processes;
+  QSet<int> seenPids;
+
+  // 1. Query compute applications
+  const auto computeResult = runner.run(
+      QStringLiteral("nvidia-smi"),
+      {QStringLiteral("--query-compute-apps=pid,process_name,used_memory"),
+       QStringLiteral("--format=csv,noheader,nounits")},
+      options);
+
+  if (computeResult.success()) {
+    const QStringList lines =
+        computeResult.stdout.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    for (const QString &line : lines) {
+      const QStringList cols = line.split(QLatin1Char(','), Qt::KeepEmptyParts);
+      if (cols.size() >= 3) {
+        int pid = 0;
+        int vram = 0;
+        parseMetricInt(cols.at(0), &pid);
+        QString name = cols.at(1).trimmed();
+        if (name.contains(QLatin1Char('/'))) {
+          name = QFileInfo(name).fileName();
+        }
+        parseMetricInt(cols.at(2), &vram);
+        if (pid > 0 && !name.isEmpty() && !seenPids.contains(pid)) {
+          seenPids.insert(pid);
+          QVariantMap item;
+          item[QStringLiteral("pid")] = pid;
+          item[QStringLiteral("name")] = name;
+          item[QStringLiteral("type")] = QStringLiteral("Compute / CUDA");
+          item[QStringLiteral("vramMiB")] = vram;
+          processes.append(item);
+        }
+      }
+    }
+  }
+
+  // 2. Query general graphics / display applications (if supported)
+  const auto graphicsResult = runner.run(
+      QStringLiteral("nvidia-smi"),
+      {QStringLiteral("--query-apps=pid,process_name,used_gpu_memory"),
+       QStringLiteral("--format=csv,noheader,nounits")},
+      options);
+
+  if (graphicsResult.success()) {
+    const QStringList lines =
+        graphicsResult.stdout.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    for (const QString &line : lines) {
+      const QStringList cols = line.split(QLatin1Char(','), Qt::KeepEmptyParts);
+      if (cols.size() >= 3) {
+        int pid = 0;
+        int vram = 0;
+        parseMetricInt(cols.at(0), &pid);
+        QString name = cols.at(1).trimmed();
+        if (name.contains(QLatin1Char('/'))) {
+          name = QFileInfo(name).fileName();
+        }
+        parseMetricInt(cols.at(2), &vram);
+        if (pid > 0 && !name.isEmpty() && !seenPids.contains(pid)) {
+          seenPids.insert(pid);
+          QVariantMap item;
+          item[QStringLiteral("pid")] = pid;
+          item[QStringLiteral("name")] = name;
+          item[QStringLiteral("type")] = QStringLiteral("Graphics / Display");
+          item[QStringLiteral("vramMiB")] = vram;
+          processes.append(item);
+        }
+      }
+    }
+  }
+
+  if (m_gpuProcesses != processes) {
+    m_gpuProcesses = processes;
+    emit gpuProcessesChanged();
   }
 }
 

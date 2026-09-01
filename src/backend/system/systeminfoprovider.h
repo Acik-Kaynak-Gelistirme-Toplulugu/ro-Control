@@ -15,6 +15,8 @@ class SystemInfoProvider : public QObject {
   Q_PROPERTY(bool virtualMachine READ virtualMachine NOTIFY infoChanged)
   Q_PROPERTY(
       QString virtualizationType READ virtualizationType NOTIFY infoChanged)
+  Q_PROPERTY(bool onBattery READ onBattery NOTIFY infoChanged)
+  Q_PROPERTY(QString powerSource READ powerSource NOTIFY infoChanged)
 
 public:
   explicit SystemInfoProvider(QObject *parent = nullptr);
@@ -26,6 +28,8 @@ public:
   QString deviceType() const { return m_deviceType; }
   bool virtualMachine() const { return !m_virtualizationType.isEmpty(); }
   QString virtualizationType() const { return m_virtualizationType; }
+  bool onBattery() const { return m_onBattery; }
+  QString powerSource() const { return m_powerSource; }
 
   Q_INVOKABLE void refresh();
   Q_INVOKABLE bool requestRestart();
@@ -40,6 +44,7 @@ private:
   QString detectDeviceType() const;
   QString detectDesktopEnvironment() const;
   QString detectVirtualizationType() const;
+  bool detectOnBattery(QString *sourceLabel = nullptr) const;
 
   QString m_osName;
   QString m_desktopEnvironment;
@@ -47,4 +52,6 @@ private:
   QString m_cpuModel;
   QString m_deviceType;
   QString m_virtualizationType;
+  bool m_onBattery = false;
+  QString m_powerSource;
 };

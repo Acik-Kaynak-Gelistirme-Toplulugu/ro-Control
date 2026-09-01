@@ -10,6 +10,8 @@ Item {
     required property var gpuMonitor
     required property var ramMonitor
     required property var fanController
+    property var powerController: null
+    property var healthGuard: null
 
     property var theme: ({})
     property bool darkMode: false
@@ -247,7 +249,7 @@ Item {
                                 { title: qsTr("Operating System"), value: page.safeText(page.systemInfo ? page.systemInfo.osName : "") },
                                 { title: qsTr("Desktop"), value: page.safeText(page.systemInfo ? page.systemInfo.desktopEnvironment : "") },
                                 { title: qsTr("Kernel"), value: page.safeText(page.systemInfo ? page.systemInfo.kernelVersion : "") },
-                                { title: qsTr("Device Type"), value: page.deviceTypeLabel() }
+                                { title: qsTr("Power Source"), value: page.safeText(page.systemInfo ? page.systemInfo.powerSource : "") }
                             ]
 
                             delegate: Rectangle {
@@ -282,6 +284,442 @@ Item {
                                         elide: Text.ElideRight
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // GPU Performance & Power Telemetry Section
+            Rectangle {
+                Layout.fillWidth: true
+                radius: 14
+                color: page.cardColor
+                border.width: 1
+                border.color: page.borderColor
+                implicitHeight: gpuPerfLayout.implicitHeight + 24
+                visible: page.showAdvancedInfo && page.gpuMonitor && page.gpuMonitor.available
+
+                ColumnLayout {
+                    id: gpuPerfLayout
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 10
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("GPU Performance & Power")
+                            color: page.textColor
+                            font.pixelSize: Math.round(18 * page.uiScale)
+                            font.weight: Font.DemiBold
+                        }
+                    }
+
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columns: width > 920 ? 5 : (width > 560 ? 3 : 2)
+                        columnSpacing: 8
+                        rowSpacing: 8
+
+                        Repeater {
+                            model: [
+                                {
+                                    title: qsTr("Power Draw / Limit"),
+                                    value: (page.gpuMonitor && page.gpuMonitor.powerDrawW > 0)
+                                           ? (page.gpuMonitor.powerDrawW.toFixed(0) + " W" +
+                                              (page.gpuMonitor.powerLimitW > 0 ? (" / " + page.gpuMonitor.powerLimitW.toFixed(0) + " W") : ""))
+                                           : qsTr("Dynamic Power")
+                                },
+                                {
+                                    title: qsTr("Graphics Clock"),
+                                    value: (page.gpuMonitor && page.gpuMonitor.graphicsClockMHz > 0)
+                                           ? (page.gpuMonitor.graphicsClockMHz + " MHz")
+                                           : qsTr("Dynamic Clock")
+                                },
+                                {
+                                    title: qsTr("Memory Clock"),
+                                    value: (page.gpuMonitor && page.gpuMonitor.memoryClockMHz > 0)
+                                           ? (page.gpuMonitor.memoryClockMHz + " MHz")
+                                           : qsTr("Dynamic Clock")
+                                },
+                                {
+                                    title: qsTr("PCIe Link"),
+                                    value: (page.gpuMonitor && page.gpuMonitor.pcieLinkStatus.length > 0)
+                                           ? page.gpuMonitor.pcieLinkStatus
+                                           : qsTr("PCIe Auto")
+                                },
+                                {
+                                    title: qsTr("VRAM Allocation"),
+                                    value: (page.gpuMonitor && page.gpuMonitor.memoryTotalMiB > 0)
+                                           ? (page.gpuMonitor.memoryUsedMiB + " / " + page.gpuMonitor.memoryTotalMiB + " MiB")
+                                           : qsTr("Unavailable")
+                                }
+                            ]
+
+                            delegate: Rectangle {
+                                required property var modelData
+                                Layout.fillWidth: true
+                                implicitHeight: Math.round(76 * page.uiScale)
+                                radius: 10
+                                color: page.bgColor
+                                border.width: 1
+                                border.color: page.borderColor
+
+                                Column {
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    spacing: 4
+
+                                    Label {
+                                        width: parent.width
+                                        text: modelData.title
+                                        color: page.softTextColor
+                                        font.pixelSize: Math.round(11 * page.uiScale)
+                                        font.weight: Font.DemiBold
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Label {
+                                        width: parent.width
+                                        text: modelData.value
+                                        color: page.textColor
+                                        font.pixelSize: Math.round(13 * page.uiScale)
+                                        font.weight: Font.DemiBold
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // GPU Task Manager / Active Applications Section
+            Rectangle {
+                Layout.fillWidth: true
+                radius: 14
+                color: page.cardColor
+                border.width: 1
+                border.color: page.borderColor
+                implicitHeight: gpuProcLayout.implicitHeight + 24
+
+                ColumnLayout {
+                    id: gpuProcLayout
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 12
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("GPU Task Manager & Active Processes")
+                            color: page.textColor
+                            font.pixelSize: Math.round(18 * page.uiScale)
+                            font.weight: Font.DemiBold
+                        }
+
+                        Components.InfoBadge {
+                            text: (page.gpuMonitor && page.gpuMonitor.gpuProcessCount > 0)
+                                  ? qsTr("%1 ACTIVE").arg(page.gpuMonitor.gpuProcessCount)
+                                  : qsTr("0 ACTIVE")
+                            backgroundColor: (page.gpuMonitor && page.gpuMonitor.gpuProcessCount > 0)
+                                             ? (page.darkMode ? "#312E81" : "#EEF2FF")
+                                             : (page.darkMode ? "#1E293B" : "#F1F5F9")
+                            foregroundColor: (page.gpuMonitor && page.gpuMonitor.gpuProcessCount > 0)
+                                             ? page.accentColor
+                                             : page.softTextColor
+                        }
+                    }
+
+                    // Empty state when no GPU processes are running
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: Math.round(72 * page.uiScale)
+                        radius: 10
+                        color: page.bgColor
+                        border.width: 1
+                        border.color: page.borderColor
+                        visible: !page.gpuMonitor || page.gpuMonitor.gpuProcessCount === 0
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 16
+                            spacing: 14
+
+                            Rectangle {
+                                width: Math.round(36 * page.uiScale)
+                                height: Math.round(36 * page.uiScale)
+                                radius: 8
+                                color: page.darkMode ? "#1E293B" : "#E2E8F0"
+
+                                Label {
+                                    anchors.centerIn: parent
+                                    text: "✓"
+                                    color: "#22C55E"
+                                    font.pixelSize: Math.round(18 * page.uiScale)
+                                    font.weight: Font.Bold
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+
+                                Label {
+                                    text: qsTr("No Active GPU Processes")
+                                    color: page.textColor
+                                    font.pixelSize: Math.round(13 * page.uiScale)
+                                    font.weight: Font.DemiBold
+                                }
+
+                                Label {
+                                    text: qsTr("No applications are currently allocating VRAM or compute resources on this GPU.")
+                                    color: page.softTextColor
+                                    font.pixelSize: Math.round(11 * page.uiScale)
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+                    }
+
+                    // Process list table when processes exist
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        visible: page.gpuMonitor && page.gpuMonitor.gpuProcessCount > 0
+
+                        // Table header
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.leftMargin: 12
+                            Layout.rightMargin: 12
+                            spacing: 12
+
+                            Label {
+                                Layout.preferredWidth: Math.round(60 * page.uiScale)
+                                text: qsTr("PID")
+                                color: page.softTextColor
+                                font.pixelSize: Math.round(11 * page.uiScale)
+                                font.weight: Font.Bold
+                            }
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("PROCESS NAME")
+                                color: page.softTextColor
+                                font.pixelSize: Math.round(11 * page.uiScale)
+                                font.weight: Font.Bold
+                            }
+
+                            Label {
+                                Layout.preferredWidth: Math.round(110 * page.uiScale)
+                                text: qsTr("TYPE")
+                                color: page.softTextColor
+                                font.pixelSize: Math.round(11 * page.uiScale)
+                                font.weight: Font.Bold
+                            }
+
+                            Label {
+                                Layout.preferredWidth: Math.round(130 * page.uiScale)
+                                text: qsTr("VRAM USAGE")
+                                color: page.softTextColor
+                                font.pixelSize: Math.round(11 * page.uiScale)
+                                font.weight: Font.Bold
+                                horizontalAlignment: Text.AlignRight
+                            }
+
+                            Label {
+                                Layout.preferredWidth: Math.round(80 * page.uiScale)
+                                text: qsTr("ACTION")
+                                color: page.softTextColor
+                                font.pixelSize: Math.round(11 * page.uiScale)
+                                font.weight: Font.Bold
+                                horizontalAlignment: Text.AlignRight
+                            }
+                        }
+
+                        Repeater {
+                            model: page.gpuMonitor ? page.gpuMonitor.gpuProcesses : []
+
+                            delegate: Rectangle {
+                                required property var modelData
+                                Layout.fillWidth: true
+                                implicitHeight: Math.round(48 * page.uiScale)
+                                radius: 8
+                                color: page.bgColor
+                                border.width: 1
+                                border.color: page.borderColor
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 12
+                                    spacing: 12
+
+                                    Rectangle {
+                                        Layout.preferredWidth: Math.round(60 * page.uiScale)
+                                        Layout.preferredHeight: Math.round(24 * page.uiScale)
+                                        radius: 4
+                                        color: page.darkMode ? "#1E293B" : "#E2E8F0"
+
+                                        Label {
+                                            anchors.centerIn: parent
+                                            text: modelData.pid
+                                            color: page.textColor
+                                            font.pixelSize: Math.round(11 * page.uiScale)
+                                            font.weight: Font.DemiBold
+                                            font.family: "Monospace"
+                                        }
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: modelData.name
+                                        color: page.textColor
+                                        font.pixelSize: Math.round(13 * page.uiScale)
+                                        font.weight: Font.DemiBold
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Rectangle {
+                                        Layout.preferredWidth: Math.round(110 * page.uiScale)
+                                        Layout.preferredHeight: Math.round(22 * page.uiScale)
+                                        radius: 4
+                                        color: (modelData.type && modelData.type.indexOf("Compute") !== -1)
+                                               ? (page.darkMode ? "#312E81" : "#EEF2FF")
+                                               : (page.darkMode ? "#064E3B" : "#ECFDF5")
+
+                                        Label {
+                                            anchors.centerIn: parent
+                                            text: modelData.type || qsTr("Compute")
+                                            color: (modelData.type && modelData.type.indexOf("Compute") !== -1)
+                                                   ? (page.darkMode ? "#A5B4FC" : "#4F46E5")
+                                                   : (page.darkMode ? "#6EE7B7" : "#059669")
+                                            font.pixelSize: Math.round(10 * page.uiScale)
+                                            font.weight: Font.DemiBold
+                                        }
+                                    }
+
+                                    ColumnLayout {
+                                        Layout.preferredWidth: Math.round(130 * page.uiScale)
+                                        spacing: 2
+
+                                        Label {
+                                            Layout.fillWidth: true
+                                            text: modelData.vramMiB + " MiB"
+                                            color: page.accentColor
+                                            font.pixelSize: Math.round(12 * page.uiScale)
+                                            font.weight: Font.DemiBold
+                                            horizontalAlignment: Text.AlignRight
+                                        }
+
+                                        ProgressBar {
+                                            Layout.fillWidth: true
+                                            from: 0
+                                            to: page.gpuMonitor && page.gpuMonitor.memoryTotalMiB > 0 ? page.gpuMonitor.memoryTotalMiB : 1000
+                                            value: modelData.vramMiB
+                                            implicitHeight: 4
+                                        }
+                                    }
+
+                                    Button {
+                                        text: qsTr("End")
+                                        flat: true
+                                        implicitWidth: Math.round(75 * page.uiScale)
+                                        implicitHeight: Math.round(30 * page.uiScale)
+                                        onClicked: {
+                                            if (page.gpuMonitor) {
+                                                page.gpuMonitor.killProcess(modelData.pid);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // GPU Power & TDP Management Section
+            Rectangle {
+                Layout.fillWidth: true
+                radius: 14
+                color: page.cardColor
+                border.width: 1
+                border.color: page.borderColor
+                implicitHeight: powerArea.implicitHeight + 24
+                visible: page.powerController !== null && page.powerController.supported
+
+                ColumnLayout {
+                    id: powerArea
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 12
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("GPU Power & Performance Management")
+                            color: page.textColor
+                            font.pixelSize: Math.round(18 * page.uiScale)
+                            font.weight: Font.DemiBold
+                        }
+
+                        Components.InfoBadge {
+                            text: page.powerController && page.powerController.persistenceModeEnabled ? qsTr("PERSISTENCE ON") : qsTr("STANDARD")
+                            backgroundColor: page.powerController && page.powerController.persistenceModeEnabled ? "#22c55e" : (page.darkMode ? "#334155" : "#e2e8f0")
+                            foregroundColor: page.powerController && page.powerController.persistenceModeEnabled ? "#ffffff" : page.textColor
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+
+                        Label {
+                            text: qsTr("Current Draw: %1 W").arg(page.powerController ? page.powerController.currentPowerDrawW.toFixed(1) : "0.0")
+                            color: page.textColor
+                            font.pixelSize: Math.round(13 * page.uiScale)
+                            font.weight: Font.DemiBold
+                        }
+
+                        Label {
+                            text: qsTr("Power Limit: %1 W").arg(page.powerController ? page.powerController.powerLimitW.toFixed(0) : "N/A")
+                            color: page.accentColor
+                            font.pixelSize: Math.round(13 * page.uiScale)
+                            font.weight: Font.DemiBold
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        RowLayout {
+                            spacing: 6
+                            visible: page.powerController && page.powerController.controlSupported
+
+                            Button {
+                                text: qsTr("Eco")
+                                highlighted: page.powerController && page.powerController.powerPreset === "eco"
+                                onClicked: if (page.powerController) page.powerController.applyPowerPreset("eco")
+                            }
+                            Button {
+                                text: qsTr("Balanced")
+                                highlighted: page.powerController && page.powerController.powerPreset === "balanced"
+                                onClicked: if (page.powerController) page.powerController.applyPowerPreset("balanced")
+                            }
+                            Button {
+                                text: qsTr("Performance")
+                                highlighted: page.powerController && page.powerController.powerPreset === "performance"
+                                onClicked: if (page.powerController) page.powerController.applyPowerPreset("performance")
                             }
                         }
                     }

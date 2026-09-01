@@ -7,6 +7,7 @@ commands=(
   'status:Show concise system and driver status'
   'diagnostics:Show full diagnostics snapshot'
   'driver:Manage NVIDIA drivers'
+  'fan:Manage cooling and fan profiles'
 )
 
 local -a driver_commands
@@ -15,6 +16,24 @@ driver_commands=(
   'remove:Remove installed NVIDIA packages'
   'update:Update the installed NVIDIA driver'
   'deep-clean:Remove legacy NVIDIA leftovers'
+)
+
+local -a fan_commands
+fan_commands=(
+  'status:Show fan status'
+  'set-speed:Set fan speed percentage'
+  'set-mode:Set fan operating mode profile'
+  'reset:Restore default automatic fan profile'
+)
+
+local -a fan_modes
+fan_modes=(
+  'auto:Default hardware curve'
+  'silent:Acoustic priority'
+  'balanced:Thermal-acoustic equilibrium'
+  'performance:Maximum airflow cooling'
+  'manual:Fixed speed percentage'
+  'custom:Custom temperature curve'
 )
 
 local -a global_opts
@@ -50,6 +69,18 @@ case "${words[2]}" in
 
     if [[ "${words[3]}" == "install" ]]; then
       _describe 'install-option' install_opts
+    fi
+    ;;
+  fan)
+    if (( CURRENT == 3 )); then
+      _describe 'fan-command' fan_commands
+      return
+    fi
+
+    if [[ "${words[3]}" == "status" ]]; then
+      _describe 'option' '--json[Render fan status as JSON]'
+    elif [[ "${words[3]}" == "set-mode" ]]; then
+      _describe 'fan-mode' fan_modes
     fi
     ;;
   *)

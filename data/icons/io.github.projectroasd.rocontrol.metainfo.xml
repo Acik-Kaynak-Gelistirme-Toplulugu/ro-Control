@@ -6,7 +6,6 @@
 	<summary xml:lang="tr">NVIDIA sürücü yöneticisi ve sistem monitörü</summary>
 	<metadata_license>CC0-1.0</metadata_license>
 	<project_license>GPL-3.0-or-later</project_license>
-	<developer_name>Project Ro ASD</developer_name>
 	<developer id="io.github.projectroasd">
 		<name>Project Ro ASD</name>
 	</developer>
@@ -67,10 +66,10 @@
 	</categories>
 
 	<releases>
-		<release version="1.2.1" date="2026-08-31">
+		<release version="1.3.0" date="2026-09-01">
 			<description>
-				<p>Fedora 44 maintenance release with native x86_64 and aarch64 RPM validation, source artifacts, and deterministic hardware-monitor tests.</p>
-				<p xml:lang="tr">Yerel x86_64 ve aarch64 RPM doğrulaması, kaynak paketleri ve kararlı donanım izleme testleri sunan Fedora 44 bakım sürümü.</p>
+				<p>Major feature release adding GPU Power and TDP management, background Health Guard with thermal notifications, system tray integration, and Sentinel D-Bus IPC service.</p>
+				<p xml:lang="tr">GPU Güç ve TDP yönetimi, masaüstü termal uyarı bildirimli Health Guard, sistem tepsisi entegrasyonu ve Sentinel D-Bus IPC servisini getiren ana sürüm.</p>
 			</description>
 		</release>
 		<release version="1.2.0" date="2026-08-27">

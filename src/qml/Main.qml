@@ -15,6 +15,8 @@ ApplicationWindow {
     required property var gpuMonitor
     required property var ramMonitor
     required property var fanController
+    required property var powerController
+    required property var healthGuard
     required property var systemInfo
     required property var languageManager
     required property var uiPreferences
@@ -69,6 +71,18 @@ ApplicationWindow {
         return qsTr("Desktop");
     }
 
+    function powerSummaryLabel() {
+        const dev = root.deviceTypeLabel();
+        if (!root.systemInfo || !root.systemInfo.powerSource || root.systemInfo.powerSource.length === 0)
+            return dev;
+        const pwr = root.systemInfo.powerSource;
+        if (pwr === "AC / Desktop" || pwr === "AC Power")
+            return dev + " • ⚡ " + qsTr("AC");
+        if (pwr === "Battery")
+            return dev + " • 🔋 " + qsTr("Battery");
+        return dev + " • " + pwr;
+    }
+
     function openQuickMenu(mode, sourceButton) {
         quickMenuMode = mode;
         quickMenuPopup.width = Math.round(220 * root.uiScale);
@@ -113,6 +127,15 @@ ApplicationWindow {
         interval: 350
         repeat: false
         onTriggered: root.refreshAfterResume()
+    }
+
+    Connections {
+        target: root.systemInfo
+        function onInfoChanged() {
+            if (root.systemInfo && root.fanController) {
+                root.fanController.syncPowerSource(root.systemInfo.onBattery);
+            }
+        }
     }
 
     QtObject {
@@ -218,7 +241,7 @@ ApplicationWindow {
                     }
 
                     Rectangle {
-                        Layout.preferredWidth: Math.round(132 * root.uiScale)
+                        Layout.preferredWidth: Math.max(Math.round(120 * root.uiScale), deviceBadgeText.implicitWidth + Math.round(24 * root.uiScale))
                         Layout.preferredHeight: Math.round(34 * root.uiScale)
                         radius: Math.round(10 * root.uiScale)
                         color: colors.card
@@ -226,9 +249,9 @@ ApplicationWindow {
                         border.color: colors.border
 
                         Label {
+                            id: deviceBadgeText
                             anchors.centerIn: parent
-                            width: parent.width - Math.round(10 * root.uiScale)
-                            text: root.deviceTypeLabel()
+                            text: root.powerSummaryLabel()
                             color: colors.text
                             elide: Text.ElideRight
                             horizontalAlignment: Text.AlignHCenter
@@ -329,7 +352,7 @@ ApplicationWindow {
                             color: quickMenuButton.modelData.code === (root.quickMenuMode === "language"
                                                                        ? root.languageManager.currentLanguage
                                                                        : root.uiPreferences.themeMode)
-                                   ? colors.text
+                                   ? "#FFFFFF"
                                    : colors.text
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -462,6 +485,8 @@ ApplicationWindow {
                     gpuMonitor: root.gpuMonitor
                     ramMonitor: root.ramMonitor
                     fanController: root.fanController
+                    powerController: root.powerController
+                    healthGuard: root.healthGuard
                 }
 
                 Pages.FanPage {

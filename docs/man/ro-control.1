@@ -1,4 +1,4 @@
-.TH RO-CONTROL 1 "August 2026" "ro-control 1.2.0" "User Commands"
+.TH RO-CONTROL 1 "September 2026" "ro-control 1.3.0" "User Commands"
 .SH NAME
 ro-control \- NVIDIA driver management and diagnostics CLI
 .SH SYNOPSIS
@@ -34,6 +34,18 @@ Update the installed NVIDIA driver.
 .TP
 .B driver deep-clean
 Remove legacy NVIDIA leftovers.
+.TP
+.B fan status [--json]
+Display fan telemetry, RPM, current mode, and hardware capability.
+.TP
+.BI "fan set-speed " "<0-100>"
+Manually set the target fan speed percentage.
+.TP
+.BI "fan set-mode " "<auto|silent|balanced|performance|manual|custom>"
+Set the active fan cooling profile.
+.TP
+.B fan reset
+Restore default automatic hardware fan control curve.
 .SH OPTIONS
 .TP
 .B \-h, \-\-help
@@ -84,6 +96,15 @@ Install the proprietary driver stack with explicit license confirmation.
 .TP
 .B ro-control driver update
 Update the installed NVIDIA driver.
+.TP
+.B ro-control fan status --json
+Print machine-readable fan telemetry and mode status.
+.TP
+.B ro-control fan set-mode performance
+Engage performance cooling mode for high compute workloads.
+.TP
+.B ro-control fan set-speed 75
+Manually fix fan speed to 75%.
 .SH FILES
 .TP
 .I /usr/bin/ro-control

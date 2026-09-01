@@ -87,7 +87,7 @@ QString valueFromOsRelease(const QString &key) {
   return {};
 }
 
-QString valueFromFile(const QString &path) {
+[[maybe_unused]] QString valueFromFile(const QString &path) {
   QFile file(path);
   if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
     return {};
@@ -109,12 +109,15 @@ void SystemInfoProvider::refresh() {
   const QString nextCpuModel = detectCpuModel();
   const QString nextVirtualizationType = detectVirtualizationType();
   const QString nextDeviceType = detectDeviceType();
+  QString nextPowerSource;
+  const bool nextOnBattery = detectOnBattery(&nextPowerSource);
 
   if (m_osName == nextOsName &&
       m_desktopEnvironment == nextDesktopEnvironment &&
       m_kernelVersion == nextKernelVersion && m_cpuModel == nextCpuModel &&
       m_deviceType == nextDeviceType &&
-      m_virtualizationType == nextVirtualizationType) {
+      m_virtualizationType == nextVirtualizationType &&
+      m_onBattery == nextOnBattery && m_powerSource == nextPowerSource) {
     return;
   }
 
@@ -124,6 +127,8 @@ void SystemInfoProvider::refresh() {
   m_cpuModel = nextCpuModel;
   m_deviceType = nextDeviceType;
   m_virtualizationType = nextVirtualizationType;
+  m_onBattery = nextOnBattery;
+  m_powerSource = nextPowerSource;
   emit infoChanged();
 }
 
@@ -331,4 +336,76 @@ QString SystemInfoProvider::detectDesktopEnvironment() const {
   }
 
   return normalizedParts.join(QStringLiteral(" / "));
+}
+
+bool SystemInfoProvider::detectOnBattery(QString *sourceLabel) const {
+  const QString overrideOnline =
+      qEnvironmentVariable("RO_CONTROL_POWER_SUPPLY_ONLINE").trimmed();
+  if (!overrideOnline.isEmpty()) {
+    const bool onBat = (overrideOnline == QStringLiteral("0"));
+    if (sourceLabel) {
+      *sourceLabel =
+          onBat ? QStringLiteral("Battery") : QStringLiteral("AC Power");
+    }
+    return onBat;
+  }
+
+#if defined(Q_OS_LINUX)
+  QDir powerDir(QStringLiteral("/sys/class/power_supply"));
+  if (!powerDir.exists()) {
+    if (sourceLabel) {
+      *sourceLabel = QStringLiteral("AC / Desktop");
+    }
+    return false;
+  }
+
+  const QFileInfoList entries =
+      powerDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+  bool hasBattery = false;
+  bool isDischarging = false;
+  bool isAcOnline = false;
+
+  for (const QFileInfo &entry : entries) {
+    const QString type =
+        valueFromFile(entry.absoluteFilePath() + QStringLiteral("/type"))
+            .trimmed();
+    if (type.compare(QStringLiteral("Battery"), Qt::CaseInsensitive) == 0) {
+      hasBattery = true;
+      const QString status =
+          valueFromFile(entry.absoluteFilePath() + QStringLiteral("/status"))
+              .trimmed();
+      if (status.compare(QStringLiteral("Discharging"), Qt::CaseInsensitive) ==
+          0) {
+        isDischarging = true;
+      }
+    } else if (type.compare(QStringLiteral("Mains"), Qt::CaseInsensitive) ==
+               0) {
+      const QString online =
+          valueFromFile(entry.absoluteFilePath() + QStringLiteral("/online"))
+              .trimmed();
+      if (online == QStringLiteral("1")) {
+        isAcOnline = true;
+      }
+    }
+  }
+
+  if (!hasBattery) {
+    if (sourceLabel) {
+      *sourceLabel = QStringLiteral("AC / Desktop");
+    }
+    return false;
+  }
+
+  const bool onBat = isDischarging || (!isAcOnline && hasBattery);
+  if (sourceLabel) {
+    *sourceLabel =
+        onBat ? QStringLiteral("Battery") : QStringLiteral("AC Power");
+  }
+  return onBat;
+#else
+  if (sourceLabel) {
+    *sourceLabel = QStringLiteral("AC Power");
+  }
+  return false;
+#endif
 }

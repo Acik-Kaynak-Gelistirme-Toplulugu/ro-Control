@@ -5,18 +5,26 @@ All notable changes to **ro-Control** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
----
+## [v1.3.0] - 2026-09-01
 
-## [v1.2.1] - 2026-08-31
-
-### Fixed
-- Isolated GPU monitor tests from host `hwmon` and PCI device state.
-- Validated native Fedora 44 RPM builds on both x86_64 and aarch64 runners.
-
-### Packaging
-- Restored canonical NVRA filenames for binary RPM artifacts.
-- Added source RPM, exact source archive, and release checksum publication.
-- Enabled install and CLI smoke tests for both supported architectures.
+### Added
+- **GPU Power & TDP Management Subsystem:**
+  - Dynamic power limit control (`PowerController`) via Polkit and `nvidia-smi`.
+  - Power preset switching (`Eco`, `Balanced`, `Performance`, `Custom`).
+  - NVIDIA Driver persistence mode toggle and status tracking.
+  - CLI integration: `ro-control power status [--json]`, `ro-control power set-limit <watts>`, `ro-control power set-preset <preset>`, `ro-control power set-persistence <on|off>`.
+- **System Tray & Thermal Health Guard:**
+  - `HealthGuard` subsystem with configurable thermal warning and critical limits.
+  - Native desktop notifications (`QSystemTrayIcon::showMessage`) for critical overheating warnings.
+  - Live tooltip with GPU temperature, fan RPM, and live power draw.
+  - Context menu with quick Fan profile and Power preset switching.
+- **Sentinel D-Bus IPC Service & Daemon Mode:**
+  - Native D-Bus service registered at `io.github.ProjectRoASD.rocontrol` (`/io/github/ProjectRoASD/rocontrol`).
+  - Methods for external telemetry queries (`GetTelemetry`, `GetThermalStatus`, `GetGpuHealth`) and hardware control (`SetFanMode`, `SetFanSpeed`, `SetPowerLimit`, `SetPersistenceMode`).
+  - Signals: `ThermalAlert`, `TelemetryUpdated`.
+  - Headless daemon CLI command: `ro-control --daemon`.
+- **Test Suite Expansion:**
+  - Added unit test suites for `PowerController`, `HealthGuard`, and `RoControlDBusService` (12/12 test targets passing 100%).
 
 ---
 

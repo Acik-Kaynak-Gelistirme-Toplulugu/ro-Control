@@ -25,6 +25,12 @@ enum class CommandAction {
   FanReset,
   PrintFanStatusText,
   PrintFanStatusJson,
+  PrintPowerStatusText,
+  PrintPowerStatusJson,
+  PowerSetLimit,
+  PowerSetPersistence,
+  PowerSetPreset,
+  RunDaemon,
   Invalid,
 };
 
@@ -78,6 +84,16 @@ struct DiagnosticsSnapshot {
   int ramTotalMiB = 0;
   int ramUsedMiB = 0;
   int ramUsagePercent = 0;
+
+  bool powerSupported = false;
+  bool powerControlSupported = false;
+  double powerDrawW = 0.0;
+  double powerLimitW = 0.0;
+  double minPowerLimitW = 0.0;
+  double maxPowerLimitW = 0.0;
+  double defaultPowerLimitW = 0.0;
+  bool persistenceModeEnabled = false;
+  QString powerPreset;
 };
 
 ParsedCommand parseArguments(const QStringList &arguments,

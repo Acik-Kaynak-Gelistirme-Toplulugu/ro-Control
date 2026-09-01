@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(ro-control
-    VERSION 1.2.1
+    VERSION 1.3.0
     DESCRIPTION "Smart NVIDIA driver manager and system monitor for Fedora KDE Plasma"
     HOMEPAGE_URL "https://github.com/Project-Ro-ASD/ro-Control"
     LANGUAGES CXX
@@ -108,6 +108,9 @@ set(BACKEND_SOURCES
     src/backend/system/uipreferencesmanager.cpp
     src/backend/system/systeminfoprovider.cpp
     src/backend/fan/fancontroller.cpp
+    src/backend/power/powercontroller.cpp
+    src/backend/system/healthguard.cpp
+    src/backend/system/dbusservice.cpp
 )
 
 set(APP_SOURCES
@@ -351,6 +354,11 @@ endif()
 
 # ─── Tests ───────────────────────────────────────────────────────────────────
 option(BUILD_TESTS "Build unit tests" OFF)
+
+# Also honour the CMake standard BUILD_TESTING convention
+if(BUILD_TESTING AND NOT BUILD_TESTS)
+    set(BUILD_TESTS ON CACHE BOOL "Build unit tests" FORCE)
+endif()
 
 if(BUILD_TESTS)
     enable_testing()

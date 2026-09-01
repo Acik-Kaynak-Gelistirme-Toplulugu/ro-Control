@@ -5,7 +5,7 @@
 
 namespace {
 
-const QString kAppVersion = QStringLiteral("1.2.0");
+const QString kAppVersion = QStringLiteral("1.3.0");
 
 }
 
@@ -260,6 +260,63 @@ private slots:
          QStringLiteral("reset")},
         QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
     QCOMPARE(command.action, RoControlCli::CommandAction::FanReset);
+  }
+
+  void testPowerStatusCliCommand() {
+    const auto commandText = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("power"),
+         QStringLiteral("status")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
+    QCOMPARE(commandText.action,
+             RoControlCli::CommandAction::PrintPowerStatusText);
+
+    const auto commandJson = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("power"),
+         QStringLiteral("status"), QStringLiteral("--json")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
+    QCOMPARE(commandJson.action,
+             RoControlCli::CommandAction::PrintPowerStatusJson);
+  }
+
+  void testPowerSetLimitCliCommand() {
+    const auto validCommand = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("power"),
+         QStringLiteral("set-limit"), QStringLiteral("175")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
+    QCOMPARE(validCommand.action, RoControlCli::CommandAction::PowerSetLimit);
+    QCOMPARE(validCommand.payload, QStringLiteral("175"));
+
+    const auto invalidCommand = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("power"),
+         QStringLiteral("set-limit"), QStringLiteral("-50")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
+    QCOMPARE(invalidCommand.action, RoControlCli::CommandAction::Invalid);
+  }
+
+  void testPowerSetPresetCliCommand() {
+    const auto validCommand = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("power"),
+         QStringLiteral("set-preset"), QStringLiteral("eco")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
+    QCOMPARE(validCommand.action, RoControlCli::CommandAction::PowerSetPreset);
+    QCOMPARE(validCommand.payload, QStringLiteral("eco"));
+  }
+
+  void testPowerSetPersistenceCliCommand() {
+    const auto validCommand = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("power"),
+         QStringLiteral("set-persistence"), QStringLiteral("on")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
+    QCOMPARE(validCommand.action,
+             RoControlCli::CommandAction::PowerSetPersistence);
+    QCOMPARE(validCommand.payload, QStringLiteral("1"));
+  }
+
+  void testDaemonFlagCliCommand() {
+    const auto command = RoControlCli::parseArguments(
+        {QStringLiteral("ro-control"), QStringLiteral("--daemon")},
+        QStringLiteral("ro-control"), kAppVersion, QStringLiteral("CLI test"));
+    QCOMPARE(command.action, RoControlCli::CommandAction::RunDaemon);
   }
 };
 

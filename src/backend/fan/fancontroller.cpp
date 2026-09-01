@@ -6,7 +6,11 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QRegularExpression>
+#include <QStandardPaths>
 #include <algorithm>
 #include <cmath>
 
@@ -1004,6 +1008,20 @@ void FanController::updateSystemFansTelemetry() {
   fanList.append(chassisFan);
 
   m_systemFans = fanList;
+
+  // Keep m_fanCount in sync with the number of GPU fans in the topology so
+  // that executeSetFanSpeed can correctly address [fan:1] on dual-fan cards.
+  int gpuFanCount = 0;
+  for (const QVariant &item : std::as_const(m_systemFans)) {
+    const QVariantMap fan = item.toMap();
+    if (fan.value(QStringLiteral("type")).toString() == QStringLiteral("GPU"))
+      ++gpuFanCount;
+  }
+  if (gpuFanCount > 0 && m_fanCount != gpuFanCount) {
+    m_fanCount = gpuFanCount;
+    emit fanCountChanged();
+  }
+
   emit systemFansChanged();
 }
 
@@ -1546,4 +1564,154 @@ bool FanController::applyFanConfiguration(const QString &fanId) {
   saveSettings();
   updateSystemFansTelemetry();
   return true;
+}
+
+bool FanController::batteryProfileSyncEnabled() const {
+  return m_batteryProfileSyncEnabled;
+}
+
+void FanController::setBatteryProfileSyncEnabled(bool enabled) {
+  if (m_batteryProfileSyncEnabled == enabled) {
+    return;
+  }
+  m_batteryProfileSyncEnabled = enabled;
+  saveSettings();
+  emit batteryProfileSyncEnabledChanged();
+}
+
+void FanController::syncPowerSource(bool onBattery) {
+  if (!m_batteryProfileSyncEnabled) {
+    return;
+  }
+
+  if (onBattery) {
+    if (m_mode != FanMode::Silent && m_mode != FanMode::Auto) {
+      m_preBatteryFanMode = fanMode();
+      setFanMode(QStringLiteral("silent"));
+    }
+  } else {
+    if (!m_preBatteryFanMode.isEmpty()) {
+      setFanMode(m_preBatteryFanMode);
+      m_preBatteryFanMode.clear();
+    }
+  }
+}
+
+bool FanController::exportProfile(const QString &profileName,
+                                  const QString &filePath) {
+  const QString name = profileName.trimmed().isEmpty()
+                           ? QStringLiteral("ro-control-fan-profile")
+                           : profileName.trimmed();
+
+  QString targetPath = filePath.trimmed();
+  if (targetPath.isEmpty()) {
+    const QString baseDir =
+        QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) +
+        QStringLiteral("/profiles");
+    QDir().mkpath(baseDir);
+    targetPath = baseDir + QLatin1Char('/') + name + QStringLiteral(".json");
+  }
+
+  QJsonObject rootObj;
+  rootObj[QStringLiteral("version")] = 1;
+  rootObj[QStringLiteral("profileName")] = name;
+  rootObj[QStringLiteral("fanMode")] = fanMode();
+  rootObj[QStringLiteral("manualSpeed")] = m_manualFanSpeedPercent;
+  rootObj[QStringLiteral("thermalThreshold")] = m_thermalThresholdC;
+
+  QJsonArray curveArray;
+  for (const FanCurvePoint &pt : m_customCurve) {
+    QJsonObject ptObj;
+    ptObj[QStringLiteral("temp")] = pt.temperatureC;
+    ptObj[QStringLiteral("speed")] = pt.fanSpeedPercent;
+    curveArray.append(ptObj);
+  }
+  rootObj[QStringLiteral("curve")] = curveArray;
+
+  QFile file(targetPath);
+  if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    emit profileExported(name, false);
+    return false;
+  }
+
+  const QJsonDocument doc(rootObj);
+  file.write(doc.toJson(QJsonDocument::Indented));
+  file.close();
+
+  emit profileExported(name, true);
+  return true;
+}
+
+bool FanController::importProfile(const QString &filePath) {
+  QFile file(filePath);
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    emit profileImported(filePath, false);
+    return false;
+  }
+
+  const QByteArray data = file.readAll();
+  file.close();
+
+  QJsonParseError parseError;
+  const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+  if (doc.isNull() || !doc.isObject()) {
+    emit profileImported(filePath, false);
+    return false;
+  }
+
+  const QJsonObject rootObj = doc.object();
+  const QString name = rootObj.value(QStringLiteral("profileName")).toString();
+  const QString mode = rootObj.value(QStringLiteral("fanMode")).toString();
+  const int manualSpeed =
+      rootObj.value(QStringLiteral("manualSpeed")).toInt(50);
+  const int thermalThresh =
+      rootObj.value(QStringLiteral("thermalThreshold")).toInt(85);
+
+  if (rootObj.contains(QStringLiteral("curve"))) {
+    const QJsonArray curveArray =
+        rootObj.value(QStringLiteral("curve")).toArray();
+    QVector<FanCurvePoint> importedCurve;
+    for (const auto &val : curveArray) {
+      const QJsonObject ptObj = val.toObject();
+      FanCurvePoint pt;
+      pt.temperatureC = ptObj.value(QStringLiteral("temp")).toInt();
+      pt.fanSpeedPercent = ptObj.value(QStringLiteral("speed")).toInt();
+      if (pt.temperatureC > 0 && pt.fanSpeedPercent >= 0) {
+        importedCurve.append(pt);
+      }
+    }
+    if (!importedCurve.isEmpty()) {
+      std::sort(importedCurve.begin(), importedCurve.end(),
+                [](const FanCurvePoint &a, const FanCurvePoint &b) {
+                  return a.temperatureC < b.temperatureC;
+                });
+      m_customCurve = importedCurve;
+      emit customCurvePointsChanged();
+    }
+  }
+
+  m_thermalThresholdC = std::clamp(thermalThresh, 60, 95);
+  emit thermalThresholdCChanged();
+
+  setManualFanSpeedPercent(manualSpeed);
+  if (!mode.isEmpty()) {
+    setFanMode(mode);
+  }
+
+  saveSettings();
+  evaluateAndApplyFanSpeed(true);
+
+  emit profileImported(name.isEmpty() ? filePath : name, true);
+  return true;
+}
+
+QStringList FanController::listSavedProfiles() const {
+  const QString baseDir =
+      QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) +
+      QStringLiteral("/profiles");
+  QDir dir(baseDir);
+  if (!dir.exists()) {
+    return {};
+  }
+  return dir.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
 }

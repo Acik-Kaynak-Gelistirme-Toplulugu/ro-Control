@@ -19,6 +19,18 @@ class GpuMonitor : public QObject {
                  memoryUsagePercentChanged)
   Q_PROPERTY(
       int fanSpeedPercent READ fanSpeedPercent NOTIFY fanSpeedPercentChanged)
+  Q_PROPERTY(double powerDrawW READ powerDrawW NOTIFY powerDrawWChanged)
+  Q_PROPERTY(double powerLimitW READ powerLimitW NOTIFY powerLimitWChanged)
+  Q_PROPERTY(
+      int graphicsClockMHz READ graphicsClockMHz NOTIFY graphicsClockMHzChanged)
+  Q_PROPERTY(
+      int memoryClockMHz READ memoryClockMHz NOTIFY memoryClockMHzChanged)
+  Q_PROPERTY(
+      QString pcieLinkStatus READ pcieLinkStatus NOTIFY pcieLinkStatusChanged)
+  Q_PROPERTY(
+      QVariantList gpuProcesses READ gpuProcesses NOTIFY gpuProcessesChanged)
+  Q_PROPERTY(
+      int gpuProcessCount READ gpuProcessCount NOTIFY gpuProcessesChanged)
   Q_PROPERTY(
       QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
   Q_PROPERTY(int updateInterval READ updateInterval WRITE setUpdateInterval
@@ -36,12 +48,20 @@ public:
   int memoryTotalMiB() const;
   int memoryUsagePercent() const;
   int fanSpeedPercent() const;
+  double powerDrawW() const;
+  double powerLimitW() const;
+  int graphicsClockMHz() const;
+  int memoryClockMHz() const;
+  QString pcieLinkStatus() const;
+  QVariantList gpuProcesses() const;
+  int gpuProcessCount() const;
   QString statusMessage() const;
   int updateInterval() const;
 
   Q_INVOKABLE void refresh();
   Q_INVOKABLE void start();
   Q_INVOKABLE void stop();
+  Q_INVOKABLE bool killProcess(int pid);
   void setUpdateInterval(int intervalMs);
 
 signals:
@@ -54,6 +74,12 @@ signals:
   void memoryTotalMiBChanged();
   void memoryUsagePercentChanged();
   void fanSpeedPercentChanged();
+  void powerDrawWChanged();
+  void powerLimitWChanged();
+  void graphicsClockMHzChanged();
+  void memoryClockMHzChanged();
+  void pcieLinkStatusChanged();
+  void gpuProcessesChanged();
   void statusMessageChanged();
   void updateIntervalChanged();
 
@@ -61,6 +87,7 @@ private:
   void clearMetrics();
   void setAvailable(bool value);
   void setStatusMessage(const QString &value);
+  void queryGpuProcesses();
 
   QTimer m_timer;
   bool m_available = false;
@@ -72,4 +99,10 @@ private:
   int m_memoryTotalMiB = 0;
   int m_memoryUsagePercent = 0;
   int m_fanSpeedPercent = 0;
+  double m_powerDrawW = 0.0;
+  double m_powerLimitW = 0.0;
+  int m_graphicsClockMHz = 0;
+  int m_memoryClockMHz = 0;
+  QString m_pcieLinkStatus;
+  QVariantList m_gpuProcesses;
 };

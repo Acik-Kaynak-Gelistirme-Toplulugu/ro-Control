@@ -3,8 +3,10 @@ _ro_control()
     local cur prev words cword
     _init_completion || return
 
-    local commands="help version status diagnostics driver"
+    local commands="help version status diagnostics driver fan"
     local driver_commands="install remove update deep-clean"
+    local fan_commands="status set-speed set-mode reset"
+    local fan_modes="auto silent balanced performance manual custom"
     local global_opts="--help --version --diagnostics --json"
     local install_opts="--proprietary --open-source --accept-license"
 
@@ -26,6 +28,22 @@ _ro_control()
 
             if [[ ${words[2]} == "install" ]]; then
                 COMPREPLY=( $(compgen -W "${install_opts}" -- "${cur}") )
+                return
+            fi
+            ;;
+        fan)
+            if [[ ${cword} -eq 2 ]]; then
+                COMPREPLY=( $(compgen -W "${fan_commands}" -- "${cur}") )
+                return
+            fi
+
+            if [[ ${words[2]} == "status" ]]; then
+                COMPREPLY=( $(compgen -W "--json" -- "${cur}") )
+                return
+            fi
+
+            if [[ ${words[2]} == "set-mode" ]]; then
+                COMPREPLY=( $(compgen -W "${fan_modes}" -- "${cur}") )
                 return
             fi
             ;;

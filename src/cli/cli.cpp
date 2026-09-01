@@ -15,6 +15,7 @@
 #include "backend/monitor/rammonitor.h"
 #include "backend/nvidia/detector.h"
 #include "backend/nvidia/updater.h"
+#include "backend/power/powercontroller.h"
 
 namespace RoControlCli {
 
@@ -31,6 +32,9 @@ QString commandActionToString(CommandAction action) {
   case CommandAction::PrintFanStatusText:
   case CommandAction::PrintFanStatusJson:
     return QStringLiteral("fan-status");
+  case CommandAction::PrintPowerStatusText:
+  case CommandAction::PrintPowerStatusJson:
+    return QStringLiteral("power-status");
   default:
     return QStringLiteral("unknown");
   }
@@ -74,6 +78,13 @@ QString buildHelpText(const QString &applicationName,
   stream << "  fan set-mode <profile>     Set fan profile (auto, silent, "
             "balanced, performance, manual, custom).\n";
   stream << "  fan reset                  Reset fan control to automatic "
+            "mode.\n";
+  stream << "  power status [--json]      Print GPU power draw, limits and "
+            "persistence mode.\n";
+  stream << "  power set-limit <watts>    Set GPU power limit in Watts.\n";
+  stream << "  power set-preset <preset>  Set power preset (eco, balanced, "
+            "performance, custom).\n";
+  stream << "  power set-persistence <on|off> Enable or disable persistence "
             "mode.\n\n";
   stream << "Driver install options:\n";
   stream << "  --proprietary              Install the proprietary akmod-nvidia "
@@ -87,10 +98,14 @@ QString buildHelpText(const QString &applicationName,
   stream << "  -v, --version              Show version and exit.\n";
   stream << "  -d, --diagnostics          Legacy alias for `diagnostics`.\n";
   stream << "  --json                     Render `status` or `diagnostics` as "
-            "JSON.\n\n";
+            "JSON.\n";
+  stream << "  --daemon                   Run headless in background with "
+            "D-Bus service.\n\n";
   stream << "Examples:\n";
   stream << "  " << applicationName << " status\n";
   stream << "  " << applicationName << " diagnostics --json\n";
+  stream << "  " << applicationName << " power status\n";
+  stream << "  " << applicationName << " power set-limit 180\n";
   stream << "  " << applicationName
          << " driver install --proprietary --accept-license\n";
   stream << "  " << applicationName << " driver update\n";
@@ -120,6 +135,9 @@ void configureParser(QCommandLineParser &parser, const QString &applicationName,
   parser.addOption(QCommandLineOption(
       {QStringLiteral("json")},
       QStringLiteral("Render status or diagnostics output as JSON.")));
+  parser.addOption(QCommandLineOption(
+      {QStringLiteral("daemon")},
+      QStringLiteral("Run ro-Control in background daemon mode.")));
   parser.addOption(QCommandLineOption(
       {QStringLiteral("proprietary")},
       QStringLiteral("Use the proprietary NVIDIA driver install path.")));
@@ -170,10 +188,17 @@ ParsedCommand parseArguments(const QStringList &arguments,
   const bool version = parser.isSet(QStringLiteral("version"));
   const bool diagnosticsFlag = parser.isSet(QStringLiteral("diagnostics"));
   const bool json = parser.isSet(QStringLiteral("json"));
+  const bool daemonFlag = parser.isSet(QStringLiteral("daemon"));
   const bool proprietary = parser.isSet(QStringLiteral("proprietary"));
   const bool openSource = parser.isSet(QStringLiteral("open-source"));
   const bool acceptLicense = parser.isSet(QStringLiteral("accept-license"));
   const QStringList positional = parser.positionalArguments();
+
+  if (daemonFlag) {
+    ParsedCommand command;
+    command.action = CommandAction::RunDaemon;
+    return command;
+  }
 
   if (hasConflictingInstallModeOptions(parser)) {
     return invalidCommand(QStringLiteral(
@@ -347,6 +372,96 @@ ParsedCommand parseArguments(const QStringList &arguments,
         QStringLiteral("Unknown `fan` subcommand: %1").arg(fanAction));
   }
 
+  if (commandName == QStringLiteral("power")) {
+    if (positional.size() < 2) {
+      return invalidCommand(
+          QStringLiteral("`power` requires a subcommand: status, set-limit, "
+                         "set-preset, set-persistence."));
+    }
+
+    const QString powerAction = positional.at(1).toLower();
+    if (powerAction == QStringLiteral("status")) {
+      if (positional.size() != 2) {
+        return invalidCommand(
+            QStringLiteral("`power status` does not take extra arguments."));
+      }
+      ParsedCommand command;
+      command.action = json ? CommandAction::PrintPowerStatusJson
+                            : CommandAction::PrintPowerStatusText;
+      return command;
+    }
+
+    if (json) {
+      return invalidCommand(QStringLiteral(
+          "--json is only supported by `status`, `diagnostics`, `fan status` "
+          "and `power status`."));
+    }
+
+    if (powerAction == QStringLiteral("set-limit")) {
+      if (positional.size() != 3) {
+        return invalidCommand(QStringLiteral(
+            "`power set-limit` requires a wattage argument (e.g. 180)."));
+      }
+      bool ok = false;
+      const double watts = positional.at(2).toDouble(&ok);
+      if (!ok || watts <= 0.0) {
+        return invalidCommand(
+            QStringLiteral("Power limit must be a positive number."));
+      }
+      ParsedCommand command;
+      command.action = CommandAction::PowerSetLimit;
+      command.payload = QString::number(watts);
+      return command;
+    }
+
+    if (powerAction == QStringLiteral("set-preset")) {
+      if (positional.size() != 3) {
+        return invalidCommand(QStringLiteral(
+            "`power set-preset` requires a preset argument (eco, balanced, "
+            "performance, custom)."));
+      }
+      const QString preset = positional.at(2).toLower();
+      const QStringList validPresets = {
+          QStringLiteral("eco"), QStringLiteral("balanced"),
+          QStringLiteral("performance"), QStringLiteral("custom")};
+      if (!validPresets.contains(preset)) {
+        return invalidCommand(
+            QStringLiteral("Invalid power preset. Choose from: eco, balanced, "
+                           "performance, custom."));
+      }
+      ParsedCommand command;
+      command.action = CommandAction::PowerSetPreset;
+      command.payload = preset;
+      return command;
+    }
+
+    if (powerAction == QStringLiteral("set-persistence")) {
+      if (positional.size() != 3) {
+        return invalidCommand(QStringLiteral(
+            "`power set-persistence` requires a state argument (on, off, 1, 0, "
+            "enable, disable)."));
+      }
+      const QString state = positional.at(2).toLower();
+      if (state != QStringLiteral("on") && state != QStringLiteral("off") &&
+          state != QStringLiteral("1") && state != QStringLiteral("0") &&
+          state != QStringLiteral("enable") &&
+          state != QStringLiteral("disable")) {
+        return invalidCommand(QStringLiteral(
+            "Invalid persistence state. Choose from: on, off, 1, 0."));
+      }
+      const bool enable =
+          (state == QStringLiteral("on") || state == QStringLiteral("1") ||
+           state == QStringLiteral("enable"));
+      ParsedCommand command;
+      command.action = CommandAction::PowerSetPersistence;
+      command.payload = enable ? QStringLiteral("1") : QStringLiteral("0");
+      return command;
+    }
+
+    return invalidCommand(
+        QStringLiteral("Unknown `power` subcommand: %1").arg(powerAction));
+  }
+
   if (commandName != QStringLiteral("driver")) {
     return invalidCommand(
         QStringLiteral("Unknown command: %1").arg(commandName));
@@ -497,6 +612,18 @@ DiagnosticsSnapshot collectDiagnostics(const QString &applicationName,
   snapshot.ramUsedMiB = ramMonitor.usedMiB();
   snapshot.ramUsagePercent = ramMonitor.usagePercent();
 
+  PowerController powerController;
+  powerController.refresh();
+  snapshot.powerSupported = powerController.supported();
+  snapshot.powerControlSupported = powerController.controlSupported();
+  snapshot.powerDrawW = powerController.currentPowerDrawW();
+  snapshot.powerLimitW = powerController.powerLimitW();
+  snapshot.minPowerLimitW = powerController.minPowerLimitW();
+  snapshot.maxPowerLimitW = powerController.maxPowerLimitW();
+  snapshot.defaultPowerLimitW = powerController.defaultPowerLimitW();
+  snapshot.persistenceModeEnabled = powerController.persistenceModeEnabled();
+  snapshot.powerPreset = powerController.powerPreset();
+
   return snapshot;
 }
 
@@ -576,6 +703,24 @@ QString renderDiagnosticsText(const DiagnosticsSnapshot &snapshot) {
   output += QStringLiteral("ram_used_mib: %1\n").arg(snapshot.ramUsedMiB);
   output +=
       QStringLiteral("ram_usage_percent: %1\n").arg(snapshot.ramUsagePercent);
+  output += QStringLiteral("power_supported: %1\n")
+                .arg(boolText(snapshot.powerSupported));
+  output += QStringLiteral("power_control_supported: %1\n")
+                .arg(boolText(snapshot.powerControlSupported));
+  output +=
+      QStringLiteral("power_draw_w: %1\n").arg(snapshot.powerDrawW, 0, 'f', 1);
+  output += QStringLiteral("power_limit_w: %1\n")
+                .arg(snapshot.powerLimitW, 0, 'f', 1);
+  output += QStringLiteral("min_power_limit_w: %1\n")
+                .arg(snapshot.minPowerLimitW, 0, 'f', 1);
+  output += QStringLiteral("max_power_limit_w: %1\n")
+                .arg(snapshot.maxPowerLimitW, 0, 'f', 1);
+  output += QStringLiteral("default_power_limit_w: %1\n")
+                .arg(snapshot.defaultPowerLimitW, 0, 'f', 1);
+  output += QStringLiteral("persistence_mode: %1\n")
+                .arg(boolText(snapshot.persistenceModeEnabled));
+  output += QStringLiteral("power_preset: %1\n")
+                .arg(dashIfEmpty(snapshot.powerPreset));
 
   if (!snapshot.verificationReport.isEmpty()) {
     output += QStringLiteral("verification_report:\n%1\n")
@@ -651,6 +796,18 @@ QJsonObject renderDiagnosticsJsonObject(const DiagnosticsSnapshot &snapshot) {
   object.insert(QStringLiteral("ramTotalMiB"), snapshot.ramTotalMiB);
   object.insert(QStringLiteral("ramUsedMiB"), snapshot.ramUsedMiB);
   object.insert(QStringLiteral("ramUsagePercent"), snapshot.ramUsagePercent);
+  object.insert(QStringLiteral("powerSupported"), snapshot.powerSupported);
+  object.insert(QStringLiteral("powerControlSupported"),
+                snapshot.powerControlSupported);
+  object.insert(QStringLiteral("powerDrawW"), snapshot.powerDrawW);
+  object.insert(QStringLiteral("powerLimitW"), snapshot.powerLimitW);
+  object.insert(QStringLiteral("minPowerLimitW"), snapshot.minPowerLimitW);
+  object.insert(QStringLiteral("maxPowerLimitW"), snapshot.maxPowerLimitW);
+  object.insert(QStringLiteral("defaultPowerLimitW"),
+                snapshot.defaultPowerLimitW);
+  object.insert(QStringLiteral("persistenceMode"),
+                snapshot.persistenceModeEnabled);
+  object.insert(QStringLiteral("powerPreset"), snapshot.powerPreset);
   return object;
 }
 

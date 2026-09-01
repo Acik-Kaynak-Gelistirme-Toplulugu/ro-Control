@@ -1,4 +1,4 @@
-%global upstream_version %{!?upstream_version:1.2.1}%{?upstream_version}
+%{!?upstream_version: %global upstream_version 1.3.0}
 %global debug_package %{nil}
 
 Name:           ro-control
@@ -63,9 +63,6 @@ tar -xzf %{SOURCE0} --strip-components=1
 %cmake_install
 
 %check
-export HOME="$PWD/.test-home"
-export XDG_CONFIG_HOME="$HOME/.config"
-mkdir -p "$XDG_CONFIG_HOME"
 export QT_QPA_PLATFORM=offscreen
 export QT_QUICK_CONTROLS_STYLE=Basic
 %ctest --output-on-failure
@@ -87,13 +84,11 @@ export QT_QUICK_CONTROLS_STYLE=Basic
 %{_datadir}/polkit-1/actions/io.github.ProjectRoASD.rocontrol.policy
 
 %changelog
-* Mon Aug 31 2026 Project Ro-ASD <contact@roasd.org> - 1.2.1-1
-- Build native Fedora 44 packages for x86_64 and aarch64.
-- Publish canonical RPM, SRPM, source archive, and checksum artifacts.
-- Isolate hardware monitor tests from host GPU sensor state.
-
-* Mon Aug 31 2026 Project Ro-ASD <contact@roasd.org> - 1.2.0-2
-- Rebuild for Fedora 44 with canonical binary RPM names and a source RPM artifact.
+* Tue Sep 01 2026 ro-Control Maintainers <noreply@github.com> - 1.3.0-1
+- SystemInfoProvider integration across Monitor, Driver, and Fan suites
+- Battery profile auto-sync and power source status indicators
+- Enhanced fan controller with GPU topology synchronization and dynamic curve points
+- Code quality hardening, qmllint stabilization, and AppStream 1.0 alignment
 
 * Thu Aug 27 2026 ro-Control Maintainers <noreply@github.com> - 1.2.0-1
 - Add advanced fan management and telemetry subsystem

@@ -490,6 +490,19 @@ Item {
 
                         Button {
                             Layout.fillWidth: true
+                            text: qsTr("Rebuild Modules")
+                            enabled: page.canManageDriverStack && page.driverInstalledLocally && !page.nvidiaInstaller.busy && !page.nvidiaUpdater.busy
+                            onClicked: {
+                                page.markDriverActionStarted("rebuild-modules");
+                                page.setOperationState(qsTr("Installer"), qsTr("Rebuilding kernel modules & initramfs..."), "info", true);
+                                page.nvidiaInstaller.rebuildKernelModules();
+                            }
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Force-rebuilds akmod kernel modules and regenerates initramfs after kernel updates.")
+                        }
+
+                        Button {
+                            Layout.fillWidth: true
                             text: qsTr("Restart")
                             visible: page.pendingDriverStateText.length > 0
                             enabled: visible && !page.operationRunning

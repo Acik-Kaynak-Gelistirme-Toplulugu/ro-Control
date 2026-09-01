@@ -109,6 +109,44 @@ private slots:
     qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SMI");
   }
 
+  void testGpuPowerAndClockTelemetry() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString scriptPath =
+        tempDir.filePath(QStringLiteral("fake-nvidia-smi-full.sh"));
+    QFile script(scriptPath);
+    QVERIFY(script.open(QIODevice::WriteOnly | QIODevice::Text));
+
+    QTextStream stream(&script);
+    stream << "#!/bin/sh\n";
+    stream << "printf 'NVIDIA GeForce RTX 4090, 58, 85, 6144, 24576, 45, "
+              "215.50 W, 450.00 W, 2520 MHz, 10501 MHz\\n'\n";
+    script.close();
+    QVERIFY(QFile::setPermissions(scriptPath, QFileDevice::ReadOwner |
+                                                  QFileDevice::WriteOwner |
+                                                  QFileDevice::ExeOwner));
+
+    qputenv("RO_CONTROL_COMMAND_NVIDIA_SMI", scriptPath.toUtf8());
+    GpuMonitor gpu;
+    gpu.stop();
+    gpu.refresh();
+
+    QVERIFY(gpu.available());
+    QCOMPARE(gpu.gpuName(), QStringLiteral("NVIDIA GeForce RTX 4090"));
+    QCOMPARE(gpu.temperatureC(), 58);
+    QCOMPARE(gpu.utilizationPercent(), 85);
+    QCOMPARE(gpu.memoryUsedMiB(), 6144);
+    QCOMPARE(gpu.memoryTotalMiB(), 24576);
+    QCOMPARE(gpu.fanSpeedPercent(), 45);
+    QCOMPARE(gpu.powerDrawW(), 215.50);
+    QCOMPARE(gpu.powerLimitW(), 450.00);
+    QCOMPARE(gpu.graphicsClockMHz(), 2520);
+    QCOMPARE(gpu.memoryClockMHz(), 10501);
+
+    qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SMI");
+  }
+
   void testGpuStatusMessageWhenTelemetryUnavailable() {
     qputenv("RO_CONTROL_COMMAND_NVIDIA_SMI",
             QByteArrayLiteral("/definitely/missing/nvidia-smi"));
@@ -118,10 +156,6 @@ private slots:
             QByteArrayLiteral("/definitely/missing/nvidia-settings"));
     qputenv("RO_CONTROL_DRM_ROOT",
             QByteArrayLiteral("/definitely/missing/drm-root"));
-    qputenv("RO_CONTROL_HWMON_ROOT",
-            QByteArrayLiteral("/definitely/missing/hwmon-root"));
-    qputenv("RO_CONTROL_PCI_DEVICES_ROOT",
-            QByteArrayLiteral("/definitely/missing/pci-devices-root"));
 
     GpuMonitor gpu;
     gpu.stop();
@@ -134,8 +168,6 @@ private slots:
     qunsetenv("RO_CONTROL_COMMAND_SENSORS");
     qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS");
     qunsetenv("RO_CONTROL_DRM_ROOT");
-    qunsetenv("RO_CONTROL_HWMON_ROOT");
-    qunsetenv("RO_CONTROL_PCI_DEVICES_ROOT");
   }
 
   void testGpuTemperatureFallsBackToSensors() {
@@ -167,10 +199,6 @@ private slots:
             QByteArrayLiteral("/definitely/missing/nvidia-settings"));
     qputenv("RO_CONTROL_DRM_ROOT",
             QByteArrayLiteral("/definitely/missing/drm-root"));
-    qputenv("RO_CONTROL_HWMON_ROOT",
-            QByteArrayLiteral("/definitely/missing/hwmon-root"));
-    qputenv("RO_CONTROL_PCI_DEVICES_ROOT",
-            QByteArrayLiteral("/definitely/missing/pci-devices-root"));
 
     GpuMonitor gpu;
     gpu.stop();
@@ -186,8 +214,6 @@ private slots:
     qunsetenv("RO_CONTROL_COMMAND_SENSORS");
     qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS");
     qunsetenv("RO_CONTROL_DRM_ROOT");
-    qunsetenv("RO_CONTROL_HWMON_ROOT");
-    qunsetenv("RO_CONTROL_PCI_DEVICES_ROOT");
   }
 
   void testRamConstruction() {

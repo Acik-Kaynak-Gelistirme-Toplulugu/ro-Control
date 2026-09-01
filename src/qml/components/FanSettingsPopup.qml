@@ -217,11 +217,12 @@ Popup {
                     }
 
                     Button {
+                        id: closeBtn
                         implicitWidth: Math.round(32 * popup.uiScale)
                         implicitHeight: Math.round(32 * popup.uiScale)
                         background: Rectangle {
                             radius: 16
-                            color: parent.hovered ? (popup.darkMode ? "#4A3E6D" : "#E2E8F0") : "transparent"
+                            color: closeBtn.hovered ? (popup.darkMode ? "#4A3E6D" : "#E2E8F0") : "transparent"
                         }
                         contentItem: Text {
                             text: "✕"
@@ -501,20 +502,21 @@ Popup {
                                     model: [30, 50, 75, 100]
 
                                     delegate: Button {
+                                        id: presetBtn
                                         required property int modelData
-                                        text: modelData + "%"
+                                        text: presetBtn.modelData + "%"
                                         implicitHeight: Math.round(26 * popup.uiScale)
 
                                         background: Rectangle {
                                             radius: 6
-                                            color: popup.activeManualSpeed === modelData ? popup.accentColor : popup.bgColor
+                                            color: popup.activeManualSpeed === presetBtn.modelData ? popup.accentColor : popup.bgColor
                                             border.width: 1
                                             border.color: popup.borderColor
                                         }
 
                                         contentItem: Text {
-                                            text: parent.text
-                                            color: popup.activeManualSpeed === modelData ? popup.accentButtonText : popup.textColor
+                                            text: presetBtn.text
+                                            color: popup.activeManualSpeed === presetBtn.modelData ? popup.accentButtonText : popup.textColor
                                             font.pixelSize: Math.round(10 * popup.uiScale)
                                             font.weight: Font.Medium
                                             horizontalAlignment: Text.AlignHCenter
@@ -557,6 +559,134 @@ Popup {
                                             { temp: 70, speed: 70 },
                                             { temp: 85, speed: 100 }
                                         ];
+                                    }
+                                }
+                            }
+
+                            // Interactive Live Curve Graph Canvas
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: Math.round(110 * popup.uiScale)
+                                radius: 8
+                                color: popup.bgColor
+                                border.width: 1
+                                border.color: popup.borderColor
+                                clip: true
+
+                                Canvas {
+                                    id: curveCanvas
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+
+                                    property var pts: popup.activeCurvePoints
+                                    property int liveTemp: (popup.currentFan && popup.currentFan.temperatureC > 0)
+                                                           ? popup.currentFan.temperatureC : 0
+
+                                    onPtsChanged: requestPaint()
+                                    onLiveTempChanged: requestPaint()
+
+                                    onPaint: {
+                                        var ctx = getContext("2d");
+                                        ctx.reset();
+                                        var w = width;
+                                        var h = height;
+                                        var padL = 24;
+                                        var padR = 12;
+                                        var padT = 10;
+                                        var padB = 18;
+                                        var graphW = w - padL - padR;
+                                        var graphH = h - padT - padB;
+
+                                        // Grid Background Lines
+                                        ctx.strokeStyle = popup.darkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+                                        ctx.lineWidth = 1;
+                                        for (var g = 0; g <= 4; ++g) {
+                                            var gy = padT + (graphH * g / 4);
+                                            ctx.beginPath();
+                                            ctx.moveTo(padL, gy);
+                                            ctx.lineTo(padL + graphW, gy);
+                                            ctx.stroke();
+                                        }
+
+                                        // Axis labels
+                                        ctx.fillStyle = popup.softTextColor;
+                                        ctx.font = "9px sans-serif";
+                                        ctx.fillText("100%", 2, padT + 8);
+                                        ctx.fillText("50%", 6, padT + (graphH / 2) + 3);
+                                        ctx.fillText("0%", 10, padT + graphH);
+                                        ctx.fillText("20°C", padL, h - 3);
+                                        ctx.fillText("60°C", padL + (graphW / 2) - 10, h - 3);
+                                        ctx.fillText("100°C", padL + graphW - 24, h - 3);
+
+                                        if (!pts || pts.length === 0)
+                                            return;
+
+                                        // Map temperature (20-100) to X, speed (0-100) to Y
+                                        function mapX(temp) {
+                                            var clamped = Math.max(20, Math.min(100, temp));
+                                            return padL + (graphW * (clamped - 20) / 80);
+                                        }
+                                        function mapY(speed) {
+                                            var clamped = Math.max(0, Math.min(100, speed));
+                                            return padT + graphH - (graphH * clamped / 100);
+                                        }
+
+                                        // Draw Area Gradient Under Curve
+                                        ctx.beginPath();
+                                        ctx.moveTo(mapX(20), mapY(pts[0].speed));
+                                        for (var i = 0; i < pts.length; ++i) {
+                                            ctx.lineTo(mapX(pts[i].temp), mapY(pts[i].speed));
+                                        }
+                                        ctx.lineTo(mapX(100), mapY(pts[pts.length - 1].speed));
+                                        ctx.lineTo(padL + graphW, padT + graphH);
+                                        ctx.lineTo(padL, padT + graphH);
+                                        ctx.closePath();
+
+                                        var grad = ctx.createLinearGradient(0, padT, 0, padT + graphH);
+                                        grad.addColorStop(0, popup.darkMode ? "rgba(129, 140, 248, 0.35)" : "rgba(79, 70, 229, 0.25)");
+                                        grad.addColorStop(1, popup.darkMode ? "rgba(129, 140, 248, 0.02)" : "rgba(79, 70, 229, 0.02)");
+                                        ctx.fillStyle = grad;
+                                        ctx.fill();
+
+                                        // Draw Curve Stroke
+                                        ctx.beginPath();
+                                        ctx.strokeStyle = popup.accentColor;
+                                        ctx.lineWidth = 2.5;
+                                        ctx.moveTo(mapX(20), mapY(pts[0].speed));
+                                        for (var k = 0; k < pts.length; ++k) {
+                                            ctx.lineTo(mapX(pts[k].temp), mapY(pts[k].speed));
+                                        }
+                                        ctx.lineTo(mapX(100), mapY(pts[pts.length - 1].speed));
+                                        ctx.stroke();
+
+                                        // Draw Control Point Dots
+                                        for (var j = 0; j < pts.length; ++j) {
+                                            var px = mapX(pts[j].temp);
+                                            var py = mapY(pts[j].speed);
+
+                                            ctx.beginPath();
+                                            ctx.fillStyle = popup.accentColor;
+                                            ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+                                            ctx.fill();
+
+                                            ctx.beginPath();
+                                            ctx.fillStyle = popup.bgColor;
+                                            ctx.arc(px, py, 2, 0, Math.PI * 2);
+                                            ctx.fill();
+                                        }
+
+                                        // Draw Live Temperature Marker
+                                        if (liveTemp >= 20 && liveTemp <= 100) {
+                                            var liveX = mapX(liveTemp);
+                                            ctx.beginPath();
+                                            ctx.strokeStyle = popup.warningText;
+                                            ctx.lineWidth = 1.5;
+                                            ctx.setLineDash([3, 3]);
+                                            ctx.moveTo(liveX, padT);
+                                            ctx.lineTo(liveX, padT + graphH);
+                                            ctx.stroke();
+                                            ctx.setLineDash([]);
+                                        }
                                     }
                                 }
                             }
@@ -729,6 +859,7 @@ Popup {
                     }
 
                     Button {
+                        id: applyBtn
                         text: qsTr("Apply & Save Settings")
                         implicitHeight: Math.round(38 * popup.uiScale)
 
@@ -738,7 +869,7 @@ Popup {
                         }
 
                         contentItem: Text {
-                            text: parent.text
+                            text: applyBtn.text
                             color: popup.accentButtonText
                             font.pixelSize: Math.round(12 * popup.uiScale)
                             font.weight: Font.Bold

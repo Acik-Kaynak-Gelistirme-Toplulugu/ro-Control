@@ -126,6 +126,35 @@ Item {
                         }
                     }
 
+                    // Compact Power Source badge in header
+                    Rectangle {
+                        visible: page.systemInfo !== null && page.systemInfo.powerSource && page.systemInfo.powerSource.length > 0
+                        implicitHeight: Math.round(32 * page.uiScale)
+                        implicitWidth: powerBadgeLayout.implicitWidth + Math.round(20 * page.uiScale)
+                        radius: 8
+                        color: (page.systemInfo && page.systemInfo.onBattery) ? page.warningBg : page.bgColor
+                        border.width: 1
+                        border.color: (page.systemInfo && page.systemInfo.onBattery) ? page.warningText : page.borderColor
+
+                        RowLayout {
+                            id: powerBadgeLayout
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            Label {
+                                text: (page.systemInfo && page.systemInfo.onBattery) ? "🔋" : "⚡"
+                                font.pixelSize: Math.round(12 * page.uiScale)
+                            }
+
+                            Label {
+                                text: page.systemInfo ? page.systemInfo.powerSource : ""
+                                color: (page.systemInfo && page.systemInfo.onBattery) ? page.warningText : page.textColor
+                                font.pixelSize: Math.round(12 * page.uiScale)
+                                font.weight: Font.DemiBold
+                            }
+                        }
+                    }
+
                     Components.RefreshToolButton {
                         busy: page.refreshAnimating
                         theme: page.theme
@@ -433,6 +462,53 @@ Item {
                         wrapMode: Text.Wrap
                     }
 
+                    // Battery Profile Sync Toggle
+                    Rectangle {
+                        Layout.fillWidth: true
+                        radius: 8
+                        color: page.bgColor
+                        border.width: 1
+                        border.color: page.borderColor
+                        implicitHeight: batterySyncRow.implicitHeight + 16
+                        visible: page.fanController !== null
+
+                        RowLayout {
+                            id: batterySyncRow
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 12
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+
+                                Label {
+                                    text: qsTr("Battery Profile Sync")
+                                    color: page.textColor
+                                    font.pixelSize: Math.round(13 * page.uiScale)
+                                    font.weight: Font.DemiBold
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: qsTr("Automatically switch to Auto mode when running on battery to preserve energy.")
+                                    color: page.softTextColor
+                                    font.pixelSize: Math.round(11 * page.uiScale)
+                                    wrapMode: Text.Wrap
+                                }
+                            }
+
+                            Switch {
+                                id: batterySyncSwitch
+                                checked: page.fanController ? page.fanController.batteryProfileSyncEnabled : false
+                                onToggled: {
+                                    if (page.fanController)
+                                        page.fanController.batteryProfileSyncEnabled = checked;
+                                }
+                            }
+                        }
+                    }
+
                     // Manual Speed Slider (when Manual mode selected)
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -486,20 +562,21 @@ Item {
                                 model: [30, 50, 75, 100]
 
                                 delegate: Button {
+                                    id: presetBtn
                                     required property int modelData
-                                    text: modelData + "%"
+                                    text: presetBtn.modelData + "%"
                                     implicitHeight: Math.round(28 * page.uiScale)
 
                                     background: Rectangle {
                                         radius: 6
-                                        color: Math.round(manualSlider.value) === modelData ? page.accentColor : page.bgColor
+                                        color: Math.round(manualSlider.value) === presetBtn.modelData ? page.accentColor : page.bgColor
                                         border.width: 1
                                         border.color: page.borderColor
                                     }
 
                                     contentItem: Text {
-                                        text: parent.text
-                                        color: Math.round(manualSlider.value) === modelData ? page.accentButtonText : page.textColor
+                                        text: presetBtn.text
+                                        color: Math.round(manualSlider.value) === presetBtn.modelData ? page.accentButtonText : page.textColor
                                         font.pixelSize: Math.round(11 * page.uiScale)
                                         font.weight: Font.Medium
                                         horizontalAlignment: Text.AlignHCenter
@@ -507,9 +584,9 @@ Item {
                                     }
 
                                     onClicked: {
-                                        manualSlider.value = modelData;
+                                        manualSlider.value = presetBtn.modelData;
                                         if (page.fanController)
-                                            page.fanController.setManualFanSpeedPercent(modelData);
+                                            page.fanController.setManualFanSpeedPercent(presetBtn.modelData);
                                     }
                                 }
                             }
