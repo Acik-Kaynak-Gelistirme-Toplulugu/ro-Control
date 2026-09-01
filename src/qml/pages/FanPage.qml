@@ -692,12 +692,12 @@ Item {
 
                         Repeater {
                             model: [
-                                { mode: "auto", icon: "⚡", label: qsTr("Auto"), desc: qsTr("Hardware dynamic") },
-                                { mode: "silent", icon: "🌙", label: qsTr("Silent"), desc: qsTr("Zero-dB quiet") },
-                                { mode: "balanced", icon: "⚖️", label: qsTr("Balanced"), desc: qsTr("Optimized blend") },
-                                { mode: "performance", icon: "🚀", label: qsTr("Performance"), desc: qsTr("Maximum airflow") },
-                                { mode: "manual", icon: "🎛️", label: qsTr("Manual"), desc: qsTr("Locked speed") },
-                                { mode: "custom", icon: "📈", label: qsTr("Custom"), desc: qsTr("User curve") }
+                                { mode: "auto", label: qsTr("Auto"), desc: qsTr("Hardware dynamic") },
+                                { mode: "silent", label: qsTr("Silent"), desc: qsTr("Zero-dB quiet") },
+                                { mode: "balanced", label: qsTr("Balanced"), desc: qsTr("Optimized blend") },
+                                { mode: "performance", label: qsTr("Performance"), desc: qsTr("Maximum airflow") },
+                                { mode: "manual", label: qsTr("Manual"), desc: qsTr("Locked speed") },
+                                { mode: "custom", label: qsTr("Custom"), desc: qsTr("User curve") }
                             ]
 
                             delegate: AbstractButton {
@@ -721,42 +721,38 @@ Item {
                                     Behavior on border.color { ColorAnimation { duration: 120 } }
                                 }
 
-                                contentItem: RowLayout {
+                                contentItem: ColumnLayout {
                                     anchors.fill: parent
-                                    anchors.margins: Math.round(8 * page.uiScale)
-                                    spacing: 8
+                                    anchors.margins: Math.round(10 * page.uiScale)
+                                    spacing: 2
 
-                                    Rectangle {
-                                        implicitWidth: Math.round(32 * page.uiScale)
-                                        implicitHeight: Math.round(32 * page.uiScale)
-                                        radius: 8
-                                        color: modeBtn.isCurrent ? page.accentColor : (page.darkMode ? "#221C30" : "#F1F5F9")
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: modeBtn.modelData.icon
-                                            font.pixelSize: Math.round(14 * page.uiScale)
-                                        }
-                                    }
-
-                                    ColumnLayout {
+                                    RowLayout {
                                         Layout.fillWidth: true
-                                        spacing: 1
+                                        spacing: 6
+
+                                        Rectangle {
+                                            implicitWidth: Math.round(8 * page.uiScale)
+                                            implicitHeight: Math.round(8 * page.uiScale)
+                                            radius: Math.round(4 * page.uiScale)
+                                            color: modeBtn.isCurrent ? page.accentColor : (page.darkMode ? "#403858" : "#CBD5E1")
+                                        }
 
                                         Label {
+                                            Layout.fillWidth: true
                                             text: modeBtn.modelData.label
                                             color: modeBtn.isCurrent ? page.accentColor : page.textColor
-                                            font.pixelSize: Math.round(12 * page.uiScale)
+                                            font.pixelSize: Math.round(13 * page.uiScale)
                                             font.weight: modeBtn.isCurrent ? Font.Bold : Font.DemiBold
                                             elide: Text.ElideRight
                                         }
+                                    }
 
-                                        Label {
-                                            text: modeBtn.modelData.desc
-                                            color: page.softTextColor
-                                            font.pixelSize: Math.round(9 * page.uiScale)
-                                            elide: Text.ElideRight
-                                        }
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: modeBtn.modelData.desc
+                                        color: page.softTextColor
+                                        font.pixelSize: Math.round(10 * page.uiScale)
+                                        elide: Text.ElideRight
                                     }
                                 }
 
@@ -787,21 +783,6 @@ Item {
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: 10
-
-                                Rectangle {
-                                    implicitWidth: Math.round(34 * page.uiScale)
-                                    implicitHeight: Math.round(34 * page.uiScale)
-                                    radius: 8
-                                    color: page.darkMode ? "#342D4A" : "#EEF2FF"
-                                    border.width: 1
-                                    border.color: page.accentColor
-
-                                    Label {
-                                        anchors.centerIn: parent
-                                        text: "📈"
-                                        font.pixelSize: Math.round(16 * page.uiScale)
-                                    }
-                                }
 
                                 ColumnLayout {
                                     Layout.fillWidth: true
@@ -959,10 +940,10 @@ Item {
 
                                 Repeater {
                                     model: [
-                                        { id: "stealth", name: qsTr("🌙 Zero-dB Stealth") },
-                                        { id: "balanced", name: qsTr("⚖️ Balanced") },
-                                        { id: "aggressive", name: qsTr("⚡ Aggressive") },
-                                        { id: "stepped", name: qsTr("📶 Stepped") }
+                                        { id: "stealth", name: qsTr("Zero-dB Stealth") },
+                                        { id: "balanced", name: qsTr("Balanced") },
+                                        { id: "aggressive", name: qsTr("Aggressive") },
+                                        { id: "stepped", name: qsTr("Stepped") }
                                     ]
 
                                     delegate: Button {
