@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Resolve version
         id: meta
@@ -48,7 +48,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Create source archive
         env:
@@ -57,7 +57,7 @@ jobs:
           git archive --format=tar.gz --prefix="${ARCHIVE_PREFIX}/" --output="${ARCHIVE_PREFIX}.tar.gz" "${GITHUB_SHA}"
 
       - name: Upload source archive
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ro-control-source-${{ needs.metadata.outputs.version }}
           path: |
@@ -81,10 +81,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Download source archive
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           name: ro-control-source-${{ needs.metadata.outputs.version }}
           path: dist
@@ -156,7 +156,7 @@ jobs:
           rpm -qpl "${MAIN_RPM_FILE}" | grep -Fx '/usr/bin/ro-control'
 
       - name: Upload RPM artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ro-control-${{ matrix.arch }}-rpm
           path: |
