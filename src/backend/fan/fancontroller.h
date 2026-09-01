@@ -146,6 +146,8 @@ public:
   Q_INVOKABLE void setManualFanSpeedPercent(int percent);
   Q_INVOKABLE bool setCustomCurvePoint(int index, int tempC, int speedPercent);
   Q_INVOKABLE void resetCustomCurve();
+  Q_INVOKABLE bool applyCurvePreset(const QString &presetName);
+  Q_INVOKABLE QString cycleFanMode();
   Q_INVOKABLE void resetToAuto();
   Q_INVOKABLE void updateTemperature(int tempC);
   Q_INVOKABLE void updateCpuTemperature(int tempC);
@@ -172,6 +174,8 @@ public:
   Q_INVOKABLE bool setManualSpeedForFan(const QString &fanId, int percent);
   Q_INVOKABLE bool setCustomCurvePointForFan(const QString &fanId, int index,
                                              int tempC, int speedPercent);
+  Q_INVOKABLE bool applyCurvePresetForFan(const QString &fanId,
+                                          const QString &presetName);
   Q_INVOKABLE bool resetCustomCurveForFan(const QString &fanId);
   Q_INVOKABLE bool setThermalThresholdForFan(const QString &fanId, int tempC);
   Q_INVOKABLE bool resetFanToAuto(const QString &fanId);

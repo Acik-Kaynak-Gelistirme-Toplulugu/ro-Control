@@ -519,6 +519,60 @@ void FanController::resetCustomCurve() {
   }
 }
 
+static QVector<FanCurvePoint> presetToCurve(const QString &presetName) {
+  const QString lower = presetName.trimmed().toLower();
+  if (lower == QStringLiteral("stealth") ||
+      lower == QStringLiteral("zero-db") || lower == QStringLiteral("quiet")) {
+    return {{45, 0}, {55, 30}, {68, 55}, {80, 80}, {88, 100}};
+  }
+  if (lower == QStringLiteral("aggressive") ||
+      lower == QStringLiteral("overclock") ||
+      lower == QStringLiteral("extreme") || lower == QStringLiteral("gaming")) {
+    return {{35, 50}, {50, 70}, {65, 85}, {75, 95}, {82, 100}};
+  }
+  if (lower == QStringLiteral("stepped") || lower == QStringLiteral("ladder")) {
+    return {{40, 30}, {55, 30}, {56, 60}, {70, 60}, {71, 90}, {85, 100}};
+  }
+  if (lower == QStringLiteral("silent")) {
+    return FanController::defaultSilentCurve();
+  }
+  if (lower == QStringLiteral("performance")) {
+    return FanController::defaultPerformanceCurve();
+  }
+  return FanController::defaultBalancedCurve();
+}
+
+bool FanController::applyCurvePreset(const QString &presetName) {
+  m_customCurve = presetToCurve(presetName);
+  saveSettings();
+  emit customCurvePointsChanged();
+
+  if (m_mode == FanMode::Custom) {
+    evaluateAndApplyFanSpeed(true);
+  }
+  return true;
+}
+
+QString FanController::cycleFanMode() {
+  const QString current = fanMode();
+  QString next;
+  if (current == QStringLiteral("auto")) {
+    next = QStringLiteral("silent");
+  } else if (current == QStringLiteral("silent")) {
+    next = QStringLiteral("balanced");
+  } else if (current == QStringLiteral("balanced")) {
+    next = QStringLiteral("performance");
+  } else if (current == QStringLiteral("performance")) {
+    next = QStringLiteral("manual");
+  } else if (current == QStringLiteral("manual")) {
+    next = QStringLiteral("custom");
+  } else {
+    next = QStringLiteral("auto");
+  }
+  setFanMode(next);
+  return next;
+}
+
 void FanController::resetToAuto() { setFanMode(QStringLiteral("auto")); }
 
 void FanController::loadSettings() {
@@ -1572,6 +1626,27 @@ bool FanController::setCustomCurvePointForFan(const QString &fanId, int index,
   saveSettings();
   updateSystemFansTelemetry();
   return true;
+}
+
+bool FanController::applyCurvePresetForFan(const QString &fanId,
+                                           const QString &presetName) {
+  const auto curve = presetToCurve(presetName);
+  if (fanId == QStringLiteral("gpu_0") || fanId.isEmpty()) {
+    return applyCurvePreset(presetName);
+  }
+  if (fanId == QStringLiteral("cpu_fan_0")) {
+    m_cpuProfile.customCurve = curve;
+    saveSettings();
+    updateSystemFansTelemetry();
+    return true;
+  }
+  if (fanId == QStringLiteral("sys_fan_0")) {
+    m_sysProfile.customCurve = curve;
+    saveSettings();
+    updateSystemFansTelemetry();
+    return true;
+  }
+  return false;
 }
 
 bool FanController::resetCustomCurveForFan(const QString &fanId) {

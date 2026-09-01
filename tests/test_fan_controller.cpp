@@ -491,6 +491,39 @@ private slots:
     fan.setRampDownRatePercent(10);
     QCOMPARE(fan.rampDownRatePercent(), 10);
   }
+
+  void testCurvePresetsAndCycleMode() {
+    FanController fan;
+    fan.stop();
+
+    // Test Cycle Fan Mode
+    fan.setFanMode(QStringLiteral("auto"));
+    QCOMPARE(fan.cycleFanMode(), QStringLiteral("silent"));
+    QCOMPARE(fan.cycleFanMode(), QStringLiteral("balanced"));
+    QCOMPARE(fan.cycleFanMode(), QStringLiteral("performance"));
+    QCOMPARE(fan.cycleFanMode(), QStringLiteral("manual"));
+    QCOMPARE(fan.cycleFanMode(), QStringLiteral("custom"));
+    QCOMPARE(fan.cycleFanMode(), QStringLiteral("auto"));
+
+    // Test Curve Presets
+    QVERIFY(fan.applyCurvePreset(QStringLiteral("stealth")));
+    QVERIFY(fan.customCurvePoints().size() >= 4);
+    QCOMPARE(fan.customCurvePoints().at(0).fanSpeedPercent,
+             0); // zero-rpm under 45°C
+
+    QVERIFY(fan.applyCurvePreset(QStringLiteral("aggressive")));
+    QVERIFY(fan.customCurvePoints().size() >= 4);
+    QCOMPARE(fan.customCurvePoints().at(0).fanSpeedPercent, 50);
+
+    QVERIFY(fan.applyCurvePreset(QStringLiteral("stepped")));
+    QVERIFY(fan.customCurvePoints().size() >= 4);
+
+    // Per fan preset
+    QVERIFY(fan.applyCurvePresetForFan(QStringLiteral("cpu_fan_0"),
+                                       QStringLiteral("aggressive")));
+    QVERIFY(fan.applyCurvePresetForFan(QStringLiteral("sys_fan_0"),
+                                       QStringLiteral("stealth")));
+  }
 };
 
 QTEST_MAIN(TestFanController)
