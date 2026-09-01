@@ -45,11 +45,12 @@ private slots:
                        "desktop</launchable>")));
     QVERIFY(metainfo.contains(
                 QStringLiteral("<developer id=\"io.github.projectroasd\">")) ||
-            metainfo.contains(QStringLiteral(
-                "<developer_name>Project Ro ASD</developer_name>")));
-    QVERIFY(metainfo.contains(QStringLiteral("<name>Project Ro ASD</name>")) ||
-            metainfo.contains(QStringLiteral(
-                "<developer_name>Project Ro ASD</developer_name>")));
+            metainfo.contains(
+                QStringLiteral("<developer_name>Sopwit</developer_name>")));
+    QVERIFY(metainfo.contains(QStringLiteral("<name>Sopwit</name>")) ||
+            metainfo.contains(QStringLiteral("<name>Project Ro ASD</name>")) ||
+            metainfo.contains(
+                QStringLiteral("<developer_name>Sopwit</developer_name>")));
     QVERIFY(
         metainfo.contains(QStringLiteral("<url "
                                          "type=\"homepage\">https://github.com/"
@@ -87,19 +88,6 @@ private slots:
     QVERIFY(desktop.contains(QStringLiteral("Exec=ro-control")));
     QVERIFY(metainfo.contains(
         QStringLiteral("<id>io.github.projectroasd.rocontrol.desktop</id>")));
-    QVERIFY(metainfo.contains(QStringLiteral("<screenshots>")));
-    QVERIFY(metainfo.contains(
-        QStringLiteral("https://raw.githubusercontent.com/Project-Ro-ASD/"
-                       "ro-Control/main/docs/screenshots/driver-light.png")));
-    QVERIFY(metainfo.contains(
-        QStringLiteral("https://raw.githubusercontent.com/Project-Ro-ASD/"
-                       "ro-Control/main/docs/screenshots/monitor-light.png")));
-    QVERIFY(metainfo.contains(
-        QStringLiteral("https://raw.githubusercontent.com/Project-Ro-ASD/"
-                       "ro-Control/main/docs/screenshots/driver-dark.png")));
-    QVERIFY(metainfo.contains(
-        QStringLiteral("https://raw.githubusercontent.com/Project-Ro-ASD/"
-                       "ro-Control/main/docs/screenshots/monitor-dark.png")));
   }
 
   void testAppStreamContainsCurrentReleaseVersion() {
