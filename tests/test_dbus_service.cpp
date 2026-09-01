@@ -100,6 +100,10 @@ private slots:
 
     QVERIFY(adaptor.SelectGpu(0));
     QVERIFY(adaptor.SetFanSmoothing(true, 25, 10, 3));
+    QVERIFY(adaptor.SetFanMode(QStringLiteral("silent")));
+    QCOMPARE(adaptor.CycleFanMode(), QStringLiteral("balanced"));
+    QVERIFY(adaptor.ApplyFanCurvePreset(QStringLiteral("stealth")));
+    QCOMPARE(adaptor.GetFanModes().size(), 6);
   }
 };
 

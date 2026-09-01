@@ -251,6 +251,27 @@ bool RoControlDBusAdaptor::SetFanMode(const QString &mode) {
   return true;
 }
 
+QString RoControlDBusAdaptor::CycleFanMode() {
+  if (!m_fan) {
+    return QStringLiteral("auto");
+  }
+  return m_fan->cycleFanMode();
+}
+
+bool RoControlDBusAdaptor::ApplyFanCurvePreset(const QString &presetName) {
+  if (!m_fan) {
+    return false;
+  }
+  return m_fan->applyCurvePreset(presetName);
+}
+
+QStringList RoControlDBusAdaptor::GetFanModes() {
+  if (!m_fan) {
+    return {};
+  }
+  return m_fan->availableModes();
+}
+
 bool RoControlDBusAdaptor::SetFanSpeed(int percent) {
   if (!m_fan || !m_fan->controlSupported()) {
     return false;

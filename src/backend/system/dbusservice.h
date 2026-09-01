@@ -29,6 +29,9 @@ public slots:
   QString GetGpuDevices();
   bool SelectGpu(int index);
   bool SetFanMode(const QString &mode);
+  QString CycleFanMode();
+  bool ApplyFanCurvePreset(const QString &presetName);
+  QStringList GetFanModes();
   bool SetFanSpeed(int percent);
   bool SetPowerLimit(double watts);
   bool SetPersistenceMode(bool enabled);

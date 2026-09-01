@@ -295,8 +295,20 @@ private slots:
     QVERIFY(!provider.kernelVersion().isEmpty());
     QVERIFY(!provider.cpuModel().isEmpty());
     QVERIFY(!provider.deviceType().isEmpty());
+    QVERIFY(!provider.motherboardModel().isEmpty());
+    QVERIFY(!provider.biosVersion().isEmpty());
+    QVERIFY(!provider.cudaVersion().isEmpty());
+    QVERIFY(!provider.graphicsApiSummary().isEmpty());
     QCOMPARE(provider.virtualMachine(),
              !provider.virtualizationType().isEmpty());
+
+    const QString report = provider.generateSystemReport(
+        QStringLiteral("NVIDIA RTX 4080"), QStringLiteral("570.86.16"),
+        QStringLiteral("16 GB"), QStringLiteral("32 GB"),
+        QStringLiteral("Gen4 x16"), QStringLiteral("Secure Boot: Off"));
+    QVERIFY(!report.isEmpty());
+    QVERIFY(report.contains(QStringLiteral("System Diagnostic Report")));
+    QVERIFY(report.contains(QStringLiteral("NVIDIA RTX 4080")));
 
     QSignalSpy spy(&provider, &SystemInfoProvider::infoChanged);
     provider.refresh();
