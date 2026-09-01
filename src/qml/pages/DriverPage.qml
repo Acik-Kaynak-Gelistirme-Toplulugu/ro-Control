@@ -59,6 +59,195 @@ Item {
     readonly property color successBg: theme && theme.successBg ? theme.successBg : (page.darkMode ? "#143828" : "#ECFDF5")
     readonly property color warningBg: theme && theme.warningBg ? theme.warningBg : (page.darkMode ? "#3A2E12" : "#FFFBEB")
     readonly property color dangerBg: theme && theme.dangerBg ? theme.dangerBg : (page.darkMode ? "#3D171E" : "#FEF2F2")
+    readonly property color accentColor: theme && theme.accentA ? theme.accentA : (page.darkMode ? "#818CF8" : "#4F46E5")
+
+    component DriverActionTile: AbstractButton {
+        id: tile
+        property string title: ""
+        property string subtitle: ""
+        property color accentColor: "#10B981"
+        property bool activeBadge: false
+        property string badgeText: ""
+        property string tooltipText: ""
+
+        Layout.fillWidth: true
+        implicitHeight: Math.round(68 * page.uiScale)
+        hoverEnabled: true
+
+        scale: !enabled ? 1.0 : (down ? 0.98 : (hovered ? 1.012 : 1.0))
+        opacity: enabled ? 1.0 : 0.45
+
+        Behavior on scale {
+            NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+        }
+        Behavior on opacity {
+            NumberAnimation { duration: 150 }
+        }
+
+        ToolTip.visible: tooltipText.length > 0 && hovered
+        ToolTip.text: tooltipText
+        ToolTip.delay: 300
+
+        background: Rectangle {
+            radius: 10
+            color: !tile.enabled ? page.cardColor
+                   : tile.down ? Qt.darker(page.bgColor, 1.05)
+                   : tile.hovered ? (page.darkMode ? Qt.tint(page.bgColor, Qt.rgba(tile.accentColor.r, tile.accentColor.g, tile.accentColor.b, 0.14))
+                                                   : Qt.tint(page.bgColor, Qt.rgba(tile.accentColor.r, tile.accentColor.g, tile.accentColor.b, 0.08)))
+                   : page.bgColor
+            border.width: tile.hovered && tile.enabled ? 1.5 : 1
+            border.color: tile.hovered && tile.enabled ? tile.accentColor : page.borderColor
+
+            Behavior on border.color {
+                ColorAnimation { duration: 150 }
+            }
+            Behavior on color {
+                ColorAnimation { duration: 150 }
+            }
+
+            Rectangle {
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                anchors.margins: 10
+                width: 4
+                radius: 2
+                color: tile.accentColor
+                visible: tile.enabled
+                opacity: tile.hovered ? 1.0 : 0.7
+            }
+        }
+
+        contentItem: ColumnLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 20
+            anchors.rightMargin: 16
+            anchors.topMargin: 12
+            anchors.bottomMargin: 12
+            spacing: 3
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 6
+
+                Label {
+                    Layout.fillWidth: true
+                    text: tile.title
+                    color: page.textColor
+                    font.pixelSize: Math.round(13 * page.uiScale)
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+
+                Rectangle {
+                    visible: tile.activeBadge
+                    Layout.preferredHeight: Math.round(18 * page.uiScale)
+                    Layout.preferredWidth: badgeLabel.implicitWidth + 10
+                    radius: 4
+                    color: page.darkMode ? "#064E3B" : "#ECFDF5"
+                    border.width: 1
+                    border.color: "#10B981"
+
+                    Label {
+                        id: badgeLabel
+                        anchors.centerIn: parent
+                        text: tile.badgeText.length > 0 ? tile.badgeText : qsTr("ACTIVE")
+                        color: "#10B981"
+                        font.pixelSize: Math.round(9 * page.uiScale)
+                        font.weight: Font.Bold
+                    }
+                }
+            }
+
+            Label {
+                Layout.fillWidth: true
+                text: tile.subtitle
+                color: page.softTextColor
+                font.pixelSize: Math.round(11 * page.uiScale)
+                elide: Text.ElideRight
+            }
+        }
+    }
+
+    component ModernMiniButton: Button {
+        id: miniBtn
+        property string tone: "neutral"
+        property real uiScale: page.uiScale
+
+        implicitHeight: Math.round(32 * uiScale)
+        leftPadding: Math.round(14 * uiScale)
+        rightPadding: Math.round(14 * uiScale)
+
+        scale: !enabled ? 1.0 : (down ? 0.96 : (hovered ? 1.02 : 1.0))
+        Behavior on scale { NumberAnimation { duration: 100 } }
+
+        contentItem: Label {
+            text: miniBtn.text
+            font.pixelSize: Math.round(11 * miniBtn.uiScale)
+            font.weight: Font.DemiBold
+            color: !miniBtn.enabled ? page.softTextColor
+                   : tone === "danger" ? (miniBtn.hovered ? "#FFFFFF" : "#EF4444")
+                   : tone === "primary" ? "#FFFFFF"
+                   : tone === "success" ? "#FFFFFF"
+                   : page.textColor
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        background: Rectangle {
+            radius: 6
+            color: !miniBtn.enabled ? Qt.rgba(0,0,0,0)
+                   : tone === "primary" ? (miniBtn.down ? Qt.darker(page.accentColor, 1.1) : (miniBtn.hovered ? Qt.lighter(page.accentColor, 1.1) : page.accentColor))
+                   : tone === "danger" ? (miniBtn.down ? "#DC2626" : (miniBtn.hovered ? "#EF4444" : (page.darkMode ? "#3D171E" : "#FEE2E2")))
+                   : tone === "success" ? (miniBtn.down ? "#16A34A" : (miniBtn.hovered ? "#22C55E" : (page.darkMode ? "#143828" : "#DCFCE7")))
+                   : (miniBtn.down ? Qt.darker(page.bgColor, 1.1) : (miniBtn.hovered ? page.cardColor : page.bgColor))
+            border.width: 1
+            border.color: !miniBtn.enabled ? page.borderColor
+                         : tone === "danger" ? "#EF4444"
+                         : tone === "primary" ? page.accentColor
+                         : tone === "success" ? "#22C55E"
+                         : page.borderColor
+            opacity: miniBtn.enabled ? 1.0 : 0.5
+        }
+    }
+
+    component ModernDialogButton: Button {
+        id: dlgBtn
+        property string tone: "neutral"
+        property real uiScale: page.uiScale
+
+        Layout.fillWidth: true
+        implicitHeight: Math.round(38 * uiScale)
+
+        scale: !enabled ? 1.0 : (down ? 0.97 : (hovered ? 1.015 : 1.0))
+        Behavior on scale { NumberAnimation { duration: 100 } }
+
+        contentItem: Label {
+            text: dlgBtn.text
+            font.pixelSize: Math.round(13 * dlgBtn.uiScale)
+            font.weight: Font.DemiBold
+            color: !dlgBtn.enabled ? page.softTextColor
+                   : tone === "primary" || tone === "danger" || tone === "success" ? "#FFFFFF"
+                   : page.textColor
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        background: Rectangle {
+            radius: 8
+            color: !dlgBtn.enabled ? page.cardColor
+                   : tone === "primary" ? (dlgBtn.down ? Qt.darker(page.accentColor, 1.1) : (dlgBtn.hovered ? Qt.lighter(page.accentColor, 1.08) : page.accentColor))
+                   : tone === "danger" ? (dlgBtn.down ? "#DC2626" : (dlgBtn.hovered ? "#EF4444" : "#DC2626"))
+                   : tone === "success" ? (dlgBtn.down ? "#16A34A" : (dlgBtn.hovered ? "#22C55E" : "#16A34A"))
+                   : (dlgBtn.down ? Qt.darker(page.bgColor, 1.08) : (dlgBtn.hovered ? page.cardColor : page.bgColor))
+            border.width: 1
+            border.color: !dlgBtn.enabled ? page.borderColor
+                         : tone === "primary" ? Qt.tint(page.accentColor, "#33FFFFFF")
+                         : tone === "danger" ? Qt.tint("#EF4444", "#33FFFFFF")
+                         : tone === "success" ? Qt.tint("#22C55E", "#33FFFFFF")
+                         : page.borderColor
+        }
+    }
 
     function classifyOperationPhase(message) {
         const lowered = (message || "").toLowerCase();
@@ -455,32 +644,38 @@ Item {
 
                     GridLayout {
                         Layout.fillWidth: true
-                        columns: width > 920 ? 4 : 1
-                        columnSpacing: 8
-                        rowSpacing: 8
+                        columns: width > 920 ? (page.pendingDriverStateText.length > 0 ? 5 : 4) : (width > 560 ? 2 : 1)
+                        columnSpacing: 10
+                        rowSpacing: 10
 
-                        Button {
-                            Layout.fillWidth: true
-                            text: qsTr("Closed Source")
+                        DriverActionTile {
+                            title: qsTr("Closed Source")
+                            subtitle: qsTr("Proprietary akmod • CUDA")
+                            accentColor: "#10B981"
+                            activeBadge: page.closedSourceDriverDetected
+                            badgeText: qsTr("INSTALLED")
                             enabled: page.canManageDriverStack && !page.openSourceDriverDetected && !page.nvidiaInstaller.busy && !page.nvidiaUpdater.busy
+                            tooltipText: page.openSourceDriverDetected ? qsTr("Deep Clean is required before switching from open-source to closed-source.") : qsTr("Install or update official NVIDIA proprietary driver.")
                             onClicked: page.beginClosedSourceInstall()
-                            ToolTip.visible: hovered && page.openSourceDriverDetected
-                            ToolTip.text: qsTr("Deep Clean is required before switching from open-source to closed-source.")
                         }
 
-                        Button {
-                            Layout.fillWidth: true
-                            text: qsTr("Open Source")
+                        DriverActionTile {
+                            title: qsTr("Open Source")
+                            subtitle: qsTr("Community Nouveau / Open")
+                            accentColor: "#0EA5E9"
+                            activeBadge: page.openSourceDriverDetected
+                            badgeText: qsTr("INSTALLED")
                             enabled: page.canManageDriverStack && !page.closedSourceDriverDetected && !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
+                            tooltipText: page.closedSourceDriverDetected ? qsTr("Deep Clean is required before switching from closed-source to open-source.") : qsTr("Switch to open-source graphics stack.")
                             onClicked: page.beginOpenSourceInstall()
-                            ToolTip.visible: hovered && page.closedSourceDriverDetected
-                            ToolTip.text: qsTr("Deep Clean is required before switching from closed-source to open-source.")
                         }
 
-                        Button {
-                            Layout.fillWidth: true
-                            text: qsTr("Deep Clean")
+                        DriverActionTile {
+                            title: qsTr("Deep Clean")
+                            subtitle: qsTr("Purge artifacts & stale DKMS")
+                            accentColor: "#F59E0B"
                             enabled: page.canManageDriverStack && page.driverInstalledLocally && !page.nvidiaInstaller.busy && !page.nvidiaUpdater.busy
+                            tooltipText: qsTr("Remove leftover configurations and prepare system for clean driver installation.")
                             onClicked: {
                                 page.markDriverActionStarted("deep-clean");
                                 page.setOperationState(qsTr("Installer"), qsTr("Cleaning NVIDIA artifacts..."), "info", true);
@@ -488,24 +683,26 @@ Item {
                             }
                         }
 
-                        Button {
-                            Layout.fillWidth: true
-                            text: qsTr("Rebuild Modules")
+                        DriverActionTile {
+                            title: qsTr("Rebuild Modules")
+                            subtitle: qsTr("Akmods & initramfs regeneration")
+                            accentColor: "#8B5CF6"
                             enabled: page.canManageDriverStack && page.driverInstalledLocally && !page.nvidiaInstaller.busy && !page.nvidiaUpdater.busy
+                            tooltipText: qsTr("Force-rebuilds akmod kernel modules and regenerates initramfs after kernel updates.")
                             onClicked: {
                                 page.markDriverActionStarted("rebuild-modules");
                                 page.setOperationState(qsTr("Installer"), qsTr("Rebuilding kernel modules & initramfs..."), "info", true);
                                 page.nvidiaInstaller.rebuildKernelModules();
                             }
-                            ToolTip.visible: hovered
-                            ToolTip.text: qsTr("Force-rebuilds akmod kernel modules and regenerates initramfs after kernel updates.")
                         }
 
-                        Button {
-                            Layout.fillWidth: true
-                            text: qsTr("Restart")
+                        DriverActionTile {
                             visible: page.pendingDriverStateText.length > 0
+                            title: qsTr("Restart System")
+                            subtitle: qsTr("Reboot to activate new driver")
+                            accentColor: "#EF4444"
                             enabled: visible && !page.operationRunning
+                            tooltipText: qsTr("System restart required to load newly installed kernel driver.")
                             onClicked: restartPopup.open()
                         }
 
@@ -626,20 +823,23 @@ Item {
                             font.pixelSize: Math.round(11 * page.uiScale)
                         }
 
-                        Button {
+                        ModernMiniButton {
                             text: qsTr("Follow")
                             enabled: !page.activityFollowTail
+                            tone: "neutral"
                             onClicked: page.resumeActivityFollow()
                         }
 
-                        Button {
+                        ModernMiniButton {
                             text: qsTr("Cancel")
                             enabled: page.operationRunning
+                            tone: "danger"
                             onClicked: page.requestCancelDriverOperation()
                         }
 
-                        Button {
+                        ModernMiniButton {
                             text: qsTr("Clear")
+                            tone: "neutral"
                             onClicked: {
                                 activityLog.text = "";
                                 page.activityFollowTail = true;
@@ -753,15 +953,15 @@ Item {
                 Layout.fillWidth: true
                 spacing: 8
 
-                Button {
-                    Layout.fillWidth: true
+                ModernDialogButton {
                     text: qsTr("Cancel")
+                    tone: "neutral"
                     onClicked: restartPopup.close()
                 }
 
-                Button {
-                    Layout.fillWidth: true
+                ModernDialogButton {
                     text: qsTr("Restart Now")
+                    tone: "danger"
                     onClicked: {
                         restartPopup.close();
                         page.requestSystemRestart();
@@ -810,15 +1010,15 @@ Item {
                 Layout.fillWidth: true
                 spacing: 8
 
-                Button {
-                    Layout.fillWidth: true
+                ModernDialogButton {
                     text: qsTr("Cancel")
+                    tone: "neutral"
                     onClicked: currentDriverPopup.close()
                 }
 
-                Button {
-                    Layout.fillWidth: true
+                ModernDialogButton {
                     text: qsTr("Reinstall Anyway")
+                    tone: "primary"
                     onClicked: {
                         currentDriverPopup.close();
                         page.continueClosedSourceInstall();
@@ -870,15 +1070,15 @@ Item {
                 Layout.fillWidth: true
                 spacing: 8
 
-                Button {
-                    Layout.fillWidth: true
+                ModernDialogButton {
                     text: qsTr("Cancel")
+                    tone: "neutral"
                     onClicked: sourceSwitchBlockedPopup.close()
                 }
 
-                Button {
-                    Layout.fillWidth: true
+                ModernDialogButton {
                     text: qsTr("Deep Clean")
+                    tone: "primary"
                     enabled: page.canManageDriverStack && page.driverInstalledLocally && !page.operationRunning
                     onClicked: {
                         sourceSwitchBlockedPopup.close();
@@ -965,17 +1165,17 @@ Item {
                 Layout.fillWidth: true
                 spacing: 8
 
-                Button {
-                    Layout.fillWidth: true
+                ModernDialogButton {
                     text: qsTr("Reject")
+                    tone: "neutral"
                     onClicked: {
                         licensePopup.close();
                     }
                 }
 
-                Button {
-                    Layout.fillWidth: true
+                ModernDialogButton {
                     text: qsTr("Accept")
+                    tone: "success"
                     onClicked: {
                         licensePopup.close();
                         page.markDriverActionStarted("closed-install");
