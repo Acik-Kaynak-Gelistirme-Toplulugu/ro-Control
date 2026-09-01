@@ -121,18 +121,19 @@ Popup {
             spacing: 12
 
             Rectangle {
-                implicitWidth: Math.round(40 * popup.uiScale)
-                implicitHeight: Math.round(40 * popup.uiScale)
-                radius: Math.round(20 * popup.uiScale)
+                implicitWidth: Math.round(36 * popup.uiScale)
+                implicitHeight: Math.round(36 * popup.uiScale)
+                radius: Math.round(18 * popup.uiScale)
                 color: popup.step === "done" ? popup.successBg : (popup.darkMode ? "#3B3156" : "#EEF2FF")
                 border.width: 1
                 border.color: popup.step === "done" ? popup.successText : popup.accentColor
 
                 Label {
                     anchors.centerIn: parent
-                    text: popup.step === "done" ? "✓" : (popup.step === "scanning" ? "🔍" : "⚙️")
+                    text: popup.step === "done" ? "✓" : (popup.step === "scanning" ? "• • •" : "WIZ")
                     color: popup.step === "done" ? popup.successText : popup.accentColor
-                    font.pixelSize: Math.round(18 * popup.uiScale)
+                    font.pixelSize: Math.round(11 * popup.uiScale)
+                    font.weight: Font.Bold
                 }
             }
 
@@ -162,22 +163,34 @@ Popup {
                 }
             }
 
-            Button {
+            ToolButton {
                 id: closeBtn
                 visible: popup.step !== "scanning"
+                Layout.alignment: Qt.AlignTop | Qt.AlignRight
                 implicitWidth: Math.round(32 * popup.uiScale)
                 implicitHeight: Math.round(32 * popup.uiScale)
+                hoverEnabled: true
+
                 background: Rectangle {
-                    radius: 16
+                    radius: Math.round(16 * popup.uiScale)
                     color: closeBtn.hovered ? (popup.darkMode ? "#3B3156" : "#E2E8F0") : "transparent"
                 }
+
                 contentItem: Text {
                     text: "✕"
-                    color: popup.softTextColor
-                    font.pixelSize: Math.round(14 * popup.uiScale)
+                    color: closeBtn.hovered ? popup.textColor : popup.softTextColor
+                    font.pixelSize: Math.round(15 * popup.uiScale)
+                    font.weight: Font.DemiBold
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
+
+                ToolTip {
+                    visible: closeBtn.hovered
+                    text: qsTr("Close")
+                    delay: 400
+                }
+
                 onClicked: popup.close()
             }
         }
