@@ -650,23 +650,23 @@ Item {
 
                         DriverActionTile {
                             title: qsTr("Closed Source")
-                            subtitle: qsTr("Proprietary akmod • CUDA")
+                            subtitle: qsTr("NVIDIA Official Release • Proprietary")
                             accentColor: "#10B981"
                             activeBadge: page.closedSourceDriverDetected
                             badgeText: qsTr("INSTALLED")
                             enabled: page.canManageDriverStack && !page.openSourceDriverDetected && !page.nvidiaInstaller.busy && !page.nvidiaUpdater.busy
-                            tooltipText: page.openSourceDriverDetected ? qsTr("Deep Clean is required before switching from open-source to closed-source.") : qsTr("Install or update official NVIDIA proprietary driver.")
+                            tooltipText: page.openSourceDriverDetected ? qsTr("Deep Clean is required before switching from open-source to closed-source.") : qsTr("Install official proprietary NVIDIA driver release (akmod-nvidia).")
                             onClicked: page.beginClosedSourceInstall()
                         }
 
                         DriverActionTile {
                             title: qsTr("Open Source")
-                            subtitle: qsTr("Community Nouveau / Open")
+                            subtitle: qsTr("Community Release • akmod-open")
                             accentColor: "#0EA5E9"
                             activeBadge: page.openSourceDriverDetected
                             badgeText: qsTr("INSTALLED")
                             enabled: page.canManageDriverStack && !page.closedSourceDriverDetected && !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
-                            tooltipText: page.closedSourceDriverDetected ? qsTr("Deep Clean is required before switching from closed-source to open-source.") : qsTr("Switch to open-source graphics stack.")
+                            tooltipText: page.closedSourceDriverDetected ? qsTr("Deep Clean is required before switching from closed-source to open-source.") : qsTr("Install community open-source kernel driver package (akmod-nvidia-open).")
                             onClicked: page.beginOpenSourceInstall()
                         }
 
