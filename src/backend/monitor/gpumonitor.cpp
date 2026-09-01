@@ -127,20 +127,6 @@ bool readFirstTemperatureFromHwmon(const QString &basePath, int *value) {
   return false;
 }
 
-bool readFirstTemperatureInputInDirectory(const QString &path, int *value) {
-  const QFileInfoList inputs = QDir(path).entryInfoList(
-      {QStringLiteral("temp*_input")}, QDir::Files, QDir::Name);
-  for (const QFileInfo &input : inputs) {
-    qint64 milliC = 0;
-    if (readIntegerFile(input.absoluteFilePath(), &milliC) && milliC > 0) {
-      *value = static_cast<int>(milliC / 1000);
-      return true;
-    }
-  }
-
-  return false;
-}
-
 bool isGpuHwmonName(const QString &name) {
   const QString lower = name.trimmed().toLower();
   return lower.contains(QStringLiteral("nvidia")) ||
@@ -149,18 +135,41 @@ bool isGpuHwmonName(const QString &name) {
 }
 
 bool readNvidiaTemperatureFromHwmonClass(int *value) {
-  const QFileInfoList hwmonEntries =
-      QDir(QStringLiteral("/sys/class/hwmon"))
-          .entryInfoList({QStringLiteral("hwmon*")},
-                         QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
-  for (const QFileInfo &entry : hwmonEntries) {
-    if (!isGpuHwmonName(
-            readFileText(entry.absoluteFilePath() + QStringLiteral("/name")))) {
-      continue;
-    }
+  static QString s_cachedGpuHwmonInput;
+  static bool s_probed = false;
 
-    if (readFirstTemperatureInputInDirectory(entry.absoluteFilePath(), value)) {
+  if (s_probed && !s_cachedGpuHwmonInput.isEmpty()) {
+    qint64 milliC = 0;
+    if (readIntegerFile(s_cachedGpuHwmonInput, &milliC) && milliC > 0) {
+      *value = static_cast<int>(milliC / 1000);
       return true;
+    }
+  }
+
+  if (!s_probed) {
+    s_probed = true;
+    const QFileInfoList hwmonEntries =
+        QDir(QStringLiteral("/sys/class/hwmon"))
+            .entryInfoList({QStringLiteral("hwmon*")},
+                           QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    for (const QFileInfo &entry : hwmonEntries) {
+      if (!isGpuHwmonName(readFileText(entry.absoluteFilePath() +
+                                       QStringLiteral("/name")))) {
+        continue;
+      }
+
+      const QFileInfoList inputs =
+          QDir(entry.absoluteFilePath())
+              .entryInfoList({QStringLiteral("temp*_input")}, QDir::Files,
+                             QDir::Name);
+      for (const QFileInfo &input : inputs) {
+        qint64 milliC = 0;
+        if (readIntegerFile(input.absoluteFilePath(), &milliC) && milliC > 0) {
+          s_cachedGpuHwmonInput = input.absoluteFilePath();
+          *value = static_cast<int>(milliC / 1000);
+          return true;
+        }
+      }
     }
   }
 
@@ -168,25 +177,55 @@ bool readNvidiaTemperatureFromHwmonClass(int *value) {
 }
 
 bool readNvidiaTemperatureFromPciHwmon(int *value) {
-  const QFileInfoList deviceEntries =
-      QDir(QStringLiteral("/sys/bus/pci/devices"))
-          .entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
-  for (const QFileInfo &deviceEntry : deviceEntries) {
-    const QString devicePath = deviceEntry.absoluteFilePath();
-    if (readFileText(devicePath + QStringLiteral("/vendor"))
-            .compare(QStringLiteral("0x10de"), Qt::CaseInsensitive) != 0) {
-      continue;
-    }
+  static QString s_cachedPciInput;
+  static bool s_probed = false;
 
-    const QString deviceClass =
-        readFileText(devicePath + QStringLiteral("/class")).toLower();
-    if (!deviceClass.startsWith(QStringLiteral("0x03")) &&
-        !deviceClass.startsWith(QStringLiteral("0x02"))) {
-      continue;
-    }
-
-    if (readFirstTemperatureFromHwmon(devicePath, value)) {
+  if (s_probed && !s_cachedPciInput.isEmpty()) {
+    qint64 milliC = 0;
+    if (readIntegerFile(s_cachedPciInput, &milliC) && milliC > 0) {
+      *value = static_cast<int>(milliC / 1000);
       return true;
+    }
+  }
+
+  if (!s_probed) {
+    s_probed = true;
+    const QFileInfoList deviceEntries =
+        QDir(QStringLiteral("/sys/bus/pci/devices"))
+            .entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    for (const QFileInfo &deviceEntry : deviceEntries) {
+      const QString devicePath = deviceEntry.absoluteFilePath();
+      if (readFileText(devicePath + QStringLiteral("/vendor"))
+              .compare(QStringLiteral("0x10de"), Qt::CaseInsensitive) != 0) {
+        continue;
+      }
+
+      const QString deviceClass =
+          readFileText(devicePath + QStringLiteral("/class")).toLower();
+      if (!deviceClass.startsWith(QStringLiteral("0x03")) &&
+          !deviceClass.startsWith(QStringLiteral("0x02"))) {
+        continue;
+      }
+
+      const QFileInfoList hwmonEntries =
+          QDir(devicePath)
+              .entryInfoList({QStringLiteral("hwmon*")},
+                             QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+      for (const QFileInfo &entry : hwmonEntries) {
+        const QFileInfoList inputs =
+            QDir(entry.absoluteFilePath())
+                .entryInfoList({QStringLiteral("temp*_input")}, QDir::Files,
+                               QDir::Name);
+        for (const QFileInfo &input : inputs) {
+          qint64 milliC = 0;
+          if (readIntegerFile(input.absoluteFilePath(), &milliC) &&
+              milliC > 0) {
+            s_cachedPciInput = input.absoluteFilePath();
+            *value = static_cast<int>(milliC / 1000);
+            return true;
+          }
+        }
+      }
     }
   }
 
@@ -218,15 +257,13 @@ bool readTemperatureFromSensorsOutput(const QString &text, int *value) {
     }
 
     const auto tempMatch = tempInputPattern.match(trimmed);
-    if (!tempMatch.hasMatch()) {
-      continue;
-    }
-
-    bool ok = false;
-    const double parsed = tempMatch.captured(1).toDouble(&ok);
-    if (ok && parsed > 0.0) {
-      *value = static_cast<int>(parsed);
-      return true;
+    if (tempMatch.hasMatch()) {
+      bool ok = false;
+      const double parsed = tempMatch.captured(1).toDouble(&ok);
+      if (ok && parsed > 0.0) {
+        *value = static_cast<int>(parsed);
+        return true;
+      }
     }
   }
 
@@ -274,99 +311,122 @@ bool readNvidiaHotspotAndMemoryTemps(CommandRunner &runner, int *hotspotC,
     return false;
   }
 
-  const QFileInfoList hwmonEntries =
-      QDir(QStringLiteral("/sys/class/hwmon"))
-          .entryInfoList({QStringLiteral("hwmon*")},
-                         QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
-  for (const QFileInfo &entry : hwmonEntries) {
-    const QString hwmonPath = entry.absoluteFilePath();
-    if (!isGpuHwmonName(readFileText(hwmonPath + QStringLiteral("/name")))) {
+  static QString s_cachedHotspotPath;
+  static QString s_cachedMemPath;
+  static bool s_hwmonProbed = false;
+
+  if (!s_hwmonProbed) {
+    s_hwmonProbed = true;
+    const QFileInfoList hwmonEntries =
+        QDir(QStringLiteral("/sys/class/hwmon"))
+            .entryInfoList({QStringLiteral("hwmon*")},
+                           QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    for (const QFileInfo &entry : hwmonEntries) {
+      const QString hwmonPath = entry.absoluteFilePath();
+      if (!isGpuHwmonName(readFileText(hwmonPath + QStringLiteral("/name")))) {
+        continue;
+      }
+
+      const QFileInfoList tempInputs = QDir(hwmonPath).entryInfoList(
+          {QStringLiteral("temp*_input")}, QDir::Files, QDir::Name);
+      for (const QFileInfo &tempFile : tempInputs) {
+        const QString baseName = tempFile.baseName();
+        const QString prefix = baseName.section(QLatin1Char('_'), 0, 0);
+        const QString label = readFileText(hwmonPath + QLatin1Char('/') +
+                                           prefix + QStringLiteral("_label"))
+                                  .toLower();
+
+        if (label.contains(QStringLiteral("junction")) ||
+            label.contains(QStringLiteral("hotspot"))) {
+          s_cachedHotspotPath = tempFile.absoluteFilePath();
+        } else if (label.contains(QStringLiteral("mem")) ||
+                   label.contains(QStringLiteral("vram"))) {
+          s_cachedMemPath = tempFile.absoluteFilePath();
+        }
+      }
+    }
+  }
+
+  if (!s_cachedHotspotPath.isEmpty()) {
+    qint64 milliC = 0;
+    if (readIntegerFile(s_cachedHotspotPath, &milliC) && milliC > 0) {
+      *hotspotC = static_cast<int>(milliC / 1000);
+    }
+  }
+  if (!s_cachedMemPath.isEmpty()) {
+    qint64 milliC = 0;
+    if (readIntegerFile(s_cachedMemPath, &milliC) && milliC > 0) {
+      *memoryC = static_cast<int>(milliC / 1000);
+    }
+  }
+
+  if (*hotspotC > 0 || *memoryC > 0) {
+    return true;
+  }
+
+  static qint64 s_lastSensorsRun = 0;
+  static bool s_sensorsSupported = true;
+  const qint64 now = QDateTime::currentMSecsSinceEpoch();
+  if (!s_sensorsSupported || (now - s_lastSensorsRun < 15000)) {
+    return false;
+  }
+  s_lastSensorsRun = now;
+
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 800;
+  const auto result =
+      runner.run(QStringLiteral("sensors"), {QStringLiteral("-u")}, options);
+  if (!result.success()) {
+    s_sensorsSupported = false;
+    return false;
+  }
+
+  static const QRegularExpression chipHeaderPattern(
+      QStringLiteral(R"(^([^\s:][^:]+)$)"));
+  static const QRegularExpression junctionPattern(
+      QStringLiteral(R"(\b(?:junction|hotspot)_input:\s*([+-]?\d+(?:\.\d+)?))"),
+      QRegularExpression::CaseInsensitiveOption);
+  static const QRegularExpression memPattern(
+      QStringLiteral(R"(\b(?:mem|memory|vram)_input:\s*([+-]?\d+(?:\.\d+)?))"),
+      QRegularExpression::CaseInsensitiveOption);
+
+  bool inGpuChip = false;
+  const QStringList lines = result.stdout.split(QLatin1Char('\n'));
+  for (const QString &line : lines) {
+    const QString trimmed = line.trimmed();
+    if (trimmed.isEmpty()) {
       continue;
     }
 
-    const QFileInfoList tempInputs = QDir(hwmonPath).entryInfoList(
-        {QStringLiteral("temp*_input")}, QDir::Files, QDir::Name);
-    for (const QFileInfo &tempFile : tempInputs) {
-      const QString baseName = tempFile.baseName(); // e.g. "temp2_input"
-      const QString prefix =
-          baseName.section(QLatin1Char('_'), 0, 0); // e.g. "temp2"
-      const QString label = readFileText(hwmonPath + QLatin1Char('/') + prefix +
-                                         QStringLiteral("_label"))
-                                .toLower();
+    const auto chipMatch = chipHeaderPattern.match(line);
+    if (chipMatch.hasMatch()) {
+      inGpuChip = isGpuHwmonName(chipMatch.captured(1));
+      continue;
+    }
+    if (!inGpuChip) {
+      continue;
+    }
 
-      qint64 milliC = 0;
-      if (readIntegerFile(tempFile.absoluteFilePath(), &milliC) && milliC > 0) {
-        const int val = static_cast<int>(milliC / 1000);
-        if (label.contains(QStringLiteral("junction")) ||
-            label.contains(QStringLiteral("hotspot"))) {
-          *hotspotC = val;
-        } else if (label.contains(QStringLiteral("mem")) ||
-                   label.contains(QStringLiteral("vram"))) {
-          *memoryC = val;
-        }
+    auto matchJunction = junctionPattern.match(trimmed);
+    if (matchJunction.hasMatch()) {
+      bool ok = false;
+      const double val = matchJunction.captured(1).toDouble(&ok);
+      if (ok && val > 0.0) {
+        *hotspotC = static_cast<int>(val);
       }
     }
 
-    if (*hotspotC > 0 || *memoryC > 0) {
-      return true;
+    auto matchMem = memPattern.match(trimmed);
+    if (matchMem.hasMatch()) {
+      bool ok = false;
+      const double val = matchMem.captured(1).toDouble(&ok);
+      if (ok && val > 0.0) {
+        *memoryC = static_cast<int>(val);
+      }
     }
   }
 
-  CommandRunner::RunOptions options;
-  options.timeoutMs = 1200;
-  const auto result =
-      runner.run(QStringLiteral("sensors"), {QStringLiteral("-u")}, options);
-  if (result.success()) {
-    static const QRegularExpression chipHeaderPattern(
-        QStringLiteral(R"(^([^\s:][^:]+)$)"));
-    static const QRegularExpression junctionPattern(
-        QStringLiteral(
-            R"(\b(?:junction|hotspot)_input:\s*([+-]?\d+(?:\.\d+)?))"),
-        QRegularExpression::CaseInsensitiveOption);
-    static const QRegularExpression memPattern(
-        QStringLiteral(
-            R"(\b(?:mem|memory|vram)_input:\s*([+-]?\d+(?:\.\d+)?))"),
-        QRegularExpression::CaseInsensitiveOption);
-
-    bool inGpuChip = false;
-    const QStringList lines = result.stdout.split(QLatin1Char('\n'));
-    for (const QString &line : lines) {
-      const QString trimmed = line.trimmed();
-      if (trimmed.isEmpty()) {
-        continue;
-      }
-
-      const auto chipMatch = chipHeaderPattern.match(line);
-      if (chipMatch.hasMatch()) {
-        inGpuChip = isGpuHwmonName(chipMatch.captured(1));
-        continue;
-      }
-      if (!inGpuChip) {
-        continue;
-      }
-
-      auto matchJunction = junctionPattern.match(trimmed);
-      if (matchJunction.hasMatch()) {
-        bool ok = false;
-        const double val = matchJunction.captured(1).toDouble(&ok);
-        if (ok && val > 0.0) {
-          *hotspotC = static_cast<int>(val);
-        }
-      }
-
-      auto matchMem = memPattern.match(trimmed);
-      if (matchMem.hasMatch()) {
-        bool ok = false;
-        const double val = matchMem.captured(1).toDouble(&ok);
-        if (ok && val > 0.0) {
-          *memoryC = static_cast<int>(val);
-        }
-      }
-    }
-    return (*hotspotC > 0 || *memoryC > 0);
-  }
-
-  return false;
+  return *hotspotC > 0 || *memoryC > 0;
 }
 
 bool hasNvidiaPciDevice() {
@@ -512,8 +572,9 @@ QString GpuMonitor::statusMessage() const { return m_statusMessage; }
 int GpuMonitor::updateInterval() const { return m_timer.interval(); }
 
 void GpuMonitor::refresh() {
-  queryGpuDevices();
-  queryGpuProcesses();
+  ++m_refreshTickCount;
+  queryGpuDevices(false);
+  queryGpuProcesses(false);
 
   CommandRunner runner;
   CommandRunner::RunOptions options;
@@ -918,11 +979,15 @@ bool GpuMonitor::killProcess(int pid) {
   const auto res =
       runner.run(QStringLiteral("kill"),
                  {QStringLiteral("-15"), QString::number(pid)}, options);
-  queryGpuProcesses();
+  queryGpuProcesses(true);
   return res.success();
 }
 
-void GpuMonitor::queryGpuProcesses() {
+void GpuMonitor::queryGpuProcesses(bool force) {
+  if (!force && !m_gpuProcesses.isEmpty() && (m_refreshTickCount % 4 != 1)) {
+    return;
+  }
+
   CommandRunner runner;
   CommandRunner::RunOptions options;
   options.timeoutMs = 1500;
@@ -979,39 +1044,44 @@ void GpuMonitor::queryGpuProcesses() {
     }
   }
 
-  // 2. Query compute applications as supplementary query
-  const auto computeResult = runner.run(
-      QStringLiteral("nvidia-smi"),
-      {QStringLiteral("--query-compute-apps=pid,process_name,used_memory"),
-       QStringLiteral("--format=csv,noheader,nounits")},
-      options);
+  // 2. Query compute applications only if first pass didn't find any processes
+  // or failed
+  if (processes.isEmpty()) {
+    const auto computeResult = runner.run(
+        QStringLiteral("nvidia-smi"),
+        {QStringLiteral("--query-compute-apps=pid,process_name,used_memory"),
+         QStringLiteral("--format=csv,noheader,nounits")},
+        options);
 
-  if (computeResult.success()) {
-    const QStringList lines =
-        computeResult.stdout.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-    for (const QString &line : lines) {
-      const QStringList cols = line.split(QLatin1Char(','), Qt::KeepEmptyParts);
-      if (cols.size() >= 3) {
-        int pid = 0;
-        int vram = 0;
-        parseMetricInt(cols.at(0), &pid);
-        QString rawName = cols.at(1).trimmed();
-        parseMetricInt(cols.at(2), &vram);
-        if (pid > 0 && !seenPids.contains(pid)) {
-          seenPids.insert(pid);
-          QString cleanName =
-              readFileText(QStringLiteral("/proc/%1/comm").arg(pid)).trimmed();
-          if (cleanName.isEmpty()) {
-            cleanName = rawName.contains(QLatin1Char('/'))
-                            ? QFileInfo(rawName).fileName()
-                            : rawName;
+    if (computeResult.success()) {
+      const QStringList lines =
+          computeResult.stdout.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+      for (const QString &line : lines) {
+        const QStringList cols =
+            line.split(QLatin1Char(','), Qt::KeepEmptyParts);
+        if (cols.size() >= 3) {
+          int pid = 0;
+          int vram = 0;
+          parseMetricInt(cols.at(0), &pid);
+          QString rawName = cols.at(1).trimmed();
+          parseMetricInt(cols.at(2), &vram);
+          if (pid > 0 && !seenPids.contains(pid)) {
+            seenPids.insert(pid);
+            QString cleanName =
+                readFileText(QStringLiteral("/proc/%1/comm").arg(pid))
+                    .trimmed();
+            if (cleanName.isEmpty()) {
+              cleanName = rawName.contains(QLatin1Char('/'))
+                              ? QFileInfo(rawName).fileName()
+                              : rawName;
+            }
+            QVariantMap item;
+            item[QStringLiteral("pid")] = pid;
+            item[QStringLiteral("name")] = cleanName;
+            item[QStringLiteral("type")] = QStringLiteral("Compute / CUDA");
+            item[QStringLiteral("vramMiB")] = vram;
+            processes.append(item);
           }
-          QVariantMap item;
-          item[QStringLiteral("pid")] = pid;
-          item[QStringLiteral("name")] = cleanName;
-          item[QStringLiteral("type")] = QStringLiteral("Compute / CUDA");
-          item[QStringLiteral("vramMiB")] = vram;
-          processes.append(item);
         }
       }
     }
@@ -1037,7 +1107,11 @@ void GpuMonitor::queryGpuProcesses() {
   }
 }
 
-void GpuMonitor::queryGpuDevices() {
+void GpuMonitor::queryGpuDevices(bool force) {
+  if (!force && !m_gpuDevices.isEmpty() && (m_refreshTickCount % 30 != 1)) {
+    return;
+  }
+
   CommandRunner runner;
   CommandRunner::RunOptions options;
   options.timeoutMs = 1200;

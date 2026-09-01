@@ -749,11 +749,16 @@ void FanController::saveSettings() {
   settings.endGroup();
 }
 
-void FanController::detectHardwareCapabilities() {
+void FanController::detectHardwareCapabilities(bool force) {
+  if (m_capabilitiesDetected && !force) {
+    return;
+  }
+
   const QString mockCap = qEnvironmentVariable("RO_CONTROL_MOCK_FAN_CAPABILITY")
                               .trimmed()
                               .toLower();
   if (!mockCap.isEmpty()) {
+    m_capabilitiesDetected = true;
     if (mockCap == QStringLiteral("controllable")) {
       setSupported(true);
       setControlSupported(true);
@@ -783,6 +788,8 @@ void FanController::detectHardwareCapabilities() {
       return;
     }
   }
+
+  m_capabilitiesDetected = true;
 
   const bool hasSysfsOverride =
       !qEnvironmentVariable("RO_CONTROL_FAN_SYSFS_ROOT").trimmed().isEmpty();
@@ -951,43 +958,66 @@ void FanController::updateSystemFansTelemetry() {
   int cpuTemp = m_cpuTemperatureC > 0 ? m_cpuTemperatureC : 38;
   int cpuRpm = 0;
 
-  // Check if coretemp or SuperIO has hardware fan inputs
-  const QFileInfoList hwmonEntries =
-      QDir(fanSysfsRoot())
-          .entryInfoList({QStringLiteral("hwmon*")},
-                         QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+  static QString s_cachedCoretempInput;
+  static QString s_cachedAcpitzInput;
+  static QString s_cachedFanRpmInput;
+  static bool s_hwmonTopologyProbed = false;
 
   int ambientTemp = 28;
-  for (const QFileInfo &entry : hwmonEntries) {
-    const QString basePath = entry.absoluteFilePath();
-    const QString chipName = readTextFile(basePath + QStringLiteral("/name"));
 
-    // Check temp inputs
-    const QFileInfoList tempInputs = QDir(basePath).entryInfoList(
-        {QStringLiteral("temp*_input")}, QDir::Files, QDir::Name);
-    for (const QFileInfo &tFile : tempInputs) {
-      bool ok = false;
-      const int tVal = readTextFile(tFile.absoluteFilePath()).toInt(&ok) / 1000;
-      if (ok && tVal > 0 && tVal < 115) {
+  if (!s_hwmonTopologyProbed) {
+    s_hwmonTopologyProbed = true;
+    const QFileInfoList hwmonEntries =
+        QDir(fanSysfsRoot())
+            .entryInfoList({QStringLiteral("hwmon*")},
+                           QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    for (const QFileInfo &entry : hwmonEntries) {
+      const QString basePath = entry.absoluteFilePath();
+      const QString chipName = readTextFile(basePath + QStringLiteral("/name"));
+
+      const QFileInfoList tempInputs = QDir(basePath).entryInfoList(
+          {QStringLiteral("temp*_input")}, QDir::Files, QDir::Name);
+      for (const QFileInfo &tFile : tempInputs) {
         if (chipName.contains(QStringLiteral("coretemp"),
-                              Qt::CaseInsensitive)) {
-          cpuTemp = tVal;
+                              Qt::CaseInsensitive) &&
+            s_cachedCoretempInput.isEmpty()) {
+          s_cachedCoretempInput = tFile.absoluteFilePath();
         } else if (chipName.contains(QStringLiteral("acpitz"),
-                                     Qt::CaseInsensitive)) {
-          ambientTemp = tVal;
+                                     Qt::CaseInsensitive) &&
+                   s_cachedAcpitzInput.isEmpty()) {
+          s_cachedAcpitzInput = tFile.absoluteFilePath();
+        }
+      }
+
+      const QFileInfoList fanInputs = QDir(basePath).entryInfoList(
+          {QStringLiteral("fan*_input")}, QDir::Files, QDir::Name);
+      for (const QFileInfo &fFile : fanInputs) {
+        if (s_cachedFanRpmInput.isEmpty()) {
+          s_cachedFanRpmInput = fFile.absoluteFilePath();
         }
       }
     }
+  }
 
-    // Check hardware fan inputs if present
-    const QFileInfoList fanInputs = QDir(basePath).entryInfoList(
-        {QStringLiteral("fan*_input")}, QDir::Files, QDir::Name);
-    for (const QFileInfo &fFile : fanInputs) {
-      bool ok = false;
-      const int rpm = readTextFile(fFile.absoluteFilePath()).toInt(&ok);
-      if (ok && rpm > 0) {
-        cpuRpm = rpm;
-      }
+  if (!s_cachedCoretempInput.isEmpty()) {
+    bool ok = false;
+    const int tVal = readTextFile(s_cachedCoretempInput).toInt(&ok) / 1000;
+    if (ok && tVal > 0 && tVal < 115) {
+      cpuTemp = tVal;
+    }
+  }
+  if (!s_cachedAcpitzInput.isEmpty()) {
+    bool ok = false;
+    const int tVal = readTextFile(s_cachedAcpitzInput).toInt(&ok) / 1000;
+    if (ok && tVal > 0 && tVal < 115) {
+      ambientTemp = tVal;
+    }
+  }
+  if (!s_cachedFanRpmInput.isEmpty()) {
+    bool ok = false;
+    const int rpm = readTextFile(s_cachedFanRpmInput).toInt(&ok);
+    if (ok && rpm > 0) {
+      cpuRpm = rpm;
     }
   }
 
@@ -1159,7 +1189,7 @@ void FanController::readCurrentFanTelemetry() {
 
   CommandRunner runner;
   CommandRunner::RunOptions options;
-  options.timeoutMs = 1200;
+  options.timeoutMs = 500;
 
   // 1. Live telemetry queries via nvidia-settings (when available)
   const QString nvidiaSettingsProg =
@@ -1171,7 +1201,7 @@ void FanController::readCurrentFanTelemetry() {
                               QStringLiteral("[fan:0]/GPUCurrentFanSpeedRPM"),
                               QStringLiteral("-t")},
                              options);
-    if (!rpmRes.success() || rpmRes.stdout.trimmed().isEmpty()) {
+    if (!rpmRes.success() && rpmRes.exitCode == 0) {
       rpmRes = runner.run(QStringLiteral("nvidia-settings"),
                           {QStringLiteral("-q"),
                            QStringLiteral("GPUCurrentFanSpeedRPM"),
@@ -1194,32 +1224,34 @@ void FanController::readCurrentFanTelemetry() {
       }
     }
 
-    // Query live speed percentage
-    auto speedRes = runner.run(QStringLiteral("nvidia-settings"),
-                               {QStringLiteral("-q"),
-                                QStringLiteral("[fan:0]/GPUCurrentFanSpeed"),
-                                QStringLiteral("-t")},
-                               options);
-    if (!speedRes.success() || speedRes.stdout.trimmed().isEmpty()) {
-      speedRes = runner.run(QStringLiteral("nvidia-settings"),
-                            {QStringLiteral("-q"),
-                             QStringLiteral("GPUCurrentFanSpeed"),
-                             QStringLiteral("-t")},
-                            options);
-    }
-    if (speedRes.success()) {
-      bool ok = false;
-      const int spd = speedRes.stdout.trimmed()
-                          .split(QLatin1Char('\n'))
-                          .value(0)
-                          .trimmed()
-                          .toInt(&ok);
-      if (ok && spd >= 0) {
-        if (m_currentFanSpeedPercent != spd) {
-          m_currentFanSpeedPercent = spd;
-          emit currentFanSpeedPercentChanged();
+    if (rpmRes.success() || rpmRes.exitCode == 0) {
+      // Query live speed percentage
+      auto speedRes = runner.run(QStringLiteral("nvidia-settings"),
+                                 {QStringLiteral("-q"),
+                                  QStringLiteral("[fan:0]/GPUCurrentFanSpeed"),
+                                  QStringLiteral("-t")},
+                                 options);
+      if (!speedRes.success() && speedRes.exitCode == 0) {
+        speedRes = runner.run(QStringLiteral("nvidia-settings"),
+                              {QStringLiteral("-q"),
+                               QStringLiteral("GPUCurrentFanSpeed"),
+                               QStringLiteral("-t")},
+                              options);
+      }
+      if (speedRes.success()) {
+        bool ok = false;
+        const int spd = speedRes.stdout.trimmed()
+                            .split(QLatin1Char('\n'))
+                            .value(0)
+                            .trimmed()
+                            .toInt(&ok);
+        if (ok && spd >= 0) {
+          if (m_currentFanSpeedPercent != spd) {
+            m_currentFanSpeedPercent = spd;
+            emit currentFanSpeedPercentChanged();
+          }
+          setSupported(true);
         }
-        setSupported(true);
       }
     }
 

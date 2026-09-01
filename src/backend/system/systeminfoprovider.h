@@ -65,6 +65,7 @@ private:
   QString detectDesktopEnvironment() const;
   QString detectVirtualizationType() const;
   bool detectOnBattery(QString *sourceLabel = nullptr) const;
+  void initializeStaticInfo();
 
   QString m_osName;
   QString m_desktopEnvironment;
@@ -77,5 +78,6 @@ private:
   QString m_deviceType;
   QString m_virtualizationType;
   bool m_onBattery = false;
+  bool m_staticHardwareLoaded = false;
   QString m_powerSource;
 };

@@ -105,8 +105,8 @@ private:
   void clearMetrics();
   void setAvailable(bool value);
   void setStatusMessage(const QString &value);
-  void queryGpuProcesses();
-  void queryGpuDevices();
+  void queryGpuProcesses(bool force = false);
+  void queryGpuDevices(bool force = false);
 
   QTimer m_timer;
   bool m_available = false;
@@ -128,4 +128,5 @@ private:
   QVariantList m_gpuProcesses;
   QVariantList m_gpuDevices;
   int m_selectedGpuIndex = 0;
+  quint64 m_refreshTickCount = 0;
 };

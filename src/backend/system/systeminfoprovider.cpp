@@ -103,45 +103,40 @@ QString valueFromOsRelease(const QString &key) {
 } // namespace
 
 SystemInfoProvider::SystemInfoProvider(QObject *parent) : QObject(parent) {
+  initializeStaticInfo();
   refresh();
 }
 
-void SystemInfoProvider::refresh() {
-  const QString nextOsName = detectOsName();
-  const QString nextDesktopEnvironment = detectDesktopEnvironment();
-  const QString nextKernelVersion = detectKernelVersion();
-  const QString nextCpuModel = detectCpuModel();
-  const QString nextMotherboardModel = detectMotherboardModel();
-  const QString nextBiosVersion = detectBiosVersion();
-  const QString nextCudaVersion = detectCudaVersion();
-  const QString nextGraphicsApiSummary = detectGraphicsApiSummary();
-  const QString nextVirtualizationType = detectVirtualizationType();
-  const QString nextDeviceType = detectDeviceType();
-  QString nextPowerSource;
-  const bool nextOnBattery = detectOnBattery(&nextPowerSource);
-
-  if (m_osName == nextOsName &&
-      m_desktopEnvironment == nextDesktopEnvironment &&
-      m_kernelVersion == nextKernelVersion && m_cpuModel == nextCpuModel &&
-      m_motherboardModel == nextMotherboardModel &&
-      m_biosVersion == nextBiosVersion && m_cudaVersion == nextCudaVersion &&
-      m_graphicsApiSummary == nextGraphicsApiSummary &&
-      m_deviceType == nextDeviceType &&
-      m_virtualizationType == nextVirtualizationType &&
-      m_onBattery == nextOnBattery && m_powerSource == nextPowerSource) {
+void SystemInfoProvider::initializeStaticInfo() {
+  if (m_staticHardwareLoaded) {
     return;
   }
 
-  m_osName = nextOsName;
-  m_desktopEnvironment = nextDesktopEnvironment;
-  m_kernelVersion = nextKernelVersion;
-  m_cpuModel = nextCpuModel;
-  m_motherboardModel = nextMotherboardModel;
-  m_biosVersion = nextBiosVersion;
-  m_cudaVersion = nextCudaVersion;
-  m_graphicsApiSummary = nextGraphicsApiSummary;
-  m_deviceType = nextDeviceType;
-  m_virtualizationType = nextVirtualizationType;
+  m_osName = detectOsName();
+  m_desktopEnvironment = detectDesktopEnvironment();
+  m_kernelVersion = detectKernelVersion();
+  m_cpuModel = detectCpuModel();
+  m_motherboardModel = detectMotherboardModel();
+  m_biosVersion = detectBiosVersion();
+  m_cudaVersion = detectCudaVersion();
+  m_graphicsApiSummary = detectGraphicsApiSummary();
+  m_virtualizationType = detectVirtualizationType();
+  m_deviceType = detectDeviceType();
+  m_staticHardwareLoaded = true;
+}
+
+void SystemInfoProvider::refresh() {
+  if (!m_staticHardwareLoaded) {
+    initializeStaticInfo();
+  }
+
+  QString nextPowerSource;
+  const bool nextOnBattery = detectOnBattery(&nextPowerSource);
+
+  if (m_onBattery == nextOnBattery && m_powerSource == nextPowerSource) {
+    return;
+  }
+
   m_onBattery = nextOnBattery;
   m_powerSource = nextPowerSource;
   emit infoChanged();

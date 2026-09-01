@@ -46,10 +46,13 @@ bool isPreferredCpuSensorType(const QString &sensorType) {
          lowered.contains(QStringLiteral("x86_pkg_temp"));
 }
 
+static QString s_cachedCpuTempPath;
+
 int readFirstValidTemperature(const QStringList &paths) {
   for (const QString &path : paths) {
     const int temperatureC = parseMilliCelsius(readFileText(path));
     if (temperatureC > 0) {
+      s_cachedCpuTempPath = path;
       return temperatureC;
     }
   }
@@ -214,6 +217,14 @@ int readCpuTemperatureFromVcgencmd() {
 }
 
 int readCpuTemperatureC() {
+  if (!s_cachedCpuTempPath.isEmpty()) {
+    const int cachedTemp = parseMilliCelsius(readFileText(s_cachedCpuTempPath));
+    if (cachedTemp > 0) {
+      return cachedTemp;
+    }
+    s_cachedCpuTempPath.clear();
+  }
+
   const int thermalZoneTemperature = readCpuTemperatureFromThermalZones();
   if (thermalZoneTemperature > 0) {
     return thermalZoneTemperature;

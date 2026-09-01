@@ -148,10 +148,10 @@ void HealthGuard::evaluateAlerts() {
     if (now - m_lastGpuAlertTime > kAlertCooldownSecs) {
       m_lastGpuAlertTime = now;
       m_alertActive = true;
-      m_lastAlertTitle = QStringLiteral("GPU Critical Temperature Alert");
+      m_lastAlertTitle = tr("GPU Critical Temperature Alert");
       m_lastAlertMessage =
-          QStringLiteral("GPU temperature reached %1°C (critical limit: %2°C). "
-                         "Cooling is throttled.")
+          tr("GPU temperature reached %1°C (critical limit: %2°C). "
+             "Cooling is throttled.")
               .arg(m_currentGpuTempC)
               .arg(m_gpuCriticalThresholdC);
       m_lastAlertSeverity = QStringLiteral("critical");
@@ -166,11 +166,10 @@ void HealthGuard::evaluateAlerts() {
     if (now - m_lastGpuAlertTime > kAlertCooldownSecs) {
       m_lastGpuAlertTime = now;
       m_alertActive = true;
-      m_lastAlertTitle = QStringLiteral("GPU High Temperature Warning");
-      m_lastAlertMessage =
-          QStringLiteral("GPU temperature is %1°C (warning limit: %2°C).")
-              .arg(m_currentGpuTempC)
-              .arg(m_gpuWarningThresholdC);
+      m_lastAlertTitle = tr("GPU High Temperature Warning");
+      m_lastAlertMessage = tr("GPU temperature is %1°C (warning limit: %2°C).")
+                               .arg(m_currentGpuTempC)
+                               .arg(m_gpuWarningThresholdC);
       m_lastAlertSeverity = QStringLiteral("warning");
       emit alertActiveChanged();
       emit alertChanged();
@@ -183,9 +182,9 @@ void HealthGuard::evaluateAlerts() {
     if (now - m_lastCpuAlertTime > kAlertCooldownSecs) {
       m_lastCpuAlertTime = now;
       m_alertActive = true;
-      m_lastAlertTitle = QStringLiteral("CPU Critical Temperature Alert");
+      m_lastAlertTitle = tr("CPU Critical Temperature Alert");
       m_lastAlertMessage =
-          QStringLiteral("CPU temperature reached %1°C (critical limit: %2°C).")
+          tr("CPU temperature reached %1°C (critical limit: %2°C).")
               .arg(m_currentCpuTempC)
               .arg(m_cpuCriticalThresholdC);
       m_lastAlertSeverity = QStringLiteral("critical");

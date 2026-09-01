@@ -374,42 +374,65 @@ QString NvidiaDetector::detectDriverVersion() const {
   return {};
 }
 
-QString NvidiaDetector::detectDriverPackageVersion() const {
+struct InstalledPackagesSnapshot {
+  QSet<QString> installedPackages;
+  QString detectedVersion;
+};
+
+InstalledPackagesSnapshot queryInstalledDriverPackages() {
+  InstalledPackagesSnapshot snapshot;
   if (!CapabilityProbe::isToolAvailable(QStringLiteral("rpm"))) {
-    return {};
+    return snapshot;
   }
 
-  const QStringList packageNames = {QStringLiteral("akmod-nvidia"),
-                                    QStringLiteral("akmod-nvidia-open"),
-                                    QStringLiteral("xorg-x11-drv-nvidia"),
-                                    QStringLiteral("xorg-x11-drv-nvidia-open")};
   CommandRunner runner;
-  for (const QString &packageName : packageNames) {
-    const auto result = runner.run(
-        QStringLiteral("rpm"),
-        {QStringLiteral("-q"), QStringLiteral("--qf"),
-         QStringLiteral("%{EPOCH}:%{VERSION}-%{RELEASE}"), packageName});
-    if (result.success()) {
-      const QString version = normalizedRpmDriverVersion(result.stdout);
-      if (!version.isEmpty()) {
-        return version;
+  CommandRunner::RunOptions opts;
+  opts.timeoutMs = 1200;
+  const auto result = runner.run(
+      QStringLiteral("rpm"),
+      {QStringLiteral("-q"), QStringLiteral("--qf"),
+       QStringLiteral("%{NAME}|%{EPOCH}:%{VERSION}-%{RELEASE}\n"),
+       QStringLiteral("akmod-nvidia"), QStringLiteral("akmod-nvidia-open"),
+       QStringLiteral("xorg-x11-drv-nvidia"),
+       QStringLiteral("xorg-x11-drv-nvidia-open")},
+      opts);
+
+  if (result.success() || !result.stdout.isEmpty()) {
+    const QStringList lines =
+        result.stdout.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    for (const QString &line : lines) {
+      if (line.contains(QStringLiteral("is not installed"))) {
+        continue;
+      }
+      const QStringList parts = line.split(QLatin1Char('|'));
+      if (parts.size() >= 2) {
+        const QString pkgName = parts.at(0).trimmed();
+        const QString rawVer = parts.at(1).trimmed();
+        snapshot.installedPackages.insert(pkgName);
+        if (snapshot.detectedVersion.isEmpty()) {
+          snapshot.detectedVersion = normalizedRpmDriverVersion(rawVer);
+        }
       }
     }
   }
+  return snapshot;
+}
 
-  return {};
+QString NvidiaDetector::detectDriverPackageVersion() const {
+  const auto snapshot = queryInstalledDriverPackages();
+  return snapshot.detectedVersion;
 }
 
 bool NvidiaDetector::detectDriverPackageInstalled() const {
-  return isPackageInstalled(QStringLiteral("akmod-nvidia")) ||
-         isPackageInstalled(QStringLiteral("akmod-nvidia-open")) ||
-         isPackageInstalled(QStringLiteral("xorg-x11-drv-nvidia")) ||
-         isPackageInstalled(QStringLiteral("xorg-x11-drv-nvidia-open"));
+  const auto snapshot = queryInstalledDriverPackages();
+  return !snapshot.installedPackages.isEmpty();
 }
 
 bool NvidiaDetector::detectClosedSourceDriverInstalled() const {
-  if (isPackageInstalled(QStringLiteral("akmod-nvidia")) ||
-      isPackageInstalled(QStringLiteral("xorg-x11-drv-nvidia"))) {
+  const auto snapshot = queryInstalledDriverPackages();
+  if (snapshot.installedPackages.contains(QStringLiteral("akmod-nvidia")) ||
+      snapshot.installedPackages.contains(
+          QStringLiteral("xorg-x11-drv-nvidia"))) {
     return true;
   }
 
@@ -427,14 +450,19 @@ bool NvidiaDetector::detectClosedSourceDriverInstalled() const {
   // Nvidia module loaded but no package markers found — check that no
   // open-source package is present before claiming closed-source.
   const bool openPackageInstalled =
-      isPackageInstalled(QStringLiteral("akmod-nvidia-open")) ||
-      isPackageInstalled(QStringLiteral("xorg-x11-drv-nvidia-open"));
+      snapshot.installedPackages.contains(
+          QStringLiteral("akmod-nvidia-open")) ||
+      snapshot.installedPackages.contains(
+          QStringLiteral("xorg-x11-drv-nvidia-open"));
   return isModuleLoaded(QStringLiteral("nvidia")) && !openPackageInstalled;
 }
 
 bool NvidiaDetector::detectOpenSourceDriverInstalled() const {
-  if (isPackageInstalled(QStringLiteral("akmod-nvidia-open")) ||
-      isPackageInstalled(QStringLiteral("xorg-x11-drv-nvidia-open"))) {
+  const auto snapshot = queryInstalledDriverPackages();
+  if (snapshot.installedPackages.contains(
+          QStringLiteral("akmod-nvidia-open")) ||
+      snapshot.installedPackages.contains(
+          QStringLiteral("xorg-x11-drv-nvidia-open"))) {
     return true;
   }
 

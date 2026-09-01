@@ -136,48 +136,42 @@ void RamMonitor::refresh() {
   qint64 shmemKiB = -1;
 
   QFile meminfo(meminfoPath());
-  if (meminfo.open(QIODevice::ReadOnly | QIODevice::Text)) {
-    // TR: "Anahtar: deger" satirlarini guvenli sekilde ayriştir.
-    QTextStream stream(&meminfo);
-    while (!stream.atEnd()) {
-      const QString line = stream.readLine().trimmed();
-      if (line.isEmpty()) {
-        continue;
+  if (meminfo.open(QIODevice::ReadOnly)) {
+    const QByteArray data = meminfo.readAll();
+    const char *ptr = data.constData();
+    const char *end = ptr + data.size();
+
+    auto parseValue = [](const char *p, const char *lineEnd) -> qint64 {
+      while (p < lineEnd && (*p == ' ' || *p == '\t' || *p == ':')) {
+        ++p;
+      }
+      char *valEnd = nullptr;
+      return std::strtoll(p, &valEnd, 10);
+    };
+
+    while (ptr < end) {
+      const char *nextNewline =
+          static_cast<const char *>(std::memchr(ptr, '\n', end - ptr));
+      const char *lineEnd = nextNewline ? nextNewline : end;
+      const size_t lineLen = lineEnd - ptr;
+
+      if (lineLen > 9 && std::strncmp(ptr, "MemTotal:", 9) == 0) {
+        memTotalKiB = parseValue(ptr + 9, lineEnd);
+      } else if (lineLen > 13 && std::strncmp(ptr, "MemAvailable:", 13) == 0) {
+        memAvailableKiB = parseValue(ptr + 13, lineEnd);
+      } else if (lineLen > 8 && std::strncmp(ptr, "MemFree:", 8) == 0) {
+        memFreeKiB = parseValue(ptr + 8, lineEnd);
+      } else if (lineLen > 8 && std::strncmp(ptr, "Buffers:", 8) == 0) {
+        buffersKiB = parseValue(ptr + 8, lineEnd);
+      } else if (lineLen > 7 && std::strncmp(ptr, "Cached:", 7) == 0) {
+        cachedKiB = parseValue(ptr + 7, lineEnd);
+      } else if (lineLen > 13 && std::strncmp(ptr, "SReclaimable:", 13) == 0) {
+        sReclaimableKiB = parseValue(ptr + 13, lineEnd);
+      } else if (lineLen > 6 && std::strncmp(ptr, "Shmem:", 6) == 0) {
+        shmemKiB = parseValue(ptr + 6, lineEnd);
       }
 
-      const int colonIdx = line.indexOf(QLatin1Char(':'));
-      if (colonIdx <= 0) {
-        continue;
-      }
-
-      const QString key = line.left(colonIdx).trimmed();
-      const QString valueStr = line.mid(colonIdx + 1).trimmed();
-
-      // The value might be "19842104 kB". We just need the number.
-      const int spaceIdx = valueStr.indexOf(QLatin1Char(' '));
-      const QString numStr = spaceIdx > 0 ? valueStr.left(spaceIdx) : valueStr;
-
-      bool ok = false;
-      const qint64 value = numStr.toLongLong(&ok);
-      if (!ok) {
-        continue;
-      }
-
-      if (key == QStringLiteral("MemTotal")) {
-        memTotalKiB = value;
-      } else if (key == QStringLiteral("MemAvailable")) {
-        memAvailableKiB = value;
-      } else if (key == QStringLiteral("MemFree")) {
-        memFreeKiB = value;
-      } else if (key == QStringLiteral("Buffers")) {
-        buffersKiB = value;
-      } else if (key == QStringLiteral("Cached")) {
-        cachedKiB = value;
-      } else if (key == QStringLiteral("SReclaimable")) {
-        sReclaimableKiB = value;
-      } else if (key == QStringLiteral("Shmem")) {
-        shmemKiB = value;
-      }
+      ptr = lineEnd + (nextNewline ? 1 : 0);
     }
   }
 

@@ -214,7 +214,7 @@ signals:
 private:
   void loadSettings();
   void saveSettings();
-  void detectHardwareCapabilities();
+  void detectHardwareCapabilities(bool force = false);
   void evaluateAndApplyFanSpeed(bool force = false);
   bool executeSetFanSpeed(int percent, bool isAutoMode);
   void readCurrentFanTelemetry();
@@ -226,6 +226,7 @@ private:
   void setStatusMessage(const QString &msg);
 
   QTimer m_timer;
+  bool m_capabilitiesDetected = false;
   bool m_supported = false;
   bool m_controlSupported = false;
   ControlCapability m_capability = ControlCapability::Unsupported;
