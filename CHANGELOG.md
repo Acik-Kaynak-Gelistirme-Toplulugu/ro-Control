@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Live tooltip with GPU temperature, fan RPM, and live power draw.
   - Context menu with quick Fan profile and Power preset switching.
 - **Sentinel D-Bus IPC Service & Daemon Mode:**
-  - Native D-Bus service registered at `org.roproject.Control` (`/org/roproject/Control`).
+  - Native D-Bus service registered at `io.github.ProjectRoASD.rocontrol` (`/io/github/ProjectRoASD/rocontrol`).
   - Methods for external telemetry queries (`GetTelemetry`, `GetGpuDevices`, `GetGpuProcesses`, `GetThermalStatus`, `GetGpuHealth`) and hardware control (`SelectGpu`, `SetFanMode`, `SetFanSpeed`, `SetFanSmoothing`, `SetPowerLimit`, `SetClockOffsets`, `SetPersistenceMode`).
   - Signals: `ThermalAlert`, `TelemetryUpdated`.
   - Headless daemon CLI command: `ro-control --daemon`.

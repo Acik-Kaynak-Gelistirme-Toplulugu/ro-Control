@@ -1,245 +1,69 @@
 # ro-Control
 
-**Native Qt6 / QML Desktop Application for NVIDIA Driver Management, Hardware Telemetry, and Multi-Fan Cooling Control on Ro-ASD.**
+**Central Hardware, Graphics, and Thermal Management Suite for Ro-ASD.**
 
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
-[![Platform: Linux](https://img.shields.io/badge/Platform-Linux%20(Fedora%20%7C%20Wayland%20%7C%20X11)-green.svg)](https://github.com/Project-Ro-ASD)
-[![Qt: 6.8+](https://img.shields.io/badge/Qt-6.8%2B%20(C%2B%2B20)-orange.svg)](https://www.qt.io/)
-[![Build: CMake / Ninja](https://img.shields.io/badge/Build-CMake%20%7C%20Ninja-blueviolet.svg)](CMakeLists.txt)
-[![Project: Ro-ASD](https://img.shields.io/badge/Ecosystem-Project--Ro--ASD-red.svg)](https://github.com/Project-Ro-ASD)
+[![Platform: Ro-ASD / Linux](https://img.shields.io/badge/Platform-Ro--ASD%20%7C%20Fedora%20%7C%20Wayland-green.svg)](https://github.com/Project-Ro-ASD)
+[![Desktop: KDE Plasma 6](https://img.shields.io/badge/Desktop-KDE%20Plasma%206%20(KF6)-blue.svg)](https://kde.org)
+[![IPC: D-Bus](https://img.shields.io/badge/IPC-D--Bus%20Native-orange.svg)](docs/ARCHITECTURE.md)
+[![Ecosystem: Ro-ASD](https://img.shields.io/badge/Ecosystem-Project--Ro--ASD-red.svg)](https://github.com/Project-Ro-ASD)
 
 ---
 
 ## Overview
 
-**ro-Control** is a high-performance, native Linux system utility built with **C++20** and **Qt6/QML**, engineered specifically as the central hardware and graphics control suite for the **Project-Ro-ASD** Linux ecosystem. It provides:
+**ro-Control** is the central hardware and graphics control suite developed for the **Ro-ASD** operating system. It integrates NVIDIA driver lifecycle management, intelligent multi-fan cooling control, live hardware diagnostics, and background thermal safety protection into a native desktop experience and a headless CLI.
 
-1. **NVIDIA Driver Management:** Automated discovery, installation, updates, and deep-cleaning via distribution package managers (`dnf`, `akmods`, `kmod`).
-2. **Real-time Hardware Telemetry:** Sub-second monitoring of CPU, GPU (NVML/NV-CONTROL), RAM, and VRAM with high-contrast, theme-aware visuals.
-3. **Advanced Cooling & Multi-Fan Suite:** Full hardware discovery across all system fans (NVIDIA GPU Fan with live RPM & 0dB Auto Idle detection, Intel/AMD CPU Cooler, Chassis airflow fans), dedicated per-fan tuning pop-up dialogs, 6 optimization profiles, custom temperature-speed curves, and one-click Coolbits activation.
-4. **Headless CLI & Automation:** Rich command-line interface for headless server administration, JSON telemetry export, and automated maintenance scripts.
+### Core Capabilities
 
----
-
-## Key Features
-
-### 1. NVIDIA Driver Manager
-- **Automated GPU Detection:** Scans PCI buses (`pciutils`) and kernel modules to detect GeForce, Quadro, and RTX series GPUs.
-- **One-Click Installation & Updates:** Interacts with PolKit (`pkexec`) to execute driver transactions securely without running the entire GUI as root.
-- **Secure Boot Awareness:** Inspects MOK keys and kernel signature enforcement to warn about unsigned driver modules before reboots.
-- **Deep Clean & Recovery:** Complete removal of broken DKMS/Akmods states and clean reinstallation.
-
-### 2. Dedicated Cooling & Multi-Fan Suite
-- **Multi-Fan Hardware Discovery:** Automatically identifies GPU fans, CPU coolers via `coretemp`/hwmon sysfs, and motherboard chassis fans.
-- **Live GPU Fan RPM & 0dB Auto Idle Telemetry:** Real-time RPM tracking directly from NV-CONTROL / sysfs, accurately reflecting live spinning speeds and 0 RPM zero-noise auto idle states.
-- **Dedicated Per-Fan Configuration Pop-Ups:** Interactive modal settings dialog for each individual fan with live telemetry strips, curve customization, and instant testing.
-- **6 Optimization Profiles:**
-  - **Auto:** Default hardware VBIOS/BIOS curve.
-  - **Silent:** Acoustic priority curve with delayed ramp-up for quiet desktop operation.
-  - **Balanced:** Proportional thermal-acoustic equilibrium.
-  - **Performance:** Aggressive high-airflow cooling for heavy compute/gaming workloads.
-  - **Manual:** Precise user-defined fixed fan speed slider (0–100%) with quick presets.
-  - **Custom:** Multi-point interactive temperature-to-speed curve with hysteresis.
-- **NVIDIA Coolbits Helper:** Automated detection and setup of `/etc/X11/xorg.conf.d/99-nvidia-coolbits.conf` to unlock manual GPU fan write privileges.
-- **Thermal Safety Guard:** Emergency override automatically locks fans to 100% if GPU or CPU temperatures exceed critical thresholds (85°C+).
-
-### 3. Live System Telemetry Dashboard
-- GPU Clock speeds (Core/Memory), VRAM allocation, power draw, and per-process GPU memory list.
-- CPU utilization percentage, per-core metrics, and package temperatures.
-- System RAM usage, available memory, and swap allocation.
-
-### 4. Modern Desktop UI & Accessibility
-- **Fluid Layout & High-DPI Support:** Crisp rendering on 1080p, 2K, and 4K displays with stabilized window resizing and fullscreen transitions.
-- **Light & Dark Theme Parity:** Fully compliant WCAG AA contrast palettes for optimal readability in any lighting environment.
-- **Multilingual Support:** Runtime translations for English (`en`), Turkish (`tr`), German (`de`), and Spanish (`es`).
+- **Automated Driver Lifecycle:** One-click NVIDIA graphics driver detection, installation, updates, MOK Secure Boot validation, and kernel module recompilation (`akmods`, `dracut`).
+- **Intelligent Cooling & Multi-Fan Suite:** Hardware-aware discovery across GPU, CPU, and chassis fans. Features 6 cooling modes (`auto`, `silent`, `balanced`, `performance`, `manual`, `custom`), custom temperature curves with hysteresis, 0 RPM zero-noise idle detection, and emergency thermal overrides.
+- **Real-Time Hardware Diagnostics:** Sub-second telemetry tracking for GPU/CPU clock frequencies, VRAM allocation, power draw (TDP), thermals, and per-process GPU memory maps.
+- **Headless CLI & Scripting:** Full command-line interface with structured `--json` output for automated system maintenance and telemetry piping.
+- **Native D-Bus IPC Service:** Standardized desktop integration via `io.github.ProjectRoASD.rocontrol` for shell widgets, scripts, and status monitors.
 
 ---
 
-## Build & Installation Guide
+## CLI Quick Reference
 
-### Prerequisites & Dependencies
-
-#### Fedora / RHEL (Recommended)
-```bash
-sudo dnf install -y \
-  cmake extra-cmake-modules gcc-c++ ninja-build \
-  qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qttools-devel qt6-qtwayland-devel \
-  kf6-qqc2-desktop-style polkit-devel pciutils mokutil kmod lm_sensors
-```
-
-#### Debian / Ubuntu / Linux Mint
-```bash
-sudo apt update && sudo apt install -y \
-  cmake ninja-build g++ build-essential \
-  qt6-base-dev qt6-declarative-dev qt6-tools-dev qt6-wayland \
-  libpolkit-gobject-1-dev pciutils mokutil kmod lm-sensors
-```
-
-#### Arch Linux / Manjaro
-```bash
-sudo pacman -S --needed \
-  cmake ninja gcc qt6-base qt6-declarative qt6-tools qt6-wayland \
-  polkit pciutils kmod lm_sensors
-```
-
----
-
-### Compiling from Source
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/Project-Ro-ASD/ro-Control.git
-cd ro-Control
-
-# 2. Configure CMake with Ninja
-cmake -S . -B build -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DBUILD_TESTS=ON
-
-# 3. Build all targets in parallel
-cmake --build build --parallel $(nproc)
-
-# 4. Run the test suite
-ctest --test-dir build --output-on-failure
-```
-
----
-
-### Running the Application
-
-#### Launch Desktop GUI:
-```bash
-./build/ro-control
-```
-
-#### Install to System:
-```bash
-sudo cmake --install build --prefix /usr
-```
-
----
-
-## CLI & Headless Usage Guide
-
-`ro-control` provides a rich command-line mode for diagnostics, automated server administration, and JSON piping.
-
-### Commands
+When launched without arguments, `ro-control` opens the graphical desktop interface. For headless administration and scripting, use the CLI commands:
 
 | Command | Description |
 | :--- | :--- |
-| `ro-control status` | Prints brief human-readable GPU, driver, and system status. |
-| `ro-control status --json` | Exports complete system and GPU telemetry as JSON. |
-| `ro-control fan-status` | Displays active fan modes, speeds, RPMs, and temperatures. |
-| `ro-control fan-status --json` | Exports multi-fan telemetry as JSON. |
-| `ro-control fan set-smoothing <on\|off> [ramp_up] [ramp_down] [hysteresis]` | Configures fan ramp rate smoothing and directional hysteresis. |
-| `ro-control power status [--json]` | Displays current GPU power limits, clock offsets, and persistence mode. |
-| `ro-control power set-limit <watts>` | Sets GPU maximum power draw limit in Watts. |
-| `ro-control power set-clocks <core_mhz> <mem_mhz>` | Configures GPU core and memory clock offsets in MHz. |
-| `ro-control power set-preset <eco\|balanced\|perf\|custom>` | Applies predefined power and clock profiles. |
-| `ro-control power set-persistence <on\|off>` | Controls NVIDIA driver persistence daemon state. |
-| `ro-control processes [--json]` | Lists active GPU computing and display processes with VRAM usage. |
-| `ro-control kill-process <pid>` | Terminates a running GPU process via PolKit helper. |
-| `ro-control gpus [--json]` | Enumerates all detected GPU devices with index and bus IDs. |
-| `ro-control select-gpu <index>` | Selects active GPU target device for monitoring and tuning. |
-| `ro-control diagnostics` | Comprehensive hardware, Secure Boot, kernel, and driver report. |
-| `ro-control check-updates` | Checks repository for available NVIDIA driver packages. |
-| `ro-control install-driver` | Triggers non-interactive driver installation via PolKit. |
-| `ro-control --daemon` | Launches headless background D-Bus service (`org.roproject.Control`). |
-
-### CLI Examples
-
-```bash
-# Get quick fan telemetry
-./build/ro-control fan-status
-
-# Inspect active GPU processes
-./build/ro-control processes
-
-# Set fan smoothing with 25%/s ramp-up, 10%/s ramp-down, and 3°C hysteresis
-./build/ro-control fan set-smoothing on 25 10 3
-
-# Apply GPU overclocking offsets (+50 MHz Core, +200 MHz Memory)
-./build/ro-control power set-clocks 50 200
-
-# Export structured JSON diagnostics
-./build/ro-control diagnostics --json | jq .
-
-# Check GPU status in terminal
-./build/ro-control status
-```
+| `ro-control status [--json]` | Displays brief hardware, driver, and system status summary |
+| `ro-control fan status [--json]` | Displays active fan modes, speeds, RPMs, and temperatures |
+| `ro-control fan set-speed <percent>` | Sets fixed manual fan speed percentage (0–100%) |
+| `ro-control fan set-mode <profile>` | Sets active fan cooling mode (`auto`, `silent`, `balanced`, `performance`, `manual`, `custom`) |
+| `ro-control fan set-smoothing <on\|off> [opts]` | Configures fan ramp rate smoothing and directional hysteresis |
+| `ro-control fan reset` | Restores default hardware cooling curve |
+| `ro-control power status [--json]` | Displays current GPU power draw, TDP bounds, and persistence state |
+| `ro-control power set-limit <watts>` | Sets GPU maximum power draw limit in Watts |
+| `ro-control power set-preset <preset>` | Applies predefined power and clock profile (`eco`, `balanced`, `performance`) |
+| `ro-control power set-clocks <core> <mem>` | Configures GPU core and memory clock offsets in MHz |
+| `ro-control processes [--json]` | Lists active applications using GPU VRAM |
+| `ro-control kill-process <pid>` | Terminates a running GPU process via Polkit helper |
+| `ro-control gpus [--json]` | Enumerates all detected graphics cards |
+| `ro-control select-gpu <index>` | Selects active target GPU for monitoring and tuning |
+| `ro-control diagnostics [--json]` | Generates comprehensive hardware, kernel, and driver report |
+| `ro-control driver install [opts]` | Triggers driver installation via Polkit (`--proprietary`, `--open-source`) |
+| `ro-control driver update` | Updates installed NVIDIA driver packages |
+| `ro-control driver deep-clean` | Cleans up broken module trees, akmods residues, and leftover artifacts |
+| `ro-control --daemon` | Launches background headless D-Bus telemetry service |
 
 ---
 
-## D-Bus IPC Interface
+## Documentation
 
-`ro-control` provides a D-Bus service on `org.roproject.Control` (`/org/roproject/Control`):
+Comprehensive guides for administrators, maintainers, and developers:
 
-- **Query Methods:** `GetTelemetry()`, `GetGpuDevices()`, `GetGpuProcesses()`, `GetThermalStatus()`, `GetGpuHealth()`
-- **Control Methods:** `SelectGpu(int index)`, `SetFanMode(QString mode)`, `SetFanSpeed(int percent)`, `SetFanSmoothing(bool enabled, int rampUp, int rampDown, int hysteresis)`, `SetPowerLimit(double watts)`, `SetClockOffsets(int coreMhz, int memMhz)`, `SetPersistenceMode(bool enabled)`
-- **Signals:** `TelemetryUpdated(QString jsonPayload)`, `ThermalAlert(QString level, QString message)`
-
----
-
-## Project Architecture & Layout
-
-```text
-ro-Control/
-├── CMakeLists.txt              # Root CMake build configuration
-├── src/
-│   ├── main.cpp                # Application entry point & CLI dispatcher
-│   ├── backend/
-│   │   ├── fan/                # FanController, curve interpolation, sysfs/NVML/Coolbits
-│   │   ├── monitor/            # CpuMonitor, GpuMonitor (NVML), RamMonitor
-│   │   ├── nvidia/             # NvidiaDetector, NvidiaInstaller, NvidiaUpdater
-│   │   └── system/             # PolkitHelper, SystemInfoProvider, UiPreferences
-│   ├── cli/                    # Headless CLI argument parser & JSON formatters
-│   └── qml/                    # Qt6/QML Desktop UI
-│       ├── Main.qml            # Main ApplicationWindow shell
-│       ├── assets/             # SVG icons, logos, refresh assets
-│       ├── components/         # Reusable widgets, gauges, toolbars
-│       └── pages/              # DriverPage, MonitorPage, FanPage
-├── tests/                      # CTest / QTest unit and integration tests
-├── scripts/                    # Bootstrap & development watch scripts
-└── resources/                  # AppStream metadata, desktop file, PolKit policies
-```
-
----
-
-## Testing
-
-Run the automated test suite with CTest:
-
-```bash
-ctest --test-dir build --output-on-failure --verbose
-```
-
-Test coverage includes:
-- `test_detector`: PCI device scan and NVIDIA hardware recognition.
-- `test_fan_controller`: Fan profile curves, hysteresis limits, and thermal safety overrides.
-- `test_monitor`: CPU, GPU, RAM telemetry accuracy and threshold parsing.
-- `test_system_integration`: PolKit privileged execution and CLI action dispatching.
-- `test_driver_page`: UI data models and localized preference loading.
-
----
-
-## Contributing
-
-Contributions from the open-source community are welcome!
-1. Fork the repository on GitHub.
-2. Create a feature branch: `git checkout -b feat/my-new-feature`
-3. Commit your changes: `git commit -m "feat(cooling): add support for custom sensors"`
-4. Push to your branch and open a Pull Request against `main`.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
-
----
-
-## Security
-
-For security vulnerabilities and reporting procedures, see [SECURITY.md](SECURITY.md).
+- 📦 **[Installation & Deployment Guide](docs/INSTALL.md):** System requirements, RPM package deployment, Discover store setup, and systemd service management.
+- 🛠️ **[Build & Development Guide](docs/BUILD.md):** Toolchain prerequisites, compiling from source (CMake/Ninja), running CTest suites, and packaging commands.
+- 🏗️ **[Architecture & IPC Specification](docs/ARCHITECTURE.md):** Subsystem structure, backend modules, hardware sysfs integration, and D-Bus IPC methods/signals.
+- 🤝 **[Contributing Guidelines](CONTRIBUTING.md):** Development workflow, pull request guidelines, and code standards.
+- 🔒 **[Security Policy](SECURITY.md):** Vulnerability reporting and Polkit privilege boundaries.
 
 ---
 
 ## License
 
-This project is licensed under the **GNU General Public License v3.0 or later** (GPL-3.0-or-later). See [LICENSE](LICENSE) for full details.
+ro-Control is open-source software licensed under the **GNU General Public License v3.0 or later** (GPL-3.0-or-later). See [LICENSE](LICENSE) for details.
