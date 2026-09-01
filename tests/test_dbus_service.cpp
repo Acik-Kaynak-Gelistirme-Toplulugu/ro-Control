@@ -75,6 +75,32 @@ private slots:
     const QJsonDocument doc = QJsonDocument::fromJson(healthJson.toUtf8());
     QVERIFY(doc.isObject());
   }
+
+  void testGpuProcessesAndDevices() {
+    CpuMonitor cpu;
+    GpuMonitor gpu;
+    RamMonitor ram;
+    FanController fan;
+    PowerController power;
+    HealthGuard guard;
+
+    RoControlDBusAdaptor adaptor(this, &cpu, &gpu, &ram, &fan, &power, &guard);
+
+    const QString procJson = adaptor.GetGpuProcesses();
+    QVERIFY(!procJson.isEmpty());
+    const QJsonDocument procDoc = QJsonDocument::fromJson(procJson.toUtf8());
+    QVERIFY(procDoc.isObject());
+    QVERIFY(procDoc.object().contains(QStringLiteral("processes")));
+
+    const QString devJson = adaptor.GetGpuDevices();
+    QVERIFY(!devJson.isEmpty());
+    const QJsonDocument devDoc = QJsonDocument::fromJson(devJson.toUtf8());
+    QVERIFY(devDoc.isObject());
+    QVERIFY(devDoc.object().contains(QStringLiteral("devices")));
+
+    QVERIFY(adaptor.SelectGpu(0));
+    QVERIFY(adaptor.SetFanSmoothing(true, 25, 10, 3));
+  }
 };
 
 QTEST_MAIN(TestDBusService)

@@ -357,6 +357,15 @@ Item {
                                     value: (page.gpuMonitor && page.gpuMonitor.memoryTotalMiB > 0)
                                            ? (page.gpuMonitor.memoryUsedMiB + " / " + page.gpuMonitor.memoryTotalMiB + " MiB")
                                            : qsTr("Unavailable")
+                                },
+                                {
+                                    title: qsTr("Hotspot / VRAM Temp"),
+                                    value: (page.gpuMonitor && page.gpuMonitor.hotspotTemperatureC > 0)
+                                           ? (page.gpuMonitor.hotspotTemperatureC + " °C (Hotspot)" +
+                                              (page.gpuMonitor.memoryTemperatureC > 0 ? (" / " + page.gpuMonitor.memoryTemperatureC + " °C Mem") : ""))
+                                           : ((page.gpuMonitor && page.gpuMonitor.memoryTemperatureC > 0)
+                                              ? (page.gpuMonitor.memoryTemperatureC + " °C (Mem)")
+                                              : qsTr("Nominal Core"))
                                 }
                             ]
 

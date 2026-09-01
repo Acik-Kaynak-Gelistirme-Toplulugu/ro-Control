@@ -2,6 +2,7 @@
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QIcon>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLocale>
@@ -278,6 +279,163 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
           QStringLiteral("Error: %1\n").arg(powerController.statusMessage());
       result.exitCode = 1;
     }
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::PowerSetClocks) {
+    PowerController powerController;
+    powerController.refresh();
+    if (!powerController.controlSupported()) {
+      result.stderrText = QStringLiteral(
+          "Error: GPU clock control is unsupported or read-only.\n");
+      result.exitCode = 1;
+      return result;
+    }
+    const QStringList parts = command.payload.split(QLatin1Char(':'));
+    const int core = parts.value(0).toInt();
+    const int mem = parts.value(1).toInt();
+    if (powerController.setClockOffsets(core, mem)) {
+      result.stdoutText =
+          QStringLiteral("GPU clock offsets set to Core: %+1 MHz, Memory: %+2 MHz.\n")
+              .arg(core)
+              .arg(mem);
+      result.exitCode = 0;
+    } else {
+      result.stderrText =
+          QStringLiteral("Error: %1\n").arg(powerController.statusMessage());
+      result.exitCode = 1;
+    }
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::FanSetSmoothing) {
+    FanController fanController;
+    fanController.stop();
+    const QStringList parts = command.payload.split(QLatin1Char(':'));
+    const bool on = (parts.value(0) == QStringLiteral("1"));
+    fanController.setSmoothingEnabled(on);
+    if (parts.size() >= 2 && !parts.at(1).isEmpty()) {
+      fanController.setRampUpRatePercent(parts.at(1).toInt());
+    }
+    if (parts.size() >= 3 && !parts.at(2).isEmpty()) {
+      fanController.setRampDownRatePercent(parts.at(2).toInt());
+    }
+    if (parts.size() >= 4 && !parts.at(3).isEmpty()) {
+      fanController.setHysteresisTempC(parts.at(3).toInt());
+    }
+    result.stdoutText =
+        QStringLiteral("Fan smoothing %1 (RampUp: %2%/s, RampDown: %3%/s, Hysteresis: %4 C).\n")
+            .arg(on ? QStringLiteral("enabled") : QStringLiteral("disabled"))
+            .arg(fanController.rampUpRatePercent())
+            .arg(fanController.rampDownRatePercent())
+            .arg(fanController.hysteresisTempC());
+    result.exitCode = 0;
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::PrintProcessesText ||
+      command.action == RoControlCli::CommandAction::PrintProcessesJson) {
+    GpuMonitor gpuMonitor;
+    gpuMonitor.stop();
+    gpuMonitor.refresh();
+    const auto procs = gpuMonitor.gpuProcesses();
+    if (command.action == RoControlCli::CommandAction::PrintProcessesJson) {
+      QJsonObject obj;
+      QJsonArray arr;
+      for (const auto &p : procs) {
+        arr.append(QJsonObject::fromVariantMap(p.toMap()));
+      }
+      obj.insert(QStringLiteral("command"), QStringLiteral("processes"));
+      obj.insert(QStringLiteral("count"), procs.size());
+      obj.insert(QStringLiteral("processes"), arr);
+      result.stdoutText =
+          QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
+    } else {
+      if (procs.isEmpty()) {
+        result.stdoutText = QStringLiteral("No active GPU processes detected.\n");
+      } else {
+        result.stdoutText = QStringLiteral("PID\tNAME\t\t\tTYPE\t\t\tVRAM\n");
+        result.stdoutText +=
+            QStringLiteral("───────────────────────────────────────────────────────────────────\n");
+        for (const auto &p : procs) {
+          const auto m = p.toMap();
+          result.stdoutText +=
+              QStringLiteral("%1\t%2\t%3\t%4 MiB\n")
+                  .arg(m.value(QStringLiteral("pid")).toInt(), -6)
+                  .arg(m.value(QStringLiteral("name")).toString(), -20)
+                  .arg(m.value(QStringLiteral("type")).toString(), -20)
+                  .arg(m.value(QStringLiteral("vramMiB")).toInt());
+        }
+      }
+    }
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::KillProcess) {
+    GpuMonitor gpuMonitor;
+    gpuMonitor.stop();
+    const int pid = command.payload.toInt();
+    if (gpuMonitor.killProcess(pid)) {
+      result.stdoutText =
+          QStringLiteral("Process %1 terminated successfully.\n").arg(pid);
+      result.exitCode = 0;
+    } else {
+      result.stderrText =
+          QStringLiteral("Failed to terminate process %1.\n").arg(pid);
+      result.exitCode = 1;
+    }
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::PrintGpusText ||
+      command.action == RoControlCli::CommandAction::PrintGpusJson) {
+    GpuMonitor gpuMonitor;
+    gpuMonitor.stop();
+    gpuMonitor.refresh();
+    const auto gpus = gpuMonitor.gpuDevices();
+    if (command.action == RoControlCli::CommandAction::PrintGpusJson) {
+      QJsonObject obj;
+      QJsonArray arr;
+      for (const auto &g : gpus) {
+        arr.append(QJsonObject::fromVariantMap(g.toMap()));
+      }
+      obj.insert(QStringLiteral("command"), QStringLiteral("gpus"));
+      obj.insert(QStringLiteral("count"), gpus.size());
+      obj.insert(QStringLiteral("selectedIndex"), gpuMonitor.selectedGpuIndex());
+      obj.insert(QStringLiteral("devices"), arr);
+      result.stdoutText =
+          QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
+    } else {
+      result.stdoutText =
+          QStringLiteral("INDEX\tNAME\t\t\t\tPCI BUS ID\t\tUUID\n");
+      result.stdoutText +=
+          QStringLiteral("─────────────────────────────────────────────────────────────────────────────\n");
+      for (const auto &g : gpus) {
+        const auto m = g.toMap();
+        const int idx = m.value(QStringLiteral("index")).toInt();
+        const QString star = (idx == gpuMonitor.selectedGpuIndex())
+                                 ? QStringLiteral("*")
+                                 : QStringLiteral(" ");
+        result.stdoutText +=
+            QStringLiteral("%1%2\t%3\t%4\t%5\n")
+                .arg(star)
+                .arg(idx, -4)
+                .arg(m.value(QStringLiteral("name")).toString(), -30)
+                .arg(m.value(QStringLiteral("pciBusId")).toString(), -16)
+                .arg(m.value(QStringLiteral("uuid")).toString());
+      }
+    }
+    return result;
+  }
+
+  if (command.action == RoControlCli::CommandAction::SelectGpu) {
+    GpuMonitor gpuMonitor;
+    gpuMonitor.stop();
+    const int idx = command.payload.toInt();
+    gpuMonitor.setSelectedGpuIndex(idx);
+    result.stdoutText =
+        QStringLiteral("Active GPU set to index %1.\n").arg(idx);
+    result.exitCode = 0;
     return result;
   }
 

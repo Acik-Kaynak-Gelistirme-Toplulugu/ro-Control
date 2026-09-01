@@ -25,10 +25,15 @@ public slots:
   QString GetTelemetry();
   QString GetThermalStatus();
   QString GetGpuHealth();
+  QString GetGpuProcesses();
+  QString GetGpuDevices();
+  bool SelectGpu(int index);
   bool SetFanMode(const QString &mode);
   bool SetFanSpeed(int percent);
   bool SetPowerLimit(double watts);
   bool SetPersistenceMode(bool enabled);
+  bool SetClockOffsets(int coreMhz, int memMhz);
+  bool SetFanSmoothing(bool enabled, int rampUp, int rampDown, int hysteresis);
 
 signals:
   void ThermalAlert(const QString &source, int temperatureC, int thresholdC);

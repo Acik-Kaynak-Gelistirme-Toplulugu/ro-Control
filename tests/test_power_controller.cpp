@@ -50,6 +50,29 @@ private slots:
     QCOMPARE(controller.powerPreset(), QStringLiteral("custom"));
     QCOMPARE(presetSpy.count(), 1);
   }
+
+  void testClockOffsets() {
+    qputenv("RO_CONTROL_MOCK_POWER_CONTROL", "1");
+    PowerController controller;
+    QSignalSpy offsetSpy(&controller, &PowerController::clockOffsetsChanged);
+
+    QCOMPARE(controller.minCoreOffsetMHz(), -500);
+    QCOMPARE(controller.maxCoreOffsetMHz(), 500);
+    QCOMPARE(controller.minMemoryOffsetMHz(), -1000);
+    QCOMPARE(controller.maxMemoryOffsetMHz(), 2000);
+
+    QVERIFY(controller.setClockOffsets(100, 400));
+    QCOMPARE(controller.coreClockOffsetMHz(), 100);
+    QCOMPARE(controller.memoryClockOffsetMHz(), 400);
+    QCOMPARE(offsetSpy.count(), 1);
+
+    // Test reset
+    QVERIFY(controller.resetClockOffsets());
+    QCOMPARE(controller.coreClockOffsetMHz(), 0);
+    QCOMPARE(controller.memoryClockOffsetMHz(), 0);
+
+    qunsetenv("RO_CONTROL_MOCK_POWER_CONTROL");
+  }
 };
 
 QTEST_MAIN(TestPowerController)

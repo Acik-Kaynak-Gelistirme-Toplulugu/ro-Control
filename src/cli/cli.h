@@ -30,6 +30,14 @@ enum class CommandAction {
   PowerSetLimit,
   PowerSetPersistence,
   PowerSetPreset,
+  PowerSetClocks,
+  PrintProcessesText,
+  PrintProcessesJson,
+  KillProcess,
+  PrintGpusText,
+  PrintGpusJson,
+  SelectGpu,
+  FanSetSmoothing,
   RunDaemon,
   Invalid,
 };
@@ -64,11 +72,15 @@ struct DiagnosticsSnapshot {
   bool gpuMonitorAvailable = false;
   QString gpuMonitorName;
   int gpuTemperatureC = 0;
+  int gpuHotspotTemperatureC = 0;
+  int gpuMemoryTemperatureC = 0;
   int gpuUtilizationPercent = 0;
   int gpuMemoryUsedMiB = 0;
   int gpuMemoryTotalMiB = 0;
   int gpuMemoryUsagePercent = 0;
   int gpuFanSpeedPercent = 0;
+  int gpuCount = 1;
+  int gpuProcessCount = 0;
 
   bool fanSupported = false;
   bool fanControlSupported = false;
@@ -79,6 +91,7 @@ struct DiagnosticsSnapshot {
   int fanRpm = 0;
   bool fanSafetyOverride = false;
   int fanThermalThresholdC = 85;
+  bool fanSmoothingEnabled = true;
 
   bool ramAvailable = false;
   int ramTotalMiB = 0;
@@ -94,6 +107,8 @@ struct DiagnosticsSnapshot {
   double defaultPowerLimitW = 0.0;
   bool persistenceModeEnabled = false;
   QString powerPreset;
+  int coreClockOffsetMHz = 0;
+  int memoryClockOffsetMHz = 0;
 };
 
 ParsedCommand parseArguments(const QStringList &arguments,

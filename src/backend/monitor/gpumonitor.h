@@ -10,6 +10,10 @@ class GpuMonitor : public QObject {
   Q_PROPERTY(bool running READ running NOTIFY runningChanged)
   Q_PROPERTY(QString gpuName READ gpuName NOTIFY gpuNameChanged)
   Q_PROPERTY(int temperatureC READ temperatureC NOTIFY temperatureCChanged)
+  Q_PROPERTY(int hotspotTemperatureC READ hotspotTemperatureC NOTIFY
+                 hotspotTemperatureCChanged)
+  Q_PROPERTY(int memoryTemperatureC READ memoryTemperatureC NOTIFY
+                 memoryTemperatureCChanged)
   Q_PROPERTY(int utilizationPercent READ utilizationPercent NOTIFY
                  utilizationPercentChanged)
   Q_PROPERTY(int memoryUsedMiB READ memoryUsedMiB NOTIFY memoryUsedMiBChanged)
@@ -31,6 +35,10 @@ class GpuMonitor : public QObject {
       QVariantList gpuProcesses READ gpuProcesses NOTIFY gpuProcessesChanged)
   Q_PROPERTY(
       int gpuProcessCount READ gpuProcessCount NOTIFY gpuProcessesChanged)
+  Q_PROPERTY(int gpuCount READ gpuCount NOTIFY gpuDevicesChanged)
+  Q_PROPERTY(int selectedGpuIndex READ selectedGpuIndex WRITE setSelectedGpuIndex
+                 NOTIFY selectedGpuIndexChanged)
+  Q_PROPERTY(QVariantList gpuDevices READ gpuDevices NOTIFY gpuDevicesChanged)
   Q_PROPERTY(
       QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
   Q_PROPERTY(int updateInterval READ updateInterval WRITE setUpdateInterval
@@ -43,6 +51,8 @@ public:
   bool running() const;
   QString gpuName() const;
   int temperatureC() const;
+  int hotspotTemperatureC() const;
+  int memoryTemperatureC() const;
   int utilizationPercent() const;
   int memoryUsedMiB() const;
   int memoryTotalMiB() const;
@@ -55,6 +65,9 @@ public:
   QString pcieLinkStatus() const;
   QVariantList gpuProcesses() const;
   int gpuProcessCount() const;
+  int gpuCount() const;
+  int selectedGpuIndex() const;
+  QVariantList gpuDevices() const;
   QString statusMessage() const;
   int updateInterval() const;
 
@@ -62,6 +75,7 @@ public:
   Q_INVOKABLE void start();
   Q_INVOKABLE void stop();
   Q_INVOKABLE bool killProcess(int pid);
+  Q_INVOKABLE void setSelectedGpuIndex(int index);
   void setUpdateInterval(int intervalMs);
 
 signals:
@@ -69,6 +83,8 @@ signals:
   void runningChanged();
   void gpuNameChanged();
   void temperatureCChanged();
+  void hotspotTemperatureCChanged();
+  void memoryTemperatureCChanged();
   void utilizationPercentChanged();
   void memoryUsedMiBChanged();
   void memoryTotalMiBChanged();
@@ -80,6 +96,8 @@ signals:
   void memoryClockMHzChanged();
   void pcieLinkStatusChanged();
   void gpuProcessesChanged();
+  void gpuDevicesChanged();
+  void selectedGpuIndexChanged();
   void statusMessageChanged();
   void updateIntervalChanged();
 
@@ -88,12 +106,15 @@ private:
   void setAvailable(bool value);
   void setStatusMessage(const QString &value);
   void queryGpuProcesses();
+  void queryGpuDevices();
 
   QTimer m_timer;
   bool m_available = false;
   QString m_gpuName;
   QString m_statusMessage;
   int m_temperatureC = 0;
+  int m_hotspotTemperatureC = 0;
+  int m_memoryTemperatureC = 0;
   int m_utilizationPercent = 0;
   int m_memoryUsedMiB = 0;
   int m_memoryTotalMiB = 0;
@@ -105,4 +126,6 @@ private:
   int m_memoryClockMHz = 0;
   QString m_pcieLinkStatus;
   QVariantList m_gpuProcesses;
+  QVariantList m_gpuDevices;
+  int m_selectedGpuIndex = 0;
 };

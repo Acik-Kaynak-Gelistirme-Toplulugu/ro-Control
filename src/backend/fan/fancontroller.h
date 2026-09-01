@@ -62,6 +62,14 @@ class FanController : public QObject {
   Q_PROPERTY(
       bool batteryProfileSyncEnabled READ batteryProfileSyncEnabled WRITE
           setBatteryProfileSyncEnabled NOTIFY batteryProfileSyncEnabledChanged)
+  Q_PROPERTY(bool smoothingEnabled READ smoothingEnabled WRITE setSmoothingEnabled
+                 NOTIFY smoothingEnabledChanged)
+  Q_PROPERTY(int rampUpRatePercent READ rampUpRatePercent WRITE setRampUpRatePercent
+                 NOTIFY rampRateChanged)
+  Q_PROPERTY(int rampDownRatePercent READ rampDownRatePercent WRITE setRampDownRatePercent
+                 NOTIFY rampRateChanged)
+  Q_PROPERTY(int hysteresisTempC READ hysteresisTempC WRITE setHysteresisTempC
+                 NOTIFY hysteresisTempCChanged)
 
 public:
   enum class FanMode {
@@ -115,6 +123,10 @@ public:
   bool coolbitsEnabled() const;
   bool batteryProfileSyncEnabled() const;
   void setBatteryProfileSyncEnabled(bool enabled);
+  bool smoothingEnabled() const;
+  int rampUpRatePercent() const;
+  int rampDownRatePercent() const;
+  int hysteresisTempC() const;
 
   static QString modeToString(FanMode mode);
   static FanMode stringToMode(const QString &modeStr);
@@ -143,6 +155,10 @@ public:
   Q_INVOKABLE void setSelectedFanId(const QString &id);
   Q_INVOKABLE bool enableNvidiaCoolbits();
   Q_INVOKABLE void syncPowerSource(bool onBattery);
+  Q_INVOKABLE void setSmoothingEnabled(bool enabled);
+  Q_INVOKABLE void setRampUpRatePercent(int percent);
+  Q_INVOKABLE void setRampDownRatePercent(int percent);
+  Q_INVOKABLE void setHysteresisTempC(int degrees);
 
   // Profile JSON export / import API
   Q_INVOKABLE bool exportProfile(const QString &profileName,
@@ -185,6 +201,9 @@ signals:
   void selectedFanIdChanged();
   void coolbitsEnabledChanged();
   void batteryProfileSyncEnabledChanged();
+  void smoothingEnabledChanged();
+  void rampRateChanged();
+  void hysteresisTempCChanged();
   void profileExported(const QString &profileName, bool success);
   void profileImported(const QString &profileName, bool success);
 
@@ -218,6 +237,9 @@ private:
   int m_thermalRecoveryMarginC = 5;
   int m_hysteresisTempC = 2;
   int m_lastEvaluatedTempC = -1;
+  bool m_smoothingEnabled = true;
+  int m_rampUpRatePercent = 20;
+  int m_rampDownRatePercent = 5;
   QString m_statusMessage;
   QVector<FanCurvePoint> m_customCurve;
   int m_gpuTemperatureC = 0;

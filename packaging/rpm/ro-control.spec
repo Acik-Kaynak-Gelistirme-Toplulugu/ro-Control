@@ -82,6 +82,8 @@ export QT_QUICK_CONTROLS_STYLE=Basic
 %{_datadir}/fish/vendor_completions.d/ro-control.fish
 %{_libexecdir}/ro-control-helper
 %{_datadir}/polkit-1/actions/io.github.ProjectRoASD.rocontrol.policy
+%{_prefix}/lib/systemd/system/ro-control.service
+%{_prefix}/lib/systemd/user/ro-control.service
 
 %changelog
 * Tue Sep 01 2026 ro-Control Maintainers <noreply@github.com> - 1.3.0-1

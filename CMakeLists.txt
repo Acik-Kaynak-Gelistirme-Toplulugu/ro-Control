@@ -333,6 +333,28 @@ install(FILES data/completions/ro-control.fish
     DESTINATION ${CMAKE_INSTALL_DATADIR}/fish/vendor_completions.d
 )
 
+# ─── Systemd Service Units ───────────────────────────────────────────────────
+configure_file(
+    data/systemd/ro-control.service.in
+    ${CMAKE_CURRENT_BINARY_DIR}/ro-control.service
+    @ONLY
+)
+
+configure_file(
+    data/systemd/ro-control-user.service.in
+    ${CMAKE_CURRENT_BINARY_DIR}/ro-control-user.service
+    @ONLY
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ro-control.service
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/systemd/system
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ro-control-user.service
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/systemd/user
+    RENAME ro-control.service
+)
+
 # ─── Formatting ──────────────────────────────────────────────────────────────
 find_program(CLANG_FORMAT_EXE clang-format)
 if(CLANG_FORMAT_EXE)

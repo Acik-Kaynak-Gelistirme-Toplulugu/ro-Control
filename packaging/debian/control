@@ -1,0 +1,29 @@
+Source: ro-control
+Section: utils
+Priority: optional
+Maintainer: Project-Ro-ASD <dev@project-ro-asd.org>
+Build-Depends: debhelper-compat (= 13),
+               cmake (>= 3.22),
+               ninja-build,
+               qt6-base-dev,
+               qt6-declarative-dev,
+               qt6-tools-dev,
+               qt6-wayland,
+               libpolkit-gobject-1-dev,
+               extra-cmake-modules
+Standards-Version: 4.6.2
+Homepage: https://github.com/Project-Ro-ASD/ro-Control
+
+Package: ro-control
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         pciutils,
+         kmod,
+         lm-sensors,
+         hicolor-icon-theme
+Recommends: nvidia-driver | nvidia-driver-libs
+Description: Native Qt6/QML NVIDIA driver manager and cooling suite
+ ro-Control provides an integrated, modern Qt6 desktop interface and
+ headless CLI daemon for NVIDIA driver lifecycle management, hardware
+ telemetry monitoring, and multi-fan cooling control.

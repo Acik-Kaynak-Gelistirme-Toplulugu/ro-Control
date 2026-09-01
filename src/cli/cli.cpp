@@ -77,6 +77,7 @@ QString buildHelpText(const QString &applicationName,
       << "  fan set-speed <percent>    Set manual fixed fan speed (0-100%).\n";
   stream << "  fan set-mode <profile>     Set fan profile (auto, silent, "
             "balanced, performance, manual, custom).\n";
+  stream << "  fan set-smoothing <on|off> [ramp_up] [ramp_down] [hysteresis] Set fan smoothing and ramp rates.\n";
   stream << "  fan reset                  Reset fan control to automatic "
             "mode.\n";
   stream << "  power status [--json]      Print GPU power draw, limits and "
@@ -84,8 +85,13 @@ QString buildHelpText(const QString &applicationName,
   stream << "  power set-limit <watts>    Set GPU power limit in Watts.\n";
   stream << "  power set-preset <preset>  Set power preset (eco, balanced, "
             "performance, custom).\n";
+  stream << "  power set-clocks <core> <mem> Set GPU core and memory clock offsets in MHz.\n";
   stream << "  power set-persistence <on|off> Enable or disable persistence "
-            "mode.\n\n";
+            "mode.\n";
+  stream << "  processes [--json]         List active GPU compute and display processes.\n";
+  stream << "  kill-process <pid>         Terminate a running GPU process.\n";
+  stream << "  gpus [--json]              List detected GPU adapters.\n";
+  stream << "  select-gpu <index>         Select active GPU device by index.\n\n";
   stream << "Driver install options:\n";
   stream << "  --proprietary              Install the proprietary akmod-nvidia "
             "stack.\n";
@@ -358,6 +364,24 @@ ParsedCommand parseArguments(const QStringList &arguments,
       return command;
     }
 
+    if (fanAction == QStringLiteral("set-smoothing")) {
+      if (positional.size() < 3) {
+        return invalidCommand(QStringLiteral(
+            "`fan set-smoothing` requires a state argument (on|off) and optional [ramp_up] [ramp_down] [hysteresis]."));
+      }
+      const QString state = positional.at(2).toLower();
+      const bool on = (state == QStringLiteral("on") || state == QStringLiteral("1") || state == QStringLiteral("true"));
+      QStringList params;
+      params << (on ? QStringLiteral("1") : QStringLiteral("0"));
+      for (int i = 3; i < positional.size(); ++i) {
+        params << positional.at(i);
+      }
+      ParsedCommand command;
+      command.action = CommandAction::FanSetSmoothing;
+      command.payload = params.join(QLatin1Char(':'));
+      return command;
+    }
+
     if (fanAction == QStringLiteral("reset")) {
       if (positional.size() != 2) {
         return invalidCommand(
@@ -376,7 +400,7 @@ ParsedCommand parseArguments(const QStringList &arguments,
     if (positional.size() < 2) {
       return invalidCommand(
           QStringLiteral("`power` requires a subcommand: status, set-limit, "
-                         "set-preset, set-persistence."));
+                         "set-preset, set-clocks, set-persistence."));
     }
 
     const QString powerAction = positional.at(1).toLower();
@@ -411,6 +435,23 @@ ParsedCommand parseArguments(const QStringList &arguments,
       ParsedCommand command;
       command.action = CommandAction::PowerSetLimit;
       command.payload = QString::number(watts);
+      return command;
+    }
+
+    if (powerAction == QStringLiteral("set-clocks")) {
+      if (positional.size() != 4) {
+        return invalidCommand(QStringLiteral(
+            "`power set-clocks` requires <core_mhz> and <mem_mhz> arguments (e.g. 50 200)."));
+      }
+      bool ok1 = false, ok2 = false;
+      const int core = positional.at(2).toInt(&ok1);
+      const int mem = positional.at(3).toInt(&ok2);
+      if (!ok1 || !ok2) {
+        return invalidCommand(QStringLiteral("Clock offsets must be integers."));
+      }
+      ParsedCommand command;
+      command.action = CommandAction::PowerSetClocks;
+      command.payload = QStringLiteral("%1:%2").arg(core).arg(mem);
       return command;
     }
 
@@ -460,6 +501,52 @@ ParsedCommand parseArguments(const QStringList &arguments,
 
     return invalidCommand(
         QStringLiteral("Unknown `power` subcommand: %1").arg(powerAction));
+  }
+
+  if (commandName == QStringLiteral("processes")) {
+    ParsedCommand command;
+    command.action = json ? CommandAction::PrintProcessesJson
+                          : CommandAction::PrintProcessesText;
+    return command;
+  }
+
+  if (commandName == QStringLiteral("kill-process")) {
+    if (positional.size() != 2) {
+      return invalidCommand(
+          QStringLiteral("`kill-process` requires a PID argument."));
+    }
+    bool ok = false;
+    const int pid = positional.at(1).toInt(&ok);
+    if (!ok || pid <= 1) {
+      return invalidCommand(QStringLiteral("PID must be a valid process ID > 1."));
+    }
+    ParsedCommand command;
+    command.action = CommandAction::KillProcess;
+    command.payload = QString::number(pid);
+    return command;
+  }
+
+  if (commandName == QStringLiteral("gpus")) {
+    ParsedCommand command;
+    command.action =
+        json ? CommandAction::PrintGpusJson : CommandAction::PrintGpusText;
+    return command;
+  }
+
+  if (commandName == QStringLiteral("select-gpu")) {
+    if (positional.size() != 2) {
+      return invalidCommand(
+          QStringLiteral("`select-gpu` requires a GPU index argument (e.g. 0)."));
+    }
+    bool ok = false;
+    const int idx = positional.at(1).toInt(&ok);
+    if (!ok || idx < 0) {
+      return invalidCommand(QStringLiteral("GPU index must be >= 0."));
+    }
+    ParsedCommand command;
+    command.action = CommandAction::SelectGpu;
+    command.payload = QString::number(idx);
+    return command;
   }
 
   if (commandName != QStringLiteral("driver")) {
@@ -585,11 +672,15 @@ DiagnosticsSnapshot collectDiagnostics(const QString &applicationName,
   snapshot.gpuMonitorAvailable = gpuMonitor.available();
   snapshot.gpuMonitorName = gpuMonitor.gpuName();
   snapshot.gpuTemperatureC = gpuMonitor.temperatureC();
+  snapshot.gpuHotspotTemperatureC = gpuMonitor.hotspotTemperatureC();
+  snapshot.gpuMemoryTemperatureC = gpuMonitor.memoryTemperatureC();
   snapshot.gpuUtilizationPercent = gpuMonitor.utilizationPercent();
   snapshot.gpuMemoryUsedMiB = gpuMonitor.memoryUsedMiB();
   snapshot.gpuMemoryTotalMiB = gpuMonitor.memoryTotalMiB();
   snapshot.gpuMemoryUsagePercent = gpuMonitor.memoryUsagePercent();
   snapshot.gpuFanSpeedPercent = gpuMonitor.fanSpeedPercent();
+  snapshot.gpuCount = gpuMonitor.gpuCount();
+  snapshot.gpuProcessCount = gpuMonitor.gpuProcessCount();
 
   FanController fanController;
   fanController.stop();
@@ -603,6 +694,7 @@ DiagnosticsSnapshot collectDiagnostics(const QString &applicationName,
   snapshot.fanRpm = fanController.currentRpm();
   snapshot.fanSafetyOverride = fanController.safetyOverrideActive();
   snapshot.fanThermalThresholdC = fanController.thermalThresholdC();
+  snapshot.fanSmoothingEnabled = fanController.smoothingEnabled();
 
   RamMonitor ramMonitor;
   ramMonitor.stop();
@@ -623,6 +715,8 @@ DiagnosticsSnapshot collectDiagnostics(const QString &applicationName,
   snapshot.defaultPowerLimitW = powerController.defaultPowerLimitW();
   snapshot.persistenceModeEnabled = powerController.persistenceModeEnabled();
   snapshot.powerPreset = powerController.powerPreset();
+  snapshot.coreClockOffsetMHz = powerController.coreClockOffsetMHz();
+  snapshot.memoryClockOffsetMHz = powerController.memoryClockOffsetMHz();
 
   return snapshot;
 }
@@ -633,6 +727,7 @@ QString renderStatusText(const DiagnosticsSnapshot &snapshot) {
   output += QStringLiteral("version: %1\n").arg(snapshot.applicationVersion);
   output += QStringLiteral("gpu_found: %1\n").arg(boolText(snapshot.gpuFound));
   output += QStringLiteral("gpu_name: %1\n").arg(dashIfEmpty(snapshot.gpuName));
+  output += QStringLiteral("gpu_count: %1\n").arg(snapshot.gpuCount);
   output += QStringLiteral("active_driver: %1\n")
                 .arg(dashIfEmpty(snapshot.activeDriver));
   output += QStringLiteral("driver_version: %1\n")
@@ -671,6 +766,10 @@ QString renderDiagnosticsText(const DiagnosticsSnapshot &snapshot) {
                 .arg(dashIfEmpty(snapshot.gpuMonitorName));
   output +=
       QStringLiteral("gpu_temperature_c: %1\n").arg(snapshot.gpuTemperatureC);
+  output += QStringLiteral("gpu_hotspot_temperature_c: %1\n")
+                .arg(snapshot.gpuHotspotTemperatureC);
+  output += QStringLiteral("gpu_memory_temperature_c: %1\n")
+                .arg(snapshot.gpuMemoryTemperatureC);
   output += QStringLiteral("gpu_utilization_percent: %1\n")
                 .arg(snapshot.gpuUtilizationPercent);
   output += QStringLiteral("gpu_memory_used_mib: %1\n")
@@ -681,6 +780,8 @@ QString renderDiagnosticsText(const DiagnosticsSnapshot &snapshot) {
                 .arg(snapshot.gpuMemoryUsagePercent);
   output += QStringLiteral("gpu_fan_speed_percent: %1\n")
                 .arg(snapshot.gpuFanSpeedPercent);
+  output += QStringLiteral("gpu_process_count: %1\n")
+                .arg(snapshot.gpuProcessCount);
   output += QStringLiteral("fan_supported: %1\n")
                 .arg(boolText(snapshot.fanSupported));
   output += QStringLiteral("fan_control_supported: %1\n")
@@ -697,6 +798,8 @@ QString renderDiagnosticsText(const DiagnosticsSnapshot &snapshot) {
                 .arg(boolText(snapshot.fanSafetyOverride));
   output += QStringLiteral("fan_thermal_threshold_c: %1\n")
                 .arg(snapshot.fanThermalThresholdC);
+  output += QStringLiteral("fan_smoothing_enabled: %1\n")
+                .arg(boolText(snapshot.fanSmoothingEnabled));
   output += QStringLiteral("ram_available: %1\n")
                 .arg(boolText(snapshot.ramAvailable));
   output += QStringLiteral("ram_total_mib: %1\n").arg(snapshot.ramTotalMiB);
@@ -721,6 +824,10 @@ QString renderDiagnosticsText(const DiagnosticsSnapshot &snapshot) {
                 .arg(boolText(snapshot.persistenceModeEnabled));
   output += QStringLiteral("power_preset: %1\n")
                 .arg(dashIfEmpty(snapshot.powerPreset));
+  output += QStringLiteral("core_clock_offset_mhz: %+1\n")
+                .arg(snapshot.coreClockOffsetMHz);
+  output += QStringLiteral("memory_clock_offset_mhz: %+1\n")
+                .arg(snapshot.memoryClockOffsetMHz);
 
   if (!snapshot.verificationReport.isEmpty()) {
     output += QStringLiteral("verification_report:\n%1\n")
@@ -738,6 +845,7 @@ QJsonObject renderStatusJsonObject(const DiagnosticsSnapshot &snapshot) {
   object.insert(QStringLiteral("version"), snapshot.applicationVersion);
   object.insert(QStringLiteral("gpuFound"), snapshot.gpuFound);
   object.insert(QStringLiteral("gpuName"), snapshot.gpuName);
+  object.insert(QStringLiteral("gpuCount"), snapshot.gpuCount);
   object.insert(QStringLiteral("activeDriver"), snapshot.activeDriver);
   object.insert(QStringLiteral("driverVersion"), snapshot.driverVersion);
   object.insert(QStringLiteral("sessionType"), snapshot.sessionType);
@@ -770,6 +878,10 @@ QJsonObject renderDiagnosticsJsonObject(const DiagnosticsSnapshot &snapshot) {
                 snapshot.gpuMonitorAvailable);
   object.insert(QStringLiteral("gpuMonitorName"), snapshot.gpuMonitorName);
   object.insert(QStringLiteral("gpuTemperatureC"), snapshot.gpuTemperatureC);
+  object.insert(QStringLiteral("gpuHotspotTemperatureC"),
+                snapshot.gpuHotspotTemperatureC);
+  object.insert(QStringLiteral("gpuMemoryTemperatureC"),
+                snapshot.gpuMemoryTemperatureC);
   object.insert(QStringLiteral("gpuUtilizationPercent"),
                 snapshot.gpuUtilizationPercent);
   object.insert(QStringLiteral("gpuMemoryUsedMiB"), snapshot.gpuMemoryUsedMiB);
@@ -779,6 +891,7 @@ QJsonObject renderDiagnosticsJsonObject(const DiagnosticsSnapshot &snapshot) {
                 snapshot.gpuMemoryUsagePercent);
   object.insert(QStringLiteral("gpuFanSpeedPercent"),
                 snapshot.gpuFanSpeedPercent);
+  object.insert(QStringLiteral("gpuProcessCount"), snapshot.gpuProcessCount);
   object.insert(QStringLiteral("fanSupported"), snapshot.fanSupported);
   object.insert(QStringLiteral("fanControlSupported"),
                 snapshot.fanControlSupported);
@@ -792,6 +905,8 @@ QJsonObject renderDiagnosticsJsonObject(const DiagnosticsSnapshot &snapshot) {
                 snapshot.fanSafetyOverride);
   object.insert(QStringLiteral("fanThermalThresholdC"),
                 snapshot.fanThermalThresholdC);
+  object.insert(QStringLiteral("fanSmoothingEnabled"),
+                snapshot.fanSmoothingEnabled);
   object.insert(QStringLiteral("ramAvailable"), snapshot.ramAvailable);
   object.insert(QStringLiteral("ramTotalMiB"), snapshot.ramTotalMiB);
   object.insert(QStringLiteral("ramUsedMiB"), snapshot.ramUsedMiB);
@@ -808,6 +923,10 @@ QJsonObject renderDiagnosticsJsonObject(const DiagnosticsSnapshot &snapshot) {
   object.insert(QStringLiteral("persistenceMode"),
                 snapshot.persistenceModeEnabled);
   object.insert(QStringLiteral("powerPreset"), snapshot.powerPreset);
+  object.insert(QStringLiteral("coreClockOffsetMHz"),
+                snapshot.coreClockOffsetMHz);
+  object.insert(QStringLiteral("memoryClockOffsetMHz"),
+                snapshot.memoryClockOffsetMHz);
   return object;
 }
 

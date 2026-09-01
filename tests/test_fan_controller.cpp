@@ -153,6 +153,7 @@ private slots:
   void testDirectionalHysteresisAndAntiHunting() {
     FanController fan;
     fan.stop();
+    fan.setSmoothingEnabled(false);
     fan.setFanMode(QStringLiteral("balanced"));
 
     // Set initial temperature at 68°C (speed is 65%)
@@ -467,6 +468,28 @@ private slots:
     // Back to AC Power -> should restore performance
     fan.syncPowerSource(false);
     QCOMPARE(fan.fanMode(), QStringLiteral("performance"));
+  }
+
+  void testSmoothingAndRampRates() {
+    FanController fan;
+    fan.stop();
+
+    QVERIFY(fan.smoothingEnabled());
+    QCOMPARE(fan.hysteresisTempC(), 2);
+    QCOMPARE(fan.rampUpRatePercent(), 20);
+    QCOMPARE(fan.rampDownRatePercent(), 5);
+
+    fan.setSmoothingEnabled(false);
+    QVERIFY(!fan.smoothingEnabled());
+
+    fan.setHysteresisTempC(4);
+    QCOMPARE(fan.hysteresisTempC(), 4);
+
+    fan.setRampUpRatePercent(30);
+    QCOMPARE(fan.rampUpRatePercent(), 30);
+
+    fan.setRampDownRatePercent(10);
+    QCOMPARE(fan.rampDownRatePercent(), 10);
   }
 };
 

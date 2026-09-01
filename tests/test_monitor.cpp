@@ -273,6 +273,31 @@ private slots:
 
     qunsetenv("RO_CONTROL_MEMINFO_PATH");
   }
+
+  void testGpuMultiDeviceAndProcesses() {
+    GpuMonitor gpu;
+    gpu.stop();
+    gpu.refresh();
+
+    QVERIFY(gpu.gpuCount() >= 1);
+    QVERIFY(gpu.selectedGpuIndex() >= 0);
+    QVERIFY(!gpu.gpuDevices().isEmpty());
+
+    const auto dev = gpu.gpuDevices().first().toMap();
+    QVERIFY(dev.contains(QStringLiteral("index")));
+    QVERIFY(dev.contains(QStringLiteral("name")));
+
+    gpu.setSelectedGpuIndex(0);
+    QCOMPARE(gpu.selectedGpuIndex(), 0);
+
+    QVERIFY(gpu.hotspotTemperatureC() >= 0);
+    QVERIFY(gpu.memoryTemperatureC() >= 0);
+    QVERIFY(gpu.gpuProcessCount() >= 0);
+
+    // Testing killProcess with invalid PID returns false safely
+    QVERIFY(!gpu.killProcess(0));
+    QVERIFY(!gpu.killProcess(1));
+  }
 };
 
 QTEST_MAIN(TestMonitor)

@@ -78,6 +78,10 @@ QString RoControlDBusAdaptor::GetTelemetry() {
     gpuObj.insert(QStringLiteral("available"), m_gpu->available());
     gpuObj.insert(QStringLiteral("name"), m_gpu->gpuName());
     gpuObj.insert(QStringLiteral("temperatureC"), m_gpu->temperatureC());
+    gpuObj.insert(QStringLiteral("hotspotTemperatureC"),
+                  m_gpu->hotspotTemperatureC());
+    gpuObj.insert(QStringLiteral("memoryTemperatureC"),
+                  m_gpu->memoryTemperatureC());
     gpuObj.insert(QStringLiteral("utilizationPercent"),
                   m_gpu->utilizationPercent());
     gpuObj.insert(QStringLiteral("memoryUsedMiB"), m_gpu->memoryUsedMiB());
@@ -92,6 +96,9 @@ QString RoControlDBusAdaptor::GetTelemetry() {
     gpuObj.insert(QStringLiteral("memoryClockMHz"), m_gpu->memoryClockMHz());
     gpuObj.insert(QStringLiteral("pcieLinkStatus"), m_gpu->pcieLinkStatus());
     gpuObj.insert(QStringLiteral("processCount"), m_gpu->gpuProcessCount());
+    gpuObj.insert(QStringLiteral("gpuCount"), m_gpu->gpuCount());
+    gpuObj.insert(QStringLiteral("selectedGpuIndex"),
+                  m_gpu->selectedGpuIndex());
   }
   root.insert(QStringLiteral("gpu"), gpuObj);
 
@@ -117,6 +124,9 @@ QString RoControlDBusAdaptor::GetTelemetry() {
     fanObj.insert(QStringLiteral("rpm"), m_fan->currentRpm());
     fanObj.insert(QStringLiteral("safetyOverride"),
                   m_fan->safetyOverrideActive());
+    fanObj.insert(QStringLiteral("smoothingEnabled"),
+                  m_fan->smoothingEnabled());
+    fanObj.insert(QStringLiteral("hysteresisTempC"), m_fan->hysteresisTempC());
   }
   root.insert(QStringLiteral("fan"), fanObj);
 
@@ -133,6 +143,10 @@ QString RoControlDBusAdaptor::GetTelemetry() {
     powerObj.insert(QStringLiteral("preset"), m_power->powerPreset());
     powerObj.insert(QStringLiteral("persistenceMode"),
                     m_power->persistenceModeEnabled());
+    powerObj.insert(QStringLiteral("coreClockOffsetMHz"),
+                    m_power->coreClockOffsetMHz());
+    powerObj.insert(QStringLiteral("memoryClockOffsetMHz"),
+                    m_power->memoryClockOffsetMHz());
   }
   root.insert(QStringLiteral("power"), powerObj);
 
@@ -143,6 +157,10 @@ QString RoControlDBusAdaptor::GetThermalStatus() {
   QJsonObject root;
   root.insert(QStringLiteral("gpuTemperatureC"),
               m_gpu ? m_gpu->temperatureC() : 0);
+  root.insert(QStringLiteral("gpuHotspotTemperatureC"),
+              m_gpu ? m_gpu->hotspotTemperatureC() : 0);
+  root.insert(QStringLiteral("gpuMemoryTemperatureC"),
+              m_gpu ? m_gpu->memoryTemperatureC() : 0);
   root.insert(QStringLiteral("cpuTemperatureC"),
               m_cpu ? m_cpu->temperatureC() : 0);
   root.insert(QStringLiteral("fanRpm"), m_fan ? m_fan->currentRpm() : 0);
@@ -163,19 +181,66 @@ QString RoControlDBusAdaptor::GetGpuHealth() {
   if (m_gpu) {
     root.insert(QStringLiteral("gpuName"), m_gpu->gpuName());
     root.insert(QStringLiteral("temperatureC"), m_gpu->temperatureC());
+    root.insert(QStringLiteral("hotspotTemperatureC"),
+                m_gpu->hotspotTemperatureC());
+    root.insert(QStringLiteral("memoryTemperatureC"),
+                m_gpu->memoryTemperatureC());
     root.insert(QStringLiteral("utilizationPercent"),
                 m_gpu->utilizationPercent());
     root.insert(QStringLiteral("powerDrawW"), m_gpu->powerDrawW());
     root.insert(QStringLiteral("powerLimitW"), m_gpu->powerLimitW());
     root.insert(QStringLiteral("pcieLinkStatus"), m_gpu->pcieLinkStatus());
     root.insert(QStringLiteral("processCount"), m_gpu->gpuProcessCount());
+    root.insert(QStringLiteral("gpuCount"), m_gpu->gpuCount());
   }
   if (m_power) {
     root.insert(QStringLiteral("persistenceMode"),
                 m_power->persistenceModeEnabled());
     root.insert(QStringLiteral("powerPreset"), m_power->powerPreset());
+    root.insert(QStringLiteral("coreClockOffsetMHz"),
+                m_power->coreClockOffsetMHz());
+    root.insert(QStringLiteral("memoryClockOffsetMHz"),
+                m_power->memoryClockOffsetMHz());
   }
   return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+}
+
+QString RoControlDBusAdaptor::GetGpuProcesses() {
+  QJsonObject root;
+  QJsonArray arr;
+  if (m_gpu) {
+    const auto procs = m_gpu->gpuProcesses();
+    for (const auto &p : procs) {
+      arr.append(QJsonObject::fromVariantMap(p.toMap()));
+    }
+  }
+  root.insert(QStringLiteral("processes"), arr);
+  root.insert(QStringLiteral("count"), arr.size());
+  return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+}
+
+QString RoControlDBusAdaptor::GetGpuDevices() {
+  QJsonObject root;
+  QJsonArray arr;
+  if (m_gpu) {
+    const auto devs = m_gpu->gpuDevices();
+    for (const auto &d : devs) {
+      arr.append(QJsonObject::fromVariantMap(d.toMap()));
+    }
+  }
+  root.insert(QStringLiteral("devices"), arr);
+  root.insert(QStringLiteral("count"), arr.size());
+  root.insert(QStringLiteral("selectedIndex"),
+              m_gpu ? m_gpu->selectedGpuIndex() : 0);
+  return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+}
+
+bool RoControlDBusAdaptor::SelectGpu(int index) {
+  if (!m_gpu) {
+    return false;
+  }
+  m_gpu->setSelectedGpuIndex(index);
+  return true;
 }
 
 bool RoControlDBusAdaptor::SetFanMode(const QString &mode) {
@@ -207,6 +272,31 @@ bool RoControlDBusAdaptor::SetPersistenceMode(bool enabled) {
     return false;
   }
   return m_power->setPersistenceMode(enabled);
+}
+
+bool RoControlDBusAdaptor::SetClockOffsets(int coreMhz, int memMhz) {
+  if (!m_power || !m_power->controlSupported()) {
+    return false;
+  }
+  return m_power->setClockOffsets(coreMhz, memMhz);
+}
+
+bool RoControlDBusAdaptor::SetFanSmoothing(bool enabled, int rampUp,
+                                           int rampDown, int hysteresis) {
+  if (!m_fan) {
+    return false;
+  }
+  m_fan->setSmoothingEnabled(enabled);
+  if (rampUp > 0) {
+    m_fan->setRampUpRatePercent(rampUp);
+  }
+  if (rampDown > 0) {
+    m_fan->setRampDownRatePercent(rampDown);
+  }
+  if (hysteresis >= 0) {
+    m_fan->setHysteresisTempC(hysteresis);
+  }
+  return true;
 }
 
 RoControlDBusService::RoControlDBusService(QObject *parent, CpuMonitor *cpu,

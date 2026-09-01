@@ -190,6 +190,45 @@ void FanController::selectFan(int index) { setSelectedFanIndex(index); }
 
 void FanController::selectFanById(const QString &id) { setSelectedFanId(id); }
 
+bool FanController::smoothingEnabled() const { return m_smoothingEnabled; }
+
+int FanController::rampUpRatePercent() const { return m_rampUpRatePercent; }
+
+int FanController::rampDownRatePercent() const { return m_rampDownRatePercent; }
+
+int FanController::hysteresisTempC() const { return m_hysteresisTempC; }
+
+void FanController::setSmoothingEnabled(bool enabled) {
+  if (m_smoothingEnabled == enabled) return;
+  m_smoothingEnabled = enabled;
+  saveSettings();
+  emit smoothingEnabledChanged();
+}
+
+void FanController::setRampUpRatePercent(int percent) {
+  const int clamped = std::clamp(percent, 1, 100);
+  if (m_rampUpRatePercent == clamped) return;
+  m_rampUpRatePercent = clamped;
+  saveSettings();
+  emit rampRateChanged();
+}
+
+void FanController::setRampDownRatePercent(int percent) {
+  const int clamped = std::clamp(percent, 1, 100);
+  if (m_rampDownRatePercent == clamped) return;
+  m_rampDownRatePercent = clamped;
+  saveSettings();
+  emit rampRateChanged();
+}
+
+void FanController::setHysteresisTempC(int degrees) {
+  const int clamped = std::clamp(degrees, 0, 15);
+  if (m_hysteresisTempC == clamped) return;
+  m_hysteresisTempC = clamped;
+  saveSettings();
+  emit hysteresisTempCChanged();
+}
+
 bool FanController::coolbitsEnabled() const {
   const QString confPath =
       QStringLiteral("/etc/X11/xorg.conf.d/99-nvidia-coolbits.conf");
@@ -520,6 +559,15 @@ void FanController::loadSettings() {
       settings.value(QStringLiteral("thermalThreshold"), 85).toInt();
   m_thermalThresholdC = std::clamp(m_thermalThresholdC, 60, 105);
 
+  m_smoothingEnabled =
+      settings.value(QStringLiteral("smoothingEnabled"), true).toBool();
+  m_rampUpRatePercent = std::clamp(
+      settings.value(QStringLiteral("rampUpRate"), 20).toInt(), 1, 100);
+  m_rampDownRatePercent = std::clamp(
+      settings.value(QStringLiteral("rampDownRate"), 5).toInt(), 1, 100);
+  m_hysteresisTempC = std::clamp(
+      settings.value(QStringLiteral("hysteresisTempC"), 2).toInt(), 0, 15);
+
   settings.endGroup();
 
   // CPU Profile initialization & loading
@@ -594,6 +642,10 @@ void FanController::saveSettings() {
   settings.setValue(QStringLiteral("mode"), modeToString(m_mode));
   settings.setValue(QStringLiteral("manualSpeed"), m_manualFanSpeedPercent);
   settings.setValue(QStringLiteral("thermalThreshold"), m_thermalThresholdC);
+  settings.setValue(QStringLiteral("smoothingEnabled"), m_smoothingEnabled);
+  settings.setValue(QStringLiteral("rampUpRate"), m_rampUpRatePercent);
+  settings.setValue(QStringLiteral("rampDownRate"), m_rampDownRatePercent);
+  settings.setValue(QStringLiteral("hysteresisTempC"), m_hysteresisTempC);
   settings.setValue(QStringLiteral("curveCount"), m_customCurve.size());
 
   for (qsizetype i = 0; i < m_customCurve.size(); ++i) {
@@ -1289,6 +1341,18 @@ void FanController::evaluateAndApplyFanSpeed(bool force) {
       if (m_gpuTemperatureC > (m_lastEvaluatedTempC - m_hysteresisTempC) &&
           !m_lastAppliedModeWasAuto && m_lastAppliedPercent > 0) {
         calculatedSpeed = std::max(calculatedSpeed, m_lastAppliedPercent);
+      }
+    }
+
+    // Fan smoothing / step rate limiter:
+    if (!isAuto && !force && m_smoothingEnabled && m_lastAppliedPercent > 0 &&
+        !m_lastAppliedModeWasAuto) {
+      if (calculatedSpeed > m_lastAppliedPercent) {
+        calculatedSpeed =
+            std::min(calculatedSpeed, m_lastAppliedPercent + m_rampUpRatePercent);
+      } else if (calculatedSpeed < m_lastAppliedPercent) {
+        calculatedSpeed =
+            std::max(calculatedSpeed, m_lastAppliedPercent - m_rampDownRatePercent);
       }
     }
   }

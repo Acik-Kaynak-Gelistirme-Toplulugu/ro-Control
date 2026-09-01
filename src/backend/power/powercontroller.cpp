@@ -71,6 +71,10 @@ double PowerController::defaultPowerLimitW() const {
 bool PowerController::persistenceModeEnabled() const {
   return m_persistenceModeEnabled;
 }
+int PowerController::coreClockOffsetMHz() const { return m_coreClockOffsetMHz; }
+int PowerController::memoryClockOffsetMHz() const { return m_memoryClockOffsetMHz; }
+bool PowerController::clockOffsetSupported() const { return m_controlSupported; }
+
 QString PowerController::powerPreset() const { return m_powerPreset; }
 QStringList PowerController::availablePresets() const {
   return {QStringLiteral("eco"), QStringLiteral("balanced"),
@@ -94,6 +98,10 @@ void PowerController::loadSettings() {
           .toString();
   m_persistenceModeEnabled =
       settings.value(QString::fromLatin1(kKeyPersistenceMode), false).toBool();
+  m_coreClockOffsetMHz =
+      settings.value(QStringLiteral("CoreClockOffset"), 0).toInt();
+  m_memoryClockOffsetMHz =
+      settings.value(QStringLiteral("MemoryClockOffset"), 0).toInt();
   settings.endGroup();
 }
 
@@ -104,6 +112,8 @@ void PowerController::saveSettings() {
   settings.setValue(QString::fromLatin1(kKeyPersistenceMode),
                     m_persistenceModeEnabled);
   settings.setValue(QString::fromLatin1(kKeyLastTargetWatts), m_powerLimitW);
+  settings.setValue(QStringLiteral("CoreClockOffset"), m_coreClockOffsetMHz);
+  settings.setValue(QStringLiteral("MemoryClockOffset"), m_memoryClockOffsetMHz);
   settings.endGroup();
 }
 
@@ -323,4 +333,64 @@ bool PowerController::resetToDefault() {
     return setPowerLimit(m_defaultPowerLimitW);
   }
   return applyPowerPreset(QStringLiteral("balanced"));
+}
+
+bool PowerController::setClockOffsets(int coreOffsetMHz, int memoryOffsetMHz) {
+  const int clampedCore = std::clamp(coreOffsetMHz, minCoreOffsetMHz(), maxCoreOffsetMHz());
+  const int clampedMem = std::clamp(memoryOffsetMHz, minMemoryOffsetMHz(), maxMemoryOffsetMHz());
+
+  PolkitHelper polkit;
+  CommandRunner runner;
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 2000;
+
+  const QString nvidiaSettingsProg =
+      CommandRunner::resolveProgramPath(QStringLiteral("nvidia-settings"));
+
+  bool success = false;
+  if (!nvidiaSettingsProg.isEmpty()) {
+    const auto result = runner.run(
+        QStringLiteral("nvidia-settings"),
+        {QStringLiteral("-a"),
+         QStringLiteral("[gpu:0]/GPUGraphicsClockOffset[3]=%1").arg(clampedCore),
+         QStringLiteral("-a"),
+         QStringLiteral("[gpu:0]/GPUMemoryTransferRateOffset[3]=%1").arg(clampedMem)},
+        options);
+    success = result.success();
+  }
+
+  if (!success) {
+    const auto privRes = polkit.runPrivileged(
+        QStringLiteral("nvidia-settings"),
+        {QStringLiteral("-a"),
+         QStringLiteral("[gpu:0]/GPUGraphicsClockOffset[3]=%1").arg(clampedCore),
+         QStringLiteral("-a"),
+         QStringLiteral("[gpu:0]/GPUMemoryTransferRateOffset[3]=%1").arg(clampedMem)});
+    success = privRes.success();
+  }
+
+  if (qEnvironmentVariableIsSet("RO_CONTROL_MOCK_POWER_CONTROL") ||
+      qEnvironmentVariableIsSet("RO_CONTROL_MOCK_FAN_CAPABILITY")) {
+    success = true;
+  }
+
+  if (success) {
+    m_coreClockOffsetMHz = clampedCore;
+    m_memoryClockOffsetMHz = clampedMem;
+    emit clockOffsetsChanged();
+    setStatusMessage(QStringLiteral("Clock offsets set to Core: %+1 MHz, Memory: %+2 MHz.")
+                         .arg(clampedCore)
+                         .arg(clampedMem));
+    saveSettings();
+    emit clockOffsetsApplied(clampedCore, clampedMem, true);
+    return true;
+  }
+
+  setStatusMessage(QStringLiteral("Failed to set clock offsets. Ensure Coolbits 8/28 is active."));
+  emit clockOffsetsApplied(clampedCore, clampedMem, false);
+  return false;
+}
+
+bool PowerController::resetClockOffsets() {
+  return setClockOffsets(0, 0);
 }
