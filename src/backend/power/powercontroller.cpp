@@ -389,9 +389,13 @@ bool PowerController::setClockOffsets(int coreOffsetMHz, int memoryOffsetMHz) {
     m_coreClockOffsetMHz = clampedCore;
     m_memoryClockOffsetMHz = clampedMem;
     emit clockOffsetsChanged();
+    const QString coreSign = clampedCore >= 0 ? QStringLiteral("+") : QString();
+    const QString memSign = clampedMem >= 0 ? QStringLiteral("+") : QString();
     setStatusMessage(
-        QStringLiteral("Clock offsets set to Core: %+1 MHz, Memory: %+2 MHz.")
+        QStringLiteral("Clock offsets set to Core: %1%2 MHz, Memory: %3%4 MHz.")
+            .arg(coreSign)
             .arg(clampedCore)
+            .arg(memSign)
             .arg(clampedMem));
     saveSettings();
     emit clockOffsetsApplied(clampedCore, clampedMem, true);

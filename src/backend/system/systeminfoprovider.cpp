@@ -2,7 +2,9 @@
 
 #include "commandrunner.h"
 
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QList>
 #include <QProcess>
 #include <QRegularExpression>

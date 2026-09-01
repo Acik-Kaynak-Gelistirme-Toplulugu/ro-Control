@@ -295,10 +295,14 @@ CliExecutionResult executeCliCommand(const RoControlCli::ParsedCommand &command,
     const int core = parts.value(0).toInt();
     const int mem = parts.value(1).toInt();
     if (powerController.setClockOffsets(core, mem)) {
+      const QString coreSign = core >= 0 ? QStringLiteral("+") : QString();
+      const QString memSign = mem >= 0 ? QStringLiteral("+") : QString();
       result.stdoutText =
           QStringLiteral(
-              "GPU clock offsets set to Core: %+1 MHz, Memory: %+2 MHz.\n")
+              "GPU clock offsets set to Core: %1%2 MHz, Memory: %3%4 MHz.\n")
+              .arg(coreSign)
               .arg(core)
+              .arg(memSign)
               .arg(mem);
       result.exitCode = 0;
     } else {

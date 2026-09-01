@@ -247,8 +247,11 @@ ParsedCommand parseArguments(const QStringList &arguments,
   }
 
   if (proprietary || openSource || acceptLicense) {
-    if (positional.value(0) != QStringLiteral("driver") ||
-        positional.value(1) != QStringLiteral("install")) {
+    const bool isDriverInstall =
+        (positional.value(0) == QStringLiteral("driver") &&
+         positional.value(1) == QStringLiteral("install")) ||
+        positional.value(0) == QStringLiteral("install-driver");
+    if (!isDriverInstall) {
       return invalidCommand(
           QStringLiteral("--proprietary, --open-source and --accept-license "
                          "can only be used with `driver install`."));
@@ -301,6 +304,37 @@ ParsedCommand parseArguments(const QStringList &arguments,
     ParsedCommand command;
     command.action = json ? CommandAction::PrintDiagnosticsJson
                           : CommandAction::PrintDiagnosticsText;
+    return command;
+  }
+
+  if (commandName == QStringLiteral("fan-status")) {
+    if (positional.size() != 1) {
+      return invalidCommand(
+          QStringLiteral("`fan-status` does not take extra arguments."));
+    }
+
+    ParsedCommand command;
+    command.action = json ? CommandAction::PrintFanStatusJson
+                          : CommandAction::PrintFanStatusText;
+    return command;
+  }
+
+  if (commandName == QStringLiteral("check-updates")) {
+    if (positional.size() != 1) {
+      return invalidCommand(
+          QStringLiteral("`check-updates` does not take arguments."));
+    }
+
+    ParsedCommand command;
+    command.action = CommandAction::UpdateDriver;
+    return command;
+  }
+
+  if (commandName == QStringLiteral("install-driver")) {
+    ParsedCommand command;
+    command.action = openSource ? CommandAction::InstallOpenSourceDriver
+                                : CommandAction::InstallProprietaryDriver;
+    command.acceptLicense = acceptLicense;
     return command;
   }
 
@@ -834,9 +868,9 @@ QString renderDiagnosticsText(const DiagnosticsSnapshot &snapshot) {
                 .arg(boolText(snapshot.persistenceModeEnabled));
   output += QStringLiteral("power_preset: %1\n")
                 .arg(dashIfEmpty(snapshot.powerPreset));
-  output += QStringLiteral("core_clock_offset_mhz: %+1\n")
+  output += QStringLiteral("core_clock_offset_mhz: %1\n")
                 .arg(snapshot.coreClockOffsetMHz);
-  output += QStringLiteral("memory_clock_offset_mhz: %+1\n")
+  output += QStringLiteral("memory_clock_offset_mhz: %1\n")
                 .arg(snapshot.memoryClockOffsetMHz);
 
   if (!snapshot.verificationReport.isEmpty()) {
