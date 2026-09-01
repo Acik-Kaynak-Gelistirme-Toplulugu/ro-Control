@@ -753,14 +753,20 @@ int main(int argc, char *argv[]) {
                    updateTrayTooltip);
 
   QMenu trayMenu;
-  auto *restoreAction = trayMenu.addAction(QStringLiteral("Open ro-Control"));
+  auto *restoreAction = trayMenu.addAction(
+      QCoreApplication::translate("Main", "Open ro-Control"));
   trayMenu.addSeparator();
 
-  auto *fanMenu = trayMenu.addMenu(QStringLiteral("Fan Profile"));
-  auto *autoFanAction = fanMenu->addAction(QStringLiteral("Auto"));
-  auto *silentFanAction = fanMenu->addAction(QStringLiteral("Silent"));
-  auto *balancedFanAction = fanMenu->addAction(QStringLiteral("Balanced"));
-  auto *perfFanAction = fanMenu->addAction(QStringLiteral("Performance"));
+  auto *fanMenu =
+      trayMenu.addMenu(QCoreApplication::translate("Main", "Fan Profile"));
+  auto *autoFanAction =
+      fanMenu->addAction(QCoreApplication::translate("Main", "Auto"));
+  auto *silentFanAction =
+      fanMenu->addAction(QCoreApplication::translate("Main", "Silent"));
+  auto *balancedFanAction =
+      fanMenu->addAction(QCoreApplication::translate("Main", "Balanced"));
+  auto *perfFanAction =
+      fanMenu->addAction(QCoreApplication::translate("Main", "Performance"));
 
   QObject::connect(autoFanAction, &QAction::triggered, &fanController,
                    [&]() { fanController.setFanMode(QStringLiteral("auto")); });
@@ -774,10 +780,14 @@ int main(int argc, char *argv[]) {
     fanController.setFanMode(QStringLiteral("performance"));
   });
 
-  auto *powerMenu = trayMenu.addMenu(QStringLiteral("Power Preset"));
-  auto *ecoPowerAction = powerMenu->addAction(QStringLiteral("Eco"));
-  auto *balancedPowerAction = powerMenu->addAction(QStringLiteral("Balanced"));
-  auto *perfPowerAction = powerMenu->addAction(QStringLiteral("Performance"));
+  auto *powerMenu =
+      trayMenu.addMenu(QCoreApplication::translate("Main", "Power Preset"));
+  auto *ecoPowerAction =
+      powerMenu->addAction(QCoreApplication::translate("Main", "Eco"));
+  auto *balancedPowerAction =
+      powerMenu->addAction(QCoreApplication::translate("Main", "Balanced"));
+  auto *perfPowerAction =
+      powerMenu->addAction(QCoreApplication::translate("Main", "Performance"));
 
   QObject::connect(
       ecoPowerAction, &QAction::triggered, &powerController,
@@ -791,7 +801,8 @@ int main(int argc, char *argv[]) {
       });
 
   trayMenu.addSeparator();
-  auto *quitAction = trayMenu.addAction(QStringLiteral("Quit"));
+  auto *quitAction =
+      trayMenu.addAction(QCoreApplication::translate("Main", "Quit"));
   QObject::connect(quitAction, &QAction::triggered, &app, &QApplication::quit);
 
   trayIcon.setContextMenu(&trayMenu);

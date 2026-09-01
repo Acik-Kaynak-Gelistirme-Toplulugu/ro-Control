@@ -82,36 +82,26 @@ ApplicationWindow {
     }
 
     function openSettingsMenu(sourceButton) {
+        if (!sourceButton)
+            return;
         settingsPopup.width = Math.round(260 * root.uiScale);
+        var mapped = sourceButton.mapToItem(root.contentItem, 0, sourceButton.height);
         settingsPopup.x = Math.max(Math.round(16 * root.uiScale),
-                                   Math.min(sourceButton.mapToItem(root.contentItem, 0, 0).x
-                                            + sourceButton.width - settingsPopup.width,
+                                   Math.min(mapped.x + sourceButton.width - settingsPopup.width,
                                             root.width - settingsPopup.width - Math.round(16 * root.uiScale)));
-        settingsPopup.y = sourceButton.mapToItem(root.contentItem, 0, sourceButton.height).y + Math.round(8 * root.uiScale);
+        settingsPopup.y = mapped.y + Math.round(8 * root.uiScale);
         settingsPopup.open();
     }
 
     function refreshAfterResume() {
-        if (root.systemInfo)
-            root.systemInfo.refresh();
-        if (root.nvidiaDetector)
-            root.nvidiaDetector.refresh();
-        if (root.cpuMonitor) {
+        if (root.cpuMonitor)
             root.cpuMonitor.start();
-            root.cpuMonitor.refresh();
-        }
-        if (root.gpuMonitor) {
+        if (root.gpuMonitor)
             root.gpuMonitor.start();
-            root.gpuMonitor.refresh();
-        }
-        if (root.ramMonitor) {
+        if (root.ramMonitor)
             root.ramMonitor.start();
-            root.ramMonitor.refresh();
-        }
-        if (root.fanController) {
+        if (root.fanController)
             root.fanController.start();
-            root.fanController.refresh();
-        }
     }
 
     onActiveChanged: {

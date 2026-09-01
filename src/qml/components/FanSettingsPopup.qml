@@ -787,8 +787,12 @@ Popup {
                                     property int liveTemp: (popup.currentFan && popup.currentFan.temperatureC > 0)
                                                            ? popup.currentFan.temperatureC : 0
 
-                                    onPtsChanged: requestPaint()
-                                    onLiveTempChanged: requestPaint()
+                                    renderTarget: Canvas.Image
+                                    renderStrategy: Canvas.Immediate
+                                    visible: popup.opened && popup.activeMode === "custom"
+
+                                    onPtsChanged: if (visible) requestPaint()
+                                    onLiveTempChanged: if (visible) requestPaint()
 
                                     onPaint: {
                                         var ctx = getContext("2d");

@@ -40,12 +40,13 @@ Item {
         property color fillColor: Qt.rgba(lineColor.r, lineColor.g, lineColor.b, 0.15)
         property real maxValue: 100.0
 
-        renderTarget: Canvas.FramebufferObject
-        renderStrategy: Canvas.Threaded
+        renderTarget: Canvas.Image
+        renderStrategy: Canvas.Immediate
+        visible: page.visible
 
-        onValuesChanged: requestPaint()
-        onWidthChanged: requestPaint()
-        onHeightChanged: requestPaint()
+        onValuesChanged: if (page.visible) Qt.callLater(requestPaint)
+        onWidthChanged: if (page.visible) Qt.callLater(requestPaint)
+        onHeightChanged: if (page.visible) Qt.callLater(requestPaint)
 
         onPaint: {
             var ctx = getContext("2d");
@@ -131,6 +132,8 @@ Item {
     }
 
     function pushTelemetryHistory() {
+        if (!page.visible)
+            return;
         var cpuVal = page.cpuMonitor ? page.cpuMonitor.usagePercent : 0;
         var gpuVal = page.gpuMonitor ? page.gpuMonitor.utilizationPercent : 0;
         var ramVal = page.ramMonitor ? page.ramMonitor.usagePercent : 0;

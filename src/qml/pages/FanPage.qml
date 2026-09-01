@@ -42,9 +42,14 @@ Item {
         property color lineColor: page.accentColor
         property color fillColor: Qt.rgba(lineColor.r, lineColor.g, lineColor.b, 0.15)
         property real maxValue: 100.0
-        onValuesChanged: requestPaint()
-        onWidthChanged: requestPaint()
-        onHeightChanged: requestPaint()
+
+        renderTarget: Canvas.Image
+        renderStrategy: Canvas.Immediate
+        visible: page.visible
+
+        onValuesChanged: if (page.visible) Qt.callLater(requestPaint)
+        onWidthChanged: if (page.visible) Qt.callLater(requestPaint)
+        onHeightChanged: if (page.visible) Qt.callLater(requestPaint)
 
         onPaint: {
             var ctx = getContext("2d");
@@ -136,7 +141,16 @@ Item {
         page.syncOrderedFans();
     }
 
+    onVisibleChanged: {
+        if (visible) {
+            syncOrderedFans();
+            pushFanHistory();
+        }
+    }
+
     function pushFanHistory() {
+        if (!page.visible)
+            return;
         var spd = page.fanController ? page.fanController.currentFanSpeedPercent : 0;
         var rpm = page.fanController ? page.fanController.currentRpm : 0;
 
@@ -170,15 +184,18 @@ Item {
 
     Connections {
         target: page.fanController
+        enabled: page.visible
         function onSystemFansChanged() {
-            page.syncOrderedFans();
-            page.pushFanHistory();
+            if (page.visible) {
+                page.syncOrderedFans();
+                page.pushFanHistory();
+            }
         }
         function onCurrentFanSpeedPercentChanged() {
-            page.pushFanHistory();
+            if (page.visible) page.pushFanHistory();
         }
         function onCurrentRpmChanged() {
-            page.pushFanHistory();
+            if (page.visible) page.pushFanHistory();
         }
     }
 
