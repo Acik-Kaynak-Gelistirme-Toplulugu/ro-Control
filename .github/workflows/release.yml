@@ -185,7 +185,7 @@ jobs:
             exit 1
           fi
           [[ "$(basename "${RPM_FILE}")" == "$(rpm -qp --qf '%{NVRA}.rpm' "${RPM_FILE}")" ]]
-          [[ "$(rpm -qp --qf '%{RELEASE}' "${RPM_FILE}")" == "1.fc44" ]]
+          [[ "$(rpm -qp --qf '%{RELEASE}' "${RPM_FILE}")" == "1" ]]
 
           rpm -qp --info "${RPM_FILE}" > "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-info.txt"
           rpm -qp --requires "${RPM_FILE}" | sort > "dist/rpm/ro-control-${VERSION}-${RPM_ARCH}-requires.txt"
