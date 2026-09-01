@@ -3,12 +3,12 @@
 
 Name:           ro-control
 Version:        %{upstream_version}
-Release:        1%{?dist}
-Summary:        Smart NVIDIA driver manager and system monitor
+Release:        1
+Summary:        Smart NVIDIA driver manager and hardware monitor for Ro-ASD
 
 License:        GPL-3.0-or-later
-Vendor:         Project Ro ASD
-Packager:       Project Ro ASD <noreply@github.com>
+Vendor:         Sopwit
+Packager:       Sopwit <sopwith.osdev@gmail.com>
 URL:            https://github.com/Project-Ro-ASD/ro-Control
 Source0:        %{name}-%{version}.tar.gz
 ExclusiveArch:  x86_64 aarch64
@@ -23,6 +23,8 @@ BuildRequires:  qt6-qttools-devel
 BuildRequires:  qt6-qtwayland-devel
 BuildRequires:  kf6-qqc2-desktop-style
 BuildRequires:  polkit-devel
+BuildRequires:  systemd-rpm-macros
+BuildRequires:  desktop-file-utils
 
 Requires:       qt6-qtbase
 Requires:       qt6-qtdeclarative
@@ -43,11 +45,11 @@ Recommends:     /usr/bin/dracut
 Recommends:     /usr/sbin/grubby
 
 %description
-ro-Control is a native Qt6 and KDE Plasma desktop application designed for
-Linux systems. It provides smart NVIDIA driver detection, installation, and
-updates through DNF, multi-fan cooling control with custom temperature curves,
-real-time hardware diagnostics (GPU, CPU, VRAM, and RAM telemetry), power threshold
-management, and secure Polkit privilege integration.
+ro-Control is the central hardware management utility developed for Ro-ASD.
+It provides automated NVIDIA graphics driver installation and updates,
+multi-fan cooling control with custom temperature curves, real-time
+hardware diagnostics (GPU, CPU, RAM usage, temperatures, and power draw),
+and emergency thermal protection.
 
 %prep
 %autosetup -c -T -n %{name}-%{version}
@@ -56,7 +58,8 @@ tar -xzf %{SOURCE0} --strip-components=1
 %build
 %cmake \
     -DBUILD_TESTS=ON \
-    -DREQUIRE_TRANSLATIONS=ON
+    -DREQUIRE_TRANSLATIONS=ON \
+    -DCMAKE_SKIP_INSTALL_RPATH=ON
 %cmake_build
 
 %install
@@ -66,6 +69,29 @@ tar -xzf %{SOURCE0} --strip-components=1
 export QT_QPA_PLATFORM=offscreen
 export QT_QUICK_CONTROLS_STYLE=Basic
 %ctest --output-on-failure
+desktop-file-validate %{buildroot}%{_datadir}/applications/io.github.projectroasd.rocontrol.desktop
+
+%post
+/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+/usr/bin/update-desktop-database &>/dev/null || :
+%systemd_post ro-control.service
+%systemd_user_post ro-control.service
+
+%preun
+%systemd_preun ro-control.service
+%systemd_user_preun ro-control.service
+
+%postun
+if [ $1 -eq 0 ] ; then
+    /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+    /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
+    /usr/bin/update-desktop-database &>/dev/null || :
+fi
+%systemd_postun_with_restart ro-control.service
+%systemd_user_postun_with_restart ro-control.service
+
+%posttrans
+/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 %files
 %license LICENSE
@@ -86,7 +112,7 @@ export QT_QUICK_CONTROLS_STYLE=Basic
 %{_prefix}/lib/systemd/user/ro-control.service
 
 %changelog
-* Tue Sep 01 2026 ro-Control Maintainers <noreply@github.com> - 1.3.0-1
+* Tue Sep 01 2026 Sopwit <sopwith.osdev@gmail.com> - 1.3.0-1
 - SystemInfoProvider integration across Monitor, Driver, and Fan suites
 - Battery profile auto-sync and power source status indicators
 - Enhanced fan controller with GPU topology synchronization and dynamic curve points

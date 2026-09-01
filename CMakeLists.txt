@@ -143,7 +143,11 @@ target_compile_options(ro-control-backend PRIVATE
     -Wextra
     -Wpedantic
     $<$<CONFIG:Debug>:-g -O0>
-    $<$<CONFIG:Release>:-O2>
+    $<$<CONFIG:Release>:-O3 -fvisibility=hidden -fvisibility-inlines-hidden -fdata-sections -ffunction-sections>
+)
+
+target_link_options(ro-control-backend PRIVATE
+    $<$<CONFIG:Release>:-Wl,--gc-sections>
 )
 
 target_include_directories(ro-control-backend PUBLIC
@@ -246,7 +250,11 @@ target_compile_options(ro-control PRIVATE
     -Wextra
     -Wpedantic
     $<$<CONFIG:Debug>:-g -O0>
-    $<$<CONFIG:Release>:-O2>
+    $<$<CONFIG:Release>:-O3 -fvisibility=hidden -fvisibility-inlines-hidden -fdata-sections -ffunction-sections>
+)
+
+target_link_options(ro-control PRIVATE
+    $<$<CONFIG:Release>:-Wl,--gc-sections -Wl,-O1 -Wl,--as-needed>
 )
 
 # ─── Include Directories ──────────────────────────────────────────────────────

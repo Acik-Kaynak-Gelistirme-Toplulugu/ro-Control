@@ -1,7 +1,7 @@
 Source: ro-control
 Section: utils
 Priority: optional
-Maintainer: Project-Ro-ASD <dev@project-ro-asd.org>
+Maintainer: Sopwit <sopwith.osdev@gmail.com>
 Build-Depends: debhelper-compat (= 13),
                cmake (>= 3.22),
                ninja-build,
