@@ -593,7 +593,7 @@ Item {
                             color: page.textColor
                             selectedTextColor: page.bgColor
                             selectionColor: page.theme && page.theme.accentA ? page.theme.accentA : "#3778c2"
-                            font.family: "Noto Sans Mono"
+                            font.family: (Qt.platform.os === "osx") ? "Menlo" : "Monospace"
                             font.pixelSize: Math.round(11 * page.uiScale)
                             padding: 8
                             background: null

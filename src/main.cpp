@@ -13,6 +13,7 @@
 #include <QTextStream>
 #include <QTranslator>
 #include <QVariant>
+#include <QtQuickControls2/QQuickStyle>
 
 #include <QMenu>
 #include <QSystemTrayIcon>
@@ -505,6 +506,10 @@ int main(int argc, char *argv[]) {
   }
 
   configureGuiGraphicsEnvironment();
+
+  if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE")) {
+    QQuickStyle::setStyle(QStringLiteral("Basic"));
+  }
 
   QApplication app(argc, argv);
 

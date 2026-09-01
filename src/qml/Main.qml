@@ -26,7 +26,6 @@ ApplicationWindow {
     minimumWidth: 960
     minimumHeight: 600
     title: qsTr("ro-Control")
-    font.family: "Noto Sans"
 
     readonly property bool hasUiPreferences: root.uiPreferences !== null
     readonly property bool hasLanguageManager: root.languageManager !== null

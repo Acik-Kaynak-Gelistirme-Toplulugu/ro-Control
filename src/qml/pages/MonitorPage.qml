@@ -575,7 +575,7 @@ Item {
                                             color: page.textColor
                                             font.pixelSize: Math.round(11 * page.uiScale)
                                             font.weight: Font.DemiBold
-                                            font.family: "Monospace"
+                                            font.family: (Qt.platform.os === "osx") ? "Menlo" : "Monospace"
                                         }
                                     }
 
