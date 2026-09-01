@@ -2,52 +2,32 @@
 <component type="desktop-application">
 	<id>io.github.projectroasd.rocontrol.desktop</id>
 	<name>ro-Control</name>
-	<summary>NVIDIA driver manager and system monitor</summary>
-	<summary xml:lang="tr">NVIDIA sürücü yöneticisi ve sistem monitörü</summary>
+	<summary>NVIDIA driver manager, cooling controller, and hardware monitor for Ro-ASD</summary>
+	<summary xml:lang="tr">Ro-ASD için NVIDIA sürücü yöneticisi, soğutma kontrolcüsü ve donanım monitörü</summary>
 	<metadata_license>CC0-1.0</metadata_license>
 	<project_license>GPL-3.0-or-later</project_license>
 	<developer id="io.github.projectroasd">
-		<name>Project Ro ASD</name>
+		<name>Sopwit</name>
 	</developer>
+	<developer_name>Sopwit</developer_name>
+	<developer_name xml:lang="tr">Sopwit</developer_name>
+	<project_group>Sopwit</project_group>
 	<content_rating type="oars-1.1" />
 
 	<description>
 		<p>
-			ro-Control is the dedicated Project-Ro-ASD desktop utility for NVIDIA driver
-			management, multi-fan cooling control, and live hardware diagnostics. It helps users detect GPUs,
-			install or update drivers through DNF, manage fan curves and individual fan settings, and inspect
-			GPU, CPU, and RAM telemetry from a native Qt interface.
+			ro-Control is the central hardware and graphics control suite developed for Ro-ASD.
+			It provides automated NVIDIA graphics card detection, one-click driver installation and updates,
+			custom fan speed and cooling curve management, real-time hardware diagnostics (GPU, CPU, RAM,
+			temperatures, and power consumption), and automatic emergency thermal protection.
 		</p>
 		<p xml:lang="tr">
-			ro-Control, Project-Ro-ASD ekosistemine özgü NVIDIA sürücü yönetimi, çoklu fan soğutma
-			kontrolü ve canlı donanım tanılama masaüstü aracıdır. Kullanıcıların GPU'ları tespit etmesine,
-			sürücüleri DNF üzerinden kurup güncellemesine, her fan için özel ayar pop-up'ları ile soğutma
-			profillerini yönetmesine ve canlı GPU/CPU/RAM telemetrisini izlemesine olanak tanır.
+			ro-Control, Ro-ASD için geliştirilmiş merkezi donanım ve grafik yönetim aracıdır.
+			NVIDIA ekran kartlarını otomatik tespit etme, tek tıkla sürücü kurulumu ve güncelleme,
+			özel fan hızı ve soğutma eğrisi yönetimi, canlı donanım takibi (GPU, CPU, RAM kullanımı,
+			sıcaklıklar ve güç tüketimi) ile otomatik acil durum termal koruması sağlar.
 		</p>
 	</description>
-
-	<screenshots>
-		<screenshot type="default">
-			<caption>Driver management view in the light theme</caption>
-			<caption xml:lang="tr">Açık temada sürücü yönetimi görünümü</caption>
-			<image type="source">https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/driver-light.png</image>
-		</screenshot>
-		<screenshot>
-			<caption>Hardware monitor view in the light theme</caption>
-			<caption xml:lang="tr">Açık temada donanım izleme görünümü</caption>
-			<image type="source">https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/monitor-light.png</image>
-		</screenshot>
-		<screenshot>
-			<caption>Driver management view in the dark theme</caption>
-			<caption xml:lang="tr">Koyu temada sürücü yönetimi görünümü</caption>
-			<image type="source">https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/driver-dark.png</image>
-		</screenshot>
-		<screenshot>
-			<caption>Hardware monitor view in the dark theme</caption>
-			<caption xml:lang="tr">Koyu temada donanım izleme görünümü</caption>
-			<image type="source">https://raw.githubusercontent.com/Project-Ro-ASD/ro-Control/main/docs/screenshots/monitor-dark.png</image>
-		</screenshot>
-	</screenshots>
 
 	<keywords>
 		<keyword>NVIDIA</keyword>
