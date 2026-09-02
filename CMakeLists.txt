@@ -146,9 +146,11 @@ target_compile_options(ro-control-backend PRIVATE
     $<$<CONFIG:Release>:-O3 -fvisibility=hidden -fvisibility-inlines-hidden -fdata-sections -ffunction-sections>
 )
 
-target_link_options(ro-control-backend PRIVATE
-    $<$<CONFIG:Release>:-Wl,--gc-sections>
-)
+if(NOT APPLE)
+    target_link_options(ro-control-backend PRIVATE
+        $<$<CONFIG:Release>:-Wl,--gc-sections>
+    )
+endif()
 
 target_include_directories(ro-control-backend PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -253,9 +255,15 @@ target_compile_options(ro-control PRIVATE
     $<$<CONFIG:Release>:-O3 -fvisibility=hidden -fvisibility-inlines-hidden -fdata-sections -ffunction-sections>
 )
 
-target_link_options(ro-control PRIVATE
-    $<$<CONFIG:Release>:-Wl,--gc-sections -Wl,-O1 -Wl,--as-needed>
-)
+if(APPLE)
+    target_link_options(ro-control PRIVATE
+        $<$<CONFIG:Release>:-Wl,-dead_strip>
+    )
+else()
+    target_link_options(ro-control PRIVATE
+        $<$<CONFIG:Release>:-Wl,--gc-sections -Wl,-O1 -Wl,--as-needed>
+    )
+endif()
 
 # ─── Include Directories ──────────────────────────────────────────────────────
 target_include_directories(ro-control PRIVATE
