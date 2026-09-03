@@ -92,6 +92,13 @@ Item {
             width: pageScroll.availableWidth
             spacing: Math.round(14 * page.uiScale)
 
+            Rectangle { Layout.fillWidth: true; implicitHeight: 52; radius: 12; color: page.cardColor; border.width: 1; border.color: page.borderColor
+                RowLayout { anchors.fill: parent; anchors.margins: 12; spacing: 18
+                    Label { text: qsTr("System health"); color: page.textColor; font.weight: Font.DemiBold }
+                    Label { Layout.fillWidth: true; text: qsTr("Driver: %1 • GPU telemetry: %2 • Secure Boot: %3").arg(page.safeText(page.nvidiaDetector ? page.nvidiaDetector.driverVersion : "")).arg(page.gpuMonitor && page.gpuMonitor.available ? qsTr("Available") : qsTr("Unavailable")).arg(page.nvidiaDetector && page.nvidiaDetector.secureBootEnabled ? qsTr("On") : qsTr("Off")); color: page.softTextColor; elide: Text.ElideRight }
+                }
+            }
+
             // Section 1: Hardware Specifications
             Rectangle {
                 Layout.fillWidth: true
@@ -157,7 +164,7 @@ Item {
                                     title: qsTr("PCIe Link Interface"),
                                     value: (page.gpuMonitor && page.gpuMonitor.pcieLinkStatus.length > 0)
                                            ? page.gpuMonitor.pcieLinkStatus
-                                           : qsTr("PCIe Auto")
+                                           : qsTr("Unavailable")
                                 },
                                 {
                                     title: qsTr("Device & Power"),

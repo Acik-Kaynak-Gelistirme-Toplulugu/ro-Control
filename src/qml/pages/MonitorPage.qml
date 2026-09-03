@@ -22,6 +22,9 @@ Item {
     property var cpuUsageHistory: []
     property var gpuLoadHistory: []
     property var ramUsageHistory: []
+    property int pendingTerminationPid: -1
+    property string pendingTerminationName: ""
+    property bool showAllGpuProcesses: false
 
     readonly property color bgColor: theme && theme.card ? theme.card : (page.darkMode ? "#29233B" : "#FFFFFF")
     readonly property color cardColor: theme && theme.cardStrong ? theme.cardStrong : (page.darkMode ? "#342D4A" : "#F1F5F9")
@@ -194,6 +197,10 @@ Item {
         ColumnLayout {
             width: pageScroll.availableWidth
             spacing: 12
+
+            Rectangle { visible: page.gpuMonitor && !page.gpuMonitor.available; Layout.fillWidth: true; implicitHeight: 48; radius: 10; color: page.infoBg; border.width: 1; border.color: page.borderColor
+                Label { anchors.fill: parent; anchors.margins: 12; text: qsTr("GPU telemetry unavailable — check NVIDIA driver session permissions, then refresh."); color: page.textColor; verticalAlignment: Text.AlignVCenter; wrapMode: Text.WordWrap }
+            }
 
             GridLayout {
                 Layout.fillWidth: true
@@ -780,6 +787,52 @@ Item {
                             font.pixelSize: Math.round(18 * page.uiScale)
                             font.weight: Font.DemiBold
                         }
+                        Button {
+                            id: processExpansionButton
+                            visible: page.gpuMonitor && page.gpuMonitor.gpuProcessCount > 4
+                            implicitWidth: processExpansionContent.implicitWidth + Math.round(28 * page.uiScale)
+                            implicitHeight: Math.round(36 * page.uiScale)
+                            hoverEnabled: true
+                            scale: down ? 0.98 : 1.0
+                            Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
+                            background: Rectangle {
+                                radius: Math.round(9 * page.uiScale)
+                                color: processExpansionButton.down
+                                       ? Qt.darker(page.accentColor, 1.16)
+                                       : (processExpansionButton.hovered ? "#8B8FFF" : page.accentColor)
+                                border.width: 1
+                                border.color: processExpansionButton.hovered ? "#B8BAFF" : page.accentColor
+
+                                Behavior on color { ColorAnimation { duration: 110 } }
+                            }
+                            contentItem: RowLayout {
+                                id: processExpansionContent
+                                spacing: Math.round(8 * page.uiScale)
+                                Text {
+                                    text: page.showAllGpuProcesses ? qsTr("Show less") : qsTr("All processes")
+                                    color: "#FFFFFF"
+                                    font.pixelSize: Math.round(12 * page.uiScale)
+                                    font.weight: Font.DemiBold
+                                }
+                                Rectangle {
+                                    implicitWidth: 1
+                                    implicitHeight: Math.round(16 * page.uiScale)
+                                    color: "#55FFFFFF"
+                                }
+                                Text {
+                                    text: page.showAllGpuProcesses ? "−" : (page.gpuMonitor ? page.gpuMonitor.gpuProcessCount : 0)
+                                    color: "#FFFFFF"
+                                    font.pixelSize: Math.round(11 * page.uiScale)
+                                    font.weight: Font.Bold
+                                }
+                                Text {
+                                    text: page.showAllGpuProcesses ? "⌃" : "⌄"
+                                    color: "#DDFFFFFF"
+                                    font.pixelSize: Math.round(13 * page.uiScale)
+                                }
+                            }
+                            onClicked: page.showAllGpuProcesses = !page.showAllGpuProcesses
+                        }
                     }
 
                     // Empty state when no GPU processes are running
@@ -903,7 +956,10 @@ Item {
                                 spacing: 6
 
                                 Repeater {
-                                    model: page.gpuMonitor ? page.gpuMonitor.gpuProcesses : []
+                                    model: {
+                                        var all = page.gpuMonitor ? page.gpuMonitor.gpuProcesses : [];
+                                        return page.showAllGpuProcesses ? all : all.slice(0, 4);
+                                    }
 
                                     delegate: Rectangle {
                                         required property var modelData
@@ -978,8 +1034,8 @@ Item {
                                                     anchors.top: parent.top
                                                     anchors.bottom: parent.bottom
                                                     width: {
-                                                        var total = page.gpuMonitor && page.gpuMonitor.memoryTotalMiB > 0 ? page.gpuMonitor.memoryTotalMiB : 8192;
-                                                        var pct = Math.min(1.0, Math.max(0.04, modelData.vramMiB / total));
+                                                        var total = page.gpuMonitor ? page.gpuMonitor.memoryTotalMiB : 0;
+                                                        var pct = total > 0 ? Math.min(1.0, Math.max(0.04, modelData.vramMiB / total)) : 0;
                                                         return parent.width * pct;
                                                     }
                                                     radius: 5
@@ -990,7 +1046,9 @@ Item {
                                                 Label {
                                                     anchors.centerIn: parent
                                                     text: {
-                                                        var total = page.gpuMonitor && page.gpuMonitor.memoryTotalMiB > 0 ? page.gpuMonitor.memoryTotalMiB : 8192;
+                                                        var total = page.gpuMonitor ? page.gpuMonitor.memoryTotalMiB : 0;
+                                                        if (total <= 0)
+                                                            return modelData.vramMiB + " MiB";
                                                         var pct = ((modelData.vramMiB / total) * 100).toFixed(modelData.vramMiB > 1000 ? 0 : 1);
                                                         return modelData.vramMiB + " MiB (" + pct + "%)";
                                                     }
@@ -1027,16 +1085,70 @@ Item {
                                                 }
 
                                                 onClicked: {
-                                                    if (page.gpuMonitor) {
-                                                        page.gpuMonitor.killProcess(modelData.pid);
-                                                    }
+                                                    page.pendingTerminationPid = modelData.pid;
+                                                    page.pendingTerminationName = modelData.name;
+                                                    terminateProcessPopup.open();
                                                 }
                                             }
                                         }
                                     }
                                 }
                             }
+
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    Popup {
+        id: terminateProcessPopup
+        modal: true
+        focus: true
+        anchors.centerIn: parent
+        width: Math.min(parent ? parent.width - 40 : 420, Math.round(420 * page.uiScale))
+        padding: Math.round(18 * page.uiScale)
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            radius: 12
+            color: page.cardColor
+            border.width: 1
+            border.color: page.borderColor
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 12
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("End GPU process?")
+                color: page.textColor
+                font.pixelSize: Math.round(17 * page.uiScale)
+                font.weight: Font.DemiBold
+            }
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("%1 (PID %2) will be terminated. Unsaved work may be lost.")
+                      .arg(page.pendingTerminationName).arg(page.pendingTerminationPid)
+                color: page.softTextColor
+                wrapMode: Text.WordWrap
+                font.pixelSize: Math.round(12 * page.uiScale)
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Item { Layout.fillWidth: true }
+                Button {
+                    text: qsTr("Cancel")
+                    onClicked: terminateProcessPopup.close()
+                }
+                Button {
+                    text: qsTr("End process")
+                    enabled: page.pendingTerminationPid > 0
+                    onClicked: {
+                        if (page.gpuMonitor)
+                            page.gpuMonitor.killProcess(page.pendingTerminationPid);
+                        terminateProcessPopup.close();
                     }
                 }
             }
