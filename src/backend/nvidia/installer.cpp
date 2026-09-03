@@ -567,12 +567,13 @@ void NvidiaInstaller::deepClean() {
     emitProgressAsync(
         guard, NvidiaInstaller::tr("Cleaning legacy driver leftovers..."));
 
-    const auto removeResult =
-        runner.runAsRoot(QStringLiteral("dnf"),
-                         {QStringLiteral("remove"), QStringLiteral("-y"),
-                          QStringLiteral("*nvidia*"), QStringLiteral("*akmod*"),
-                          QStringLiteral("*nvidia-open*")},
-                         runOptions);
+    const auto removeResult = runner.runAsRoot(
+        QStringLiteral("dnf"),
+        {QStringLiteral("remove"), QStringLiteral("-y"),
+         QStringLiteral("akmod-nvidia"), QStringLiteral("akmod-nvidia-open"),
+         QStringLiteral("xorg-x11-drv-nvidia*"),
+         QStringLiteral("nvidia-settings")},
+        runOptions);
 
     if (!removeResult.success()) {
       const QString error =

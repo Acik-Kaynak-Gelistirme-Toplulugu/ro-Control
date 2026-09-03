@@ -23,6 +23,7 @@ Item {
     property bool operationActive: false
     property bool suppressPassiveStatus: true
     property bool activityFollowTail: true
+    property bool activityExpanded: false
     property string lastOperationText: ""
     property string lastOperationTone: "info"
     property string requestedDriverAction: ""
@@ -61,6 +62,11 @@ Item {
     readonly property color dangerBg: theme && theme.dangerBg ? theme.dangerBg : (page.darkMode ? "#3D171E" : "#FEF2F2")
     readonly property color dangerColor: theme && theme.danger ? theme.danger : (page.darkMode ? "#F87171" : "#EF4444")
     readonly property color accentColor: theme && theme.accentA ? theme.accentA : (page.darkMode ? "#818CF8" : "#4F46E5")
+
+    onOperationRunningChanged: {
+        if (operationRunning)
+            activityExpanded = true;
+    }
 
     component DriverActionTile: AbstractButton {
         id: tile
@@ -598,6 +604,10 @@ Item {
             width: pageScroll.availableWidth
             spacing: 10
 
+            Rectangle { visible: page.nvidiaDetector && page.nvidiaDetector.activeDriver.indexOf("Restart Required") !== -1; Layout.fillWidth: true; implicitHeight: 44; radius: 10; color: page.warningBg; border.width: 1; border.color: page.theme.warning
+                Label { anchors.fill: parent; anchors.margins: 12; text: qsTr("Restart required — the installed NVIDIA driver will be active after reboot."); color: page.textColor; verticalAlignment: Text.AlignVCenter; font.weight: Font.DemiBold }
+            }
+
             GridLayout {
                 Layout.fillWidth: true
                 columns: width > 900 ? 3 : 1
@@ -900,8 +910,8 @@ Item {
                 color: page.cardColor
                 border.width: 1
                 border.color: page.borderColor
-                implicitHeight: Math.round(320 * page.uiScale)
-                Layout.preferredHeight: Math.round(320 * page.uiScale)
+                implicitHeight: Math.round((page.activityExpanded ? 320 : 78) * page.uiScale)
+                Layout.preferredHeight: implicitHeight
                 Layout.maximumHeight: Math.round(340 * page.uiScale)
 
                 ColumnLayout {
@@ -960,9 +970,29 @@ Item {
                                 }
                             }
                         }
+
+                        ModernMiniButton {
+                            text: page.activityExpanded ? qsTr("Collapse") : qsTr("View log")
+                            tone: "neutral"
+                            onClicked: page.activityExpanded = !page.activityExpanded
+                        }
+                    }
+
+                    Label {
+                        visible: !page.activityExpanded
+                        Layout.fillWidth: true
+                        text: page.operationRunning
+                              ? qsTr("Operation is running. Open the log to follow progress.")
+                              : (activityLog.text.length > 0
+                                 ? qsTr("Latest activity is available. Open the log to review it.")
+                                 : qsTr("No active driver operation."))
+                        color: page.softTextColor
+                        font.pixelSize: Math.round(11 * page.uiScale)
+                        elide: Text.ElideRight
                     }
 
                     Components.StatusBanner {
+                        visible: page.activityExpanded && page.lastOperationText.length > 0
                         Layout.fillWidth: true
                         theme: page.theme
                         tone: page.lastOperationTone
@@ -970,6 +1000,7 @@ Item {
                     }
 
                     ScrollView {
+                        visible: page.activityExpanded
                         id: activityScroll
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -1027,6 +1058,7 @@ Item {
                     }
 
                     RowLayout {
+                        visible: page.activityExpanded
                         Layout.fillWidth: true
                         spacing: 8
 
