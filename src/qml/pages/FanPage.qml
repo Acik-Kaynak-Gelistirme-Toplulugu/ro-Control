@@ -499,8 +499,8 @@ Item {
                                             }
 
                                             Label {
-                                                text: fanCard.modelData.speedAvailable !== false && fanCard.modelData.telemetryAvailable
-                                                      ? ((fanCard.modelData.speedPercent !== undefined ? fanCard.modelData.speedPercent : 0) + "%")
+                                                text: fanCard.modelData && fanCard.modelData.speedPercent !== undefined
+                                                      ? (fanCard.modelData.speedPercent + "%")
                                                       : qsTr("--")
                                                 color: page.textColor
                                                 font.pixelSize: Math.round(18 * page.uiScale)
@@ -531,8 +531,6 @@ Item {
                                             Label {
                                                 text: {
                                                     if (!fanCard.modelData)
-                                                        return qsTr("--");
-                                                    if (!fanCard.modelData.telemetryAvailable)
                                                         return qsTr("--");
                                                     if (fanCard.modelData.rpm > 0)
                                                         return fanCard.modelData.rpm + " RPM";
