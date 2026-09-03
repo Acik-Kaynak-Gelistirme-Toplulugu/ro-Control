@@ -373,7 +373,7 @@ Item {
                                 required property var modelData
                                 required property int index
                                 Layout.fillWidth: true
-                                implicitHeight: Math.round((page.reorderMode ? 224 : 198) * page.uiScale)
+                                implicitHeight: Math.round((page.reorderMode ? 196 : 164) * page.uiScale)
                                 radius: 12
                                 scale: (page.reorderMode && page.draggingFanIndex === fanCard.index) ? 1.03 : 1.0
                                 z: (page.reorderMode && page.draggingFanIndex === fanCard.index) ? 10 : 1
@@ -569,82 +569,6 @@ Item {
                                                 font.pixelSize: Math.round(18 * page.uiScale)
                                                 font.weight: Font.Bold
                                                 elide: Text.ElideRight
-                                            }
-                                        }
-                                    }
-
-                                    // At-a-glance operating state. Detailed controls remain in the popup.
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        spacing: Math.round(6 * page.uiScale)
-
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            implicitHeight: Math.round(26 * page.uiScale)
-                                            radius: Math.round(7 * page.uiScale)
-                                            color: page.darkMode ? "#302A45" : "#F8FAFC"
-                                            border.width: 1
-                                            border.color: page.borderColor
-
-                                            RowLayout {
-                                                anchors.fill: parent
-                                                anchors.leftMargin: Math.round(8 * page.uiScale)
-                                                anchors.rightMargin: Math.round(8 * page.uiScale)
-                                                spacing: Math.round(6 * page.uiScale)
-
-                                                Rectangle {
-                                                    implicitWidth: Math.round(7 * page.uiScale)
-                                                    implicitHeight: implicitWidth
-                                                    radius: implicitWidth / 2
-                                                    color: fanCard.modelData.controllable
-                                                           ? page.successText
-                                                           : (fanCard.modelData.telemetryAvailable ? page.accentColor : page.softTextColor)
-                                                }
-
-                                                Label {
-                                                    Layout.fillWidth: true
-                                                    text: fanCard.modelData.statusLabel || qsTr("Status unavailable")
-                                                    color: page.textColor
-                                                    font.pixelSize: Math.round(10 * page.uiScale)
-                                                    font.weight: Font.DemiBold
-                                                    elide: Text.ElideRight
-                                                }
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            implicitWidth: modeLabel.implicitWidth + Math.round(16 * page.uiScale)
-                                            implicitHeight: Math.round(26 * page.uiScale)
-                                            radius: Math.round(7 * page.uiScale)
-                                            color: page.darkMode ? "#3B3156" : "#EEF2FF"
-                                            border.width: 1
-                                            border.color: page.darkMode ? "#514477" : "#C7D2FE"
-
-                                            Label {
-                                                id: modeLabel
-                                                anchors.centerIn: parent
-                                                text: (fanCard.modelData.mode || "auto").toUpperCase()
-                                                color: page.accentColor
-                                                font.pixelSize: Math.round(10 * page.uiScale)
-                                                font.weight: Font.Bold
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            implicitWidth: guardLabel.implicitWidth + Math.round(16 * page.uiScale)
-                                            implicitHeight: Math.round(26 * page.uiScale)
-                                            radius: Math.round(7 * page.uiScale)
-                                            color: page.warningBg
-                                            border.width: 1
-                                            border.color: Qt.rgba(page.warningText.r, page.warningText.g, page.warningText.b, 0.45)
-
-                                            Label {
-                                                id: guardLabel
-                                                anchors.centerIn: parent
-                                                text: qsTr("Guard %1 °C").arg(fanCard.modelData.thermalThresholdC || 85)
-                                                color: page.warningText
-                                                font.pixelSize: Math.round(10 * page.uiScale)
-                                                font.weight: Font.DemiBold
                                             }
                                         }
                                     }
