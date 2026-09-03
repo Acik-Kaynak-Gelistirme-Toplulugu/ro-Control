@@ -284,7 +284,7 @@ Item {
                             Layout.fillWidth: true
                             text: page.reorderMode
                                   ? qsTr("Rearrange Fans (Drag or use ◀ ▶ to reorder)")
-                                  : qsTr("Detected System Fans (%1)").arg(page.fanController ? page.fanController.systemFanCount : 0)
+                                  : qsTr("Cooling Channels (%1)").arg(page.fanController ? page.fanController.systemFanCount : 0)
                             color: page.reorderMode ? page.accentColor : page.textColor
                             font.pixelSize: Math.round(15 * page.uiScale)
                             font.weight: Font.DemiBold
@@ -373,7 +373,7 @@ Item {
                                 required property var modelData
                                 required property int index
                                 Layout.fillWidth: true
-                                implicitHeight: Math.round((page.reorderMode ? 196 : 164) * page.uiScale)
+                                implicitHeight: Math.round((page.reorderMode ? 224 : 198) * page.uiScale)
                                 radius: 12
                                 scale: (page.reorderMode && page.draggingFanIndex === fanCard.index) ? 1.03 : 1.0
                                 z: (page.reorderMode && page.draggingFanIndex === fanCard.index) ? 10 : 1
@@ -420,17 +420,29 @@ Item {
                                         spacing: 8
 
                                         Rectangle {
-                                            implicitWidth: Math.round(44 * page.uiScale)
+                                            implicitWidth: Math.round(54 * page.uiScale)
                                             implicitHeight: Math.round(24 * page.uiScale)
                                             radius: 6
                                             color: page.darkMode ? "#4A3E6D" : "#E2E8F0"
 
-                                            Label {
+                                            Row {
                                                 anchors.centerIn: parent
-                                                text: fanCard.modelData.type || "SYS"
-                                                color: page.textColor
-                                                font.pixelSize: Math.round(11 * page.uiScale)
-                                                font.weight: Font.Bold
+                                                spacing: Math.round(5 * page.uiScale)
+
+                                                Label {
+                                                    text: fanCard.modelData.type === "CPU" ? "▦"
+                                                          : (fanCard.modelData.type === "GPU" ? "▰" : "✣")
+                                                    color: page.accentColor
+                                                    font.pixelSize: Math.round(13 * page.uiScale)
+                                                    font.weight: Font.Bold
+                                                }
+
+                                                Label {
+                                                    text: fanCard.modelData.type || "SYS"
+                                                    color: page.textColor
+                                                    font.pixelSize: Math.round(10 * page.uiScale)
+                                                    font.weight: Font.Bold
+                                                }
                                             }
                                         }
 
@@ -443,11 +455,30 @@ Item {
                                             Layout.fillWidth: true
                                         }
 
-                                        Label {
+                                        ToolButton {
                                             visible: !page.reorderMode
                                             text: "⚙"
-                                            color: page.softTextColor
-                                            font.pixelSize: Math.round(14 * page.uiScale)
+                                            implicitWidth: Math.round(28 * page.uiScale)
+                                            implicitHeight: Math.round(28 * page.uiScale)
+                                            hoverEnabled: true
+                                            background: Rectangle {
+                                                radius: width / 2
+                                                color: parent.hovered ? (page.darkMode ? "#3B3156" : "#E2E8F0") : "transparent"
+                                            }
+                                            contentItem: Label {
+                                                text: parent.text
+                                                color: parent.hovered ? page.accentColor : page.softTextColor
+                                                font.pixelSize: Math.round(15 * page.uiScale)
+                                                horizontalAlignment: Text.AlignHCenter
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                            ToolTip.visible: hovered
+                                            ToolTip.text: qsTr("Open fan settings")
+                                            onClicked: {
+                                                if (page.fanController)
+                                                    page.fanController.selectFan(fanCard.index);
+                                                fanSettingsPopup.openForFan(fanCard.modelData);
+                                            }
                                         }
                                     }
 
@@ -468,7 +499,9 @@ Item {
                                             }
 
                                             Label {
-                                                text: (fanCard.modelData.speedPercent !== undefined ? fanCard.modelData.speedPercent : 0) + "%"
+                                                text: fanCard.modelData.speedAvailable !== false && fanCard.modelData.telemetryAvailable
+                                                      ? ((fanCard.modelData.speedPercent !== undefined ? fanCard.modelData.speedPercent : 0) + "%")
+                                                      : qsTr("--")
                                                 color: page.textColor
                                                 font.pixelSize: Math.round(18 * page.uiScale)
                                                 font.weight: Font.Bold
@@ -498,6 +531,8 @@ Item {
                                             Label {
                                                 text: {
                                                     if (!fanCard.modelData)
+                                                        return qsTr("--");
+                                                    if (!fanCard.modelData.telemetryAvailable)
                                                         return qsTr("--");
                                                     if (fanCard.modelData.rpm > 0)
                                                         return fanCard.modelData.rpm + " RPM";
@@ -536,6 +571,82 @@ Item {
                                                 font.pixelSize: Math.round(18 * page.uiScale)
                                                 font.weight: Font.Bold
                                                 elide: Text.ElideRight
+                                            }
+                                        }
+                                    }
+
+                                    // At-a-glance operating state. Detailed controls remain in the popup.
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: Math.round(6 * page.uiScale)
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            implicitHeight: Math.round(26 * page.uiScale)
+                                            radius: Math.round(7 * page.uiScale)
+                                            color: page.darkMode ? "#302A45" : "#F8FAFC"
+                                            border.width: 1
+                                            border.color: page.borderColor
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: Math.round(8 * page.uiScale)
+                                                anchors.rightMargin: Math.round(8 * page.uiScale)
+                                                spacing: Math.round(6 * page.uiScale)
+
+                                                Rectangle {
+                                                    implicitWidth: Math.round(7 * page.uiScale)
+                                                    implicitHeight: implicitWidth
+                                                    radius: implicitWidth / 2
+                                                    color: fanCard.modelData.controllable
+                                                           ? page.successText
+                                                           : (fanCard.modelData.telemetryAvailable ? page.accentColor : page.softTextColor)
+                                                }
+
+                                                Label {
+                                                    Layout.fillWidth: true
+                                                    text: fanCard.modelData.statusLabel || qsTr("Status unavailable")
+                                                    color: page.textColor
+                                                    font.pixelSize: Math.round(10 * page.uiScale)
+                                                    font.weight: Font.DemiBold
+                                                    elide: Text.ElideRight
+                                                }
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            implicitWidth: modeLabel.implicitWidth + Math.round(16 * page.uiScale)
+                                            implicitHeight: Math.round(26 * page.uiScale)
+                                            radius: Math.round(7 * page.uiScale)
+                                            color: page.darkMode ? "#3B3156" : "#EEF2FF"
+                                            border.width: 1
+                                            border.color: page.darkMode ? "#514477" : "#C7D2FE"
+
+                                            Label {
+                                                id: modeLabel
+                                                anchors.centerIn: parent
+                                                text: (fanCard.modelData.mode || "auto").toUpperCase()
+                                                color: page.accentColor
+                                                font.pixelSize: Math.round(10 * page.uiScale)
+                                                font.weight: Font.Bold
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            implicitWidth: guardLabel.implicitWidth + Math.round(16 * page.uiScale)
+                                            implicitHeight: Math.round(26 * page.uiScale)
+                                            radius: Math.round(7 * page.uiScale)
+                                            color: page.warningBg
+                                            border.width: 1
+                                            border.color: Qt.rgba(page.warningText.r, page.warningText.g, page.warningText.b, 0.45)
+
+                                            Label {
+                                                id: guardLabel
+                                                anchors.centerIn: parent
+                                                text: qsTr("Guard %1 °C").arg(fanCard.modelData.thermalThresholdC || 85)
+                                                color: page.warningText
+                                                font.pixelSize: Math.round(10 * page.uiScale)
+                                                font.weight: Font.DemiBold
                                             }
                                         }
                                     }

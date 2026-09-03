@@ -396,6 +396,43 @@ private slots:
              QStringLiteral("auto"));
   }
 
+  void testFanDisplayNamesPersistAndGpuTestDoesNotChangeProfile() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString scriptPath =
+        tempDir.filePath(QStringLiteral("fake-nvidia-settings.sh"));
+    QFile script(scriptPath);
+    QVERIFY(script.open(QIODevice::WriteOnly | QIODevice::Text));
+    script.write("#!/bin/sh\nexit 0\n");
+    script.close();
+    QVERIFY(QFile::setPermissions(scriptPath, QFileDevice::ReadOwner |
+                                                  QFileDevice::WriteOwner |
+                                                  QFileDevice::ExeOwner));
+
+    qputenv("RO_CONTROL_MOCK_FAN_CAPABILITY", "controllable");
+    qputenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS", scriptPath.toUtf8());
+    FanController fan;
+    fan.stop();
+    fan.setFanMode(QStringLiteral("balanced"));
+
+    QVERIFY(fan.setFanDisplayName(QStringLiteral("gpu_0"),
+                                  QStringLiteral("Front GPU Fan")));
+    QCOMPARE(fan.getFanConfig(QStringLiteral("gpu_0"))
+                 .value(QStringLiteral("name"))
+                 .toString(),
+             QStringLiteral("Front GPU Fan"));
+    QVERIFY(!fan.setFanDisplayName(QStringLiteral("gpu_0"), QString()));
+    QVERIFY(!fan.setFanDisplayName(QStringLiteral("unknown"),
+                                   QStringLiteral("Invalid")));
+
+    QVERIFY(fan.testFanSpeedForFan(QStringLiteral("gpu_0"), 100));
+    QCOMPARE(fan.fanMode(), QStringLiteral("balanced"));
+    QVERIFY(fan.restoreFanControlForFan(QStringLiteral("gpu_0")));
+    QCOMPARE(fan.fanMode(), QStringLiteral("balanced"));
+    qunsetenv("RO_CONTROL_MOCK_FAN_CAPABILITY");
+    qunsetenv("RO_CONTROL_COMMAND_NVIDIA_SETTINGS");
+  }
+
   void testGpuLiveRpmAndAutoIdleTelemetry() {
     // Test 0 RPM Auto Idle state
     qputenv("RO_CONTROL_MOCK_FAN_RPM", "0");
@@ -422,6 +459,17 @@ private slots:
       QVERIFY(!gpuCfg.value(QStringLiteral("isZeroRpm")).toBool());
     }
     qunsetenv("RO_CONTROL_MOCK_FAN_RPM");
+  }
+
+  void testUnavailableAuxiliaryFansDoNotFabricateTelemetry() {
+    FanController fan;
+    fan.stop();
+    const QVariantMap cpu = fan.getFanConfig(QStringLiteral("cpu_fan_0"));
+    const QVariantMap sys = fan.getFanConfig(QStringLiteral("sys_fan_0"));
+
+    QVERIFY(!cpu.value(QStringLiteral("speedAvailable")).toBool());
+    QVERIFY(!sys.value(QStringLiteral("speedAvailable")).toBool());
+    QCOMPARE(sys.value(QStringLiteral("rpm")).toInt(), 0);
   }
 
   void testProfileExportAndImport() {

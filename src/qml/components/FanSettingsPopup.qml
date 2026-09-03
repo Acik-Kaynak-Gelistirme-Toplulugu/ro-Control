@@ -16,6 +16,9 @@ Popup {
     property var activeCurvePoints: []
     property bool saveFeedbackVisible: false
     property bool testingFanActive: false
+    property bool fanTestFailed: false
+    property bool editingFanName: false
+    property string pendingFanName: ""
     property real fanAngle: 0
 
     readonly property color bgColor: theme && theme.card ? theme.card : (popup.darkMode ? "#241E34" : "#FFFFFF")
@@ -62,6 +65,9 @@ Popup {
         activeManualSpeed = fanData.manualSpeedPercent !== undefined ? fanData.manualSpeedPercent : (fanData.speedPercent || 50);
         activeThermalThreshold = fanData.thermalThresholdC || 85;
         testingFanActive = false;
+        fanTestFailed = false;
+        editingFanName = false;
+        pendingFanName = fanData.name || "";
         
         var pts = [];
         if (fanData.customCurvePoints && fanData.customCurvePoints.length > 0) {
@@ -157,10 +163,20 @@ Popup {
     function triggerQuickTest100() {
         if (!currentFan || !popup.fanController)
             return;
+        fanTestFailed = !popup.fanController.testFanSpeedForFan(currentFan.id, 100);
+        if (fanTestFailed)
+            return;
         testingFanActive = true;
-        popup.fanController.setManualSpeedForFan(currentFan.id, 100);
-        popup.fanController.setFanModeForFan(currentFan.id, "manual");
         testDurationTimer.restart();
+    }
+
+    function saveFanName() {
+        if (!currentFan || !popup.fanController)
+            return;
+        if (popup.fanController.setFanDisplayName(currentFan.id, pendingFanName)) {
+            currentFan = popup.fanController.getFanConfig(currentFan.id);
+            editingFanName = false;
+        }
     }
 
     Timer {
@@ -170,10 +186,7 @@ Popup {
         onTriggered: {
             popup.testingFanActive = false;
             if (popup.currentFan && popup.fanController) {
-                popup.fanController.setFanModeForFan(popup.currentFan.id, popup.activeMode);
-                if (popup.activeMode === "manual") {
-                    popup.fanController.setManualSpeedForFan(popup.currentFan.id, popup.activeManualSpeed);
-                }
+                popup.fanController.restoreFanControlForFan(popup.currentFan.id);
             }
         }
     }
@@ -193,11 +206,13 @@ Popup {
     }
 
     contentItem: ColumnLayout {
+        width: popup.availableWidth
         spacing: Math.round(12 * popup.uiScale)
 
         // Pinned Header Bar (Always visible at top)
         RowLayout {
             Layout.fillWidth: true
+            Layout.preferredWidth: popup.availableWidth
             spacing: 12
 
             Rectangle {
@@ -211,9 +226,11 @@ Popup {
                 Label {
                     id: spinningFanLabel
                     anchors.centerIn: parent
-                    text: "FAN"
+                    text: !popup.currentFan ? "✣"
+                          : (popup.currentFan.type === "CPU" ? "▦"
+                             : (popup.currentFan.type === "GPU" ? "▰" : "✣"))
                     color: popup.accentColor
-                    font.pixelSize: Math.round(11 * popup.uiScale)
+                    font.pixelSize: Math.round(17 * popup.uiScale)
                     font.weight: Font.Bold
                 }
             }
@@ -225,11 +242,67 @@ Popup {
                 RowLayout {
                     spacing: 8
                     Label {
+                        visible: !popup.editingFanName
                         text: popup.currentFan ? popup.currentFan.name : qsTr("Fan Settings & Dynamics")
                         color: popup.textColor
                         font.pixelSize: Math.round(16 * popup.uiScale)
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
+                    }
+
+                    TextField {
+                        id: fanNameField
+                        visible: popup.editingFanName
+                        Layout.fillWidth: true
+                        text: popup.pendingFanName
+                        maximumLength: 64
+                        selectByMouse: true
+                        color: popup.textColor
+                        font.pixelSize: Math.round(16 * popup.uiScale)
+                        font.weight: Font.DemiBold
+                        background: Rectangle {
+                            radius: 6
+                            color: popup.cardColor
+                            border.width: 1
+                            border.color: fanNameField.activeFocus ? popup.accentColor : popup.borderColor
+                        }
+                        onTextEdited: popup.pendingFanName = text
+                        onAccepted: popup.saveFanName()
+                    }
+
+                    ToolButton {
+                        id: renameFanButton
+                        visible: popup.currentFan
+                        text: popup.editingFanName ? "✓" : "✎"
+                        implicitWidth: Math.round(30 * popup.uiScale)
+                        implicitHeight: Math.round(30 * popup.uiScale)
+                        hoverEnabled: true
+                        background: Rectangle {
+                            radius: width / 2
+                            color: renameFanButton.hovered
+                                   ? (popup.darkMode ? "#3B3156" : "#EEF2FF")
+                                   : "transparent"
+                            border.width: renameFanButton.hovered ? 1 : 0
+                            border.color: popup.accentColor
+                        }
+                        contentItem: Text {
+                            text: renameFanButton.text
+                            color: renameFanButton.hovered ? popup.accentColor : popup.softTextColor
+                            font.pixelSize: Math.round(14 * popup.uiScale)
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        onClicked: {
+                            if (popup.editingFanName)
+                                popup.saveFanName();
+                            else {
+                                popup.editingFanName = true;
+                                fanNameField.forceActiveFocus();
+                                fanNameField.selectAll();
+                            }
+                        }
+                        ToolTip.visible: hovered
+                        ToolTip.text: popup.editingFanName ? qsTr("Save name") : qsTr("Rename fan")
                     }
 
                     Rectangle {
@@ -256,9 +329,15 @@ Popup {
                 }
             }
 
+            Item {
+                Layout.fillWidth: true
+            }
+
             ToolButton {
                 id: closeBtn
                 Layout.alignment: Qt.AlignTop | Qt.AlignRight
+                Layout.preferredWidth: Math.round(32 * popup.uiScale)
+                Layout.fillWidth: false
                 implicitWidth: Math.round(32 * popup.uiScale)
                 implicitHeight: Math.round(32 * popup.uiScale)
                 hoverEnabled: true
@@ -667,8 +746,46 @@ Popup {
                                 }
 
                                 Button {
-                                    text: qsTr("Reset Baseline")
-                                    implicitHeight: Math.round(26 * popup.uiScale)
+                                    id: resetBaselineButton
+                                    text: qsTr("Reset curve")
+                                    implicitWidth: resetBaselineContent.implicitWidth + Math.round(20 * popup.uiScale)
+                                    implicitHeight: Math.round(30 * popup.uiScale)
+                                    hoverEnabled: true
+
+                                    background: Rectangle {
+                                        radius: Math.round(8 * popup.uiScale)
+                                        color: resetBaselineButton.down
+                                               ? (popup.darkMode ? "#40375B" : "#E0E7FF")
+                                               : (resetBaselineButton.hovered
+                                                  ? (popup.darkMode ? "#372F50" : "#EEF2FF")
+                                                  : "transparent")
+                                        border.width: 1
+                                        border.color: resetBaselineButton.hovered ? popup.accentColor : popup.borderColor
+                                        Behavior on color { ColorAnimation { duration: 100 } }
+                                    }
+
+                                    contentItem: RowLayout {
+                                        id: resetBaselineContent
+                                        spacing: Math.round(6 * popup.uiScale)
+
+                                        Label {
+                                            text: "↺"
+                                            color: resetBaselineButton.hovered ? popup.accentColor : popup.softTextColor
+                                            font.pixelSize: Math.round(15 * popup.uiScale)
+                                            font.weight: Font.Bold
+                                        }
+
+                                        Label {
+                                            text: resetBaselineButton.text
+                                            color: resetBaselineButton.hovered ? popup.accentColor : popup.textColor
+                                            font.pixelSize: Math.round(11 * popup.uiScale)
+                                            font.weight: Font.DemiBold
+                                        }
+                                    }
+
+                                    ToolTip.visible: hovered
+                                    ToolTip.delay: 400
+                                    ToolTip.text: qsTr("Restore the default balanced fan curve")
                                     onClicked: {
                                         popup.activeCurvePoints = [
                                             { temp: 40, speed: 30 },
@@ -1133,9 +1250,11 @@ Popup {
 
             Button {
                 id: testBtn
+                visible: popup.currentFan && popup.currentFan.id === "gpu_0"
                 text: popup.testingFanActive ? qsTr("Testing (100%)...") : qsTr("Quick Test 100%")
                 implicitHeight: Math.round(36 * popup.uiScale)
                 hoverEnabled: true
+                enabled: popup.fanController && popup.fanController.controlSupported
 
                 background: Rectangle {
                     radius: 8
@@ -1155,6 +1274,22 @@ Popup {
                 }
 
                 onClicked: popup.triggerQuickTest100()
+            }
+
+            Label {
+                visible: testBtn.visible && !testBtn.enabled
+                text: qsTr("Direct fan control unavailable")
+                color: popup.softTextColor
+                font.pixelSize: Math.round(10 * popup.uiScale)
+            }
+
+            Label {
+                visible: popup.fanTestFailed
+                Layout.fillWidth: true
+                text: qsTr("GPU fan test could not start. Enable NVIDIA Coolbits / fan control first.")
+                color: popup.warningText
+                font.pixelSize: Math.round(11 * popup.uiScale)
+                wrapMode: Text.WordWrap
             }
 
             Button {
@@ -1185,33 +1320,6 @@ Popup {
             }
 
             Item { Layout.fillWidth: true }
-
-            Button {
-                id: closePopupBtn
-                text: qsTr("Close")
-                implicitHeight: Math.round(36 * popup.uiScale)
-                hoverEnabled: true
-
-                background: Rectangle {
-                    radius: 8
-                    color: closePopupBtn.down ? (popup.darkMode ? "#3B3156" : "#E2E8F0")
-                                              : (closePopupBtn.hovered ? (popup.darkMode ? "#342D4A" : "#F1F5F9")
-                                                                       : popup.cardColor)
-                    border.width: 1
-                    border.color: closePopupBtn.hovered ? popup.accentColor : popup.borderColor
-                }
-
-                contentItem: Text {
-                    text: closePopupBtn.text
-                    color: closePopupBtn.hovered ? popup.accentColor : popup.textColor
-                    font.pixelSize: Math.round(12 * popup.uiScale)
-                    font.weight: Font.DemiBold
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                onClicked: popup.close()
-            }
 
             Button {
                 id: applyBtn

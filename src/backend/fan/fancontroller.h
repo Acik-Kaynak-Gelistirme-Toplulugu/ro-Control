@@ -180,6 +180,11 @@ public:
   Q_INVOKABLE bool setThermalThresholdForFan(const QString &fanId, int tempC);
   Q_INVOKABLE bool resetFanToAuto(const QString &fanId);
   Q_INVOKABLE bool applyFanConfiguration(const QString &fanId);
+  Q_INVOKABLE bool setFanDisplayName(const QString &fanId,
+                                     const QString &displayName);
+  // Runs a non-persistent hardware test. This never changes the saved profile.
+  Q_INVOKABLE bool testFanSpeedForFan(const QString &fanId, int percent = 100);
+  Q_INVOKABLE bool restoreFanControlForFan(const QString &fanId);
 
 signals:
   void supportedChanged();
@@ -248,7 +253,7 @@ private:
   QString m_statusMessage;
   QVector<FanCurvePoint> m_customCurve;
   int m_gpuTemperatureC = 0;
-  int m_cpuTemperatureC = 38;
+  int m_cpuTemperatureC = 0;
   int m_lastAppliedPercent = -1;
   bool m_lastAppliedModeWasAuto = true;
   QString m_verifiedHwmonPwmPath;
@@ -265,6 +270,7 @@ private:
 
   SystemFanProfile m_cpuProfile;
   SystemFanProfile m_sysProfile;
+  QString m_gpuDisplayName;
   QVariantList m_systemFans;
   int m_selectedFanIndex = 0;
   QString m_selectedFanId = QStringLiteral("gpu_0");
