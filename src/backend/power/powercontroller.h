@@ -114,6 +114,7 @@ private:
   QString m_powerPreset = QStringLiteral("balanced");
   QString m_systemPowerProfile;
   bool m_systemPowerProfileSupported = false;
+  QString m_systemPowerBackend;
   int m_coreClockOffsetMHz = 0;
   int m_memoryClockOffsetMHz = 0;
   bool m_clockOffsetSupported = false;

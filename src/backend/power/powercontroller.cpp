@@ -39,6 +39,18 @@ bool parseDoubleValue(const QString &field, double *value) {
   return false;
 }
 
+QString canonicalSystemProfile(const QString &profile) {
+  const QString lower = profile.trimmed().toLower();
+  if (lower.contains(QStringLiteral("performance")))
+    return QStringLiteral("performance");
+  if (lower.contains(QStringLiteral("power-saver")) ||
+      lower.contains(QStringLiteral("powersave")))
+    return QStringLiteral("power-saver");
+  if (lower.contains(QStringLiteral("balanced")))
+    return QStringLiteral("balanced");
+  return lower;
+}
+
 } // namespace
 
 PowerController::PowerController(QObject *parent)
@@ -246,26 +258,52 @@ void PowerController::refresh() {
 }
 
 void PowerController::querySystemPowerProfile() {
-  const QString program =
-      CommandRunner::resolveProgramPath(QStringLiteral("powerprofilesctl"));
-  const bool available = !program.isEmpty();
+  CommandRunner runner;
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 1000;
+  QString profile;
+  QString backend;
+  bool available = false;
+
+  if (!CommandRunner::resolveProgramPath(QStringLiteral("powerprofilesctl"))
+           .isEmpty()) {
+    const auto result = runner.run(QStringLiteral("powerprofilesctl"),
+                                   {QStringLiteral("get")}, options);
+    if (result.success() && !result.stdout.trimmed().isEmpty()) {
+      profile = result.stdout.trimmed();
+      backend = QStringLiteral("powerprofilesctl");
+      available = true;
+    }
+  }
+
+  // Fedora systems may use tuned instead of power-profiles-daemon.
+  if (!available &&
+      !CommandRunner::resolveProgramPath(QStringLiteral("tuned-adm"))
+           .isEmpty()) {
+    const auto result = runner.run(QStringLiteral("tuned-adm"),
+                                   {QStringLiteral("active")}, options);
+    if (result.success()) {
+      const QRegularExpressionMatch match =
+          QRegularExpression(QStringLiteral(R"(:\s*(.+)$)"),
+                             QRegularExpression::MultilineOption)
+              .match(result.stdout);
+      if (match.hasMatch()) {
+        profile = match.captured(1).trimmed();
+        backend = QStringLiteral("tuned-adm");
+        available = !profile.isEmpty();
+      }
+    }
+  }
+
   if (m_systemPowerProfileSupported != available) {
     m_systemPowerProfileSupported = available;
     emit systemPowerProfileSupportedChanged();
   }
-  if (!available) {
+  if (!available)
     return;
-  }
 
-  CommandRunner runner;
-  CommandRunner::RunOptions options;
-  options.timeoutMs = 1000;
-  const auto result = runner.run(QStringLiteral("powerprofilesctl"),
-                                 {QStringLiteral("get")}, options);
-  if (!result.success()) {
-    return;
-  }
-  const QString profile = result.stdout.trimmed().toLower();
+  m_systemPowerBackend = backend;
+  profile = canonicalSystemProfile(profile);
   if (!profile.isEmpty() && m_systemPowerProfile != profile) {
     m_systemPowerProfile = profile;
     emit systemPowerProfileChanged();
@@ -280,19 +318,38 @@ bool PowerController::applySystemPowerProfile(const QString &preset) {
       preset == QStringLiteral("eco")           ? QStringLiteral("power-saver")
       : preset == QStringLiteral("performance") ? QStringLiteral("performance")
                                                 : QStringLiteral("balanced");
-  CommandRunner runner;
-  CommandRunner::RunOptions options;
-  options.timeoutMs = 2000;
-  const auto result = runner.run(QStringLiteral("powerprofilesctl"),
-                                 {QStringLiteral("set"), target}, options);
-  if (!result.success()) {
-    setStatusMessage(QStringLiteral("Failed to apply system power profile: %1")
-                         .arg(result.stderr.trimmed()));
+  bool success = false;
+  QString error;
+  if (m_systemPowerBackend == QStringLiteral("powerprofilesctl")) {
+    CommandRunner runner;
+    CommandRunner::RunOptions options;
+    options.timeoutMs = 2000;
+    const auto result = runner.run(QStringLiteral("powerprofilesctl"),
+                                   {QStringLiteral("set"), target}, options);
+    success = result.success();
+    error = result.stderr.trimmed();
+  } else if (m_systemPowerBackend == QStringLiteral("tuned-adm")) {
+    const QString tunedTarget = target == QStringLiteral("power-saver")
+                                    ? QStringLiteral("powersave")
+                                : target == QStringLiteral("performance")
+                                    ? QStringLiteral("throughput-performance")
+                                    : QStringLiteral("balanced");
+    PolkitHelper polkit;
+    const auto result = polkit.runPrivileged(
+        QStringLiteral("tuned-adm"), {QStringLiteral("profile"), tunedTarget});
+    success = result.success();
+    error = result.stderr.trimmed();
+  }
+  if (!success) {
+    setStatusMessage(
+        QStringLiteral("Failed to apply system power profile: %1").arg(error));
     return false;
   }
+  querySystemPowerProfile();
   if (m_systemPowerProfile != target) {
-    m_systemPowerProfile = target;
-    emit systemPowerProfileChanged();
+    setStatusMessage(
+        QStringLiteral("System power service did not confirm %1.").arg(target));
+    return false;
   }
   return true;
 }
