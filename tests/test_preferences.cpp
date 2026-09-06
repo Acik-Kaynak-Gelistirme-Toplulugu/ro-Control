@@ -94,6 +94,6 @@ void TestPreferences::testLanguageManagerExposesEffectiveLanguageMetadata() {
   QVERIFY(languageCodes.contains(QStringLiteral("es")));
 }
 
-QTEST_GUILESS_MAIN(TestPreferences)
+QTEST_MAIN(TestPreferences)
 
 #include "test_preferences.moc"
