@@ -433,13 +433,24 @@ bool PowerController::setPowerLimit(double watts) {
     watts = m_maxPowerLimitW;
   }
 
-  PolkitHelper polkit;
   const QString wattsStr = QString::number(static_cast<int>(watts));
-  const auto result = polkit.runPrivileged(
-      QStringLiteral("nvidia-smi"), {QStringLiteral("-i"), QStringLiteral("0"),
-                                     QStringLiteral("-pl"), wattsStr});
+  bool success = false;
+  QString errorMessage;
 
-  if (result.success()) {
+  if (qEnvironmentVariableIsSet("RO_CONTROL_MOCK_POWER_CONTROL") ||
+      qEnvironmentVariableIsSet("RO_CONTROL_MOCK_FAN_CAPABILITY")) {
+    success = true;
+  } else {
+    PolkitHelper polkit;
+    const auto result =
+        polkit.runPrivileged(QStringLiteral("nvidia-smi"),
+                             {QStringLiteral("-i"), QStringLiteral("0"),
+                              QStringLiteral("-pl"), wattsStr});
+    success = result.success();
+    errorMessage = result.stderr.trimmed();
+  }
+
+  if (success) {
     m_powerLimitW = watts;
     emit powerLimitWChanged();
     setStatusMessage(QStringLiteral("Power limit set to %1 W.").arg(wattsStr));
@@ -448,20 +459,31 @@ bool PowerController::setPowerLimit(double watts) {
     return true;
   }
 
-  setStatusMessage(QStringLiteral("Failed to set power limit: %1")
-                       .arg(result.stderr.trimmed()));
+  setStatusMessage(
+      QStringLiteral("Failed to set power limit: %1").arg(errorMessage));
   emit powerLimitApplied(watts, false);
   return false;
 }
 
 bool PowerController::setPersistenceMode(bool enabled) {
-  PolkitHelper polkit;
   const QString flag = enabled ? QStringLiteral("1") : QStringLiteral("0");
-  const auto result = polkit.runPrivileged(
-      QStringLiteral("nvidia-smi"),
-      {QStringLiteral("-i"), QStringLiteral("0"), QStringLiteral("-pm"), flag});
+  bool success = false;
+  QString errorMessage;
 
-  if (result.success()) {
+  if (qEnvironmentVariableIsSet("RO_CONTROL_MOCK_POWER_CONTROL") ||
+      qEnvironmentVariableIsSet("RO_CONTROL_MOCK_FAN_CAPABILITY")) {
+    success = true;
+  } else {
+    PolkitHelper polkit;
+    const auto result =
+        polkit.runPrivileged(QStringLiteral("nvidia-smi"),
+                             {QStringLiteral("-i"), QStringLiteral("0"),
+                              QStringLiteral("-pm"), flag});
+    success = result.success();
+    errorMessage = result.stderr.trimmed();
+  }
+
+  if (success) {
     m_persistenceModeEnabled = enabled;
     emit persistenceModeChanged();
     setStatusMessage(QStringLiteral("Persistence mode %1.")
@@ -472,7 +494,7 @@ bool PowerController::setPersistenceMode(bool enabled) {
   }
 
   setStatusMessage(QStringLiteral("Failed to change persistence mode: %1")
-                       .arg(result.stderr.trimmed()));
+                       .arg(errorMessage));
   return false;
 }
 

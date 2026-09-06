@@ -87,6 +87,8 @@ void HealthGuard::clearAlert() {
   if (m_alertActive) {
     m_alertActive = false;
     m_lastAlertSeverity = QStringLiteral("normal");
+    m_lastGpuAlertTime = 0;
+    m_lastCpuAlertTime = 0;
     emit alertActiveChanged();
     emit alertChanged();
   }
@@ -188,6 +190,22 @@ void HealthGuard::evaluateAlerts() {
               .arg(m_currentCpuTempC)
               .arg(m_cpuCriticalThresholdC);
       m_lastAlertSeverity = QStringLiteral("critical");
+      emit alertActiveChanged();
+      emit alertChanged();
+      if (m_notificationsEnabled) {
+        emit thermalAlertTriggered(m_lastAlertTitle, m_lastAlertMessage,
+                                   m_lastAlertSeverity);
+      }
+    }
+  } else if (m_currentCpuTempC >= m_cpuWarningThresholdC) {
+    if (now - m_lastCpuAlertTime > kAlertCooldownSecs) {
+      m_lastCpuAlertTime = now;
+      m_alertActive = true;
+      m_lastAlertTitle = tr("CPU High Temperature Warning");
+      m_lastAlertMessage = tr("CPU temperature is %1°C (warning limit: %2°C).")
+                               .arg(m_currentCpuTempC)
+                               .arg(m_cpuWarningThresholdC);
+      m_lastAlertSeverity = QStringLiteral("warning");
       emit alertActiveChanged();
       emit alertChanged();
       if (m_notificationsEnabled) {
