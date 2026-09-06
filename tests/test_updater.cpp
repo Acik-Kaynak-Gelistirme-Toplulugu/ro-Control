@@ -1,8 +1,6 @@
 #include <QTest>
 
-#define private public
 #include "nvidia/updater.h"
-#undef private
 #include "nvidia/versionparser.h"
 
 class TestUpdater : public QObject {
@@ -57,7 +55,7 @@ private slots:
 
   void testBuildTransactionArgumentsForFreshInstallStaysScoped() {
     NvidiaUpdater updater;
-    updater.m_latestPackageVersion = QStringLiteral("3:570.153.02-1.fc42");
+    updater.setLatestPackageVersion(QStringLiteral("3:570.153.02-1.fc42"));
 
     const QStringList args = updater.buildTransactionArguments(
         QString(), QString(), QStringLiteral("wayland"),
@@ -75,7 +73,7 @@ private slots:
 
   void testBuildTransactionArgumentsForInstalledDriverAvoidsBroadUpdate() {
     NvidiaUpdater updater;
-    updater.m_latestPackageVersion = QStringLiteral("3:570.153.02-1.fc42");
+    updater.setLatestPackageVersion(QStringLiteral("3:570.153.02-1.fc42"));
 
     const QStringList args = updater.buildTransactionArguments(
         QString(), QStringLiteral("3:565.77-1.fc42"), QStringLiteral("wayland"),
@@ -118,7 +116,7 @@ private slots:
 
   void testBuildTransactionArgumentsForOpenKernelModules() {
     NvidiaUpdater updater;
-    updater.m_latestPackageVersion = QStringLiteral("3:570.153.02-1.fc42");
+    updater.setLatestPackageVersion(QStringLiteral("3:570.153.02-1.fc42"));
 
     const QStringList args = updater.buildTransactionArguments(
         QString(), QStringLiteral("3:565.77-1.fc42"), QStringLiteral("wayland"),
