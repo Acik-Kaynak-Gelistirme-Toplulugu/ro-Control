@@ -32,8 +32,9 @@ When launched without arguments, `ro-control` opens the graphical desktop interf
 | `ro-control fan reset` | Restores default hardware cooling curve |
 | `ro-control power status [--json]` | Displays current GPU power draw, TDP bounds, and persistence state |
 | `ro-control power set-limit <watts>` | Sets GPU maximum power draw limit in Watts |
-| `ro-control power set-preset <preset>` | Applies predefined power and clock profile (`eco`, `balanced`, `performance`) |
+| `ro-control power set-preset <preset>` | Applies predefined power and clock profile (`eco`, `balanced`, `performance`, `custom`) |
 | `ro-control power set-clocks <core> <mem>` | Configures GPU core and memory clock offsets in MHz |
+| `ro-control power set-persistence <on\|off>` | Toggles NVIDIA driver persistence daemon mode |
 | `ro-control processes [--json]` | Lists active applications using GPU VRAM |
 | `ro-control kill-process <pid>` | Terminates a running GPU process via Polkit helper |
 | `ro-control gpus [--json]` | Enumerates all detected graphics cards |
