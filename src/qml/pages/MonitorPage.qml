@@ -216,16 +216,17 @@ Item {
 
             GridLayout {
                 Layout.fillWidth: true
-                columns: width > 900 ? 3 : 1
+                columns: page.ramMonitor && page.ramMonitor.zramAvailable
+                         ? (width > 1180 ? 4 : (width > 560 ? 2 : 1))
+                         : (width > 900 ? 3 : (width > 560 ? 2 : 1))
                 columnSpacing: Math.round(10 * page.uiScale)
                 rowSpacing: Math.round(10 * page.uiScale)
 
                 // CPU Card
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: page.ramMonitor && (page.ramMonitor.zramAvailable || page.ramMonitor.zswapEnabled)
-                                            ? Math.round(178 * page.uiScale) : Math.round(152 * page.uiScale)
-                    Layout.minimumHeight: Layout.preferredHeight
+                    Layout.preferredHeight: Math.round(152 * page.uiScale)
+                    Layout.minimumHeight: Math.round(152 * page.uiScale)
                     radius: 14
                     color: page.cardColor
                     border.width: 1
@@ -280,71 +281,6 @@ Item {
                                     font.weight: Font.Bold
                                 }
                             }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            visible: page.ramMonitor && (page.ramMonitor.zramAvailable || page.ramMonitor.zswapEnabled)
-                            spacing: Math.round(8 * page.uiScale)
-
-                            Rectangle {
-                                visible: page.ramMonitor && page.ramMonitor.zramAvailable
-                                implicitHeight: Math.round(24 * page.uiScale)
-                                implicitWidth: zramUsage.implicitWidth + Math.round(14 * page.uiScale)
-                                radius: 6
-                                color: page.darkMode ? "#272044" : "#FFF7ED"
-                                border.width: 1
-                                border.color: page.darkMode ? "#5B4A82" : "#FED7AA"
-
-                                Label {
-                                    id: zramUsage
-                                    anchors.centerIn: parent
-                                    text: qsTr("ZRAM: %1 / %2 MiB").arg(page.ramMonitor.zramUsedMiB).arg(page.ramMonitor.zramTotalMiB)
-                                    color: page.textColor
-                                    font.pixelSize: Math.round(10 * page.uiScale)
-                                    font.weight: Font.DemiBold
-                                }
-                            }
-
-                            Rectangle {
-                                visible: page.ramMonitor && page.ramMonitor.zramAvailable && page.ramMonitor.zramCompressionRatio > 0
-                                implicitHeight: Math.round(24 * page.uiScale)
-                                implicitWidth: zramRatio.implicitWidth + Math.round(14 * page.uiScale)
-                                radius: 6
-                                color: page.darkMode ? "#1E2548" : "#EFF6FF"
-                                border.width: 1
-                                border.color: page.darkMode ? "#4338CA" : "#BFDBFE"
-
-                                Label {
-                                    id: zramRatio
-                                    anchors.centerIn: parent
-                                    text: qsTr("Compression: %1×").arg(page.ramMonitor.zramCompressionRatio.toFixed(1))
-                                    color: page.accentColor
-                                    font.pixelSize: Math.round(10 * page.uiScale)
-                                    font.weight: Font.DemiBold
-                                }
-                            }
-
-                            Rectangle {
-                                visible: page.ramMonitor && page.ramMonitor.zswapEnabled
-                                implicitHeight: Math.round(24 * page.uiScale)
-                                implicitWidth: zswapStatus.implicitWidth + Math.round(14 * page.uiScale)
-                                radius: 6
-                                color: page.darkMode ? "#143828" : "#ECFDF5"
-                                border.width: 1
-                                border.color: page.darkMode ? "#166534" : "#A7F3D0"
-
-                                Label {
-                                    id: zswapStatus
-                                    anchors.centerIn: parent
-                                    text: qsTr("zswap enabled")
-                                    color: page.successColor
-                                    font.pixelSize: Math.round(10 * page.uiScale)
-                                    font.weight: Font.DemiBold
-                                }
-                            }
-
-                            Item { Layout.fillWidth: true }
                         }
 
                         TelemetrySparkline {
@@ -590,6 +526,94 @@ Item {
                         }
                     }
                 }
+
+                // ZRAM Card — exposed only when the kernel has an active zram device.
+                Rectangle {
+                    visible: page.ramMonitor && page.ramMonitor.zramAvailable
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Math.round(152 * page.uiScale)
+                    Layout.minimumHeight: Math.round(152 * page.uiScale)
+                    radius: 14
+                    color: page.cardColor
+                    border.width: 1
+                    border.color: page.borderColor
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: Math.round(14 * page.uiScale)
+                        spacing: Math.round(4 * page.uiScale)
+
+                        Label {
+                            text: qsTr("ZRAM")
+                            color: page.softTextColor
+                            font.weight: Font.DemiBold
+                            font.pixelSize: Math.round(13 * page.uiScale)
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Math.round(12 * page.uiScale)
+
+                            ColumnLayout {
+                                spacing: 1
+                                Label {
+                                    text: qsTr("USAGE")
+                                    color: page.softTextColor
+                                    font.pixelSize: Math.round(10 * page.uiScale)
+                                    font.weight: Font.DemiBold
+                                }
+                                Label {
+                                    text: page.ramMonitor.zramTotalMiB > 0
+                                          ? Math.round((page.ramMonitor.zramUsedMiB / page.ramMonitor.zramTotalMiB) * 100) + "%"
+                                          : "--"
+                                    color: page.textColor
+                                    font.pixelSize: Math.round(22 * page.uiScale)
+                                    font.weight: Font.Bold
+                                }
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            ColumnLayout {
+                                spacing: 1
+                                Label {
+                                    text: qsTr("ALLOCATED")
+                                    color: page.softTextColor
+                                    font.pixelSize: Math.round(10 * page.uiScale)
+                                    font.weight: Font.DemiBold
+                                }
+                                Label {
+                                    text: page.ramMonitor.zramUsedMiB + " / " + page.ramMonitor.zramTotalMiB + " MiB"
+                                    color: page.textColor
+                                    font.pixelSize: Math.round(18 * page.uiScale)
+                                    font.weight: Font.Bold
+                                }
+                            }
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            visible: page.ramMonitor.zramCompressionRatio > 0 || page.ramMonitor.zswapEnabled
+                            text: (page.ramMonitor.zramCompressionRatio > 0
+                                   ? qsTr("Compression: %1×").arg(page.ramMonitor.zramCompressionRatio.toFixed(1))
+                                   : "")
+                                  + (page.ramMonitor.zswapEnabled
+                                     ? (page.ramMonitor.zramCompressionRatio > 0 ? " • " : "") + qsTr("zswap enabled")
+                                     : "")
+                            color: page.softTextColor
+                            font.pixelSize: Math.round(10 * page.uiScale)
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Math.round(2 * page.uiScale)
+                            radius: 1
+                            color: page.darkMode ? "#F59E0B" : "#D97706"
+                        }
+                    }
+                }
             }
 
             // GPU Performance & Power Telemetry Section (4 Tiles in 1 Row)
@@ -792,36 +816,6 @@ Item {
                         }
 
                         Item { Layout.fillWidth: true }
-
-                        Rectangle {
-                            visible: page.powerController && page.powerController.systemPowerProfileSupported
-                            implicitHeight: Math.round(30 * page.uiScale)
-                            implicitWidth: systemProfileRow.implicitWidth + Math.round(16 * page.uiScale)
-                            radius: 6
-                            color: page.darkMode ? "#143828" : "#ECFDF5"
-                            border.width: 1
-                            border.color: page.darkMode ? "#166534" : "#A7F3D0"
-
-                            RowLayout {
-                                id: systemProfileRow
-                                anchors.centerIn: parent
-                                spacing: 4
-
-                                Label {
-                                    text: qsTr("System Profile:")
-                                    color: page.successColor
-                                    font.pixelSize: Math.round(11 * page.uiScale)
-                                    font.weight: Font.Medium
-                                }
-
-                                Label {
-                                    text: page.powerController ? page.powerController.systemPowerProfile : ""
-                                    color: page.successColor
-                                    font.pixelSize: Math.round(12 * page.uiScale)
-                                    font.weight: Font.Bold
-                                }
-                            }
-                        }
 
                         RowLayout {
                             spacing: Math.round(8 * page.uiScale)
