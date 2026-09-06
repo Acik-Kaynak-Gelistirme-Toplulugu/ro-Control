@@ -1247,9 +1247,7 @@ void FanController::updateSystemFansTelemetry() {
     const QString basePath = entry.absoluteFilePath();
     const QString chipName = readTextFile(basePath + QStringLiteral("/name"));
     const bool gpuHwmon = isGpuHwmon(chipName);
-    if (gpuHwmon && m_supported) {
-      continue; // The NVIDIA controller card already represents this device.
-    }
+
     const QFileInfoList fanInputs = QDir(basePath).entryInfoList(
         {QStringLiteral("fan*_input")}, QDir::Files, QDir::Name);
     for (const QFileInfo &fFile : fanInputs) {
