@@ -65,7 +65,7 @@
 | `CycleFanMode` | `() -> (s: mode)` | Cycles to the next cooling profile and returns the active mode |
 | `GetFanModes` | `() -> (as: modes)` | Lists all available cooling profiles |
 | `SetFanSpeed` | `(i: percent) -> (b: success)` | Applies fixed manual fan speed (0–100%) |
-| `ApplyFanCurvePreset`| `(s: preset) -> (b: success)` | Applies curve template (`zero-db`, `aggressive`, `stepped`) |
+| `ApplyFanCurvePreset`| `(s: preset) -> (b: success)` | Applies curve template (`stealth`/`zero-db`/`quiet`, `balanced`, `aggressive`/`gaming`/`extreme`, `stepped`/`ladder`) |
 | `SetFanSmoothing` | `(b: enabled, i: rampUp, i: rampDown, i: hysteresis) -> (b: success)` | Configures fan ramp smoothing and directional hysteresis |
 | `SetPowerLimit` | `(d: watts) -> (b: success)` | Sets maximum GPU TDP power limit |
 | `SetClockOffsets` | `(i: coreMhz, i: memMhz) -> (b: success)` | Sets GPU core and memory clock offsets in MHz |
