@@ -11,14 +11,19 @@
 namespace {
 
 QString normalizedMetricField(const QString &field) {
+  static const QRegularExpression bracketRegex(
+      QStringLiteral(R"(\s*\[[^\]]+\]\s*)"));
+  static const QRegularExpression percentRegex(QStringLiteral(R"(\s*%\s*)"));
+  static const QRegularExpression wattRegex(
+      QStringLiteral(R"(\s*w\b)"), QRegularExpression::CaseInsensitiveOption);
+  static const QRegularExpression mhzRegex(
+      QStringLiteral(R"(\s*mhz\b)"), QRegularExpression::CaseInsensitiveOption);
+
   QString normalized = field.trimmed();
-  normalized.remove(QRegularExpression(QStringLiteral(R"(\s*\[[^\]]+\]\s*)")));
-  normalized.remove(QRegularExpression(QStringLiteral(R"(\s*%\s*)")));
-  normalized.remove(QRegularExpression(
-      QStringLiteral(R"(\s*w\b)"), QRegularExpression::CaseInsensitiveOption));
-  normalized.remove(
-      QRegularExpression(QStringLiteral(R"(\s*mhz\b)"),
-                         QRegularExpression::CaseInsensitiveOption));
+  normalized.remove(bracketRegex);
+  normalized.remove(percentRegex);
+  normalized.remove(wattRegex);
+  normalized.remove(mhzRegex);
   return normalized.trimmed();
 }
 
@@ -51,12 +56,14 @@ bool parseMetricDouble(const QString &field, double *value) {
     return false;
   }
 
+  static const QRegularExpression wattRegex(
+      QStringLiteral(R"(\s*w\b)"), QRegularExpression::CaseInsensitiveOption);
+  static const QRegularExpression mhzRegex(
+      QStringLiteral(R"(\s*mhz\b)"), QRegularExpression::CaseInsensitiveOption);
+
   QString normalized = normalizedMetricField(field);
-  normalized.remove(QRegularExpression(
-      QStringLiteral(R"(\s*w\b)"), QRegularExpression::CaseInsensitiveOption));
-  normalized.remove(
-      QRegularExpression(QStringLiteral(R"(\s*mhz\b)"),
-                         QRegularExpression::CaseInsensitiveOption));
+  normalized.remove(wattRegex);
+  normalized.remove(mhzRegex);
   if (normalized.isEmpty() ||
       normalized.compare(QStringLiteral("n/a"), Qt::CaseInsensitive) == 0 ||
       normalized.compare(QStringLiteral("not supported"),

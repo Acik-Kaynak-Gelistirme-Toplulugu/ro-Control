@@ -504,7 +504,9 @@ QString SystemInfoProvider::detectMotherboardModel() const {
     return prodName;
   }
 #endif
-  const QString virt = detectVirtualizationType();
+  const QString virt = !m_virtualizationType.isEmpty()
+                           ? m_virtualizationType
+                           : detectVirtualizationType();
   if (!virt.isEmpty()) {
     return QStringLiteral("%1 Virtual Motherboard").arg(virt);
   }
@@ -591,7 +593,9 @@ QString SystemInfoProvider::detectVirtualizationType() const {
 }
 
 QString SystemInfoProvider::detectDeviceType() const {
-  const QString virtualizationType = detectVirtualizationType();
+  const QString virtualizationType = !m_virtualizationType.isEmpty()
+                                         ? m_virtualizationType
+                                         : detectVirtualizationType();
   if (!virtualizationType.isEmpty()) {
     if (virtualizationType.compare(QStringLiteral("QEMU"),
                                    Qt::CaseInsensitive) == 0 ||

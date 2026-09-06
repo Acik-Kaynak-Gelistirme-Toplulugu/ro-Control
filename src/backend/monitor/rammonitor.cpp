@@ -89,8 +89,8 @@ RamSnapshot readSnapshotFromFree() {
       continue;
     }
 
-    const QStringList fields = line.split(
-        QRegularExpression(QStringLiteral(R"(\s+)")), Qt::SkipEmptyParts);
+    static const QRegularExpression spacesPattern(QStringLiteral(R"(\s+)"));
+    const QStringList fields = line.split(spacesPattern, Qt::SkipEmptyParts);
     if (fields.size() < 3) {
       return {};
     }

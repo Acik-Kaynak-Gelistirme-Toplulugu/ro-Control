@@ -24,9 +24,10 @@ bool parseDoubleValue(const QString &field, double *value) {
   if (!value) {
     return false;
   }
+  static const QRegularExpression wattRegex(
+      QStringLiteral(R"(\s*w\b)"), QRegularExpression::CaseInsensitiveOption);
   QString normalized = field.trimmed();
-  normalized.remove(QRegularExpression(
-      QStringLiteral(R"(\s*w\b)"), QRegularExpression::CaseInsensitiveOption));
+  normalized.remove(wattRegex);
   if (normalized.isEmpty() ||
       normalized.compare(QStringLiteral("n/a"), Qt::CaseInsensitive) == 0 ||
       normalized.compare(QStringLiteral("not supported"),
