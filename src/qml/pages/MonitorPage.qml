@@ -116,6 +116,12 @@ Item {
                : qsTr("Unavailable");
     }
 
+    function localizeGpuName(name) {
+        if (!name || name.toString().trim().length === 0)
+            return "";
+        return page.systemInfo ? page.systemInfo.localizeGpuName(name) : name;
+    }
+
     function gpuUnavailableMessage() {
         if (!page.nvidiaGpuDetected)
             return qsTr("No NVIDIA GPU detected. CPU and memory monitoring remain available; NVIDIA telemetry, power controls, and process monitoring are disabled.");
@@ -210,15 +216,35 @@ Item {
             width: pageScroll.availableWidth
             spacing: 12
 
-            Rectangle { visible: !page.gpuTelemetryAvailable; Layout.fillWidth: true; implicitHeight: unavailableGpuLabel.implicitHeight + 24; radius: 10; color: page.infoBg; border.width: 1; border.color: page.borderColor
-                Label { id: unavailableGpuLabel; anchors.fill: parent; anchors.margins: 12; text: page.gpuUnavailableMessage(); color: page.textColor; verticalAlignment: Text.AlignVCenter; wrapMode: Text.WordWrap }
+            Rectangle {
+                visible: page.nvidiaGpuDetected && !page.gpuTelemetryAvailable
+                Layout.fillWidth: true
+                implicitHeight: unavailableGpuLabel.implicitHeight + 24
+                radius: 10
+                color: page.infoBg
+                border.width: 1
+                border.color: page.borderColor
+                Label {
+                    id: unavailableGpuLabel
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    text: page.gpuUnavailableMessage()
+                    color: page.textColor
+                    verticalAlignment: Text.AlignVCenter
+                    wrapMode: Text.WordWrap
+                }
             }
 
             GridLayout {
                 Layout.fillWidth: true
-                columns: page.ramMonitor && page.ramMonitor.zramAvailable
-                         ? (width > 1180 ? 4 : (width > 560 ? 2 : 1))
-                         : (width > 900 ? 3 : (width > 560 ? 2 : 1))
+                columns: {
+                    var count = (page.gpuTelemetryAvailable ? 1 : 0) + 1 + (page.ramMonitor && page.ramMonitor.zramAvailable ? 1 : 0) + 1;
+                    if (count >= 4)
+                        return width > 1180 ? 4 : (width > 560 ? 2 : 1);
+                    if (count === 3)
+                        return width > 900 ? 3 : (width > 560 ? 2 : 1);
+                    return width > 560 ? 2 : 1;
+                }
                 columnSpacing: Math.round(10 * page.uiScale)
                 rowSpacing: Math.round(10 * page.uiScale)
 
@@ -294,7 +320,8 @@ Item {
 
                 // GPU Card
                 Rectangle {
-                    Layout.fillWidth: true
+                    visible: page.gpuTelemetryAvailable
+                    Layout.fillWidth: page.gpuTelemetryAvailable
                     Layout.preferredHeight: Math.round(152 * page.uiScale)
                     Layout.minimumHeight: Math.round(152 * page.uiScale)
                     radius: 14
@@ -344,9 +371,9 @@ Item {
                                         if (!page.gpuMonitor) return "";
                                         var count = page.gpuMonitor.gpuCount;
                                         if (count > 1) {
-                                            return qsTr("Active: %1\nClick to switch GPU (%2 available)").arg(page.gpuMonitor.gpuName).arg(count);
+                                            return qsTr("Active: %1\nClick to switch GPU (%2 available)").arg(page.localizeGpuName(page.gpuMonitor.gpuName)).arg(count);
                                         }
-                                        return page.gpuMonitor.gpuName.length > 0 ? page.gpuMonitor.gpuName : qsTr("Active Graphics Processor");
+                                        return page.gpuMonitor.gpuName.length > 0 ? page.localizeGpuName(page.gpuMonitor.gpuName) : qsTr("Active Graphics Processor");
                                     }
                                 }
 
@@ -392,7 +419,7 @@ Item {
                                         MenuItem {
                                             required property var modelData
                                             required property int index
-                                            text: (modelData.name || ("GPU " + index)) + ((page.gpuMonitor && page.gpuMonitor.selectedGpuIndex === index) ? "  ✓" : "")
+                                            text: page.localizeGpuName(modelData.name || ("GPU " + index)) + ((page.gpuMonitor && page.gpuMonitor.selectedGpuIndex === index) ? "  ✓" : "")
                                             font.pixelSize: Math.round(11 * page.uiScale)
                                             font.weight: (page.gpuMonitor && page.gpuMonitor.selectedGpuIndex === index) ? Font.Bold : Font.Normal
                                             onTriggered: {

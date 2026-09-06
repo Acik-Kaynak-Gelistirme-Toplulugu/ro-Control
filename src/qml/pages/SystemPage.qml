@@ -72,10 +72,17 @@ Item {
         return sb.length > 0 ? (virt + " • " + sb) : virt;
     }
 
+    function localizeGpuName(name) {
+        if (!name || name.toString().trim().length === 0)
+            return "";
+        return page.systemInfo ? page.systemInfo.localizeGpuName(name) : name;
+    }
+
     function diagnosticGpuName() {
         if (!page.nvidiaDetector)
             return "";
-        return page.nvidiaDetector.gpuFound ? page.nvidiaDetector.gpuName : page.nvidiaDetector.displayAdapterName;
+        var name = page.nvidiaDetector.gpuFound ? page.nvidiaDetector.gpuName : page.nvidiaDetector.displayAdapterName;
+        return page.localizeGpuName(name);
     }
 
     function hardwareCards() {
@@ -93,7 +100,7 @@ Item {
         if (page.gpuMonitor && page.gpuMonitor.memoryTotalMiB > 0)
             add(qsTr("Video Memory (VRAM)"), (page.gpuMonitor.memoryTotalMiB / 1024.0).toFixed(1) + " GB (" + page.gpuMonitor.memoryTotalMiB + " MiB)");
         if (page.systemInfo && page.systemInfo.integratedGpuName && page.systemInfo.integratedGpuMemory)
-            add(qsTr("Integrated Graphics Memory"), page.systemInfo.integratedGpuName + " • " + page.systemInfo.integratedGpuMemory);
+            add(qsTr("Integrated Graphics Memory"), page.localizeGpuName(page.systemInfo.integratedGpuName) + " • " + page.systemInfo.integratedGpuMemory);
         add(qsTr("PCIe Link Interface"), page.gpuMonitor ? page.gpuMonitor.pcieLinkStatus : "");
         add(qsTr("Device & Power"), page.deviceAndPowerSummary());
         return cards;
@@ -150,7 +157,7 @@ Item {
                     { label: qsTr("NVIDIA Driver"), value: page.nvidiaDriverSummary(), icon: "⚙️" },
                     { label: qsTr("Video Memory (VRAM)"), value: (page.gpuMonitor && page.gpuMonitor.memoryTotalMiB > 0) ? ((page.gpuMonitor.memoryTotalMiB / 1024.0).toFixed(1) + " GB (" + page.gpuMonitor.memoryTotalMiB + " MiB)") : "", icon: "📼" },
                     { label: qsTr("PCIe Link Interface"), value: page.gpuMonitor ? page.gpuMonitor.pcieLinkStatus : "", icon: "🔗" },
-                    { label: qsTr("Integrated GPU"), value: (page.systemInfo && page.systemInfo.integratedGpuName && page.systemInfo.integratedGpuMemory) ? (page.systemInfo.integratedGpuName + " • " + page.systemInfo.integratedGpuMemory) : "", icon: "🎨" },
+                    { label: qsTr("Integrated GPU"), value: (page.systemInfo && page.systemInfo.integratedGpuName && page.systemInfo.integratedGpuMemory) ? (page.localizeGpuName(page.systemInfo.integratedGpuName) + " • " + page.systemInfo.integratedGpuMemory) : "", icon: "🎨" },
                     { label: qsTr("Graphics & Compute APIs"), value: page.systemInfo ? page.systemInfo.graphicsApiSummary : "", icon: "🚀" }
                 ]
             }
