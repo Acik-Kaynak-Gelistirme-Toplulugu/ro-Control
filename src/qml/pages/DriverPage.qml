@@ -613,7 +613,7 @@ Item {
 
             GridLayout {
                 Layout.fillWidth: true
-                columns: width > 900 ? 3 : 1
+                columns: width > 900 ? (page.nvidiaDetector.gpuFound ? 3 : 2) : 1
                 columnSpacing: 10
                 rowSpacing: 10
 
@@ -656,6 +656,7 @@ Item {
                 }
 
                 Rectangle {
+                    visible: page.nvidiaDetector.gpuFound
                     Layout.fillWidth: true
                     implicitHeight: Math.round(132 * page.uiScale)
                     radius: 14
