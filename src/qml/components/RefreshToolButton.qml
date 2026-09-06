@@ -71,7 +71,10 @@ ToolButton {
                 NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
             }
 
-            RotationAnimator on rotation {
+            RotationAnimation {
+                id: busySpin
+                target: refreshIcon
+                property: "rotation"
                 running: control.busy
                 from: 0
                 to: 360
@@ -79,8 +82,10 @@ ToolButton {
                 loops: Animation.Infinite
             }
 
-            NumberAnimation on rotation {
+            NumberAnimation {
                 id: clickSpin
+                target: refreshIcon
+                property: "rotation"
                 from: refreshIcon.rotation
                 to: refreshIcon.rotation + 180
                 duration: 260

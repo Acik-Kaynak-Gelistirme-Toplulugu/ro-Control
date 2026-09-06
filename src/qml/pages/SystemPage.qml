@@ -792,9 +792,9 @@ Item {
                                 implicitHeight: Math.round(32 * page.uiScale)
                                 implicitWidth: formatBtnRow.implicitWidth + Math.round(20 * page.uiScale)
                                 radius: 8
-                                color: formatMouse.hovered ? (page.darkMode ? "#342D4A" : "#E2E8F0") : page.bgColor
+                                color: formatMouse.containsMouse ? (page.darkMode ? "#342D4A" : "#E2E8F0") : page.bgColor
                                 border.width: 1
-                                border.color: (formatMouse.hovered || formatPopup.visible) ? page.accentColor : page.borderColor
+                                border.color: (formatMouse.containsMouse || formatPopup.visible) ? page.accentColor : page.borderColor
 
                                 MouseArea {
                                     id: formatMouse
@@ -920,9 +920,9 @@ Item {
                                 implicitHeight: Math.round(32 * page.uiScale)
                                 implicitWidth: actionBtnRow.implicitWidth + Math.round(20 * page.uiScale)
                                 radius: 8
-                                color: actionMouse.hovered ? (page.darkMode ? "#342D4A" : "#E2E8F0") : page.bgColor
+                                color: actionMouse.containsMouse ? (page.darkMode ? "#342D4A" : "#E2E8F0") : page.bgColor
                                 border.width: 1
-                                border.color: (actionMouse.hovered || actionPopup.visible) ? page.accentColor : page.borderColor
+                                border.color: (actionMouse.containsMouse || actionPopup.visible) ? page.accentColor : page.borderColor
 
                                 MouseArea {
                                     id: actionMouse
@@ -1119,11 +1119,11 @@ Item {
                                                 Layout.fillWidth: true
                                                 implicitHeight: Math.round(62 * page.uiScale)
                                                 radius: 8
-                                                color: tileMouse.hovered
+                                                color: tileMouse.containsMouse
                                                        ? (page.darkMode ? "#383050" : "#F8FAFC")
                                                        : (page.darkMode ? "#2E2742" : "#F1F5F9")
                                                 border.width: 1
-                                                border.color: tileMouse.hovered ? page.accentColor : page.borderColor
+                                                border.color: tileMouse.containsMouse ? page.accentColor : page.borderColor
 
                                                 Behavior on color { ColorAnimation { duration: 100 } }
                                                 Behavior on border.color { ColorAnimation { duration: 100 } }
