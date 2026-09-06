@@ -3444,4 +3444,35 @@ Wählen Sie Akzeptieren, um mit der Closed-Source-Installation fortzufahren, ode
         <translation>Dunkel</translation>
     </message>
 </context>
+<context>
+    <name>GpuNames</name>
+    <message>
+        <source>Integrated Graphics Controller</source>
+        <translation>Integrierter Grafikcontroller</translation>
+    </message>
+    <message>
+        <source>Integrated Display Controller</source>
+        <translation>Integrierter Display-Controller</translation>
+    </message>
+    <message>
+        <source>Integrated Graphics</source>
+        <translation>Integrierte Grafik</translation>
+    </message>
+    <message>
+        <source>Graphics Controller</source>
+        <translation>Grafikcontroller</translation>
+    </message>
+    <message>
+        <source>Display Controller</source>
+        <translation>Display-Controller</translation>
+    </message>
+    <message>
+        <source>Core Processor</source>
+        <translation>Core-Prozessor</translation>
+    </message>
+    <message>
+        <source>Integrated</source>
+        <translation>Integriert</translation>
+    </message>
+</context>
 </TS>

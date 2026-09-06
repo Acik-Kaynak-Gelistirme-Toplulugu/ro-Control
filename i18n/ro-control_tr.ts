@@ -3444,4 +3444,35 @@ Kapalı kaynak kuruluma devam etmek için Kabul Et'i, iptal etmek için Reddet'i
         <translation>Koyu</translation>
     </message>
 </context>
+<context>
+    <name>GpuNames</name>
+    <message>
+        <source>Integrated Graphics Controller</source>
+        <translation>Dahili Grafik Denetleyicisi</translation>
+    </message>
+    <message>
+        <source>Integrated Display Controller</source>
+        <translation>Dahili Ekran Denetleyicisi</translation>
+    </message>
+    <message>
+        <source>Integrated Graphics</source>
+        <translation>Dahili Grafik</translation>
+    </message>
+    <message>
+        <source>Graphics Controller</source>
+        <translation>Grafik Denetleyicisi</translation>
+    </message>
+    <message>
+        <source>Display Controller</source>
+        <translation>Ekran Denetleyicisi</translation>
+    </message>
+    <message>
+        <source>Core Processor</source>
+        <translation>Çekirdek İşlemci</translation>
+    </message>
+    <message>
+        <source>Integrated</source>
+        <translation>Dahili</translation>
+    </message>
+</context>
 </TS>

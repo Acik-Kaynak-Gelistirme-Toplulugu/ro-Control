@@ -3444,4 +3444,35 @@ Elija Aceptar para continuar con la instalación de código cerrado o Rechazar p
         <translation>Oscuro</translation>
     </message>
 </context>
+<context>
+    <name>GpuNames</name>
+    <message>
+        <source>Integrated Graphics Controller</source>
+        <translation>Controlador de gráficos integrado</translation>
+    </message>
+    <message>
+        <source>Integrated Display Controller</source>
+        <translation>Controlador de pantalla integrado</translation>
+    </message>
+    <message>
+        <source>Integrated Graphics</source>
+        <translation>Gráficos integrados</translation>
+    </message>
+    <message>
+        <source>Graphics Controller</source>
+        <translation>Controlador de gráficos</translation>
+    </message>
+    <message>
+        <source>Display Controller</source>
+        <translation>Controlador de pantalla</translation>
+    </message>
+    <message>
+        <source>Core Processor</source>
+        <translation>Procesador Core</translation>
+    </message>
+    <message>
+        <source>Integrated</source>
+        <translation>Integrado</translation>
+    </message>
+</context>
 </TS>
