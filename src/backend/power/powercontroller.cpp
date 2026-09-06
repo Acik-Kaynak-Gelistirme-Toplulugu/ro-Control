@@ -1,5 +1,9 @@
 #include "powercontroller.h"
 
+#include <QDBusConnection>
+#include <QDBusInterface>
+#include <QDBusReply>
+#include <QDBusVariant>
 #include <QRegularExpression>
 #include <QSettings>
 #include <algorithm>
@@ -265,7 +269,25 @@ void PowerController::querySystemPowerProfile() {
   QString backend;
   bool available = false;
 
-  if (!CommandRunner::resolveProgramPath(QStringLiteral("powerprofilesctl"))
+  // The D-Bus API is the canonical interface used by GNOME/KDE. Some Fedora
+  // installations provide it through tuned-ppd without installing the CLI.
+  QDBusInterface properties(QStringLiteral("net.hadess.PowerProfiles"),
+                            QStringLiteral("/net/hadess/PowerProfiles"),
+                            QStringLiteral("org.freedesktop.DBus.Properties"),
+                            QDBusConnection::systemBus());
+  if (properties.isValid()) {
+    const QDBusReply<QDBusVariant> reply = properties.call(
+        QStringLiteral("Get"), QStringLiteral("net.hadess.PowerProfiles"),
+        QStringLiteral("ActiveProfile"));
+    if (reply.isValid()) {
+      profile = reply.value().variant().toString();
+      backend = QStringLiteral("powerprofiles-dbus");
+      available = !profile.isEmpty();
+    }
+  }
+
+  if (!available &&
+      !CommandRunner::resolveProgramPath(QStringLiteral("powerprofilesctl"))
            .isEmpty()) {
     const auto result = runner.run(QStringLiteral("powerprofilesctl"),
                                    {QStringLiteral("get")}, options);
@@ -282,7 +304,8 @@ void PowerController::querySystemPowerProfile() {
            .isEmpty()) {
     const auto result = runner.run(QStringLiteral("tuned-adm"),
                                    {QStringLiteral("active")}, options);
-    if (result.success()) {
+    if (result.success() &&
+        result.stdout.contains(QStringLiteral("Current active profile:"))) {
       const QRegularExpressionMatch match =
           QRegularExpression(QStringLiteral(R"(:\s*(.+)$)"),
                              QRegularExpression::MultilineOption)
@@ -320,7 +343,18 @@ bool PowerController::applySystemPowerProfile(const QString &preset) {
                                                 : QStringLiteral("balanced");
   bool success = false;
   QString error;
-  if (m_systemPowerBackend == QStringLiteral("powerprofilesctl")) {
+  if (m_systemPowerBackend == QStringLiteral("powerprofiles-dbus")) {
+    QDBusInterface properties(QStringLiteral("net.hadess.PowerProfiles"),
+                              QStringLiteral("/net/hadess/PowerProfiles"),
+                              QStringLiteral("org.freedesktop.DBus.Properties"),
+                              QDBusConnection::systemBus());
+    const QDBusMessage reply = properties.call(
+        QStringLiteral("Set"), QStringLiteral("net.hadess.PowerProfiles"),
+        QStringLiteral("ActiveProfile"),
+        QVariant::fromValue(QDBusVariant(target)));
+    success = reply.type() != QDBusMessage::ErrorMessage;
+    error = reply.errorMessage();
+  } else if (m_systemPowerBackend == QStringLiteral("powerprofilesctl")) {
     CommandRunner runner;
     CommandRunner::RunOptions options;
     options.timeoutMs = 2000;
@@ -436,6 +470,12 @@ bool PowerController::applyPowerPreset(const QString &preset) {
     emit powerPresetChanged();
     saveSettings();
     return true;
+  }
+
+  if (!m_systemPowerProfileSupported && !m_controlSupported) {
+    setStatusMessage(
+        QStringLiteral("No active system power-profile service is available."));
+    return false;
   }
 
   // This is the machine-wide policy. It works without NVIDIA hardware when
