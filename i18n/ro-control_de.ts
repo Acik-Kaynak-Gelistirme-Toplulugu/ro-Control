@@ -2402,6 +2402,16 @@ Klicken zum Wechseln der GPU (%2 verfügbar)</translation>
         <translation>Leistung</translation>
     </message>
     <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="635"/>
+        <source>Power &amp; Performance Management</source>
+        <translation>Energie- und Leistungsverwaltung</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="743"/>
+        <source>System Profile:</source>
+        <translation>Systemprofil:</translation>
+    </message>
+    <message>
         <source>Refresh telemetry</source>
         <translation type="vanished">Telemetrie aktualisieren</translation>
     </message>

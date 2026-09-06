@@ -28,6 +28,7 @@ class PowerController : public QObject {
                  systemPowerProfileChanged)
   Q_PROPERTY(bool systemPowerProfileSupported READ systemPowerProfileSupported
                  NOTIFY systemPowerProfileSupportedChanged)
+  Q_PROPERTY(QString activePreset READ activePreset NOTIFY activePresetChanged)
   Q_PROPERTY(QStringList availablePresets READ availablePresets CONSTANT)
   Q_PROPERTY(
       int coreClockOffsetMHz READ coreClockOffsetMHz NOTIFY clockOffsetsChanged)
@@ -57,6 +58,7 @@ public:
   QString powerPreset() const;
   QString systemPowerProfile() const;
   bool systemPowerProfileSupported() const;
+  QString activePreset() const;
   QStringList availablePresets() const;
   int coreClockOffsetMHz() const;
   int memoryClockOffsetMHz() const;
@@ -86,6 +88,7 @@ signals:
   void powerPresetChanged();
   void systemPowerProfileChanged();
   void systemPowerProfileSupportedChanged();
+  void activePresetChanged();
   void clockOffsetsChanged();
   void clockOffsetSupportedChanged();
   void statusMessageChanged();

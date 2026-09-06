@@ -34,6 +34,7 @@ Item {
     readonly property color softTextColor: theme && theme.textSoft ? theme.textSoft : (page.darkMode ? "#94A3B8" : "#64748B")
     readonly property color infoBg: theme && theme.infoBg ? theme.infoBg : (page.darkMode ? "#1E2548" : "#EFF6FF")
     readonly property color accentColor: theme && theme.accentA ? theme.accentA : (page.darkMode ? "#818CF8" : "#4F46E5")
+    readonly property color successColor: theme && theme.success ? theme.success : (page.darkMode ? "#4ADE80" : "#059669")
     readonly property color activeCardColor: theme && theme.card ? theme.card : (page.darkMode ? "#342D4A" : "#E2E8F0")
     readonly property int summaryCardHeight: Math.round(152 * page.uiScale)
     readonly property bool nvidiaGpuDetected: page.nvidiaDetector && page.nvidiaDetector.gpuFound
@@ -651,7 +652,9 @@ Item {
 
                         Label {
                             Layout.fillWidth: true
-                            text: qsTr("GPU Power & Performance Management")
+                            text: page.powerController && page.powerController.supported
+                                  ? qsTr("GPU Power & Performance Management")
+                                  : qsTr("Power & Performance Management")
                             color: page.textColor
                             font.pixelSize: Math.round(18 * page.uiScale)
                             font.weight: Font.DemiBold
@@ -663,6 +666,7 @@ Item {
                         spacing: 10
 
                         Rectangle {
+                            visible: page.powerController && page.powerController.supported
                             implicitHeight: Math.round(30 * page.uiScale)
                             implicitWidth: currentDrawRow.implicitWidth + Math.round(16 * page.uiScale)
                             radius: 6
@@ -692,6 +696,7 @@ Item {
                         }
 
                         Rectangle {
+                            visible: page.powerController && page.powerController.controlSupported
                             implicitHeight: Math.round(30 * page.uiScale)
                             implicitWidth: powerLimitRow.implicitWidth + Math.round(16 * page.uiScale)
                             radius: 6
@@ -722,6 +727,36 @@ Item {
 
                         Item { Layout.fillWidth: true }
 
+                        Rectangle {
+                            visible: page.powerController && page.powerController.systemPowerProfileSupported
+                            implicitHeight: Math.round(30 * page.uiScale)
+                            implicitWidth: systemProfileRow.implicitWidth + Math.round(16 * page.uiScale)
+                            radius: 6
+                            color: page.darkMode ? "#143828" : "#ECFDF5"
+                            border.width: 1
+                            border.color: page.darkMode ? "#166534" : "#A7F3D0"
+
+                            RowLayout {
+                                id: systemProfileRow
+                                anchors.centerIn: parent
+                                spacing: 4
+
+                                Label {
+                                    text: qsTr("System Profile:")
+                                    color: page.successColor
+                                    font.pixelSize: Math.round(11 * page.uiScale)
+                                    font.weight: Font.Medium
+                                }
+
+                                Label {
+                                    text: page.powerController ? page.powerController.systemPowerProfile : ""
+                                    color: page.successColor
+                                    font.pixelSize: Math.round(12 * page.uiScale)
+                                    font.weight: Font.Bold
+                                }
+                            }
+                        }
+
                         RowLayout {
                             spacing: Math.round(8 * page.uiScale)
                             visible: page.powerController && (page.powerController.controlSupported
@@ -742,22 +777,22 @@ Item {
 
                                     background: Rectangle {
                                         radius: 8
-                                        color: (page.powerController && page.powerController.powerPreset === powerPresetBtn.modelData.preset)
+                                        color: (page.powerController && page.powerController.activePreset === powerPresetBtn.modelData.preset)
                                                ? page.accentColor
                                                : page.bgColor
-                                        border.width: (page.powerController && page.powerController.powerPreset === powerPresetBtn.modelData.preset) ? 2 : 1
-                                        border.color: (page.powerController && page.powerController.powerPreset === powerPresetBtn.modelData.preset)
+                                        border.width: (page.powerController && page.powerController.activePreset === powerPresetBtn.modelData.preset) ? 2 : 1
+                                        border.color: (page.powerController && page.powerController.activePreset === powerPresetBtn.modelData.preset)
                                                       ? page.accentColor
                                                       : page.borderColor
                                     }
 
                                     contentItem: Text {
                                         text: powerPresetBtn.modelData.label
-                                        color: (page.powerController && page.powerController.powerPreset === powerPresetBtn.modelData.preset)
+                                        color: (page.powerController && page.powerController.activePreset === powerPresetBtn.modelData.preset)
                                                ? "#FFFFFF"
                                                : page.textColor
                                         font.pixelSize: Math.round(12 * page.uiScale)
-                                        font.weight: (page.powerController && page.powerController.powerPreset === powerPresetBtn.modelData.preset) ? Font.Bold : Font.DemiBold
+                                        font.weight: (page.powerController && page.powerController.activePreset === powerPresetBtn.modelData.preset) ? Font.Bold : Font.DemiBold
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }

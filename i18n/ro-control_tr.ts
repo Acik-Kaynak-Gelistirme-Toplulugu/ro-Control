@@ -2402,6 +2402,16 @@ GPU değiştirmek için tıklayın (%2 mevcut)</translation>
         <translation>Performans</translation>
     </message>
     <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="635"/>
+        <source>Power &amp; Performance Management</source>
+        <translation>Güç ve Performans Yönetimi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="743"/>
+        <source>System Profile:</source>
+        <translation>Sistem Profili:</translation>
+    </message>
+    <message>
         <source>Refresh telemetry</source>
         <translation type="vanished">Telemetriyi yenile</translation>
     </message>

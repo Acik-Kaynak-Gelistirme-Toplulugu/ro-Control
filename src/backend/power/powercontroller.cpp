@@ -55,6 +55,17 @@ QString canonicalSystemProfile(const QString &profile) {
   return lower;
 }
 
+QString presetForSystemProfile(const QString &profile) {
+  const QString canonical = canonicalSystemProfile(profile);
+  if (canonical == QStringLiteral("power-saver"))
+    return QStringLiteral("eco");
+  if (canonical == QStringLiteral("balanced") ||
+      canonical == QStringLiteral("performance")) {
+    return canonical;
+  }
+  return {};
+}
+
 } // namespace
 
 PowerController::PowerController(QObject *parent)
@@ -62,8 +73,10 @@ PowerController::PowerController(QObject *parent)
   loadSettings();
   detectCapabilities();
 
-  connect(&m_timer, &QTimer::timeout, this,
-          &PowerController::queryPowerMetrics);
+  connect(&m_timer, &QTimer::timeout, this, [this] {
+    querySystemPowerProfile();
+    queryPowerMetrics();
+  });
   m_timer.setInterval(3000);
   m_timer.start();
 }
@@ -101,6 +114,14 @@ QString PowerController::systemPowerProfile() const {
 }
 bool PowerController::systemPowerProfileSupported() const {
   return m_systemPowerProfileSupported;
+}
+QString PowerController::activePreset() const {
+  if (m_systemPowerProfileSupported) {
+    const QString systemPreset = presetForSystemProfile(m_systemPowerProfile);
+    if (!systemPreset.isEmpty())
+      return systemPreset;
+  }
+  return m_powerPreset;
 }
 QStringList PowerController::availablePresets() const {
   return {QStringLiteral("eco"), QStringLiteral("balanced"),
@@ -318,18 +339,26 @@ void PowerController::querySystemPowerProfile() {
     }
   }
 
+  const QString oldActivePreset = activePreset();
   if (m_systemPowerProfileSupported != available) {
     m_systemPowerProfileSupported = available;
     emit systemPowerProfileSupportedChanged();
   }
-  if (!available)
+  if (!available) {
+    if (oldActivePreset != activePreset()) {
+      emit activePresetChanged();
+    }
     return;
+  }
 
   m_systemPowerBackend = backend;
   profile = canonicalSystemProfile(profile);
   if (!profile.isEmpty() && m_systemPowerProfile != profile) {
     m_systemPowerProfile = profile;
     emit systemPowerProfileChanged();
+  }
+  if (oldActivePreset != activePreset()) {
+    emit activePresetChanged();
   }
 }
 
@@ -466,8 +495,11 @@ bool PowerController::applyPowerPreset(const QString &preset) {
   }
 
   if (lower == QStringLiteral("custom")) {
+    const QString oldActivePreset = activePreset();
     m_powerPreset = lower;
     emit powerPresetChanged();
+    if (oldActivePreset != activePreset())
+      emit activePresetChanged();
     saveSettings();
     return true;
   }
@@ -493,8 +525,11 @@ bool PowerController::applyPowerPreset(const QString &preset) {
   }
 
   if (!m_controlSupported || setPowerLimit(targetWatts)) {
+    const QString oldActivePreset = activePreset();
     m_powerPreset = lower;
     emit powerPresetChanged();
+    if (oldActivePreset != activePreset())
+      emit activePresetChanged();
     setStatusMessage(m_systemPowerProfileSupported
                          ? QStringLiteral("Applied %1 system power profile.")
                                .arg(m_systemPowerProfile)
