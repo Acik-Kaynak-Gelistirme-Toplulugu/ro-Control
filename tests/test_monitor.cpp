@@ -274,6 +274,53 @@ private slots:
     qunsetenv("RO_CONTROL_MEMINFO_PATH");
   }
 
+  void testRamReadsZramAndZswapTelemetry() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString swapsPath = tempDir.filePath(QStringLiteral("swaps"));
+    QFile swaps(swapsPath);
+    QVERIFY(swaps.open(QIODevice::WriteOnly | QIODevice::Text));
+    swaps.write("Filename\tType\tSize\tUsed\tPriority\n");
+    swaps.write("/dev/zram0 partition 2097152 524288 100\n");
+    swaps.close();
+
+    const QString zramRoot = tempDir.filePath(QStringLiteral("block"));
+    QVERIFY(QDir().mkpath(zramRoot + QStringLiteral("/zram0")));
+    QFile diskSize(zramRoot + QStringLiteral("/zram0/disksize"));
+    QVERIFY(diskSize.open(QIODevice::WriteOnly | QIODevice::Text));
+    diskSize.write("2147483648\n");
+    diskSize.close();
+    QFile memoryStat(zramRoot + QStringLiteral("/zram0/mm_stat"));
+    QVERIFY(memoryStat.open(QIODevice::WriteOnly | QIODevice::Text));
+    memoryStat.write("1073741824 450000000 536870912 0 0 0 0 0 0\n");
+    memoryStat.close();
+
+    const QString zswapPath = tempDir.filePath(QStringLiteral("zswap-enabled"));
+    QFile zswap(zswapPath);
+    QVERIFY(zswap.open(QIODevice::WriteOnly | QIODevice::Text));
+    zswap.write("Y\n");
+    zswap.close();
+
+    qputenv("RO_CONTROL_SWAPS_PATH", swapsPath.toUtf8());
+    qputenv("RO_CONTROL_ZRAM_SYSFS_ROOT", zramRoot.toUtf8());
+    qputenv("RO_CONTROL_ZSWAP_ENABLED_PATH", zswapPath.toUtf8());
+
+    RamMonitor ram;
+    ram.stop();
+    ram.refresh();
+
+    QVERIFY(ram.zramAvailable());
+    QCOMPARE(ram.zramTotalMiB(), 2048);
+    QCOMPARE(ram.zramUsedMiB(), 512);
+    QCOMPARE(ram.zramCompressionRatio(), 2.0);
+    QVERIFY(ram.zswapEnabled());
+
+    qunsetenv("RO_CONTROL_SWAPS_PATH");
+    qunsetenv("RO_CONTROL_ZRAM_SYSFS_ROOT");
+    qunsetenv("RO_CONTROL_ZSWAP_ENABLED_PATH");
+  }
+
   void testGpuMultiDeviceAndProcesses() {
     GpuMonitor gpu;
     gpu.stop();

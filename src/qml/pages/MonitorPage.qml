@@ -223,8 +223,9 @@ Item {
                 // CPU Card
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Math.round(152 * page.uiScale)
-                    Layout.minimumHeight: Math.round(152 * page.uiScale)
+                    Layout.preferredHeight: page.ramMonitor && (page.ramMonitor.zramAvailable || page.ramMonitor.zswapEnabled)
+                                            ? Math.round(178 * page.uiScale) : Math.round(152 * page.uiScale)
+                    Layout.minimumHeight: Layout.preferredHeight
                     radius: 14
                     color: page.cardColor
                     border.width: 1
@@ -279,6 +280,71 @@ Item {
                                     font.weight: Font.Bold
                                 }
                             }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            visible: page.ramMonitor && (page.ramMonitor.zramAvailable || page.ramMonitor.zswapEnabled)
+                            spacing: Math.round(8 * page.uiScale)
+
+                            Rectangle {
+                                visible: page.ramMonitor && page.ramMonitor.zramAvailable
+                                implicitHeight: Math.round(24 * page.uiScale)
+                                implicitWidth: zramUsage.implicitWidth + Math.round(14 * page.uiScale)
+                                radius: 6
+                                color: page.darkMode ? "#272044" : "#FFF7ED"
+                                border.width: 1
+                                border.color: page.darkMode ? "#5B4A82" : "#FED7AA"
+
+                                Label {
+                                    id: zramUsage
+                                    anchors.centerIn: parent
+                                    text: qsTr("ZRAM: %1 / %2 MiB").arg(page.ramMonitor.zramUsedMiB).arg(page.ramMonitor.zramTotalMiB)
+                                    color: page.textColor
+                                    font.pixelSize: Math.round(10 * page.uiScale)
+                                    font.weight: Font.DemiBold
+                                }
+                            }
+
+                            Rectangle {
+                                visible: page.ramMonitor && page.ramMonitor.zramAvailable && page.ramMonitor.zramCompressionRatio > 0
+                                implicitHeight: Math.round(24 * page.uiScale)
+                                implicitWidth: zramRatio.implicitWidth + Math.round(14 * page.uiScale)
+                                radius: 6
+                                color: page.darkMode ? "#1E2548" : "#EFF6FF"
+                                border.width: 1
+                                border.color: page.darkMode ? "#4338CA" : "#BFDBFE"
+
+                                Label {
+                                    id: zramRatio
+                                    anchors.centerIn: parent
+                                    text: qsTr("Compression: %1×").arg(page.ramMonitor.zramCompressionRatio.toFixed(1))
+                                    color: page.accentColor
+                                    font.pixelSize: Math.round(10 * page.uiScale)
+                                    font.weight: Font.DemiBold
+                                }
+                            }
+
+                            Rectangle {
+                                visible: page.ramMonitor && page.ramMonitor.zswapEnabled
+                                implicitHeight: Math.round(24 * page.uiScale)
+                                implicitWidth: zswapStatus.implicitWidth + Math.round(14 * page.uiScale)
+                                radius: 6
+                                color: page.darkMode ? "#143828" : "#ECFDF5"
+                                border.width: 1
+                                border.color: page.darkMode ? "#166534" : "#A7F3D0"
+
+                                Label {
+                                    id: zswapStatus
+                                    anchors.centerIn: parent
+                                    text: qsTr("zswap enabled")
+                                    color: page.successColor
+                                    font.pixelSize: Math.round(10 * page.uiScale)
+                                    font.weight: Font.DemiBold
+                                }
+                            }
+
+                            Item { Layout.fillWidth: true }
                         }
 
                         TelemetrySparkline {

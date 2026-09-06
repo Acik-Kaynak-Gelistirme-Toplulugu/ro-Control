@@ -2412,6 +2412,21 @@ GPU değiştirmek için tıklayın (%2 mevcut)</translation>
         <translation>Sistem Profili:</translation>
     </message>
     <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="530"/>
+        <source>ZRAM: %1 / %2 MiB</source>
+        <translation>ZRAM: %1 / %2 MiB</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="551"/>
+        <source>Compression: %1×</source>
+        <translation>Sıkıştırma: %1×</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="572"/>
+        <source>zswap enabled</source>
+        <translation>zswap etkin</translation>
+    </message>
+    <message>
         <source>Refresh telemetry</source>
         <translation type="vanished">Telemetriyi yenile</translation>
     </message>

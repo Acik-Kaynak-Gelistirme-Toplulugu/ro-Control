@@ -2412,6 +2412,21 @@ Haga clic para cambiar de GPU (%2 disponible)</translation>
         <translation>Perfil del sistema:</translation>
     </message>
     <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="530"/>
+        <source>ZRAM: %1 / %2 MiB</source>
+        <translation>ZRAM: %1 / %2 MiB</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="551"/>
+        <source>Compression: %1×</source>
+        <translation>Compresión: %1×</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/pages/MonitorPage.qml" line="572"/>
+        <source>zswap enabled</source>
+        <translation>zswap activado</translation>
+    </message>
+    <message>
         <source>Refresh telemetry</source>
         <translation type="vanished">Actualizar telemetría</translation>
     </message>
