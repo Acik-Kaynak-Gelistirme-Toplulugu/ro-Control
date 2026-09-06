@@ -663,6 +663,26 @@ Item {
                             }
                         }
                     }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        visible: page.hasDetectedFans && page.orderedFans.length === 1
+                        implicitHeight: singleChannelInfo.implicitHeight + Math.round(20 * page.uiScale)
+                        radius: 8
+                        color: page.infoBg
+                        border.width: 1
+                        border.color: page.borderColor
+
+                        Label {
+                            id: singleChannelInfo
+                            anchors.fill: parent
+                            anchors.margins: Math.round(10 * page.uiScale)
+                            text: qsTr("Only one RPM channel is exposed by Linux. CPU and chassis fans will appear automatically when the motherboard firmware or kernel sensor driver publishes their RPM telemetry.")
+                            color: page.softTextColor
+                            wrapMode: Text.WordWrap
+                            font.pixelSize: Math.round(11 * page.uiScale)
+                        }
+                    }
                 }
             }
 
