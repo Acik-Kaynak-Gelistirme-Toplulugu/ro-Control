@@ -49,8 +49,8 @@ public:
   explicit NvidiaDetector(QObject *parent = nullptr);
 
   bool gpuFound() const { return m_info.found; }
-  QString gpuName() const { return m_info.name; }
-  QString displayAdapterName() const { return m_info.displayAdapterName; }
+  QString gpuName() const;
+  QString displayAdapterName() const;
   QString driverVersion() const { return m_info.driverVersion; }
   bool driverPackageInstalled() const { return m_info.driverPackageInstalled; }
   bool driverLoaded() const { return m_info.driverLoaded; }
@@ -77,6 +77,7 @@ public:
   static QString cleanGpuName(const QString &rawName,
                               const QString &vendor = QString());
   static QString detectGpuNameFromProc();
+  Q_INVOKABLE static QString localizeGpuName(const QString &rawName);
 
 signals:
   void infoChanged();

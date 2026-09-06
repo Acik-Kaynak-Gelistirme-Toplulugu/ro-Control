@@ -523,7 +523,9 @@ bool GpuMonitor::available() const { return m_available; }
 
 bool GpuMonitor::running() const { return m_timer.isActive(); }
 
-QString GpuMonitor::gpuName() const { return m_gpuName; }
+QString GpuMonitor::gpuName() const {
+  return NvidiaDetector::localizeGpuName(m_gpuName);
+}
 
 int GpuMonitor::temperatureC() const { return m_temperatureC; }
 

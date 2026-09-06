@@ -124,7 +124,9 @@ bool isIntegratedGpuDescription(const QString &vendor, const QString &model) {
   }
   return (normalizedVendor.contains(QStringLiteral("amd")) ||
           normalizedVendor.contains(QStringLiteral("ati"))) &&
-         normalizedModel.contains(QStringLiteral("radeon graphics"));
+         (normalizedModel.contains(QStringLiteral("radeon graphics")) ||
+          normalizedModel.contains(QStringLiteral("vega")) ||
+          normalizedModel.contains(QStringLiteral("integrated")));
 }
 
 QString normalizedGpuDisplayName(const QString &vendor, const QString &model) {
@@ -144,6 +146,64 @@ QString normalizedGpuDisplayName(const QString &vendor, const QString &model) {
 }
 
 } // namespace
+
+QString SystemInfoProvider::localizeGpuName(const QString &rawName) {
+  if (rawName.trimmed().isEmpty()) {
+    return {};
+  }
+  QString result = rawName.trimmed();
+
+  // Multi-word phrases first to prevent partial replacements
+  static const QRegularExpression reIntegratedGpuCtrl(
+      QStringLiteral("(?i)(Integrated Graphics Controller|Dahili Grafik "
+                     "Denetleyicisi|Integrierter "
+                     "Grafikcontroller|Controlador de gr[áa]ficos integrado)"));
+  result.replace(reIntegratedGpuCtrl,
+                 QCoreApplication::translate("GpuNames",
+                                             "Integrated Graphics Controller"));
+
+  static const QRegularExpression reIntegratedDispCtrl(QStringLiteral(
+      "(?i)(Integrated Display Controller|Dahili Ekran "
+      "Denetleyicisi|Integrierter Display-Controller|Controlador "
+      "de pantalla integrado)"));
+  result.replace(
+      reIntegratedDispCtrl,
+      QCoreApplication::translate("GpuNames", "Integrated Display Controller"));
+
+  static const QRegularExpression reIntegratedGpu(
+      QStringLiteral("(?i)(Integrated Graphics|Dahili Grafik|Integrierte "
+                     "Grafik|Gr[áa]ficos integrados)"));
+  result.replace(reIntegratedGpu, QCoreApplication::translate(
+                                      "GpuNames", "Integrated Graphics"));
+
+  static const QRegularExpression reGpuCtrl(
+      QStringLiteral("(?i)(Graphics Controller|Grafik "
+                     "Denetleyicisi|Grafikcontroller|Controlador de "
+                     "gr[áa]ficos)"));
+  result.replace(reGpuCtrl, QCoreApplication::translate("GpuNames",
+                                                        "Graphics Controller"));
+
+  static const QRegularExpression reDispCtrl(
+      QStringLiteral("(?i)(Display Controller|Ekran "
+                     "Denetleyicisi|Display-Controller|Controlador de "
+                     "pantalla)"));
+  result.replace(reDispCtrl,
+                 QCoreApplication::translate("GpuNames", "Display Controller"));
+
+  static const QRegularExpression reCoreProc(
+      QStringLiteral("(?i)(Core Processor|Çekirdek "
+                     "İşlemci|Core-Prozessor|Procesador Core)"));
+  result.replace(reCoreProc,
+                 QCoreApplication::translate("GpuNames", "Core Processor"));
+
+  static const QRegularExpression reIntegrated(
+      QStringLiteral("(?i)\\b(Integrated|Dahili|Integriert|Integrado)\\b"));
+  result.replace(reIntegrated,
+                 QCoreApplication::translate("GpuNames", "Integrated"));
+
+  static const QRegularExpression spacesRegex(QStringLiteral("\\s+"));
+  return result.replace(spacesRegex, QStringLiteral(" ")).trimmed();
+}
 
 SystemInfoProvider::SystemInfoProvider(QObject *parent) : QObject(parent) {
   loadDiagnosticReportPreferences();

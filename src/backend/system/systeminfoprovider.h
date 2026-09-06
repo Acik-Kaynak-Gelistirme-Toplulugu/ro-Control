@@ -50,12 +50,16 @@ public:
   QString virtualizationType() const { return m_virtualizationType; }
   bool onBattery() const { return m_onBattery; }
   QString powerSource() const { return m_powerSource; }
-  QString integratedGpuName() const { return m_integratedGpuName; }
+  QString integratedGpuName() const {
+    return localizeGpuName(m_integratedGpuName);
+  }
   QString integratedGpuMemory() const { return m_integratedGpuMemory; }
   QString diagnosticReportFormat() const { return m_diagnosticReportFormat; }
   QString diagnosticReportDestination() const {
     return m_diagnosticReportDestination;
   }
+
+  Q_INVOKABLE static QString localizeGpuName(const QString &rawName);
 
   Q_INVOKABLE void refresh();
   Q_INVOKABLE void rescanHardware();

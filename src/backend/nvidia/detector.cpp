@@ -3,6 +3,7 @@
 #include "system/capabilityprobe.h"
 #include "system/commandrunner.h"
 #include "system/sessionutil.h"
+#include "system/systeminfoprovider.h"
 
 #include <QDir>
 #include <QFile>
@@ -54,6 +55,18 @@ NvidiaDetector::GpuInfo NvidiaDetector::detect() const {
 }
 
 bool NvidiaDetector::hasNvidiaGpu() const { return !detectGpuName().isEmpty(); }
+
+QString NvidiaDetector::gpuName() const {
+  return SystemInfoProvider::localizeGpuName(m_info.name);
+}
+
+QString NvidiaDetector::displayAdapterName() const {
+  return SystemInfoProvider::localizeGpuName(m_info.displayAdapterName);
+}
+
+QString NvidiaDetector::localizeGpuName(const QString &rawName) {
+  return SystemInfoProvider::localizeGpuName(rawName);
+}
 
 bool NvidiaDetector::isDriverInstalled() const {
   return !installedDriverVersion().isEmpty() || detectDriverPackageInstalled();
