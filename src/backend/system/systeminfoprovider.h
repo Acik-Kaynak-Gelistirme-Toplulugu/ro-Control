@@ -58,6 +58,7 @@ public:
   }
 
   Q_INVOKABLE void refresh();
+  Q_INVOKABLE void rescanHardware();
   Q_INVOKABLE bool requestRestart();
   Q_INVOKABLE bool requestRebootToFirmware();
   Q_INVOKABLE bool copyToClipboard(const QString &text);

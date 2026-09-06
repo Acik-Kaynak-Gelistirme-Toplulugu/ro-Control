@@ -188,6 +188,15 @@ void SystemInfoProvider::refresh() {
   emit infoChanged();
 }
 
+void SystemInfoProvider::rescanHardware() {
+  m_staticHardwareLoaded = false;
+  initializeStaticInfo();
+  QString nextPowerSource;
+  m_onBattery = detectOnBattery(&nextPowerSource);
+  m_powerSource = nextPowerSource;
+  emit infoChanged();
+}
+
 bool SystemInfoProvider::requestRestart() {
 #if defined(Q_OS_LINUX)
   CommandRunner runner;
