@@ -10,6 +10,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <QSet>
 #include <QStandardPaths>
 #include <algorithm>
 #include <cmath>
@@ -1227,6 +1228,82 @@ void FanController::updateSystemFansTelemetry() {
   chassisFan.insert(QStringLiteral("mode"), modeToString(m_sysProfile.mode));
   if (sysTelemetryAvailable) {
     fanList.append(chassisFan);
+  }
+
+  // Retain every live RPM channel. Motherboard firmware frequently uses labels
+  // such as AUXFAN or omits labels entirely, so filtering only CPU/SYS names
+  // would hide real cooling hardware.
+  QSet<QString> representedInputs;
+  if (cpuTelemetryAvailable)
+    representedInputs.insert(s_cachedCpuFanRpmInput);
+  if (sysTelemetryAvailable)
+    representedInputs.insert(s_cachedSysFanRpmInput);
+
+  const QFileInfoList hwmonEntries =
+      QDir(fanSysfsRoot())
+          .entryInfoList({QStringLiteral("hwmon*")},
+                         QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+  for (const QFileInfo &entry : hwmonEntries) {
+    const QString basePath = entry.absoluteFilePath();
+    const QString chipName = readTextFile(basePath + QStringLiteral("/name"));
+    const bool gpuHwmon = isGpuHwmon(chipName);
+    if (gpuHwmon && m_supported) {
+      continue; // The NVIDIA controller card already represents this device.
+    }
+    const QFileInfoList fanInputs = QDir(basePath).entryInfoList(
+        {QStringLiteral("fan*_input")}, QDir::Files, QDir::Name);
+    for (const QFileInfo &fFile : fanInputs) {
+      if (representedInputs.contains(fFile.absoluteFilePath())) {
+        continue;
+      }
+      bool ok = false;
+      const int rpm = readTextFile(fFile.absoluteFilePath()).toInt(&ok);
+      if (!ok || rpm <= 0) {
+        continue;
+      }
+
+      const QString inputName = fFile.completeBaseName();
+      const QString label =
+          readTextFile(basePath + QStringLiteral("/%1_label").arg(inputName));
+      const QString normalizedLabel = label.toLower();
+      const QString type = gpuHwmon ? QStringLiteral("GPU")
+                           : normalizedLabel.contains(QStringLiteral("cpu"))
+                               ? QStringLiteral("CPU")
+                               : QStringLiteral("SYS");
+      const QString fallbackName =
+          type == QStringLiteral("CPU")   ? QStringLiteral("CPU Fan")
+          : type == QStringLiteral("GPU") ? QStringLiteral("GPU Fan")
+                                          : QStringLiteral("System Fan");
+      QVariantMap detectedFan;
+      detectedFan.insert(
+          QStringLiteral("id"),
+          QStringLiteral("%1_%2").arg(entry.fileName(), inputName));
+      detectedFan.insert(QStringLiteral("name"),
+                         label.isEmpty() ? fallbackName : label);
+      detectedFan.insert(QStringLiteral("type"), type);
+      detectedFan.insert(QStringLiteral("speedPercent"), 0);
+      detectedFan.insert(QStringLiteral("rpm"), rpm);
+      detectedFan.insert(QStringLiteral("isZeroRpm"), false);
+      detectedFan.insert(QStringLiteral("temperatureC"),
+                         type == QStringLiteral("CPU")   ? cpuTemp
+                         : type == QStringLiteral("GPU") ? m_gpuTemperatureC
+                                                         : ambientTemp);
+      detectedFan.insert(QStringLiteral("targetSpeedPercent"), 0);
+      detectedFan.insert(QStringLiteral("manualSpeedPercent"), 0);
+      detectedFan.insert(QStringLiteral("thermalThresholdC"), 0);
+      detectedFan.insert(QStringLiteral("controllable"), false);
+      detectedFan.insert(QStringLiteral("telemetryAvailable"), true);
+      detectedFan.insert(QStringLiteral("speedAvailable"), false);
+      detectedFan.insert(QStringLiteral("customCurvePoints"), QVariantList{});
+      detectedFan.insert(QStringLiteral("statusLabel"), tr("Hardware-managed"));
+      detectedFan.insert(QStringLiteral("capability"),
+                         QStringLiteral("telemetry_only"));
+      detectedFan.insert(QStringLiteral("capabilityReason"),
+                         tr("Live RPM telemetry is available; this channel is "
+                            "managed by system firmware."));
+      detectedFan.insert(QStringLiteral("mode"), QStringLiteral("auto"));
+      fanList.append(detectedFan);
+    }
   }
 
   std::stable_sort(

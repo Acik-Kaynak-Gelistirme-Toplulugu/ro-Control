@@ -437,7 +437,7 @@ Item {
                                     spacing: 4
                                     Label {
                                         text: page.gpuTelemetryAvailable ? page.formatTemp(page.gpuMonitor.temperatureC) : qsTr("Unavailable")
-                                        color: (page.gpuTelemetryAvailable && page.gpuMonitor.temperatureC > 80) ? (page.theme && page.theme.warning ? page.theme.warning : "#EF4444") : page.softTextColor
+                                        color: (page.gpuTelemetryAvailable && page.gpuMonitor.temperatureC > 80) ? (page.theme && page.theme.warning ? page.theme.warning : "#EF4444") : (page.gpuTelemetryAvailable ? page.textColor : page.softTextColor)
                                         font.pixelSize: Math.round(22 * page.uiScale)
                                         font.weight: Font.Bold
                                     }
