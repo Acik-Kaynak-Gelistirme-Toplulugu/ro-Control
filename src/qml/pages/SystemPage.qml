@@ -18,6 +18,16 @@ Item {
     property real uiScale: 1.0
     property bool reportCopied: false
     property string generatedReport: ""
+    property int reportViewMode: 0
+    property string reportFilterText: ""
+    property string lastCopiedKey: ""
+
+    Timer {
+        id: itemCopiedTimer
+        interval: 1500
+        repeat: false
+        onTriggered: page.lastCopiedKey = ""
+    }
 
     readonly property color bgColor: theme && theme.card ? theme.card : (page.darkMode ? "#29233B" : "#FFFFFF")
     readonly property color cardColor: theme && theme.cardStrong ? theme.cardStrong : (page.darkMode ? "#342D4A" : "#F1F5F9")
@@ -105,6 +115,67 @@ Item {
         add(qsTr("Graphics & Compute APIs"), page.systemInfo ? page.systemInfo.graphicsApiSummary : "");
         add(qsTr("Platform & Security"), page.platformSecuritySummary());
         return cards;
+    }
+
+    function diagnosticReportSections() {
+        const query = page.reportFilterText.trim().toLowerCase();
+        const rawSections = [
+            {
+                title: qsTr("Operating System & Platform"),
+                icon: "💻",
+                items: [
+                    { label: qsTr("Operating System"), value: page.systemInfo ? page.systemInfo.osName : "", icon: "🐧" },
+                    { label: qsTr("Linux Kernel"), value: page.systemInfo ? page.systemInfo.kernelVersion : "", icon: "⚙️" },
+                    { label: qsTr("Desktop Environment"), value: page.systemInfo ? page.systemInfo.desktopEnvironment : "", icon: "🖥️" },
+                    { label: qsTr("Display Server / Session"), value: (page.nvidiaDetector && page.nvidiaDetector.sessionType) ? page.nvidiaDetector.sessionType.toUpperCase() : "", icon: "🪟" },
+                    { label: qsTr("Platform Security"), value: page.platformSecuritySummary(), icon: "🛡️" }
+                ]
+            },
+            {
+                title: qsTr("Processor & Hardware"),
+                icon: "⚡",
+                items: [
+                    { label: qsTr("Processor (CPU)"), value: page.systemInfo ? page.systemInfo.cpuModel : "", icon: "⚡" },
+                    { label: qsTr("Motherboard"), value: page.systemInfo ? page.systemInfo.motherboardModel : "", icon: "🔌" },
+                    { label: qsTr("UEFI / BIOS"), value: page.systemInfo ? page.systemInfo.biosVersion : "", icon: "💾" },
+                    { label: qsTr("System Memory (RAM)"), value: (page.ramMonitor && page.ramMonitor.totalMiB > 0) ? ((page.ramMonitor.totalMiB / 1024.0).toFixed(1) + " GB (" + page.ramMonitor.totalMiB + " MiB)") : "", icon: "🧠" },
+                    { label: qsTr("Device & Power"), value: page.deviceAndPowerSummary(), icon: "🔋" }
+                ]
+            },
+            {
+                title: qsTr("Graphics & Accelerators"),
+                icon: "🎮",
+                items: [
+                    { label: qsTr("Dedicated GPU"), value: page.diagnosticGpuName(), icon: "🎮" },
+                    { label: qsTr("NVIDIA Driver"), value: page.nvidiaDriverSummary(), icon: "⚙️" },
+                    { label: qsTr("Video Memory (VRAM)"), value: (page.gpuMonitor && page.gpuMonitor.memoryTotalMiB > 0) ? ((page.gpuMonitor.memoryTotalMiB / 1024.0).toFixed(1) + " GB (" + page.gpuMonitor.memoryTotalMiB + " MiB)") : "", icon: "📼" },
+                    { label: qsTr("PCIe Link Interface"), value: page.gpuMonitor ? page.gpuMonitor.pcieLinkStatus : "", icon: "🔗" },
+                    { label: qsTr("Integrated GPU"), value: (page.systemInfo && page.systemInfo.integratedGpuName && page.systemInfo.integratedGpuMemory) ? (page.systemInfo.integratedGpuName + " • " + page.systemInfo.integratedGpuMemory) : "", icon: "🎨" },
+                    { label: qsTr("Graphics & Compute APIs"), value: page.systemInfo ? page.systemInfo.graphicsApiSummary : "", icon: "🚀" }
+                ]
+            }
+        ];
+
+        const filteredSections = [];
+        for (let s = 0; s < rawSections.length; s++) {
+            const sec = rawSections[s];
+            const validItems = [];
+            for (let i = 0; i < sec.items.length; i++) {
+                const itm = sec.items[i];
+                if (!itm.value || itm.value.toString().trim().length === 0)
+                    continue;
+                if (query.length === 0 ||
+                    itm.label.toLowerCase().indexOf(query) !== -1 ||
+                    itm.value.toString().toLowerCase().indexOf(query) !== -1 ||
+                    sec.title.toLowerCase().indexOf(query) !== -1) {
+                    validItems.push(itm);
+                }
+            }
+            if (validItems.length > 0) {
+                filteredSections.push({ title: sec.title, icon: sec.icon, items: validItems });
+            }
+        }
+        return filteredSections;
     }
 
     function openDiagnosticReport() {
@@ -458,94 +529,845 @@ Item {
 
     Dialog {
         id: diagnosticReportDialog
-        title: qsTr("Diagnostic Report")
         modal: true
         anchors.centerIn: parent
-        width: Math.min(page.width * 0.9, Math.round(760 * page.uiScale))
-        height: Math.min(page.height * 0.85, Math.round(620 * page.uiScale))
-        standardButtons: Dialog.Close
+        width: Math.min(page.width * 0.94, Math.round(880 * page.uiScale))
+        height: Math.min(page.height * 0.90, Math.round(700 * page.uiScale))
+        padding: 0
+        header: null
+        footer: null
+
+        enter: Transition {
+            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 180; easing.type: Easing.OutQuad }
+            NumberAnimation { property: "scale"; from: 0.96; to: 1.0; duration: 180; easing.type: Easing.OutQuad }
+        }
+        exit: Transition {
+            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: 140; easing.type: Easing.InQuad }
+            NumberAnimation { property: "scale"; from: 1.0; to: 0.96; duration: 140; easing.type: Easing.InQuad }
+        }
 
         background: Rectangle {
-            radius: 12
+            radius: 16
             color: page.cardColor
             border.width: 1
             border.color: page.borderColor
         }
 
         contentItem: ColumnLayout {
-            spacing: 10
+            spacing: 0
 
-            Label {
+            // Header Bar
+            Rectangle {
                 Layout.fillWidth: true
-                text: qsTr("Choose how the report is generated. These preferences are saved for future reports.")
-                color: page.softTextColor
-                wrapMode: Text.WordWrap
+                implicitHeight: Math.round(64 * page.uiScale)
+                color: page.darkMode ? "#2E2640" : "#F8FAFC"
+                radius: 16
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 16
+                    color: parent.color
+                }
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: page.borderColor
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Math.round(20 * page.uiScale)
+                    anchors.rightMargin: Math.round(16 * page.uiScale)
+                    spacing: Math.round(12 * page.uiScale)
+
+                    Rectangle {
+                        implicitWidth: Math.round(36 * page.uiScale)
+                        implicitHeight: Math.round(36 * page.uiScale)
+                        radius: 8
+                        color: page.darkMode ? "#312E81" : "#E0E7FF"
+                        Label {
+                            anchors.centerIn: parent
+                            text: "▤"
+                            color: page.accentColor
+                            font.pixelSize: Math.round(18 * page.uiScale)
+                            font.weight: Font.Bold
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Label {
+                            text: qsTr("System Diagnostic Report")
+                            color: page.textColor
+                            font.pixelSize: Math.round(16 * page.uiScale)
+                            font.weight: Font.DemiBold
+                        }
+                        Label {
+                            text: qsTr("System hardware, kernel, driver and security telemetry snapshot")
+                            color: page.softTextColor
+                            font.pixelSize: Math.round(11 * page.uiScale)
+                        }
+                    }
+
+                    ToolButton {
+                        text: "✕"
+                        implicitWidth: Math.round(32 * page.uiScale)
+                        implicitHeight: Math.round(32 * page.uiScale)
+                        hoverEnabled: true
+                        background: Rectangle {
+                            radius: 8
+                            color: parent.hovered ? (page.darkMode ? "#43385E" : "#E2E8F0") : "transparent"
+                        }
+                        contentItem: Text {
+                            text: "✕"
+                            color: parent.hovered ? page.textColor : page.softTextColor
+                            font.pixelSize: Math.round(14 * page.uiScale)
+                            font.weight: Font.Bold
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        onClicked: diagnosticReportDialog.close()
+                    }
+                }
             }
 
-            RowLayout {
+            // Controls Toolbar (Segmented View Switcher & Context Controls)
+            Rectangle {
                 Layout.fillWidth: true
-                spacing: 10
+                implicitHeight: controlsRow.implicitHeight + Math.round(20 * page.uiScale)
+                color: "transparent"
 
-                Label { text: qsTr("Format"); color: page.textColor; font.weight: Font.DemiBold }
-                ComboBox {
-                    id: reportFormatCombo
-                    model: ["markdown", "plain", "json"]
-                    currentIndex: Math.max(0, model.indexOf(page.systemInfo ? page.systemInfo.diagnosticReportFormat : "markdown"))
-                    textRole: ""
-                    onActivated: function(index) {
-                        if (page.systemInfo) {
-                            page.systemInfo.setDiagnosticReportFormat(model[index]);
-                            page.openDiagnosticReport();
+                RowLayout {
+                    id: controlsRow
+                    anchors.fill: parent
+                    anchors.margins: Math.round(16 * page.uiScale)
+                    spacing: Math.round(14 * page.uiScale)
+
+                    // View Mode Segmented Switcher
+                    Rectangle {
+                        implicitHeight: Math.round(34 * page.uiScale)
+                        implicitWidth: Math.round(260 * page.uiScale)
+                        radius: 8
+                        color: page.darkMode ? "#241E34" : "#E2E8F0"
+                        border.width: 1
+                        border.color: page.borderColor
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 2
+                            spacing: 2
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                radius: 6
+                                color: page.reportViewMode === 0 ? (page.darkMode ? "#3E355B" : "#FFFFFF") : "transparent"
+                                border.width: page.reportViewMode === 0 ? 1 : 0
+                                border.color: page.reportViewMode === 0 ? (page.darkMode ? "#5B4E85" : "#CBD5E1") : "transparent"
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: page.reportViewMode = 0
+                                }
+                                Label {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Overview Cards")
+                                    color: page.reportViewMode === 0 ? page.textColor : page.softTextColor
+                                    font.pixelSize: Math.round(12 * page.uiScale)
+                                    font.weight: page.reportViewMode === 0 ? Font.DemiBold : Font.Normal
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                radius: 6
+                                color: page.reportViewMode === 1 ? (page.darkMode ? "#3E355B" : "#FFFFFF") : "transparent"
+                                border.width: page.reportViewMode === 1 ? 1 : 0
+                                border.color: page.reportViewMode === 1 ? (page.darkMode ? "#5B4E85" : "#CBD5E1") : "transparent"
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: page.reportViewMode = 1
+                                }
+                                Label {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Code / Export")
+                                    color: page.reportViewMode === 1 ? page.textColor : page.softTextColor
+                                    font.pixelSize: Math.round(12 * page.uiScale)
+                                    font.weight: page.reportViewMode === 1 ? Font.DemiBold : Font.Normal
+                                }
+                            }
+                        }
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    // Overview Cards View Toolbar: Live Search Filter
+                    Rectangle {
+                        visible: page.reportViewMode === 0
+                        implicitHeight: Math.round(34 * page.uiScale)
+                        implicitWidth: Math.min(controlsRow.width * 0.45, Math.round(240 * page.uiScale))
+                        radius: 8
+                        color: page.bgColor
+                        border.width: 1
+                        border.color: filterInput.activeFocus ? page.accentColor : page.borderColor
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: Math.round(10 * page.uiScale)
+                            anchors.rightMargin: Math.round(8 * page.uiScale)
+                            spacing: 6
+
+                            Label {
+                                text: "🔍"
+                                font.pixelSize: Math.round(12 * page.uiScale)
+                                color: page.softTextColor
+                            }
+
+                            TextInput {
+                                id: filterInput
+                                Layout.fillWidth: true
+                                text: page.reportFilterText
+                                color: page.textColor
+                                font.pixelSize: Math.round(12 * page.uiScale)
+                                clip: true
+                                verticalAlignment: TextInput.AlignVCenter
+                                onTextChanged: page.reportFilterText = text
+
+                                Text {
+                                    text: qsTr("Filter properties...")
+                                    color: page.softTextColor
+                                    font.pixelSize: Math.round(12 * page.uiScale)
+                                    visible: !filterInput.text && !filterInput.activeFocus
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                            }
+
+                            ToolButton {
+                                visible: page.reportFilterText.length > 0
+                                text: "✕"
+                                implicitWidth: Math.round(20 * page.uiScale)
+                                implicitHeight: Math.round(20 * page.uiScale)
+                                background: null
+                                contentItem: Text {
+                                    text: "✕"
+                                    color: page.softTextColor
+                                    font.pixelSize: Math.round(11 * page.uiScale)
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                onClicked: {
+                                    page.reportFilterText = "";
+                                    filterInput.text = "";
+                                }
+                            }
+                        }
+                    }
+
+                    // Code / Export View Toolbar: Format & Action Dropdowns
+                    RowLayout {
+                        visible: page.reportViewMode === 1
+                        spacing: Math.round(14 * page.uiScale)
+
+                        // Format Dropdown Selector
+                        RowLayout {
+                            spacing: Math.round(8 * page.uiScale)
+                            Label {
+                                text: qsTr("Format:")
+                                color: page.softTextColor
+                                font.pixelSize: Math.round(12 * page.uiScale)
+                                font.weight: Font.DemiBold
+                            }
+
+                            Rectangle {
+                                id: formatSelectorButton
+                                implicitHeight: Math.round(32 * page.uiScale)
+                                implicitWidth: formatBtnRow.implicitWidth + Math.round(20 * page.uiScale)
+                                radius: 8
+                                color: formatMouse.hovered ? (page.darkMode ? "#342D4A" : "#E2E8F0") : page.bgColor
+                                border.width: 1
+                                border.color: (formatMouse.hovered || formatPopup.visible) ? page.accentColor : page.borderColor
+
+                                MouseArea {
+                                    id: formatMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: formatPopup.open()
+                                }
+
+                                RowLayout {
+                                    id: formatBtnRow
+                                    anchors.centerIn: parent
+                                    spacing: 6
+
+                                    Label {
+                                        text: {
+                                            const fmt = page.systemInfo ? page.systemInfo.diagnosticReportFormat : "markdown";
+                                            if (fmt === "json") return "JSON";
+                                            if (fmt === "plain") return qsTr("Plain Text");
+                                            return "Markdown";
+                                        }
+                                        color: page.textColor
+                                        font.pixelSize: Math.round(12 * page.uiScale)
+                                        font.weight: Font.DemiBold
+                                    }
+
+                                    Label {
+                                        text: "▾"
+                                        color: page.accentColor
+                                        font.pixelSize: Math.round(11 * page.uiScale)
+                                        font.weight: Font.Bold
+                                    }
+                                }
+
+                                Popup {
+                                    id: formatPopup
+                                    y: formatSelectorButton.height + 4
+                                    width: Math.round(150 * page.uiScale)
+                                    padding: 4
+                                    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+                                    background: Rectangle {
+                                        radius: 10
+                                        color: page.bgColor
+                                        border.width: 1
+                                        border.color: page.borderColor
+                                    }
+
+                                    contentItem: ColumnLayout {
+                                        spacing: 2
+                                        Repeater {
+                                            model: [
+                                                { id: "markdown", label: "Markdown" },
+                                                { id: "plain", label: qsTr("Plain Text") },
+                                                { id: "json", label: "JSON" }
+                                            ]
+
+                                            delegate: AbstractButton {
+                                                id: fmtItemBtn
+                                                required property var modelData
+                                                Layout.fillWidth: true
+                                                implicitHeight: Math.round(32 * page.uiScale)
+                                                hoverEnabled: true
+                                                readonly property bool isSelected: page.systemInfo && page.systemInfo.diagnosticReportFormat === fmtItemBtn.modelData.id
+
+                                                background: Rectangle {
+                                                    radius: 6
+                                                    color: fmtItemBtn.hovered
+                                                           ? (page.darkMode ? "#43385E" : "#E2E8F0")
+                                                           : (fmtItemBtn.isSelected ? (page.darkMode ? "#342D4A" : "#F1F5F9") : "transparent")
+                                                    Behavior on color { ColorAnimation { duration: 100 } }
+                                                }
+
+                                                contentItem: RowLayout {
+                                                    anchors.fill: parent
+                                                    anchors.leftMargin: Math.round(10 * page.uiScale)
+                                                    anchors.rightMargin: Math.round(10 * page.uiScale)
+                                                    spacing: 6
+
+                                                    Label {
+                                                        Layout.fillWidth: true
+                                                        text: fmtItemBtn.modelData.label
+                                                        color: fmtItemBtn.isSelected ? page.accentColor : (fmtItemBtn.hovered ? page.textColor : page.softTextColor)
+                                                        font.pixelSize: Math.round(12 * page.uiScale)
+                                                        font.weight: fmtItemBtn.isSelected ? Font.Bold : Font.Normal
+                                                    }
+
+                                                    Label {
+                                                        visible: fmtItemBtn.isSelected
+                                                        text: "✓"
+                                                        color: page.accentColor
+                                                        font.pixelSize: Math.round(12 * page.uiScale)
+                                                        font.weight: Font.Bold
+                                                    }
+                                                }
+
+                                                onClicked: {
+                                                    if (page.systemInfo) {
+                                                        page.systemInfo.setDiagnosticReportFormat(fmtItemBtn.modelData.id);
+                                                        page.openDiagnosticReport();
+                                                    }
+                                                    formatPopup.close();
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Destination / Auto-Action Dropdown Selector
+                        RowLayout {
+                            spacing: Math.round(8 * page.uiScale)
+                            Label {
+                                text: qsTr("Action:")
+                                color: page.softTextColor
+                                font.pixelSize: Math.round(12 * page.uiScale)
+                                font.weight: Font.DemiBold
+                            }
+
+                            Rectangle {
+                                id: actionSelectorButton
+                                implicitHeight: Math.round(32 * page.uiScale)
+                                implicitWidth: actionBtnRow.implicitWidth + Math.round(20 * page.uiScale)
+                                radius: 8
+                                color: actionMouse.hovered ? (page.darkMode ? "#342D4A" : "#E2E8F0") : page.bgColor
+                                border.width: 1
+                                border.color: (actionMouse.hovered || actionPopup.visible) ? page.accentColor : page.borderColor
+
+                                MouseArea {
+                                    id: actionMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: actionPopup.open()
+                                }
+
+                                RowLayout {
+                                    id: actionBtnRow
+                                    anchors.centerIn: parent
+                                    spacing: 6
+
+                                    Label {
+                                        text: {
+                                            const dest = page.systemInfo ? page.systemInfo.diagnosticReportDestination : "preview";
+                                            if (dest === "clipboard") return qsTr("Copy on Open");
+                                            return qsTr("Preview");
+                                        }
+                                        color: page.textColor
+                                        font.pixelSize: Math.round(12 * page.uiScale)
+                                        font.weight: Font.DemiBold
+                                    }
+
+                                    Label {
+                                        text: "▾"
+                                        color: page.accentColor
+                                        font.pixelSize: Math.round(11 * page.uiScale)
+                                        font.weight: Font.Bold
+                                    }
+                                }
+
+                                Popup {
+                                    id: actionPopup
+                                    y: actionSelectorButton.height + 4
+                                    width: Math.round(160 * page.uiScale)
+                                    padding: 4
+                                    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+                                    background: Rectangle {
+                                        radius: 10
+                                        color: page.bgColor
+                                        border.width: 1
+                                        border.color: page.borderColor
+                                    }
+
+                                    contentItem: ColumnLayout {
+                                        spacing: 2
+                                        Repeater {
+                                            model: [
+                                                { id: "preview", label: qsTr("Preview") },
+                                                { id: "clipboard", label: qsTr("Copy on Open") }
+                                            ]
+
+                                            delegate: AbstractButton {
+                                                id: actItemBtn
+                                                required property var modelData
+                                                Layout.fillWidth: true
+                                                implicitHeight: Math.round(32 * page.uiScale)
+                                                hoverEnabled: true
+                                                readonly property bool isSelected: page.systemInfo && page.systemInfo.diagnosticReportDestination === actItemBtn.modelData.id
+
+                                                background: Rectangle {
+                                                    radius: 6
+                                                    color: actItemBtn.hovered
+                                                           ? (page.darkMode ? "#43385E" : "#E2E8F0")
+                                                           : (actItemBtn.isSelected ? (page.darkMode ? "#342D4A" : "#F1F5F9") : "transparent")
+                                                    Behavior on color { ColorAnimation { duration: 100 } }
+                                                }
+
+                                                contentItem: RowLayout {
+                                                    anchors.fill: parent
+                                                    anchors.leftMargin: Math.round(10 * page.uiScale)
+                                                    anchors.rightMargin: Math.round(10 * page.uiScale)
+                                                    spacing: 6
+
+                                                    Label {
+                                                        Layout.fillWidth: true
+                                                        text: actItemBtn.modelData.label
+                                                        color: actItemBtn.isSelected ? page.accentColor : (actItemBtn.hovered ? page.textColor : page.softTextColor)
+                                                        font.pixelSize: Math.round(12 * page.uiScale)
+                                                        font.weight: actItemBtn.isSelected ? Font.Bold : Font.Normal
+                                                    }
+
+                                                    Label {
+                                                        visible: actItemBtn.isSelected
+                                                        text: "✓"
+                                                        color: page.accentColor
+                                                        font.pixelSize: Math.round(12 * page.uiScale)
+                                                        font.weight: Font.Bold
+                                                    }
+                                                }
+
+                                                onClicked: {
+                                                    if (page.systemInfo)
+                                                        page.systemInfo.setDiagnosticReportDestination(actItemBtn.modelData.id);
+                                                    actionPopup.close();
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Main Content Area
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.leftMargin: Math.round(16 * page.uiScale)
+                Layout.rightMargin: Math.round(16 * page.uiScale)
+
+                // View 0: Interactive System Snapshot Cards
+                ScrollView {
+                    id: cardsScrollView
+                    visible: page.reportViewMode === 0
+                    anchors.fill: parent
+                    clip: true
+
+                    ColumnLayout {
+                        width: cardsScrollView.availableWidth
+                        spacing: Math.round(16 * page.uiScale)
+
+                        Repeater {
+                            model: page.diagnosticReportSections()
+
+                            delegate: Rectangle {
+                                id: sectionCard
+                                required property var modelData
+                                Layout.fillWidth: true
+                                radius: 12
+                                color: page.bgColor
+                                border.width: 1
+                                border.color: page.borderColor
+                                implicitHeight: secColumn.implicitHeight + Math.round(24 * page.uiScale)
+
+                                ColumnLayout {
+                                    id: secColumn
+                                    anchors.fill: parent
+                                    anchors.margins: Math.round(12 * page.uiScale)
+                                    spacing: Math.round(10 * page.uiScale)
+
+                                    // Section Header with Category Badge
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: Math.round(8 * page.uiScale)
+
+                                        Label {
+                                            text: sectionCard.modelData.icon
+                                            font.pixelSize: Math.round(15 * page.uiScale)
+                                        }
+
+                                        Label {
+                                            text: sectionCard.modelData.title
+                                            color: page.textColor
+                                            font.pixelSize: Math.round(14 * page.uiScale)
+                                            font.weight: Font.DemiBold
+                                            Layout.fillWidth: true
+                                        }
+
+                                        Rectangle {
+                                            implicitHeight: Math.round(20 * page.uiScale)
+                                            implicitWidth: secCountLabel.implicitWidth + Math.round(12 * page.uiScale)
+                                            radius: 10
+                                            color: page.darkMode ? "#342D4A" : "#E2E8F0"
+                                            Label {
+                                                id: secCountLabel
+                                                anchors.centerIn: parent
+                                                text: sectionCard.modelData.items.length + " " + qsTr("items")
+                                                color: page.softTextColor
+                                                font.pixelSize: Math.round(10 * page.uiScale)
+                                                font.weight: Font.DemiBold
+                                            }
+                                        }
+                                    }
+
+                                    // Grid of Parameter Cards
+                                    GridLayout {
+                                        Layout.fillWidth: true
+                                        columns: width > 520 ? 2 : 1
+                                        columnSpacing: Math.round(8 * page.uiScale)
+                                        rowSpacing: Math.round(8 * page.uiScale)
+
+                                        Repeater {
+                                            model: sectionCard.modelData.items
+
+                                            delegate: Rectangle {
+                                                id: itemTile
+                                                required property var modelData
+                                                Layout.fillWidth: true
+                                                implicitHeight: Math.round(62 * page.uiScale)
+                                                radius: 8
+                                                color: tileMouse.hovered
+                                                       ? (page.darkMode ? "#383050" : "#F8FAFC")
+                                                       : (page.darkMode ? "#2E2742" : "#F1F5F9")
+                                                border.width: 1
+                                                border.color: tileMouse.hovered ? page.accentColor : page.borderColor
+
+                                                Behavior on color { ColorAnimation { duration: 100 } }
+                                                Behavior on border.color { ColorAnimation { duration: 100 } }
+
+                                                MouseArea {
+                                                    id: tileMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                }
+
+                                                RowLayout {
+                                                    anchors.fill: parent
+                                                    anchors.leftMargin: Math.round(12 * page.uiScale)
+                                                    anchors.rightMargin: Math.round(12 * page.uiScale)
+                                                    spacing: Math.round(10 * page.uiScale)
+
+                                                    Label {
+                                                        text: itemTile.modelData.icon || "•"
+                                                        font.pixelSize: Math.round(16 * page.uiScale)
+                                                    }
+
+                                                    ColumnLayout {
+                                                        Layout.fillWidth: true
+                                                        spacing: 2
+
+                                                        Label {
+                                                            Layout.fillWidth: true
+                                                            text: itemTile.modelData.label
+                                                            color: page.softTextColor
+                                                            font.pixelSize: Math.round(11 * page.uiScale)
+                                                            font.weight: Font.DemiBold
+                                                            elide: Text.ElideRight
+                                                        }
+
+                                                        Label {
+                                                            Layout.fillWidth: true
+                                                            text: itemTile.modelData.value
+                                                            color: page.textColor
+                                                            font.pixelSize: Math.round(13 * page.uiScale)
+                                                            font.weight: Font.DemiBold
+                                                            elide: Text.ElideRight
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Empty Filter State
+                        Rectangle {
+                            visible: page.diagnosticReportSections().length === 0
+                            Layout.fillWidth: true
+                            implicitHeight: Math.round(160 * page.uiScale)
+                            radius: 12
+                            color: page.bgColor
+                            border.width: 1
+                            border.color: page.borderColor
+
+                            ColumnLayout {
+                                anchors.centerIn: parent
+                                spacing: Math.round(8 * page.uiScale)
+
+                                Label {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: "🔍"
+                                    font.pixelSize: Math.round(24 * page.uiScale)
+                                }
+
+                                Label {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: qsTr("No matching properties found")
+                                    color: page.textColor
+                                    font.pixelSize: Math.round(14 * page.uiScale)
+                                    font.weight: Font.DemiBold
+                                }
+
+                                Label {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: qsTr("Try a different search term or clear the filter.")
+                                    color: page.softTextColor
+                                    font.pixelSize: Math.round(12 * page.uiScale)
+                                }
+
+                                Button {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: qsTr("Clear Filter")
+                                    onClicked: {
+                                        page.reportFilterText = "";
+                                        filterInput.text = "";
+                                    }
+                                }
+                            }
                         }
                     }
                 }
 
-                Item { Layout.fillWidth: true }
-                Label { text: qsTr("Default action"); color: page.textColor; font.weight: Font.DemiBold }
-                ComboBox {
-                    model: ["preview", "clipboard"]
-                    currentIndex: Math.max(0, model.indexOf(page.systemInfo ? page.systemInfo.diagnosticReportDestination : "preview"))
-                    onActivated: function(index) {
-                        if (page.systemInfo)
-                            page.systemInfo.setDiagnosticReportDestination(model[index]);
+                // View 1: Formatted Code / Export Viewer
+                Rectangle {
+                    visible: page.reportViewMode === 1
+                    anchors.fill: parent
+                    radius: 10
+                    color: page.bgColor
+                    border.width: 1
+                    border.color: page.borderColor
+
+                    ScrollView {
+                        anchors.fill: parent
+                        anchors.margins: Math.round(10 * page.uiScale)
+                        clip: true
+
+                        TextArea {
+                            id: diagnosticReportText
+                            text: page.generatedReport
+                            readOnly: true
+                            selectByMouse: true
+                            textFormat: {
+                                const fmt = page.systemInfo ? page.systemInfo.diagnosticReportFormat : "markdown";
+                                return fmt === "markdown" ? TextEdit.MarkdownText : TextEdit.PlainText;
+                            }
+                            wrapMode: {
+                                const fmt = page.systemInfo ? page.systemInfo.diagnosticReportFormat : "markdown";
+                                return fmt === "json" ? TextEdit.NoWrap : TextEdit.Wrap;
+                            }
+                            color: page.textColor
+                            font.family: {
+                                const fmt = page.systemInfo ? page.systemInfo.diagnosticReportFormat : "markdown";
+                                return fmt === "json" ? "monospace" : ""
+                            }
+                            font.pixelSize: Math.round(13 * page.uiScale)
+                            selectedTextColor: "#FFFFFF"
+                            selectionColor: page.accentColor
+                            padding: Math.round(8 * page.uiScale)
+                            background: null
+                        }
                     }
                 }
             }
 
-            TextArea {
-                id: diagnosticReportText
+            // Bottom Footer Bar
+            Rectangle {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                text: page.generatedReport
-                readOnly: true
-                selectByMouse: true
-                wrapMode: TextEdit.WrapAnywhere
-                color: page.textColor
-                font.family: "monospace"
-                font.pixelSize: Math.round(12 * page.uiScale)
-                background: Rectangle {
-                    color: page.bgColor
-                    radius: 8
-                    border.width: 1
-                    border.color: page.borderColor
-                }
-            }
+                implicitHeight: Math.round(64 * page.uiScale)
+                color: "transparent"
 
-            RowLayout {
-                Layout.fillWidth: true
-                Item { Layout.fillWidth: true }
-                Label {
-                    visible: page.reportCopied
-                    text: qsTr("Copied to clipboard")
-                    color: page.successColor
-                    font.weight: Font.DemiBold
-                }
-                Button {
-                    text: qsTr("Copy to Clipboard")
-                    onClicked: {
-                        page.reportCopied = page.systemInfo && page.systemInfo.copyToClipboard(page.generatedReport);
-                        if (page.reportCopied)
-                            copiedFeedbackTimer.restart();
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: Math.round(16 * page.uiScale)
+                    spacing: Math.round(12 * page.uiScale)
+
+                    // Copied Feedback Badge
+                    Rectangle {
+                        visible: page.reportCopied
+                        implicitHeight: Math.round(32 * page.uiScale)
+                        implicitWidth: copyFeedbackRow.implicitWidth + Math.round(16 * page.uiScale)
+                        radius: 8
+                        color: page.darkMode ? "#143828" : "#ECFDF5"
+                        border.width: 1
+                        border.color: page.successColor
+
+                        RowLayout {
+                            id: copyFeedbackRow
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Label {
+                                text: "✓"
+                                color: page.successColor
+                                font.weight: Font.Bold
+                                font.pixelSize: Math.round(13 * page.uiScale)
+                            }
+                            Label {
+                                text: qsTr("Copied to clipboard!")
+                                color: page.successColor
+                                font.pixelSize: Math.round(12 * page.uiScale)
+                                font.weight: Font.DemiBold
+                            }
+                        }
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    // Close Button
+                    Button {
+                        id: closeReportBtn
+                        text: qsTr("Close")
+                        implicitHeight: Math.round(38 * page.uiScale)
+                        implicitWidth: Math.round(90 * page.uiScale)
+                        hoverEnabled: true
+
+                        background: Rectangle {
+                            radius: 8
+                            color: closeReportBtn.hovered
+                                   ? (page.darkMode ? "#3B3156" : "#E2E8F0")
+                                   : page.bgColor
+                            border.width: 1
+                            border.color: closeReportBtn.hovered ? page.accentColor : page.borderColor
+                        }
+
+                        contentItem: Label {
+                            text: closeReportBtn.text
+                            color: closeReportBtn.hovered ? page.textColor : page.softTextColor
+                            font.pixelSize: Math.round(13 * page.uiScale)
+                            font.weight: Font.DemiBold
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: diagnosticReportDialog.close()
+                    }
+
+                    // Copy to Clipboard Primary Button
+                    Button {
+                        id: copyReportBtn
+                        text: qsTr("Copy Full Report")
+                        implicitHeight: Math.round(38 * page.uiScale)
+                        implicitWidth: copyLabel.implicitWidth + Math.round(28 * page.uiScale)
+                        hoverEnabled: true
+
+                        background: Rectangle {
+                            radius: 8
+                            color: copyReportBtn.down ? Qt.darker(page.accentColor, 1.15)
+                                                      : (copyReportBtn.hovered ? Qt.lighter(page.accentColor, 1.1) : page.accentColor)
+                            border.width: 1
+                            border.color: page.accentColor
+                            Behavior on color { ColorAnimation { duration: 100 } }
+                        }
+
+                        contentItem: Label {
+                            id: copyLabel
+                            text: copyReportBtn.text
+                            color: "#FFFFFF"
+                            font.pixelSize: Math.round(13 * page.uiScale)
+                            font.weight: Font.Bold
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: {
+                            page.reportCopied = page.systemInfo && page.systemInfo.copyToClipboard(page.generatedReport);
+                            if (page.reportCopied)
+                                copiedFeedbackTimer.restart();
+                        }
                     }
                 }
             }
@@ -554,43 +1376,162 @@ Item {
 
     Dialog {
         id: rebootConfirmDialog
-        title: qsTr("Reboot to UEFI / BIOS Firmware")
         modal: true
         anchors.centerIn: parent
-        width: Math.min(page.width * 0.85, 420)
-        standardButtons: Dialog.Ok | Dialog.Cancel
+        width: Math.min(page.width * 0.88, Math.round(440 * page.uiScale))
+        padding: 0
+        header: null
+        footer: null
 
         background: Rectangle {
-            radius: 12
+            radius: 16
             color: page.cardColor
             border.width: 1
             border.color: page.borderColor
         }
 
         contentItem: ColumnLayout {
-            spacing: 12
+            spacing: 0
 
-            Label {
-                text: qsTr("Your system will restart immediately and boot directly into the UEFI / BIOS firmware setup utility.")
-                color: page.textColor
-                font.pixelSize: Math.round(13 * page.uiScale)
-                wrapMode: Text.WordWrap
+            // Header
+            Rectangle {
                 Layout.fillWidth: true
+                implicitHeight: Math.round(60 * page.uiScale)
+                color: page.darkMode ? "#3A2E12" : "#FFFBEB"
+                radius: 16
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 16
+                    color: parent.color
+                }
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: page.darkMode ? "#4D3D18" : "#FDE68A"
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: Math.round(16 * page.uiScale)
+                    spacing: Math.round(10 * page.uiScale)
+
+                    Label {
+                        text: "⚠️"
+                        font.pixelSize: Math.round(18 * page.uiScale)
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Reboot to UEFI / BIOS")
+                        color: page.textColor
+                        font.pixelSize: Math.round(15 * page.uiScale)
+                        font.weight: Font.Bold
+                    }
+                }
             }
 
-            Label {
-                text: qsTr("Make sure any unsaved work in other applications is saved.")
-                color: page.warningColor
-                font.pixelSize: Math.round(12 * page.uiScale)
-                font.weight: Font.DemiBold
-                wrapMode: Text.WordWrap
+            // Body Content
+            ColumnLayout {
                 Layout.fillWidth: true
-            }
-        }
+                Layout.margins: Math.round(18 * page.uiScale)
+                spacing: Math.round(10 * page.uiScale)
 
-        onAccepted: {
-            if (page.systemInfo)
-                page.systemInfo.requestRebootToFirmware();
+                Label {
+                    Layout.fillWidth: true
+                    text: qsTr("Your system will restart immediately and boot directly into the UEFI / BIOS firmware setup utility.")
+                    color: page.textColor
+                    font.pixelSize: Math.round(13 * page.uiScale)
+                    wrapMode: Text.WordWrap
+                }
+
+                Label {
+                    Layout.fillWidth: true
+                    text: qsTr("Make sure any unsaved work in other applications is saved before continuing.")
+                    color: page.warningColor
+                    font.pixelSize: Math.round(12 * page.uiScale)
+                    font.weight: Font.DemiBold
+                    wrapMode: Text.WordWrap
+                }
+            }
+
+            // Footer
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: Math.round(58 * page.uiScale)
+                color: "transparent"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Math.round(18 * page.uiScale)
+                    anchors.rightMargin: Math.round(18 * page.uiScale)
+                    anchors.bottomMargin: Math.round(14 * page.uiScale)
+                    spacing: Math.round(10 * page.uiScale)
+
+                    Item { Layout.fillWidth: true }
+
+                    Button {
+                        id: cancelRebootBtn
+                        text: qsTr("Cancel")
+                        implicitHeight: Math.round(36 * page.uiScale)
+                        implicitWidth: Math.round(80 * page.uiScale)
+                        hoverEnabled: true
+
+                        background: Rectangle {
+                            radius: 8
+                            color: cancelRebootBtn.hovered
+                                   ? (page.darkMode ? "#3B3156" : "#E2E8F0")
+                                   : page.bgColor
+                            border.width: 1
+                            border.color: cancelRebootBtn.hovered ? page.accentColor : page.borderColor
+                        }
+
+                        contentItem: Label {
+                            text: cancelRebootBtn.text
+                            color: cancelRebootBtn.hovered ? page.textColor : page.softTextColor
+                            font.pixelSize: Math.round(13 * page.uiScale)
+                            font.weight: Font.DemiBold
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: rebootConfirmDialog.close()
+                    }
+
+                    Button {
+                        id: confirmRebootBtn
+                        text: qsTr("Restart Now ↻")
+                        implicitHeight: Math.round(36 * page.uiScale)
+                        implicitWidth: Math.round(120 * page.uiScale)
+                        hoverEnabled: true
+
+                        background: Rectangle {
+                            radius: 8
+                            color: confirmRebootBtn.down
+                                   ? Qt.darker(page.warningColor, 1.15)
+                                   : (confirmRebootBtn.hovered ? Qt.lighter(page.warningColor, 1.1) : page.warningColor)
+                        }
+
+                        contentItem: Label {
+                            text: confirmRebootBtn.text
+                            color: "#FFFFFF"
+                            font.pixelSize: Math.round(13 * page.uiScale)
+                            font.weight: Font.Bold
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: {
+                            rebootConfirmDialog.close();
+                            if (page.systemInfo)
+                                page.systemInfo.requestRebootToFirmware();
+                        }
+                    }
+                }
+            }
         }
     }
 
