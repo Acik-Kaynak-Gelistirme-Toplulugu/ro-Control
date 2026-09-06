@@ -24,6 +24,10 @@ class PowerController : public QObject {
                  persistenceModeChanged)
   Q_PROPERTY(QString powerPreset READ powerPreset WRITE applyPowerPreset NOTIFY
                  powerPresetChanged)
+  Q_PROPERTY(QString systemPowerProfile READ systemPowerProfile NOTIFY
+                 systemPowerProfileChanged)
+  Q_PROPERTY(bool systemPowerProfileSupported READ systemPowerProfileSupported
+                 NOTIFY systemPowerProfileSupportedChanged)
   Q_PROPERTY(QStringList availablePresets READ availablePresets CONSTANT)
   Q_PROPERTY(
       int coreClockOffsetMHz READ coreClockOffsetMHz NOTIFY clockOffsetsChanged)
@@ -51,6 +55,8 @@ public:
   double defaultPowerLimitW() const;
   bool persistenceModeEnabled() const;
   QString powerPreset() const;
+  QString systemPowerProfile() const;
+  bool systemPowerProfileSupported() const;
   QStringList availablePresets() const;
   int coreClockOffsetMHz() const;
   int memoryClockOffsetMHz() const;
@@ -78,6 +84,8 @@ signals:
   void powerLimitConstraintsChanged();
   void persistenceModeChanged();
   void powerPresetChanged();
+  void systemPowerProfileChanged();
+  void systemPowerProfileSupportedChanged();
   void clockOffsetsChanged();
   void clockOffsetSupportedChanged();
   void statusMessageChanged();
@@ -88,6 +96,8 @@ signals:
 private:
   void detectCapabilities();
   void queryPowerMetrics();
+  void querySystemPowerProfile();
+  bool applySystemPowerProfile(const QString &preset);
   void loadSettings();
   void saveSettings();
   void setStatusMessage(const QString &msg);
@@ -102,6 +112,8 @@ private:
   double m_defaultPowerLimitW = 0.0;
   bool m_persistenceModeEnabled = false;
   QString m_powerPreset = QStringLiteral("balanced");
+  QString m_systemPowerProfile;
+  bool m_systemPowerProfileSupported = false;
   int m_coreClockOffsetMHz = 0;
   int m_memoryClockOffsetMHz = 0;
   bool m_clockOffsetSupported = false;

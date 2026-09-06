@@ -10,6 +10,7 @@ Item {
     required property var gpuMonitor
     required property var ramMonitor
     required property var fanController
+    required property var nvidiaDetector
     property var powerController: null
     property var healthGuard: null
 
@@ -35,6 +36,8 @@ Item {
     readonly property color accentColor: theme && theme.accentA ? theme.accentA : (page.darkMode ? "#818CF8" : "#4F46E5")
     readonly property color activeCardColor: theme && theme.card ? theme.card : (page.darkMode ? "#342D4A" : "#E2E8F0")
     readonly property int summaryCardHeight: Math.round(152 * page.uiScale)
+    readonly property bool nvidiaGpuDetected: page.nvidiaDetector && page.nvidiaDetector.gpuFound
+    readonly property bool gpuTelemetryAvailable: page.nvidiaGpuDetected && page.gpuMonitor && page.gpuMonitor.available
 
     component TelemetrySparkline: Canvas {
         id: sparkline
@@ -110,6 +113,14 @@ Item {
         return page.systemInfo.deviceType && page.systemInfo.deviceType.length > 0
                ? page.systemInfo.deviceType
                : qsTr("Unavailable");
+    }
+
+    function gpuUnavailableMessage() {
+        if (!page.nvidiaGpuDetected)
+            return qsTr("No NVIDIA GPU detected. CPU and memory monitoring remain available; NVIDIA telemetry, power controls, and process monitoring are disabled.");
+        if (page.gpuMonitor && page.gpuMonitor.statusMessage.length > 0)
+            return page.gpuMonitor.statusMessage;
+        return qsTr("NVIDIA GPU telemetry is unavailable. Check the driver and session permissions, then refresh.");
     }
 
     function modeTitle(mode) {
@@ -198,8 +209,8 @@ Item {
             width: pageScroll.availableWidth
             spacing: 12
 
-            Rectangle { visible: page.gpuMonitor && !page.gpuMonitor.available; Layout.fillWidth: true; implicitHeight: 48; radius: 10; color: page.infoBg; border.width: 1; border.color: page.borderColor
-                Label { anchors.fill: parent; anchors.margins: 12; text: qsTr("GPU telemetry unavailable — check NVIDIA driver session permissions, then refresh."); color: page.textColor; verticalAlignment: Text.AlignVCenter; wrapMode: Text.WordWrap }
+            Rectangle { visible: !page.gpuTelemetryAvailable; Layout.fillWidth: true; implicitHeight: unavailableGpuLabel.implicitHeight + 24; radius: 10; color: page.infoBg; border.width: 1; border.color: page.borderColor
+                Label { id: unavailableGpuLabel; anchors.fill: parent; anchors.margins: 12; text: page.gpuUnavailableMessage(); color: page.textColor; verticalAlignment: Text.AlignVCenter; wrapMode: Text.WordWrap }
             }
 
             GridLayout {
@@ -308,7 +319,7 @@ Item {
 
                             Rectangle {
                                 id: gpuSelectorButton
-                                visible: page.gpuMonitor && page.gpuMonitor.available
+                                visible: page.gpuTelemetryAvailable
                                 implicitHeight: Math.round(24 * page.uiScale)
                                 implicitWidth: (page.gpuMonitor && page.gpuMonitor.gpuCount > 1)
                                                ? gpuSelectorRow.implicitWidth + Math.round(14 * page.uiScale)
@@ -405,8 +416,8 @@ Item {
                                     font.weight: Font.DemiBold
                                 }
                                 Label {
-                                    text: page.gpuMonitor ? page.gpuMonitor.utilizationPercent + "%" : "--"
-                                    color: page.textColor
+                                    text: page.gpuTelemetryAvailable ? page.gpuMonitor.utilizationPercent + "%" : qsTr("Unavailable")
+                                    color: page.gpuTelemetryAvailable ? page.textColor : page.softTextColor
                                     font.pixelSize: Math.round(22 * page.uiScale)
                                     font.weight: Font.Bold
                                 }
@@ -425,8 +436,8 @@ Item {
                                 RowLayout {
                                     spacing: 4
                                     Label {
-                                        text: page.formatTemp(page.gpuMonitor ? page.gpuMonitor.temperatureC : -1)
-                                        color: (page.gpuMonitor && page.gpuMonitor.temperatureC > 80) ? (page.theme && page.theme.warning ? page.theme.warning : "#EF4444") : page.textColor
+                                        text: page.gpuTelemetryAvailable ? page.formatTemp(page.gpuMonitor.temperatureC) : qsTr("Unavailable")
+                                        color: (page.gpuTelemetryAvailable && page.gpuMonitor.temperatureC > 80) ? (page.theme && page.theme.warning ? page.theme.warning : "#EF4444") : page.softTextColor
                                         font.pixelSize: Math.round(22 * page.uiScale)
                                         font.weight: Font.Bold
                                     }
@@ -437,7 +448,7 @@ Item {
                         TelemetrySparkline {
                             Layout.fillWidth: true
                             Layout.preferredHeight: Math.round(30 * page.uiScale)
-                            values: page.gpuLoadHistory
+                            values: page.gpuTelemetryAvailable ? page.gpuLoadHistory : []
                             lineColor: page.darkMode ? "#34D399" : "#10B981"
                         }
                     }
@@ -522,7 +533,7 @@ Item {
                 border.width: 1
                 border.color: page.borderColor
                 implicitHeight: gpuPerfLayout.implicitHeight + 24
-                visible: page.showAdvancedInfo && page.gpuMonitor && page.gpuMonitor.available
+                visible: page.showAdvancedInfo && page.gpuTelemetryAvailable
 
                 ColumnLayout {
                     id: gpuPerfLayout
@@ -625,7 +636,8 @@ Item {
                 border.width: 1
                 border.color: page.borderColor
                 implicitHeight: powerArea.implicitHeight + 24
-                visible: page.powerController !== null && page.powerController.supported
+                visible: page.powerController !== null && (page.powerController.supported
+                                                           || page.powerController.systemPowerProfileSupported)
 
                 ColumnLayout {
                     id: powerArea
@@ -712,7 +724,8 @@ Item {
 
                         RowLayout {
                             spacing: Math.round(8 * page.uiScale)
-                            visible: page.powerController && page.powerController.controlSupported
+                            visible: page.powerController && (page.powerController.controlSupported
+                                                               || page.powerController.systemPowerProfileSupported)
 
                             Repeater {
                                 model: [
@@ -750,8 +763,10 @@ Item {
                                     }
 
                                     onClicked: {
-                                        if (page.powerController)
-                                            page.powerController.applyPowerPreset(powerPresetBtn.modelData.preset);
+                                        if (page.powerController) {
+                                            if (!page.powerController.applyPowerPreset(powerPresetBtn.modelData.preset))
+                                                page.powerController.refresh();
+                                        }
                                     }
                                 }
                             }
@@ -768,7 +783,7 @@ Item {
                 border.width: 1
                 border.color: page.borderColor
                 implicitHeight: taskManagerLayout.implicitHeight + 24
-                visible: page.showAdvancedInfo && page.gpuMonitor && page.gpuMonitor.available
+                visible: page.showAdvancedInfo && page.gpuTelemetryAvailable
 
                 ColumnLayout {
                     id: taskManagerLayout

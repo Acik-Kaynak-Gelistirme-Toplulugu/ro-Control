@@ -1,3 +1,4 @@
+#include <QActionGroup>
 #include <QApplication>
 #include <QCoreApplication>
 #include <QEventLoop>
@@ -767,6 +768,13 @@ int main(int argc, char *argv[]) {
       fanMenu->addAction(QCoreApplication::translate("Main", "Balanced"));
   auto *perfFanAction =
       fanMenu->addAction(QCoreApplication::translate("Main", "Performance"));
+  auto *fanActionGroup = new QActionGroup(&trayMenu);
+  fanActionGroup->setExclusive(true);
+  for (QAction *action :
+       {autoFanAction, silentFanAction, balancedFanAction, perfFanAction}) {
+    action->setCheckable(true);
+    fanActionGroup->addAction(action);
+  }
 
   QObject::connect(autoFanAction, &QAction::triggered, &fanController,
                    [&]() { fanController.setFanMode(QStringLiteral("auto")); });
@@ -788,6 +796,13 @@ int main(int argc, char *argv[]) {
       powerMenu->addAction(QCoreApplication::translate("Main", "Balanced"));
   auto *perfPowerAction =
       powerMenu->addAction(QCoreApplication::translate("Main", "Performance"));
+  auto *powerActionGroup = new QActionGroup(&trayMenu);
+  powerActionGroup->setExclusive(true);
+  for (QAction *action :
+       {ecoPowerAction, balancedPowerAction, perfPowerAction}) {
+    action->setCheckable(true);
+    powerActionGroup->addAction(action);
+  }
 
   QObject::connect(
       ecoPowerAction, &QAction::triggered, &powerController,
@@ -799,6 +814,28 @@ int main(int argc, char *argv[]) {
       perfPowerAction, &QAction::triggered, &powerController, [&]() {
         powerController.applyPowerPreset(QStringLiteral("performance"));
       });
+
+  auto syncTrayProfiles = [&]() {
+    const QString fanMode = fanController.fanMode();
+    autoFanAction->setChecked(fanMode == QStringLiteral("auto"));
+    silentFanAction->setChecked(fanMode == QStringLiteral("silent"));
+    balancedFanAction->setChecked(fanMode == QStringLiteral("balanced"));
+    perfFanAction->setChecked(fanMode == QStringLiteral("performance"));
+
+    const QString powerPreset = powerController.powerPreset();
+    ecoPowerAction->setChecked(powerPreset == QStringLiteral("eco"));
+    balancedPowerAction->setChecked(powerPreset == QStringLiteral("balanced"));
+    perfPowerAction->setChecked(powerPreset == QStringLiteral("performance"));
+    fanMenu->setTitle(QCoreApplication::translate("Main", "Fan Profile: %1")
+                          .arg(fanMode.toUpper()));
+    powerMenu->setTitle(QCoreApplication::translate("Main", "Power Preset: %1")
+                            .arg(powerPreset.toUpper()));
+  };
+  QObject::connect(&fanController, &FanController::fanModeChanged, &trayMenu,
+                   syncTrayProfiles);
+  QObject::connect(&powerController, &PowerController::powerPresetChanged,
+                   &trayMenu, syncTrayProfiles);
+  syncTrayProfiles();
 
   trayMenu.addSeparator();
   auto *quitAction =

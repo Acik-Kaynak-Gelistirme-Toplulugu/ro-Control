@@ -80,6 +80,12 @@ bool PowerController::clockOffsetSupported() const {
 }
 
 QString PowerController::powerPreset() const { return m_powerPreset; }
+QString PowerController::systemPowerProfile() const {
+  return m_systemPowerProfile;
+}
+bool PowerController::systemPowerProfileSupported() const {
+  return m_systemPowerProfileSupported;
+}
 QStringList PowerController::availablePresets() const {
   return {QStringLiteral("eco"), QStringLiteral("balanced"),
           QStringLiteral("performance"), QStringLiteral("custom")};
@@ -123,6 +129,7 @@ void PowerController::saveSettings() {
 }
 
 void PowerController::detectCapabilities() {
+  querySystemPowerProfile();
   NvidiaDetector detector;
   detector.refresh();
 
@@ -238,6 +245,58 @@ void PowerController::refresh() {
   queryPowerMetrics();
 }
 
+void PowerController::querySystemPowerProfile() {
+  const QString program =
+      CommandRunner::resolveProgramPath(QStringLiteral("powerprofilesctl"));
+  const bool available = !program.isEmpty();
+  if (m_systemPowerProfileSupported != available) {
+    m_systemPowerProfileSupported = available;
+    emit systemPowerProfileSupportedChanged();
+  }
+  if (!available) {
+    return;
+  }
+
+  CommandRunner runner;
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 1000;
+  const auto result = runner.run(QStringLiteral("powerprofilesctl"),
+                                 {QStringLiteral("get")}, options);
+  if (!result.success()) {
+    return;
+  }
+  const QString profile = result.stdout.trimmed().toLower();
+  if (!profile.isEmpty() && m_systemPowerProfile != profile) {
+    m_systemPowerProfile = profile;
+    emit systemPowerProfileChanged();
+  }
+}
+
+bool PowerController::applySystemPowerProfile(const QString &preset) {
+  if (!m_systemPowerProfileSupported) {
+    return true; // GPU power control may still be available.
+  }
+  const QString target =
+      preset == QStringLiteral("eco")           ? QStringLiteral("power-saver")
+      : preset == QStringLiteral("performance") ? QStringLiteral("performance")
+                                                : QStringLiteral("balanced");
+  CommandRunner runner;
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 2000;
+  const auto result = runner.run(QStringLiteral("powerprofilesctl"),
+                                 {QStringLiteral("set"), target}, options);
+  if (!result.success()) {
+    setStatusMessage(QStringLiteral("Failed to apply system power profile: %1")
+                         .arg(result.stderr.trimmed()));
+    return false;
+  }
+  if (m_systemPowerProfile != target) {
+    m_systemPowerProfile = target;
+    emit systemPowerProfileChanged();
+  }
+  return true;
+}
+
 bool PowerController::setPowerLimit(double watts) {
   if (watts <= 0.0) {
     setStatusMessage(QStringLiteral("Invalid power limit value."));
@@ -308,25 +367,43 @@ bool PowerController::applyPowerPreset(const QString &preset) {
   const double maxW =
       (m_maxPowerLimitW > 0.0) ? m_maxPowerLimitW : (baseDefault * 1.15);
 
+  if (lower != QStringLiteral("eco") && lower != QStringLiteral("balanced") &&
+      lower != QStringLiteral("performance") &&
+      lower != QStringLiteral("custom")) {
+    setStatusMessage(QStringLiteral("Unknown power preset: %1").arg(preset));
+    return false;
+  }
+
+  if (lower == QStringLiteral("custom")) {
+    m_powerPreset = lower;
+    emit powerPresetChanged();
+    saveSettings();
+    return true;
+  }
+
+  // This is the machine-wide policy. It works without NVIDIA hardware when
+  // power-profiles-daemon is installed; GPU power limits are an optional extra.
+  if (!applySystemPowerProfile(lower)) {
+    return false;
+  }
+
   if (lower == QStringLiteral("eco")) {
     targetWatts = minW;
   } else if (lower == QStringLiteral("balanced")) {
     targetWatts = baseDefault;
   } else if (lower == QStringLiteral("performance")) {
     targetWatts = maxW;
-  } else if (lower == QStringLiteral("custom")) {
-    m_powerPreset = lower;
-    emit powerPresetChanged();
-    saveSettings();
-    return true;
-  } else {
-    setStatusMessage(QStringLiteral("Unknown power preset: %1").arg(preset));
-    return false;
   }
 
-  if (setPowerLimit(targetWatts)) {
+  if (!m_controlSupported || setPowerLimit(targetWatts)) {
     m_powerPreset = lower;
     emit powerPresetChanged();
+    setStatusMessage(m_systemPowerProfileSupported
+                         ? QStringLiteral("Applied %1 system power profile.")
+                               .arg(m_systemPowerProfile)
+                         : QStringLiteral("Selected %1 preset; system power "
+                                          "profiles are unavailable.")
+                               .arg(lower));
     saveSettings();
     return true;
   }
