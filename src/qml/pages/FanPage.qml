@@ -347,7 +347,9 @@ Item {
 
                     GridLayout {
                         Layout.fillWidth: true
-                        columns: width > 1100 ? 3 : (width > 680 ? 2 : 1)
+                        // Match the Monitor summary-card breakpoints: CPU first,
+                        // GPU second, then the remaining discovered channels.
+                        columns: width > 900 ? 3 : (width > 560 ? 2 : 1)
                         columnSpacing: Math.round(10 * page.uiScale)
                         rowSpacing: Math.round(10 * page.uiScale)
 
@@ -359,7 +361,7 @@ Item {
                                 required property var modelData
                                 required property int index
                                 Layout.fillWidth: true
-                                implicitHeight: Math.round((page.reorderMode ? 196 : 164) * page.uiScale)
+                                implicitHeight: Math.round((page.reorderMode ? 196 : 152) * page.uiScale)
                                 radius: 12
                                 scale: (page.reorderMode && page.draggingFanIndex === fanCard.index) ? 1.03 : 1.0
                                 z: (page.reorderMode && page.draggingFanIndex === fanCard.index) ? 10 : 1
