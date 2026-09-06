@@ -1392,7 +1392,7 @@ void FanController::readCurrentFanTelemetry() {
                               QStringLiteral("[fan:0]/GPUCurrentFanSpeedRPM"),
                               QStringLiteral("-t")},
                              options);
-    if (!rpmRes.success() && rpmRes.exitCode == 0) {
+    if (!rpmRes.success()) {
       rpmRes = runner.run(QStringLiteral("nvidia-settings"),
                           {QStringLiteral("-q"),
                            QStringLiteral("GPUCurrentFanSpeedRPM"),
@@ -1422,7 +1422,7 @@ void FanController::readCurrentFanTelemetry() {
                                   QStringLiteral("[fan:0]/GPUCurrentFanSpeed"),
                                   QStringLiteral("-t")},
                                  options);
-      if (!speedRes.success() && speedRes.exitCode == 0) {
+      if (!speedRes.success()) {
         speedRes = runner.run(QStringLiteral("nvidia-settings"),
                               {QStringLiteral("-q"),
                                QStringLiteral("GPUCurrentFanSpeed"),
