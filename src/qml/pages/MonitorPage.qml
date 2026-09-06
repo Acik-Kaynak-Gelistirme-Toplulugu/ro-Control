@@ -563,9 +563,12 @@ Item {
                                     font.weight: Font.DemiBold
                                 }
                                 Label {
-                                    text: page.ramMonitor.zramTotalMiB > 0
-                                          ? Math.round((page.ramMonitor.zramUsedMiB / page.ramMonitor.zramTotalMiB) * 100) + "%"
-                                          : "--"
+                                    text: {
+                                        if (!page.ramMonitor || page.ramMonitor.zramTotalMiB <= 0) return "--"
+                                        const pct = (page.ramMonitor.zramUsedMiB / page.ramMonitor.zramTotalMiB) * 100
+                                        if (page.ramMonitor.zramUsedMiB > 0 && pct < 1.0) return pct.toFixed(1) + "%"
+                                        return Math.round(pct) + "%"
+                                    }
                                     color: page.textColor
                                     font.pixelSize: Math.round(22 * page.uiScale)
                                     font.weight: Font.Bold
@@ -593,12 +596,15 @@ Item {
 
                         Label {
                             Layout.fillWidth: true
-                            visible: page.ramMonitor.zramCompressionRatio > 0 || page.ramMonitor.zswapEnabled
+                            visible: page.ramMonitor.zramCompressionRatio > 0 || page.ramMonitor.zswapEnabled || page.ramMonitor.zramPhysicalMiB > 0
                             text: (page.ramMonitor.zramCompressionRatio > 0
                                    ? qsTr("Compression: %1×").arg(page.ramMonitor.zramCompressionRatio.toFixed(1))
                                    : "")
+                                  + (page.ramMonitor.zramPhysicalMiB > 0
+                                     ? (page.ramMonitor.zramCompressionRatio > 0 ? " • " : "") + qsTr("RAM: %1 MiB").arg(page.ramMonitor.zramPhysicalMiB)
+                                     : "")
                                   + (page.ramMonitor.zswapEnabled
-                                     ? (page.ramMonitor.zramCompressionRatio > 0 ? " • " : "") + qsTr("zswap enabled")
+                                     ? (page.ramMonitor.zramCompressionRatio > 0 || page.ramMonitor.zramPhysicalMiB > 0 ? " • " : "") + qsTr("zswap enabled")
                                      : "")
                             color: page.softTextColor
                             font.pixelSize: Math.round(10 * page.uiScale)
@@ -606,11 +612,25 @@ Item {
                             elide: Text.ElideRight
                         }
 
-                        Rectangle {
+                        Item {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: Math.round(2 * page.uiScale)
-                            radius: 1
-                            color: page.darkMode ? "#F59E0B" : "#D97706"
+                            Layout.preferredHeight: Math.round(4 * page.uiScale)
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: 2
+                                color: page.darkMode ? "#2D2644" : "#E2E8F0"
+                            }
+
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                radius: 2
+                                width: Math.min(parent.width, Math.max(0, parent.width * (page.ramMonitor.zramTotalMiB > 0 ? (page.ramMonitor.zramUsedMiB / page.ramMonitor.zramTotalMiB) : 0)))
+                                color: page.darkMode ? "#F59E0B" : "#D97706"
+                                Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+                            }
                         }
                     }
                 }

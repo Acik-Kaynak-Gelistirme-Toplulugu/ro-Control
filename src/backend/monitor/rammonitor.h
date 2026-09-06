@@ -14,6 +14,7 @@ class RamMonitor : public QObject {
   Q_PROPERTY(bool zramAvailable READ zramAvailable NOTIFY zramChanged)
   Q_PROPERTY(int zramTotalMiB READ zramTotalMiB NOTIFY zramChanged)
   Q_PROPERTY(int zramUsedMiB READ zramUsedMiB NOTIFY zramChanged)
+  Q_PROPERTY(int zramPhysicalMiB READ zramPhysicalMiB NOTIFY zramChanged)
   Q_PROPERTY(
       double zramCompressionRatio READ zramCompressionRatio NOTIFY zramChanged)
   Q_PROPERTY(bool zswapEnabled READ zswapEnabled NOTIFY zswapChanged)
@@ -31,6 +32,7 @@ public:
   bool zramAvailable() const;
   int zramTotalMiB() const;
   int zramUsedMiB() const;
+  int zramPhysicalMiB() const;
   double zramCompressionRatio() const;
   bool zswapEnabled() const;
   int updateInterval() const;
@@ -63,6 +65,7 @@ private:
   bool m_zramAvailable = false;
   int m_zramTotalMiB = 0;
   int m_zramUsedMiB = 0;
+  int m_zramPhysicalMiB = 0;
   double m_zramCompressionRatio = 0.0;
   bool m_zswapEnabled = false;
 };

@@ -160,6 +160,8 @@ int RamMonitor::zramTotalMiB() const { return m_zramTotalMiB; }
 
 int RamMonitor::zramUsedMiB() const { return m_zramUsedMiB; }
 
+int RamMonitor::zramPhysicalMiB() const { return m_zramPhysicalMiB; }
+
 double RamMonitor::zramCompressionRatio() const {
   return m_zramCompressionRatio;
 }
@@ -316,20 +318,24 @@ void RamMonitor::refreshCompressionTelemetry() {
 
   if (zramTotalKiB == 0 && diskBytes > 0)
     zramTotalKiB = diskBytes / 1024;
+  if (zramUsedKiB == 0 && originalBytes > 0)
+    zramUsedKiB = originalBytes / 1024;
 
   const bool available = zramTotalKiB > 0 || !devices.isEmpty();
   const int totalMiB = static_cast<int>(zramTotalKiB / 1024);
   const int usedMiB = static_cast<int>(zramUsedKiB / 1024);
+  const int physicalMiB = static_cast<int>(physicalBytes / (1024 * 1024));
   const double ratio = physicalBytes > 0 && originalBytes > 0
                            ? static_cast<double>(originalBytes) /
                                  static_cast<double>(physicalBytes)
                            : 0.0;
   if (m_zramAvailable != available || m_zramTotalMiB != totalMiB ||
-      m_zramUsedMiB != usedMiB ||
+      m_zramUsedMiB != usedMiB || m_zramPhysicalMiB != physicalMiB ||
       !qFuzzyCompare(m_zramCompressionRatio + 1.0, ratio + 1.0)) {
     m_zramAvailable = available;
     m_zramTotalMiB = totalMiB;
     m_zramUsedMiB = usedMiB;
+    m_zramPhysicalMiB = physicalMiB;
     m_zramCompressionRatio = ratio;
     emit zramChanged();
   }
