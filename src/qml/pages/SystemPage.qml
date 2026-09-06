@@ -316,29 +316,77 @@ Item {
                         font.weight: Font.DemiBold
                     }
 
-                    RowLayout {
+                    Label {
                         Layout.fillWidth: true
-                        spacing: Math.round(10 * page.uiScale)
+                        text: qsTr("Generate a shareable system report or restart directly into firmware setup.")
+                        color: page.softTextColor
+                        font.pixelSize: Math.round(12 * page.uiScale)
+                        wrapMode: Text.WordWrap
+                    }
+
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columns: width > Math.round(680 * page.uiScale) ? 2 : 1
+                        columnSpacing: Math.round(10 * page.uiScale)
+                        rowSpacing: Math.round(10 * page.uiScale)
 
                         Button {
-                            id: copyReportBtn
-                            text: qsTr("Open Diagnostic Report")
-                            implicitHeight: Math.round(36 * page.uiScale)
+                            id: diagnosticActionBtn
+                            Layout.fillWidth: true
+                            implicitHeight: Math.round(88 * page.uiScale)
+                            hoverEnabled: true
 
                             background: Rectangle {
-                                radius: 8
-                                color: copyReportBtn.hovered ? (page.darkMode ? "#3B3156" : "#E2E8F0") : page.bgColor
+                                radius: 10
+                                color: diagnosticActionBtn.hovered
+                                       ? (page.darkMode ? "#3B3156" : "#EEF2FF")
+                                       : page.bgColor
                                 border.width: 1
-                                border.color: copyReportBtn.hovered ? page.accentColor : page.borderColor
+                                border.color: diagnosticActionBtn.hovered ? page.accentColor : page.borderColor
                             }
 
-                            contentItem: Text {
-                                text: copyReportBtn.text
-                                color: page.textColor
-                                font.pixelSize: Math.round(12 * page.uiScale)
-                                font.weight: Font.DemiBold
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
+                            contentItem: RowLayout {
+                                spacing: Math.round(12 * page.uiScale)
+
+                                Rectangle {
+                                    Layout.preferredWidth: Math.round(38 * page.uiScale)
+                                    Layout.preferredHeight: Math.round(38 * page.uiScale)
+                                    radius: 8
+                                    color: page.darkMode ? "#312E81" : "#E0E7FF"
+
+                                    Label {
+                                        anchors.centerIn: parent
+                                        text: "▤"
+                                        color: page.accentColor
+                                        font.pixelSize: Math.round(19 * page.uiScale)
+                                        font.weight: Font.Bold
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 3
+                                    Label {
+                                        text: qsTr("Diagnostic Report")
+                                        color: page.textColor
+                                        font.pixelSize: Math.round(13 * page.uiScale)
+                                        font.weight: Font.DemiBold
+                                    }
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Preview, format, and share live system details")
+                                        color: page.softTextColor
+                                        font.pixelSize: Math.round(11 * page.uiScale)
+                                        elide: Text.ElideRight
+                                    }
+                                }
+
+                                Label {
+                                    text: qsTr("Open ›")
+                                    color: page.accentColor
+                                    font.pixelSize: Math.round(12 * page.uiScale)
+                                    font.weight: Font.DemiBold
+                                }
                             }
 
                             onClicked: page.openDiagnosticReport()
@@ -346,30 +394,61 @@ Item {
 
                         Button {
                             id: rebootFirmwareBtn
-                            text: qsTr("Reboot to UEFI / BIOS Firmware")
-                            implicitHeight: Math.round(36 * page.uiScale)
+                            Layout.fillWidth: true
+                            implicitHeight: Math.round(88 * page.uiScale)
+                            hoverEnabled: true
 
                             background: Rectangle {
-                                radius: 8
+                                radius: 10
                                 color: rebootFirmwareBtn.hovered ? (page.darkMode ? "#3B3156" : "#E2E8F0") : page.bgColor
                                 border.width: 1
                                 border.color: rebootFirmwareBtn.hovered ? page.warningColor : page.borderColor
                             }
 
-                            contentItem: Text {
-                                text: rebootFirmwareBtn.text
-                                color: rebootFirmwareBtn.hovered ? page.warningColor : page.textColor
-                                font.pixelSize: Math.round(12 * page.uiScale)
-                                font.weight: Font.DemiBold
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
+                            contentItem: RowLayout {
+                                spacing: Math.round(12 * page.uiScale)
+
+                                Rectangle {
+                                    Layout.preferredWidth: Math.round(38 * page.uiScale)
+                                    Layout.preferredHeight: Math.round(38 * page.uiScale)
+                                    radius: 8
+                                    color: page.darkMode ? "#3A2E12" : "#FFFBEB"
+                                    Label {
+                                        anchors.centerIn: parent
+                                        text: "↻"
+                                        color: page.warningColor
+                                        font.pixelSize: Math.round(20 * page.uiScale)
+                                        font.weight: Font.Bold
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 3
+                                    Label {
+                                        text: qsTr("UEFI / BIOS Firmware")
+                                        color: page.textColor
+                                        font.pixelSize: Math.round(13 * page.uiScale)
+                                        font.weight: Font.DemiBold
+                                    }
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Restart directly into firmware setup")
+                                        color: page.softTextColor
+                                        font.pixelSize: Math.round(11 * page.uiScale)
+                                        elide: Text.ElideRight
+                                    }
+                                }
+
+                                Label {
+                                    text: qsTr("Restart ›")
+                                    color: page.warningColor
+                                    font.pixelSize: Math.round(12 * page.uiScale)
+                                    font.weight: Font.DemiBold
+                                }
                             }
 
                             onClicked: rebootConfirmDialog.open()
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
                         }
                     }
                 }
