@@ -409,6 +409,21 @@ private slots:
     installer.cancelOperation();
     QCOMPARE(installer.busy(), false);
   }
+
+  void testLocalizeGpuName() {
+    QCOMPARE(
+        SystemInfoProvider::localizeGpuName(QStringLiteral(
+            "Intel Core Processor Integrated Graphics Controller")),
+        QStringLiteral("Intel Core Processor Integrated Graphics Controller"));
+    QCOMPARE(SystemInfoProvider::localizeGpuName(
+                 QStringLiteral("Intel Integrated Graphics Controller")),
+             QStringLiteral("Intel Integrated Graphics Controller"));
+    QCOMPARE(SystemInfoProvider::localizeGpuName(
+                 QStringLiteral("Intel UHD Graphics 630")),
+             QStringLiteral("Intel UHD Graphics 630"));
+    QCOMPARE(SystemInfoProvider::localizeGpuName(QStringLiteral("")),
+             QStringLiteral(""));
+  }
 };
 
 QTEST_MAIN(TestSystemIntegration)
