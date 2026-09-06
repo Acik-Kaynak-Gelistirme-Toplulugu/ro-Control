@@ -3172,9 +3172,9 @@ Wählen Sie Akzeptieren, um mit der Closed-Source-Installation fortzufahren, ode
         <translation>Live-Systemdetails in der Vorschau anzeigen, formatieren und teilen</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/SystemPage.qml" line="456" />
-        <source>Open ›</source>
-        <translation>Öffnen ›</translation>
+        <location filename="../src/qml/pages/SystemPage.qml" line="477" />
+        <source>Open</source>
+        <translation>Öffnen</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/SystemPage.qml" line="500" />
@@ -3187,9 +3187,9 @@ Wählen Sie Akzeptieren, um mit der Closed-Source-Installation fortzufahren, ode
         <translation>Direkt in das Firmware-Setup neu starten</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/SystemPage.qml" line="515" />
-        <source>Restart ›</source>
-        <translation>Neu starten ›</translation>
+        <location filename="../src/qml/pages/SystemPage.qml" line="536" />
+        <source>Restart</source>
+        <translation>Neu starten</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/SystemPage.qml" line="605" />

@@ -3172,9 +3172,9 @@ Kapalı kaynak kuruluma devam etmek için Kabul Et'i, iptal etmek için Reddet'i
         <translation>Canlı sistem ayrıntılarını önizleyin, biçimlendirin ve paylaşın</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/SystemPage.qml" line="456" />
-        <source>Open ›</source>
-        <translation>Aç ›</translation>
+        <location filename="../src/qml/pages/SystemPage.qml" line="477" />
+        <source>Open</source>
+        <translation>Aç</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/SystemPage.qml" line="500" />
@@ -3187,9 +3187,9 @@ Kapalı kaynak kuruluma devam etmek için Kabul Et'i, iptal etmek için Reddet'i
         <translation>Doğrudan bellenim ayarlarına yeniden başlat</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/SystemPage.qml" line="515" />
-        <source>Restart ›</source>
-        <translation>Yeniden Başlat ›</translation>
+        <location filename="../src/qml/pages/SystemPage.qml" line="536" />
+        <source>Restart</source>
+        <translation>Yeniden Başlat</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/SystemPage.qml" line="605" />

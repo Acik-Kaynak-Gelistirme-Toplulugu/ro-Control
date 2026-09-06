@@ -3172,9 +3172,9 @@ Elija Aceptar para continuar con la instalación de código cerrado o Rechazar p
         <translation>Previsualice, dé formato y comparta detalles del sistema en vivo</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/SystemPage.qml" line="456" />
-        <source>Open ›</source>
-        <translation>Abrir ›</translation>
+        <location filename="../src/qml/pages/SystemPage.qml" line="477" />
+        <source>Open</source>
+        <translation>Abrir</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/SystemPage.qml" line="500" />
@@ -3187,9 +3187,9 @@ Elija Aceptar para continuar con la instalación de código cerrado o Rechazar p
         <translation>Reiniciar directamente en la configuración del firmware</translation>
     </message>
     <message>
-        <location filename="../src/qml/pages/SystemPage.qml" line="515" />
-        <source>Restart ›</source>
-        <translation>Reiniciar ›</translation>
+        <location filename="../src/qml/pages/SystemPage.qml" line="536" />
+        <source>Restart</source>
+        <translation>Reiniciar</translation>
     </message>
     <message>
         <location filename="../src/qml/pages/SystemPage.qml" line="605" />
