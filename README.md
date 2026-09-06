@@ -24,6 +24,8 @@ When launched without arguments, `ro-control` opens the graphical desktop interf
 
 | Command | Description |
 | :--- | :--- |
+| `ro-control help` | Prints usage information and available commands |
+| `ro-control version` | Prints the application version |
 | `ro-control status [--json]` | Displays brief hardware, driver, and system status summary |
 | `ro-control fan status [--json]` | Displays active fan modes, speeds, RPMs, and temperatures |
 | `ro-control fan set-speed <percent>` | Sets fixed manual fan speed percentage (0–100%) |
@@ -41,6 +43,7 @@ When launched without arguments, `ro-control` opens the graphical desktop interf
 | `ro-control select-gpu <index>` | Selects active target GPU for monitoring and tuning |
 | `ro-control diagnostics [--json]` | Generates comprehensive hardware, kernel, and driver report |
 | `ro-control driver install [opts]` | Triggers driver installation via Polkit (`--proprietary`, `--open-source`) |
+| `ro-control driver remove` | Removes installed NVIDIA driver packages |
 | `ro-control driver update` | Updates installed NVIDIA driver packages |
 | `ro-control driver deep-clean` | Cleans up broken module trees, akmods residues, and leftover artifacts |
 | `ro-control --daemon` | Launches background headless D-Bus telemetry service |

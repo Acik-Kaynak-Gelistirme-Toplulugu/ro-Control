@@ -1,33 +1,18 @@
 # Build & Development Guide
 
-This document details the build prerequisites, compilation steps, test execution, and packaging procedures for developers and OS maintainers.
+This document details the build prerequisites, compilation steps, test execution, and packaging procedures for developers and OS maintainers. ro-Control targets **Fedora-based Ro-ASD** only.
 
 ---
 
 ## 1. Build Prerequisites
 
-### Fedora / Ro-ASD (Recommended Toolchain)
+### Fedora / Ro-ASD
 ```bash
 sudo dnf install -y \
   cmake extra-cmake-modules gcc-c++ ninja-build \
   qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qttools-devel qt6-qtwayland-devel \
   kf6-qqc2-desktop-style polkit-devel systemd-rpm-macros desktop-file-utils \
   pciutils mokutil kmod lm_sensors rpm-build
-```
-
-### Debian / Ubuntu
-```bash
-sudo apt update && sudo apt install -y \
-  cmake ninja-build g++ build-essential \
-  qt6-base-dev qt6-declarative-dev qt6-tools-dev qt6-wayland \
-  libpolkit-gobject-1-dev pciutils mokutil kmod lm-sensors
-```
-
-### Arch Linux
-```bash
-sudo pacman -S --needed \
-  cmake ninja gcc qt6-base qt6-declarative qt6-tools qt6-wayland \
-  polkit pciutils kmod lm_sensors
 ```
 
 ---
