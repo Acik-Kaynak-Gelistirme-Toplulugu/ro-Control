@@ -358,6 +358,7 @@ class TestDriverPage : public QObject {
 
 private slots:
   void testDriverInstalledLocallyUsesDetectorVersion();
+  void testNvidiaHardwareAvailabilityRequiresDetectedGpu();
   void testOperationRunningStillTracksBackendBusyAfterManualStateChanges();
   void testCompletedInstallImmediatelyUpdatesDriverState();
 
@@ -489,6 +490,23 @@ void TestDriverPage::testDriverInstalledLocallyUsesDetectorVersion() {
   QTRY_VERIFY(page->property("driverInstalledLocally").toBool());
   QCOMPARE(page->property("installedVersionLabel").toString(),
            QStringLiteral("580.126.18"));
+}
+
+void TestDriverPage::testNvidiaHardwareAvailabilityRequiresDetectedGpu() {
+  QQmlEngine engine;
+  DetectorMock detector;
+  InstallerMock installer;
+  UpdaterMock updater;
+
+  detector.setDriverVersion(QStringLiteral("580.126.18"));
+  QScopedPointer<QObject> page(
+      createPage(&detector, &installer, &updater, &engine));
+
+  QVERIFY(page->property("driverInstalledLocally").toBool());
+  QVERIFY(!page->property("nvidiaHardwareAvailable").toBool());
+
+  detector.setGpuFound(true);
+  QTRY_VERIFY(page->property("nvidiaHardwareAvailable").toBool());
 }
 
 void TestDriverPage::

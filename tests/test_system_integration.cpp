@@ -1,5 +1,7 @@
 #include <QDir>
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QSignalSpy>
 #include <QStandardPaths>
 #include <QTemporaryDir>
@@ -294,11 +296,6 @@ private slots:
     QVERIFY(!provider.osName().isEmpty());
     QVERIFY(!provider.kernelVersion().isEmpty());
     QVERIFY(!provider.cpuModel().isEmpty());
-    QVERIFY(!provider.deviceType().isEmpty());
-    QVERIFY(!provider.motherboardModel().isEmpty());
-    QVERIFY(!provider.biosVersion().isEmpty());
-    QVERIFY(!provider.cudaVersion().isEmpty());
-    QVERIFY(!provider.graphicsApiSummary().isEmpty());
     QCOMPARE(provider.virtualMachine(),
              !provider.virtualizationType().isEmpty());
 
@@ -309,6 +306,27 @@ private slots:
     QVERIFY(!report.isEmpty());
     QVERIFY(report.contains(QStringLiteral("System Diagnostic Report")));
     QVERIFY(report.contains(QStringLiteral("NVIDIA RTX 4080")));
+
+    const QString plainReport = provider.generateSystemReport(
+        QStringLiteral("NVIDIA RTX 4080"), QStringLiteral("570.86.16"),
+        QStringLiteral("16 GB"), QStringLiteral("32 GB"),
+        QStringLiteral("Gen4 x16"), QStringLiteral("Secure Boot: Off"),
+        QStringLiteral("plain"));
+    QVERIFY(plainReport.contains(QStringLiteral("Operating System:")));
+    QVERIFY(!plainReport.contains(QStringLiteral("**Operating System:**")));
+
+    const auto jsonReport = QJsonDocument::fromJson(
+        provider
+            .generateSystemReport(
+                QStringLiteral("NVIDIA RTX 4080"), QStringLiteral("570.86.16"),
+                QStringLiteral("16 GB"), QStringLiteral("32 GB"),
+                QStringLiteral("Gen4 x16"), QStringLiteral("Secure Boot: Off"),
+                QStringLiteral("json"))
+            .toUtf8());
+    QVERIFY(jsonReport.isObject());
+    QCOMPARE(
+        jsonReport.object().value(QStringLiteral("graphicsCard")).toString(),
+        QStringLiteral("NVIDIA RTX 4080"));
 
     QSignalSpy spy(&provider, &SystemInfoProvider::infoChanged);
     provider.refresh();

@@ -40,6 +40,9 @@ Item {
     readonly property bool virtualMachine: page.systemInfo && page.systemInfo.virtualMachine
     readonly property string virtualizationType: page.virtualMachine ? page.systemInfo.virtualizationType : ""
     readonly property bool canManageDriverStack: page.nvidiaDetector.gpuFound || page.driverInstalledLocally
+    // Driver installation and module operations only make sense when the
+    // physical NVIDIA device (or a passthrough device) is present.
+    readonly property bool nvidiaHardwareAvailable: page.nvidiaDetector.gpuFound
     readonly property bool closedSourceDriverDetected: page.installedDriverSource === "closed-source" || page.installedDriverSource === "mixed"
     readonly property bool openSourceDriverDetected: page.installedDriverSource === "open-source" || page.installedDriverSource === "mixed"
     readonly property string installedVersionLabel: page.nvidiaDetector.driverVersion.length > 0 ? page.nvidiaDetector.driverVersion : page.nvidiaUpdater.currentVersion
@@ -616,19 +619,29 @@ Item {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: Math.round(132 * page.uiScale)
+                    implicitHeight: Math.max(Math.round(132 * page.uiScale), gpuInfoColumn.implicitHeight + Math.round(28 * page.uiScale))
                     radius: 14
                     color: page.cardColor
                     border.width: 1
                     border.color: page.borderColor
 
                     Column {
+                        id: gpuInfoColumn
                         anchors.fill: parent
                         anchors.margins: Math.round(14 * page.uiScale)
                         spacing: Math.round(6 * page.uiScale)
 
                         Label { text: qsTr("GPU"); color: page.softTextColor; font.weight: Font.DemiBold; font.pixelSize: Math.round(13 * page.uiScale) }
-                        Label { text: page.gpuMainLabel(); color: page.textColor; font.pixelSize: Math.round(20 * page.uiScale); font.weight: Font.Bold; elide: Text.ElideRight; width: parent.width }
+                        Label {
+                            width: parent.width
+                            text: page.gpuMainLabel()
+                            color: page.textColor
+                            font.pixelSize: Math.round(20 * page.uiScale)
+                            font.weight: Font.Bold
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                        }
                         Label {
                             width: parent.width
                             visible: !page.nvidiaDetector.gpuFound
@@ -785,11 +798,12 @@ Item {
                         Label {
                             width: parent.width
                             text: page.nvidiaDetector.secureBootEnabled
-                                  ? qsTr("UEFI Secure Boot is active. Third-party akmod modules require MOK signing.")
+                                  ? qsTr("UEFI Secure Boot is active.\nThird-party akmod modules require MOK signing.")
                                   : page.secureBootStatusDetail()
                             color: page.softTextColor
                             font.pixelSize: Math.round(12 * page.uiScale)
                             wrapMode: Text.WordWrap
+                            horizontalAlignment: Text.AlignLeft
                         }
                     }
                 }
@@ -823,7 +837,7 @@ Item {
 
                         Components.RefreshToolButton {
                             id: refreshButton
-                            enabled: !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
+                            enabled: page.nvidiaHardwareAvailable && !page.nvidiaUpdater.busy && !page.nvidiaInstaller.busy
                             busy: page.nvidiaUpdater.busy
                             theme: page.theme
                             darkMode: page.darkMode
@@ -835,7 +849,9 @@ Item {
 
                     Label {
                         Layout.fillWidth: true
-                        text: qsTr("Manage closed-source and open-source NVIDIA stacks. Switching stacks requires Deep Clean first.")
+                        text: page.nvidiaHardwareAvailable
+                              ? qsTr("Manage closed-source and open-source NVIDIA stacks. Switching stacks requires Deep Clean first.")
+                              : qsTr("NVIDIA driver controls are disabled because no NVIDIA GPU is detected. CPU, memory, and non-NVIDIA hardware monitoring remain available.")
                         color: page.softTextColor
                         wrapMode: Text.Wrap
                     }
@@ -853,8 +869,8 @@ Item {
                             activeBadge: page.closedSourceDriverDetected
                             badgeText: qsTr("INSTALLED")
                             busy: page.requestedDriverAction === "closed-install" && page.operationRunning
-                            enabled: page.canManageDriverStack && !page.openSourceDriverDetected && !page.nvidiaInstaller.busy && !page.operationRunning
-                            tooltipText: page.openSourceDriverDetected ? qsTr("Deep Clean is required before switching from open-source to closed-source.") : qsTr("Install official proprietary NVIDIA driver release (akmod-nvidia).")
+                            enabled: page.nvidiaHardwareAvailable && !page.openSourceDriverDetected && !page.nvidiaInstaller.busy && !page.operationRunning
+                            tooltipText: !page.nvidiaHardwareAvailable ? qsTr("An NVIDIA GPU or NVIDIA passthrough device is required.") : (page.openSourceDriverDetected ? qsTr("Deep Clean is required before switching from open-source to closed-source.") : qsTr("Install official proprietary NVIDIA driver release (akmod-nvidia)."))
                             onClicked: page.beginClosedSourceInstall()
                         }
 
@@ -865,8 +881,8 @@ Item {
                             activeBadge: page.openSourceDriverDetected
                             badgeText: qsTr("INSTALLED")
                             busy: page.requestedDriverAction === "open-install" && page.operationRunning
-                            enabled: page.canManageDriverStack && !page.closedSourceDriverDetected && !page.nvidiaInstaller.busy && !page.operationRunning
-                            tooltipText: page.closedSourceDriverDetected ? qsTr("Deep Clean is required before switching from closed-source to open-source.") : qsTr("Install community open-source kernel driver package (akmod-nvidia-open).")
+                            enabled: page.nvidiaHardwareAvailable && !page.closedSourceDriverDetected && !page.nvidiaInstaller.busy && !page.operationRunning
+                            tooltipText: !page.nvidiaHardwareAvailable ? qsTr("An NVIDIA GPU or NVIDIA passthrough device is required.") : (page.closedSourceDriverDetected ? qsTr("Deep Clean is required before switching from closed-source to open-source.") : qsTr("Install community open-source kernel driver package (akmod-nvidia-open)."))
                             onClicked: page.beginOpenSourceInstall()
                         }
 
@@ -875,8 +891,8 @@ Item {
                             subtitle: qsTr("Purge artifacts & stale DKMS")
                             accentColor: "#F59E0B"
                             busy: page.requestedDriverAction === "deep-clean" && page.operationRunning
-                            enabled: page.canManageDriverStack && page.driverInstalledLocally && !page.nvidiaInstaller.busy && !page.operationRunning
-                            tooltipText: qsTr("Remove leftover configurations and prepare system for clean driver installation.")
+                            enabled: page.nvidiaHardwareAvailable && page.driverInstalledLocally && !page.nvidiaInstaller.busy && !page.operationRunning
+                            tooltipText: !page.nvidiaHardwareAvailable ? qsTr("An NVIDIA GPU or NVIDIA passthrough device is required.") : qsTr("Remove leftover configurations and prepare system for clean driver installation.")
                             onClicked: page.openDriverActionInfo("clean")
                         }
 
@@ -885,8 +901,8 @@ Item {
                             subtitle: qsTr("Akmods & initramfs regeneration")
                             accentColor: "#8B5CF6"
                             busy: page.requestedDriverAction === "rebuild-modules" && page.operationRunning
-                            enabled: page.canManageDriverStack && page.driverInstalledLocally && !page.nvidiaInstaller.busy && !page.operationRunning
-                            tooltipText: qsTr("Force-rebuilds akmod kernel modules and regenerates initramfs after kernel updates.")
+                            enabled: page.nvidiaHardwareAvailable && page.driverInstalledLocally && !page.nvidiaInstaller.busy && !page.operationRunning
+                            tooltipText: !page.nvidiaHardwareAvailable ? qsTr("An NVIDIA GPU or NVIDIA passthrough device is required.") : qsTr("Force-rebuilds akmod kernel modules and regenerates initramfs after kernel updates.")
                             onClicked: page.openDriverActionInfo("rebuild")
                         }
 

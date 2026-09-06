@@ -7,9 +7,12 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QList>
 #include <QProcess>
 #include <QRegularExpression>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QStringList>
 #include <QSysInfo>
@@ -100,9 +103,50 @@ QString valueFromOsRelease(const QString &key) {
   return QString::fromUtf8(file.readAll()).trimmed();
 }
 
+QString formatMemoryBytes(qint64 bytes) {
+  if (bytes <= 0) {
+    return {};
+  }
+  const double mib = static_cast<double>(bytes) / (1024.0 * 1024.0);
+  if (mib >= 1024.0) {
+    return QStringLiteral("%1 GB (%2 MiB)")
+        .arg(mib / 1024.0, 0, 'f', 1)
+        .arg(static_cast<qint64>(mib));
+  }
+  return QStringLiteral("%1 MiB").arg(static_cast<qint64>(mib));
+}
+
+bool isIntegratedGpuDescription(const QString &vendor, const QString &model) {
+  const QString normalizedVendor = vendor.toLower();
+  const QString normalizedModel = model.toLower();
+  if (normalizedVendor.contains(QStringLiteral("intel"))) {
+    return !normalizedModel.contains(QStringLiteral("arc"));
+  }
+  return (normalizedVendor.contains(QStringLiteral("amd")) ||
+          normalizedVendor.contains(QStringLiteral("ati"))) &&
+         normalizedModel.contains(QStringLiteral("radeon graphics"));
+}
+
+QString normalizedGpuDisplayName(const QString &vendor, const QString &model) {
+  QString name = model.trimmed();
+  if (name.isEmpty()) {
+    return {};
+  }
+  if (vendor.contains(QStringLiteral("Intel"), Qt::CaseInsensitive) &&
+      !name.startsWith(QStringLiteral("Intel"), Qt::CaseInsensitive)) {
+    name.prepend(QStringLiteral("Intel "));
+  } else if ((vendor.contains(QStringLiteral("AMD"), Qt::CaseInsensitive) ||
+              vendor.contains(QStringLiteral("ATI"), Qt::CaseInsensitive)) &&
+             !name.startsWith(QStringLiteral("AMD"), Qt::CaseInsensitive)) {
+    name.prepend(QStringLiteral("AMD "));
+  }
+  return name;
+}
+
 } // namespace
 
 SystemInfoProvider::SystemInfoProvider(QObject *parent) : QObject(parent) {
+  loadDiagnosticReportPreferences();
   initializeStaticInfo();
   refresh();
 }
@@ -122,6 +166,8 @@ void SystemInfoProvider::initializeStaticInfo() {
   m_graphicsApiSummary = detectGraphicsApiSummary();
   m_virtualizationType = detectVirtualizationType();
   m_deviceType = detectDeviceType();
+  m_integratedGpuName = detectIntegratedGpuName();
+  m_integratedGpuMemory = detectIntegratedGpuMemory();
   m_staticHardwareLoaded = true;
 }
 
@@ -193,56 +239,149 @@ bool SystemInfoProvider::copyToClipboard(const QString &text) {
   return false;
 }
 
+void SystemInfoProvider::loadDiagnosticReportPreferences() {
+  QSettings settings;
+  settings.beginGroup(QStringLiteral("DiagnosticReport"));
+  const QString format =
+      settings.value(QStringLiteral("format"), QStringLiteral("markdown"))
+          .toString()
+          .trimmed()
+          .toLower();
+  const QString destination =
+      settings.value(QStringLiteral("destination"), QStringLiteral("preview"))
+          .toString()
+          .trimmed()
+          .toLower();
+  settings.endGroup();
+  m_diagnosticReportFormat =
+      (format == QStringLiteral("plain") || format == QStringLiteral("json"))
+          ? format
+          : QStringLiteral("markdown");
+  m_diagnosticReportDestination = destination == QStringLiteral("clipboard")
+                                      ? QStringLiteral("clipboard")
+                                      : QStringLiteral("preview");
+}
+
+void SystemInfoProvider::saveDiagnosticReportPreferences() const {
+  QSettings settings;
+  settings.beginGroup(QStringLiteral("DiagnosticReport"));
+  settings.setValue(QStringLiteral("format"), m_diagnosticReportFormat);
+  settings.setValue(QStringLiteral("destination"),
+                    m_diagnosticReportDestination);
+  settings.endGroup();
+}
+
+void SystemInfoProvider::setDiagnosticReportFormat(const QString &format) {
+  const QString normalized = format.trimmed().toLower();
+  const QString next = (normalized == QStringLiteral("plain") ||
+                        normalized == QStringLiteral("json"))
+                           ? normalized
+                           : QStringLiteral("markdown");
+  if (m_diagnosticReportFormat == next)
+    return;
+  m_diagnosticReportFormat = next;
+  saveDiagnosticReportPreferences();
+  emit diagnosticReportPreferencesChanged();
+}
+
+void SystemInfoProvider::setDiagnosticReportDestination(
+    const QString &destination) {
+  const QString next =
+      destination.trimmed().toLower() == QStringLiteral("clipboard")
+          ? QStringLiteral("clipboard")
+          : QStringLiteral("preview");
+  if (m_diagnosticReportDestination == next)
+    return;
+  m_diagnosticReportDestination = next;
+  saveDiagnosticReportPreferences();
+  emit diagnosticReportPreferencesChanged();
+}
+
 QString SystemInfoProvider::generateSystemReport(
     const QString &gpuName, const QString &driverVer, const QString &vramStr,
-    const QString &ramStr, const QString &pcieStr, const QString &secureBoot) {
+    const QString &ramStr, const QString &pcieStr, const QString &secureBoot,
+    const QString &format) {
+  const QString outputFormat = format.trimmed().toLower();
+  if (outputFormat == QStringLiteral("json")) {
+    QJsonObject report;
+    report.insert(QStringLiteral("report"),
+                  QStringLiteral("ro-Control System Diagnostic Report"));
+    report.insert(QStringLiteral("operatingSystem"), m_osName);
+    report.insert(QStringLiteral("linuxKernel"), m_kernelVersion);
+    report.insert(QStringLiteral("desktopEnvironment"), m_desktopEnvironment);
+    report.insert(QStringLiteral("processor"), m_cpuModel);
+    if (!m_motherboardModel.isEmpty())
+      report.insert(QStringLiteral("motherboard"), m_motherboardModel);
+    if (!m_biosVersion.isEmpty())
+      report.insert(QStringLiteral("uefiBios"), m_biosVersion);
+    if (!gpuName.isEmpty())
+      report.insert(QStringLiteral("graphicsCard"), gpuName);
+    if (!driverVer.isEmpty())
+      report.insert(QStringLiteral("nvidiaDriver"), driverVer);
+    if (!vramStr.isEmpty())
+      report.insert(QStringLiteral("videoMemory"), vramStr);
+    if (!m_integratedGpuName.isEmpty() && !m_integratedGpuMemory.isEmpty()) {
+      report.insert(QStringLiteral("integratedGraphics"), m_integratedGpuName);
+      report.insert(QStringLiteral("integratedGraphicsMemory"),
+                    m_integratedGpuMemory);
+    }
+    if (!ramStr.isEmpty())
+      report.insert(QStringLiteral("systemMemory"), ramStr);
+    if (!pcieStr.isEmpty())
+      report.insert(QStringLiteral("pcieLink"), pcieStr);
+    if (!secureBoot.isEmpty())
+      report.insert(QStringLiteral("platformSecurity"), secureBoot);
+    if (!m_graphicsApiSummary.isEmpty())
+      report.insert(QStringLiteral("computeGraphics"), m_graphicsApiSummary);
+    return QString::fromUtf8(
+        QJsonDocument(report).toJson(QJsonDocument::Indented));
+  }
+
   QString report;
   QTextStream out(&report);
-  out << QStringLiteral("```markdown\n");
-  out << QStringLiteral("# ro-Control System Diagnostic Report\n\n");
-  out << QStringLiteral("- **Operating System:** ") << m_osName
-      << QStringLiteral("\n");
-  out << QStringLiteral("- **Linux Kernel:** ") << m_kernelVersion
-      << QStringLiteral("\n");
-  out << QStringLiteral("- **Desktop Environment:** ") << m_desktopEnvironment
-      << QStringLiteral("\n");
-  out << QStringLiteral("- **Processor (CPU):** ") << m_cpuModel
-      << QStringLiteral("\n");
+  const bool markdown = outputFormat != QStringLiteral("plain");
+  const auto field = [markdown](const QString &label, const QString &value) {
+    return markdown ? QStringLiteral("- **%1:** %2\n").arg(label, value)
+                    : QStringLiteral("%1: %2\n").arg(label, value);
+  };
+  out << (markdown ? QStringLiteral("# ro-Control System Diagnostic Report\n\n")
+                   : QStringLiteral("ro-Control System Diagnostic Report\n\n"));
+  out << field(QStringLiteral("Operating System"), m_osName);
+  out << field(QStringLiteral("Linux Kernel"), m_kernelVersion);
+  out << field(QStringLiteral("Desktop Environment"), m_desktopEnvironment);
+  out << field(QStringLiteral("Processor (CPU)"), m_cpuModel);
   if (!m_motherboardModel.isEmpty()) {
-    out << QStringLiteral("- **Motherboard:** ") << m_motherboardModel
-        << QStringLiteral("\n");
+    out << field(QStringLiteral("Motherboard"), m_motherboardModel);
   }
   if (!m_biosVersion.isEmpty()) {
-    out << QStringLiteral("- **UEFI / BIOS:** ") << m_biosVersion
-        << QStringLiteral("\n");
+    out << field(QStringLiteral("UEFI / BIOS"), m_biosVersion);
   }
   if (!gpuName.isEmpty()) {
-    out << QStringLiteral("- **Graphics Card (GPU):** ") << gpuName
-        << QStringLiteral("\n");
+    out << field(QStringLiteral("Graphics Card (GPU)"), gpuName);
   }
   if (!driverVer.isEmpty()) {
-    out << QStringLiteral("- **NVIDIA Driver:** ") << driverVer
-        << QStringLiteral("\n");
+    out << field(QStringLiteral("NVIDIA Driver"), driverVer);
   }
   if (!vramStr.isEmpty()) {
-    out << QStringLiteral("- **Video Memory (VRAM):** ") << vramStr
-        << QStringLiteral("\n");
+    out << field(QStringLiteral("Video Memory (VRAM)"), vramStr);
+  }
+  if (!m_integratedGpuName.isEmpty() && !m_integratedGpuMemory.isEmpty()) {
+    out << field(QStringLiteral("Integrated Graphics"), m_integratedGpuName);
+    out << field(QStringLiteral("Integrated Graphics Memory"),
+                 m_integratedGpuMemory);
   }
   if (!ramStr.isEmpty()) {
-    out << QStringLiteral("- **System Memory (RAM):** ") << ramStr
-        << QStringLiteral("\n");
+    out << field(QStringLiteral("System Memory (RAM)"), ramStr);
   }
   if (!pcieStr.isEmpty()) {
-    out << QStringLiteral("- **PCIe Link:** ") << pcieStr
-        << QStringLiteral("\n");
+    out << field(QStringLiteral("PCIe Link"), pcieStr);
   }
   if (!secureBoot.isEmpty()) {
-    out << QStringLiteral("- **Platform Security:** ") << secureBoot
-        << QStringLiteral("\n");
+    out << field(QStringLiteral("Platform Security"), secureBoot);
   }
-  out << QStringLiteral("- **Compute & Graphics:** ") << m_graphicsApiSummary
-      << QStringLiteral("\n");
-  out << QStringLiteral("```\n");
+  if (!m_graphicsApiSummary.isEmpty()) {
+    out << field(QStringLiteral("Compute & Graphics"), m_graphicsApiSummary);
+  }
   return report;
 }
 
@@ -369,7 +508,7 @@ QString SystemInfoProvider::detectMotherboardModel() const {
   if (!virt.isEmpty()) {
     return QStringLiteral("%1 Virtual Motherboard").arg(virt);
   }
-  return QStringLiteral("Standard Motherboard");
+  return {};
 }
 
 QString SystemInfoProvider::detectBiosVersion() const {
@@ -383,7 +522,7 @@ QString SystemInfoProvider::detectBiosVersion() const {
                            : version;
   }
 #endif
-  return QStringLiteral("UEFI / BIOS");
+  return {};
 }
 
 QString SystemInfoProvider::detectCudaVersion() const {
@@ -410,12 +549,27 @@ QString SystemInfoProvider::detectCudaVersion() const {
     }
   }
 #endif
-  return QStringLiteral("CUDA Supported");
+  return {};
 }
 
 QString SystemInfoProvider::detectGraphicsApiSummary() const {
+  QStringList capabilities;
   const QString cuda = detectCudaVersion();
-  return QStringLiteral("%1 • Vulkan 1.3 • NVENC Ready").arg(cuda);
+  if (!cuda.isEmpty()) {
+    capabilities << cuda;
+  }
+
+#if defined(Q_OS_LINUX)
+  CommandRunner runner;
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 1500;
+  const auto vulkan = runner.run(QStringLiteral("vulkaninfo"),
+                                 {QStringLiteral("--summary")}, options);
+  if (vulkan.success()) {
+    capabilities << QStringLiteral("Vulkan");
+  }
+#endif
+  return capabilities.join(QStringLiteral(" • "));
 }
 
 QString SystemInfoProvider::detectVirtualizationType() const {
@@ -477,7 +631,7 @@ QString SystemInfoProvider::detectDeviceType() const {
   }
 #endif
 
-  return QStringLiteral("Desktop");
+  return {};
 }
 
 QString SystemInfoProvider::detectDesktopEnvironment() const {
@@ -505,6 +659,63 @@ QString SystemInfoProvider::detectDesktopEnvironment() const {
   }
 
   return normalizedParts.join(QStringLiteral(" / "));
+}
+
+QString SystemInfoProvider::detectIntegratedGpuName() const {
+#if defined(Q_OS_LINUX)
+  CommandRunner runner;
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 1500;
+  const auto result =
+      runner.run(QStringLiteral("lspci"), {QStringLiteral("-mm")}, options);
+  if (!result.success())
+    return {};
+
+  static const QRegularExpression fieldPattern(QStringLiteral("\"([^\"]+)\""));
+  for (const QString &line :
+       result.stdout.split(QLatin1Char('\n'), Qt::SkipEmptyParts)) {
+    if (!line.contains(QStringLiteral("VGA"), Qt::CaseInsensitive) &&
+        !line.contains(QStringLiteral("3D controller"), Qt::CaseInsensitive) &&
+        !line.contains(QStringLiteral("Display controller"),
+                       Qt::CaseInsensitive))
+      continue;
+    auto matches = fieldPattern.globalMatch(line);
+    QStringList fields;
+    while (matches.hasNext())
+      fields << matches.next().captured(1);
+    if (fields.size() >= 3 &&
+        isIntegratedGpuDescription(fields.at(1), fields.at(2)))
+      return normalizedGpuDisplayName(fields.at(1), fields.at(2));
+  }
+#endif
+  return {};
+}
+
+QString SystemInfoProvider::detectIntegratedGpuMemory() const {
+#if defined(Q_OS_LINUX)
+  if (m_integratedGpuName.isEmpty())
+    return {};
+  const QDir drmRoot(QStringLiteral("/sys/class/drm"));
+  const QFileInfoList cards =
+      drmRoot.entryInfoList({QStringLiteral("card[0-9]*")},
+                            QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+  for (const QFileInfo &card : cards) {
+    const QString devicePath =
+        card.absoluteFilePath() + QStringLiteral("/device");
+    const QString vendor =
+        valueFromFile(devicePath + QStringLiteral("/vendor"));
+    if (vendor != QStringLiteral("0x8086") &&
+        vendor != QStringLiteral("0x1002"))
+      continue;
+    bool ok = false;
+    const qint64 bytes =
+        valueFromFile(devicePath + QStringLiteral("/mem_info_vram_total"))
+            .toLongLong(&ok);
+    if (ok && bytes > 0)
+      return formatMemoryBytes(bytes);
+  }
+#endif
+  return {};
 }
 
 bool SystemInfoProvider::detectOnBattery(QString *sourceLabel) const {

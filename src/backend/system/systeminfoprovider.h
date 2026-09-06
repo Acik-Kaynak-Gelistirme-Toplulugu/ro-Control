@@ -22,6 +22,17 @@ class SystemInfoProvider : public QObject {
       QString graphicsApiSummary READ graphicsApiSummary NOTIFY infoChanged)
   Q_PROPERTY(bool onBattery READ onBattery NOTIFY infoChanged)
   Q_PROPERTY(QString powerSource READ powerSource NOTIFY infoChanged)
+  Q_PROPERTY(
+      QString integratedGpuName READ integratedGpuName NOTIFY infoChanged)
+  Q_PROPERTY(
+      QString integratedGpuMemory READ integratedGpuMemory NOTIFY infoChanged)
+  Q_PROPERTY(
+      QString diagnosticReportFormat READ diagnosticReportFormat WRITE
+          setDiagnosticReportFormat NOTIFY diagnosticReportPreferencesChanged)
+  Q_PROPERTY(
+      QString diagnosticReportDestination READ diagnosticReportDestination WRITE
+          setDiagnosticReportDestination NOTIFY
+              diagnosticReportPreferencesChanged)
 
 public:
   explicit SystemInfoProvider(QObject *parent = nullptr);
@@ -39,19 +50,28 @@ public:
   QString virtualizationType() const { return m_virtualizationType; }
   bool onBattery() const { return m_onBattery; }
   QString powerSource() const { return m_powerSource; }
+  QString integratedGpuName() const { return m_integratedGpuName; }
+  QString integratedGpuMemory() const { return m_integratedGpuMemory; }
+  QString diagnosticReportFormat() const { return m_diagnosticReportFormat; }
+  QString diagnosticReportDestination() const {
+    return m_diagnosticReportDestination;
+  }
 
   Q_INVOKABLE void refresh();
   Q_INVOKABLE bool requestRestart();
   Q_INVOKABLE bool requestRebootToFirmware();
   Q_INVOKABLE bool copyToClipboard(const QString &text);
+  Q_INVOKABLE void setDiagnosticReportFormat(const QString &format);
+  Q_INVOKABLE void setDiagnosticReportDestination(const QString &destination);
   Q_INVOKABLE QString generateSystemReport(
       const QString &gpuName = QString(), const QString &driverVer = QString(),
       const QString &vramStr = QString(), const QString &ramStr = QString(),
-      const QString &pcieStr = QString(),
-      const QString &secureBoot = QString());
+      const QString &pcieStr = QString(), const QString &secureBoot = QString(),
+      const QString &format = QStringLiteral("markdown"));
 
 signals:
   void infoChanged();
+  void diagnosticReportPreferencesChanged();
 
 private:
   QString detectOsName() const;
@@ -64,8 +84,12 @@ private:
   QString detectDeviceType() const;
   QString detectDesktopEnvironment() const;
   QString detectVirtualizationType() const;
+  QString detectIntegratedGpuName() const;
+  QString detectIntegratedGpuMemory() const;
   bool detectOnBattery(QString *sourceLabel = nullptr) const;
   void initializeStaticInfo();
+  void loadDiagnosticReportPreferences();
+  void saveDiagnosticReportPreferences() const;
 
   QString m_osName;
   QString m_desktopEnvironment;
@@ -80,4 +104,8 @@ private:
   bool m_onBattery = false;
   bool m_staticHardwareLoaded = false;
   QString m_powerSource;
+  QString m_integratedGpuName;
+  QString m_integratedGpuMemory;
+  QString m_diagnosticReportFormat = QStringLiteral("markdown");
+  QString m_diagnosticReportDestination = QStringLiteral("preview");
 };

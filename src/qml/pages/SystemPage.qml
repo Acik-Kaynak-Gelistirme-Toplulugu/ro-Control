@@ -17,6 +17,7 @@ Item {
     property bool showAdvancedInfo: true
     property real uiScale: 1.0
     property bool reportCopied: false
+    property string generatedReport: ""
 
     readonly property color bgColor: theme && theme.card ? theme.card : (page.darkMode ? "#29233B" : "#FFFFFF")
     readonly property color cardColor: theme && theme.cardStrong ? theme.cardStrong : (page.darkMode ? "#342D4A" : "#F1F5F9")
@@ -28,20 +29,29 @@ Item {
     readonly property color successColor: theme && theme.success ? theme.success : (page.darkMode ? "#4ADE80" : "#059669")
     readonly property color warningColor: theme && theme.warning ? theme.warning : (page.darkMode ? "#FBBF24" : "#D97706")
 
-    function safeText(value) {
-        return value && value.length > 0 ? value : qsTr("Unavailable");
-    }
-
     function deviceAndPowerSummary() {
-        const dev = page.safeText(page.systemInfo ? page.systemInfo.deviceType : "");
+        const dev = page.systemInfo && page.systemInfo.deviceType ? page.systemInfo.deviceType : "";
         const pwr = page.systemInfo && page.systemInfo.powerSource ? page.systemInfo.powerSource : "";
-        return pwr.length > 0 ? (dev + " • " + pwr) : dev;
+        return dev.length > 0 && pwr.length > 0 ? (dev + " • " + pwr) : (dev || pwr);
     }
 
     function nvidiaDriverSummary() {
-        const ver = page.safeText(page.nvidiaDetector ? page.nvidiaDetector.driverVersion : "");
+        const ver = page.nvidiaDetector && page.nvidiaDetector.driverVersion ? page.nvidiaDetector.driverVersion : "";
+        if (ver.length === 0)
+            return "";
         const src = page.nvidiaDetector ? page.nvidiaDetector.installedDriverSourceLabel : "";
         return (src.length > 0 && src !== "None") ? (ver + " (" + src + ")") : ver;
+    }
+
+    function systemHealthSummary() {
+        const items = [];
+        if (page.nvidiaDetector && page.nvidiaDetector.driverVersion)
+            items.push(qsTr("Driver: %1").arg(page.nvidiaDetector.driverVersion));
+        if (page.gpuMonitor && page.gpuMonitor.available)
+            items.push(qsTr("GPU telemetry: Available"));
+        if (page.nvidiaDetector && page.nvidiaDetector.secureBootKnown)
+            items.push(page.nvidiaDetector.secureBootEnabled ? qsTr("Secure Boot: On") : qsTr("Secure Boot: Off"));
+        return items.length > 0 ? items.join(" • ") : qsTr("Live system information");
     }
 
     function platformSecuritySummary() {
@@ -52,13 +62,56 @@ Item {
         return sb.length > 0 ? (virt + " • " + sb) : virt;
     }
 
-    function copyDiagnosticReport() {
+    function diagnosticGpuName() {
+        if (!page.nvidiaDetector)
+            return "";
+        return page.nvidiaDetector.gpuFound ? page.nvidiaDetector.gpuName : page.nvidiaDetector.displayAdapterName;
+    }
+
+    function hardwareCards() {
+        const cards = [];
+        function add(title, value) {
+            if (value && value.toString().trim().length > 0)
+                cards.push({ title: title, value: value });
+        }
+        add(qsTr("Graphics Card (GPU)"), page.diagnosticGpuName());
+        add(qsTr("Processor (CPU)"), page.systemInfo ? page.systemInfo.cpuModel : "");
+        add(qsTr("Motherboard"), page.systemInfo ? page.systemInfo.motherboardModel : "");
+        add(qsTr("UEFI / BIOS"), page.systemInfo ? page.systemInfo.biosVersion : "");
+        if (page.ramMonitor && page.ramMonitor.totalMiB > 0)
+            add(qsTr("System Memory (RAM)"), (page.ramMonitor.totalMiB / 1024.0).toFixed(1) + " GB (" + page.ramMonitor.totalMiB + " MiB)");
+        if (page.gpuMonitor && page.gpuMonitor.memoryTotalMiB > 0)
+            add(qsTr("Video Memory (VRAM)"), (page.gpuMonitor.memoryTotalMiB / 1024.0).toFixed(1) + " GB (" + page.gpuMonitor.memoryTotalMiB + " MiB)");
+        if (page.systemInfo && page.systemInfo.integratedGpuName && page.systemInfo.integratedGpuMemory)
+            add(qsTr("Integrated Graphics Memory"), page.systemInfo.integratedGpuName + " • " + page.systemInfo.integratedGpuMemory);
+        add(qsTr("PCIe Link Interface"), page.gpuMonitor ? page.gpuMonitor.pcieLinkStatus : "");
+        add(qsTr("Device & Power"), page.deviceAndPowerSummary());
+        return cards;
+    }
+
+    function softwareCards() {
+        const cards = [];
+        function add(title, value) {
+            if (value && value.toString().trim().length > 0)
+                cards.push({ title: title, value: value });
+        }
+        add(qsTr("Operating System"), page.systemInfo ? page.systemInfo.osName : "");
+        add(qsTr("Desktop Environment"), page.systemInfo ? page.systemInfo.desktopEnvironment : "");
+        add(qsTr("Linux Kernel"), page.systemInfo ? page.systemInfo.kernelVersion : "");
+        if (page.nvidiaDetector && page.nvidiaDetector.sessionType)
+            add(qsTr("Display Server / Session"), page.nvidiaDetector.sessionType.charAt(0).toUpperCase() + page.nvidiaDetector.sessionType.slice(1));
+        if (page.nvidiaDetector && page.nvidiaDetector.gpuFound && page.nvidiaDetector.driverVersion)
+            add(qsTr("NVIDIA Driver"), page.nvidiaDriverSummary());
+        add(qsTr("Graphics & Compute APIs"), page.systemInfo ? page.systemInfo.graphicsApiSummary : "");
+        add(qsTr("Platform & Security"), page.platformSecuritySummary());
+        return cards;
+    }
+
+    function openDiagnosticReport() {
         if (!page.systemInfo)
             return;
 
-        const gpu = page.nvidiaDetector
-                  ? (page.nvidiaDetector.gpuFound ? page.nvidiaDetector.gpuName : page.safeText(page.nvidiaDetector.displayAdapterName))
-                  : "";
+        const gpu = page.diagnosticGpuName();
         const drv = page.nvidiaDriverSummary();
         const vram = (page.gpuMonitor && page.gpuMonitor.memoryTotalMiB > 0)
                    ? ((page.gpuMonitor.memoryTotalMiB / 1024.0).toFixed(1) + " GB (" + page.gpuMonitor.memoryTotalMiB + " MiB)")
@@ -69,10 +122,13 @@ Item {
         const pcie = page.gpuMonitor ? page.gpuMonitor.pcieLinkStatus : "";
         const sec = page.platformSecuritySummary();
 
-        const report = page.systemInfo.generateSystemReport(gpu, drv, vram, ram, pcie, sec);
-        page.systemInfo.copyToClipboard(report);
-        page.reportCopied = true;
-        copiedFeedbackTimer.restart();
+        page.generatedReport = page.systemInfo.generateSystemReport(gpu, drv, vram, ram, pcie, sec, page.systemInfo.diagnosticReportFormat);
+        if (page.systemInfo.diagnosticReportDestination === "clipboard") {
+            page.reportCopied = page.systemInfo.copyToClipboard(page.generatedReport);
+            if (page.reportCopied)
+                copiedFeedbackTimer.restart();
+        }
+        diagnosticReportDialog.open();
     }
 
     Timer {
@@ -95,7 +151,7 @@ Item {
             Rectangle { Layout.fillWidth: true; implicitHeight: 52; radius: 12; color: page.cardColor; border.width: 1; border.color: page.borderColor
                 RowLayout { anchors.fill: parent; anchors.margins: 12; spacing: 18
                     Label { text: qsTr("System health"); color: page.textColor; font.weight: Font.DemiBold }
-                    Label { Layout.fillWidth: true; text: qsTr("Driver: %1 • GPU telemetry: %2 • Secure Boot: %3").arg(page.safeText(page.nvidiaDetector ? page.nvidiaDetector.driverVersion : "")).arg(page.gpuMonitor && page.gpuMonitor.available ? qsTr("Available") : qsTr("Unavailable")).arg(page.nvidiaDetector && page.nvidiaDetector.secureBootEnabled ? qsTr("On") : qsTr("Off")); color: page.softTextColor; elide: Text.ElideRight }
+                    Label { Layout.fillWidth: true; text: page.systemHealthSummary(); color: page.softTextColor; elide: Text.ElideRight }
                 }
             }
 
@@ -129,48 +185,7 @@ Item {
                         rowSpacing: Math.round(8 * page.uiScale)
 
                         Repeater {
-                            model: [
-                                {
-                                    title: qsTr("Graphics Card (GPU)"),
-                                    value: page.nvidiaDetector
-                                           ? (page.nvidiaDetector.gpuFound ? page.nvidiaDetector.gpuName : page.safeText(page.nvidiaDetector.displayAdapterName))
-                                           : qsTr("Unavailable")
-                                },
-                                {
-                                    title: qsTr("Processor (CPU)"),
-                                    value: page.safeText(page.systemInfo ? page.systemInfo.cpuModel : "")
-                                },
-                                {
-                                    title: qsTr("Motherboard"),
-                                    value: page.safeText(page.systemInfo ? page.systemInfo.motherboardModel : "")
-                                },
-                                {
-                                    title: qsTr("UEFI / BIOS"),
-                                    value: page.safeText(page.systemInfo ? page.systemInfo.biosVersion : "")
-                                },
-                                {
-                                    title: qsTr("System Memory (RAM)"),
-                                    value: (page.ramMonitor && page.ramMonitor.totalMiB > 0)
-                                           ? ((page.ramMonitor.totalMiB / 1024.0).toFixed(1) + " GB (" + page.ramMonitor.totalMiB + " MiB)")
-                                           : qsTr("Unavailable")
-                                },
-                                {
-                                    title: qsTr("Video Memory (VRAM)"),
-                                    value: (page.gpuMonitor && page.gpuMonitor.memoryTotalMiB > 0)
-                                           ? ((page.gpuMonitor.memoryTotalMiB / 1024.0).toFixed(1) + " GB (" + page.gpuMonitor.memoryTotalMiB + " MiB)")
-                                           : qsTr("Unavailable")
-                                },
-                                {
-                                    title: qsTr("PCIe Link Interface"),
-                                    value: (page.gpuMonitor && page.gpuMonitor.pcieLinkStatus.length > 0)
-                                           ? page.gpuMonitor.pcieLinkStatus
-                                           : qsTr("Unavailable")
-                                },
-                                {
-                                    title: qsTr("Device & Power"),
-                                    value: page.deviceAndPowerSummary()
-                                }
-                            ]
+                            model: page.hardwareCards()
 
                             delegate: Rectangle {
                                 required property var modelData
@@ -239,38 +254,7 @@ Item {
                         rowSpacing: Math.round(8 * page.uiScale)
 
                         Repeater {
-                            model: [
-                                {
-                                    title: qsTr("Operating System"),
-                                    value: page.safeText(page.systemInfo ? page.systemInfo.osName : "")
-                                },
-                                {
-                                    title: qsTr("Desktop Environment"),
-                                    value: page.safeText(page.systemInfo ? page.systemInfo.desktopEnvironment : "")
-                                },
-                                {
-                                    title: qsTr("Linux Kernel"),
-                                    value: page.safeText(page.systemInfo ? page.systemInfo.kernelVersion : "")
-                                },
-                                {
-                                    title: qsTr("Display Server / Session"),
-                                    value: page.nvidiaDetector && page.nvidiaDetector.sessionType.length > 0
-                                           ? (page.nvidiaDetector.sessionType.charAt(0).toUpperCase() + page.nvidiaDetector.sessionType.slice(1))
-                                           : qsTr("Wayland")
-                                },
-                                {
-                                    title: qsTr("NVIDIA Driver"),
-                                    value: page.nvidiaDriverSummary()
-                                },
-                                {
-                                    title: qsTr("Graphics & Compute APIs"),
-                                    value: page.safeText(page.systemInfo ? page.systemInfo.graphicsApiSummary : "")
-                                },
-                                {
-                                    title: qsTr("Platform & Security"),
-                                    value: page.platformSecuritySummary()
-                                }
-                            ]
+                            model: page.softwareCards()
 
                             delegate: Rectangle {
                                 required property var modelData
@@ -338,28 +322,26 @@ Item {
 
                         Button {
                             id: copyReportBtn
-                            text: page.reportCopied ? qsTr("Report Copied to Clipboard!") : qsTr("Copy Diagnostic Report")
+                            text: qsTr("Open Diagnostic Report")
                             implicitHeight: Math.round(36 * page.uiScale)
 
                             background: Rectangle {
                                 radius: 8
-                                color: page.reportCopied
-                                       ? page.successColor
-                                       : (copyReportBtn.hovered ? (page.darkMode ? "#3B3156" : "#E2E8F0") : page.bgColor)
+                                color: copyReportBtn.hovered ? (page.darkMode ? "#3B3156" : "#E2E8F0") : page.bgColor
                                 border.width: 1
-                                border.color: page.reportCopied ? page.successColor : page.borderColor
+                                border.color: copyReportBtn.hovered ? page.accentColor : page.borderColor
                             }
 
                             contentItem: Text {
                                 text: copyReportBtn.text
-                                color: page.reportCopied ? "#FFFFFF" : page.textColor
+                                color: page.textColor
                                 font.pixelSize: Math.round(12 * page.uiScale)
                                 font.weight: Font.DemiBold
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
 
-                            onClicked: page.copyDiagnosticReport()
+                            onClicked: page.openDiagnosticReport()
                         }
 
                         Button {
@@ -389,6 +371,102 @@ Item {
                         Item {
                             Layout.fillWidth: true
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    Dialog {
+        id: diagnosticReportDialog
+        title: qsTr("Diagnostic Report")
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(page.width * 0.9, Math.round(760 * page.uiScale))
+        height: Math.min(page.height * 0.85, Math.round(620 * page.uiScale))
+        standardButtons: Dialog.Close
+
+        background: Rectangle {
+            radius: 12
+            color: page.cardColor
+            border.width: 1
+            border.color: page.borderColor
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 10
+
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Choose how the report is generated. These preferences are saved for future reports.")
+                color: page.softTextColor
+                wrapMode: Text.WordWrap
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 10
+
+                Label { text: qsTr("Format"); color: page.textColor; font.weight: Font.DemiBold }
+                ComboBox {
+                    id: reportFormatCombo
+                    model: ["markdown", "plain", "json"]
+                    currentIndex: Math.max(0, model.indexOf(page.systemInfo ? page.systemInfo.diagnosticReportFormat : "markdown"))
+                    textRole: ""
+                    onActivated: function(index) {
+                        if (page.systemInfo) {
+                            page.systemInfo.setDiagnosticReportFormat(model[index]);
+                            page.openDiagnosticReport();
+                        }
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+                Label { text: qsTr("Default action"); color: page.textColor; font.weight: Font.DemiBold }
+                ComboBox {
+                    model: ["preview", "clipboard"]
+                    currentIndex: Math.max(0, model.indexOf(page.systemInfo ? page.systemInfo.diagnosticReportDestination : "preview"))
+                    onActivated: function(index) {
+                        if (page.systemInfo)
+                            page.systemInfo.setDiagnosticReportDestination(model[index]);
+                    }
+                }
+            }
+
+            TextArea {
+                id: diagnosticReportText
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                text: page.generatedReport
+                readOnly: true
+                selectByMouse: true
+                wrapMode: TextEdit.WrapAnywhere
+                color: page.textColor
+                font.family: "monospace"
+                font.pixelSize: Math.round(12 * page.uiScale)
+                background: Rectangle {
+                    color: page.bgColor
+                    radius: 8
+                    border.width: 1
+                    border.color: page.borderColor
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Item { Layout.fillWidth: true }
+                Label {
+                    visible: page.reportCopied
+                    text: qsTr("Copied to clipboard")
+                    color: page.successColor
+                    font.weight: Font.DemiBold
+                }
+                Button {
+                    text: qsTr("Copy to Clipboard")
+                    onClicked: {
+                        page.reportCopied = page.systemInfo && page.systemInfo.copyToClipboard(page.generatedReport);
+                        if (page.reportCopied)
+                            copiedFeedbackTimer.restart();
                     }
                 }
             }

@@ -615,6 +615,7 @@ ApplicationWindow {
                     fanController: root.fanController
                     powerController: root.powerController
                     healthGuard: root.healthGuard
+                    nvidiaDetector: root.nvidiaDetector
                 }
 
                 Pages.FanPage {
