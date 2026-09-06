@@ -57,6 +57,7 @@ Comprehensive guides for administrators, maintainers, and developers:
 - 📦 **[Installation & Deployment Guide](docs/INSTALL.md):** System requirements, RPM package deployment, Discover store setup, and systemd service management.
 - 🛠️ **[Build & Development Guide](docs/BUILD.md):** Toolchain prerequisites, compiling from source (CMake/Ninja), running CTest suites, and packaging commands.
 - 🏗️ **[Architecture & IPC Specification](docs/ARCHITECTURE.md):** Subsystem structure, backend modules, hardware sysfs integration, and D-Bus IPC methods/signals.
+- ⚙️ **[Configuration Reference](docs/CONFIGURATION.md):** QSettings keys for thermal thresholds, power, fan curves, and UI preferences.
 - 🤝 **[Contributing Guidelines](CONTRIBUTING.md):** Development workflow, pull request guidelines, and code standards.
 - 🔒 **[Security Policy](SECURITY.md):** Vulnerability reporting and Polkit privilege boundaries.
 

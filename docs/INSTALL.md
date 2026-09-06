@@ -21,11 +21,14 @@ To install the pre-built release package using DNF:
 
 ```bash
 # Install local RPM with automatic dependency resolution
-sudo dnf install -y ./ro-control-1.3.0-1.x86_64.rpm
+sudo dnf install -y ./ro-control-<version>-1.<arch>.rpm
 ```
 
+Replace `<version>` and `<arch>` with the release you are installing (for
+example `ro-control-1.3.0-1.x86_64.rpm`).
+
 ### Installation via KDE Discover
-1. Open the `.rpm` file with **Discover** (`plasma-discover ro-control-1.3.0-1.x86_64.rpm`) or double-click in Dolphin.
+1. Open the `.rpm` file with **Discover** (`plasma-discover ro-control-<version>-1.<arch>.rpm`) or double-click in Dolphin.
 2. Review package details (License: `GPL-3.0-or-later`, Publisher: `Sopwit`).
 3. Click **Install** and authenticate via the system Polkit dialog.
 

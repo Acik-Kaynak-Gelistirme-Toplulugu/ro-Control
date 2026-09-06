@@ -52,16 +52,21 @@ To generate distribution-ready RPM packages:
 ```bash
 # Create source tarball
 mkdir -p ~/rpmbuild/SOURCES ~/rpmbuild/SPECS
-tar -czf ~/rpmbuild/SOURCES/ro-control-1.3.0.tar.gz \
-  --exclude-vcs --transform 's,^\.,ro-control-1.3.0,' .
+VERSION=$(awk '/^project\(ro-control/{getline; print $2}' CMakeLists.txt)
+tar -czf ~/rpmbuild/SOURCES/ro-control-${VERSION}.tar.gz \
+  --exclude-vcs --transform "s,^\.,ro-control-${VERSION}," .
 
 # Build Binary and Source RPM
 rpmbuild -ba packaging/rpm/ro-control.spec
 ```
 
-The resulting packages will be placed in:
-- Binary RPM: `~/rpmbuild/RPMS/x86_64/ro-control-1.3.0-1.x86_64.rpm`
-- Source RPM: `~/rpmbuild/SRPMS/ro-control-1.3.0-1.src.rpm`
+The `VERSION` substitution reads the current project version from
+`CMakeLists.txt`, so the tarball name always matches what
+`packaging/rpm/ro-control.spec` expects. The resulting packages will be placed
+in:
+
+- Binary RPM: `~/rpmbuild/RPMS/x86_64/ro-control-<version>-1.x86_64.rpm`
+- Source RPM: `~/rpmbuild/SRPMS/ro-control-<version>-1.src.rpm`
 
 ---
 
