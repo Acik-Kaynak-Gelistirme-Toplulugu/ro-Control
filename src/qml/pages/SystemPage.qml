@@ -258,7 +258,7 @@ Item {
 
                     GridLayout {
                         Layout.fillWidth: true
-                        columns: width > 920 ? 3 : (width > 560 ? 2 : 1)
+                        columns: width > Math.round(1080 * page.uiScale) ? 4 : (width > Math.round(780 * page.uiScale) ? 3 : (width > Math.round(520 * page.uiScale) ? 2 : 1))
                         columnSpacing: Math.round(8 * page.uiScale)
                         rowSpacing: Math.round(8 * page.uiScale)
 
@@ -327,7 +327,7 @@ Item {
 
                     GridLayout {
                         Layout.fillWidth: true
-                        columns: width > 920 ? 3 : (width > 560 ? 2 : 1)
+                        columns: width > Math.round(1080 * page.uiScale) ? 4 : (width > Math.round(780 * page.uiScale) ? 3 : (width > Math.round(520 * page.uiScale) ? 2 : 1))
                         columnSpacing: Math.round(8 * page.uiScale)
                         rowSpacing: Math.round(8 * page.uiScale)
 
@@ -414,13 +414,19 @@ Item {
                             implicitHeight: Math.round(88 * page.uiScale)
                             hoverEnabled: true
 
+                            scale: !enabled ? 1.0 : (down ? 0.985 : (hovered ? 1.01 : 1.0))
+                            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+
                             background: Rectangle {
                                 radius: 10
                                 color: diagnosticActionBtn.hovered
-                                       ? (page.darkMode ? "#3B3156" : "#EEF2FF")
+                                       ? (page.darkMode ? Qt.tint(page.bgColor, Qt.rgba(page.accentColor.r, page.accentColor.g, page.accentColor.b, 0.12))
+                                                        : Qt.tint(page.bgColor, Qt.rgba(page.accentColor.r, page.accentColor.g, page.accentColor.b, 0.06)))
                                        : page.bgColor
-                                border.width: 1
+                                border.width: diagnosticActionBtn.hovered ? 1.5 : 1
                                 border.color: diagnosticActionBtn.hovered ? page.accentColor : page.borderColor
+                                Behavior on border.color { ColorAnimation { duration: 120 } }
+                                Behavior on color { ColorAnimation { duration: 120 } }
                             }
 
                             contentItem: RowLayout {
@@ -459,11 +465,38 @@ Item {
                                     }
                                 }
 
-                                Label {
-                                    text: qsTr("Open ›")
-                                    color: page.accentColor
-                                    font.pixelSize: Math.round(12 * page.uiScale)
-                                    font.weight: Font.DemiBold
+                                Rectangle {
+                                    implicitHeight: Math.round(32 * page.uiScale)
+                                    implicitWidth: openBtnRow.implicitWidth + Math.round(20 * page.uiScale)
+                                    radius: 6
+                                    color: diagnosticActionBtn.down
+                                           ? Qt.darker(page.accentColor, 1.1)
+                                           : (diagnosticActionBtn.hovered ? page.accentColor : (page.darkMode ? "#312E81" : "#EEF2FF"))
+                                    border.width: 1
+                                    border.color: page.accentColor
+                                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                                    RowLayout {
+                                        id: openBtnRow
+                                        anchors.centerIn: parent
+                                        spacing: Math.round(4 * page.uiScale)
+
+                                        Label {
+                                            text: qsTr("Open")
+                                            color: diagnosticActionBtn.hovered ? "#FFFFFF" : page.accentColor
+                                            font.pixelSize: Math.round(12 * page.uiScale)
+                                            font.weight: Font.DemiBold
+                                            Behavior on color { ColorAnimation { duration: 120 } }
+                                        }
+
+                                        Label {
+                                            text: "↗"
+                                            color: diagnosticActionBtn.hovered ? "#FFFFFF" : page.accentColor
+                                            font.pixelSize: Math.round(11 * page.uiScale)
+                                            font.weight: Font.Bold
+                                            Behavior on color { ColorAnimation { duration: 120 } }
+                                        }
+                                    }
                                 }
                             }
 
@@ -476,11 +509,19 @@ Item {
                             implicitHeight: Math.round(88 * page.uiScale)
                             hoverEnabled: true
 
+                            scale: !enabled ? 1.0 : (down ? 0.985 : (hovered ? 1.01 : 1.0))
+                            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+
                             background: Rectangle {
                                 radius: 10
-                                color: rebootFirmwareBtn.hovered ? (page.darkMode ? "#3B3156" : "#E2E8F0") : page.bgColor
-                                border.width: 1
+                                color: rebootFirmwareBtn.hovered
+                                       ? (page.darkMode ? Qt.tint(page.bgColor, Qt.rgba(page.warningColor.r, page.warningColor.g, page.warningColor.b, 0.12))
+                                                        : Qt.tint(page.bgColor, Qt.rgba(page.warningColor.r, page.warningColor.g, page.warningColor.b, 0.06)))
+                                       : page.bgColor
+                                border.width: rebootFirmwareBtn.hovered ? 1.5 : 1
                                 border.color: rebootFirmwareBtn.hovered ? page.warningColor : page.borderColor
+                                Behavior on border.color { ColorAnimation { duration: 120 } }
+                                Behavior on color { ColorAnimation { duration: 120 } }
                             }
 
                             contentItem: RowLayout {
@@ -518,11 +559,38 @@ Item {
                                     }
                                 }
 
-                                Label {
-                                    text: qsTr("Restart ›")
-                                    color: page.warningColor
-                                    font.pixelSize: Math.round(12 * page.uiScale)
-                                    font.weight: Font.DemiBold
+                                Rectangle {
+                                    implicitHeight: Math.round(32 * page.uiScale)
+                                    implicitWidth: restartBtnRow.implicitWidth + Math.round(20 * page.uiScale)
+                                    radius: 6
+                                    color: rebootFirmwareBtn.down
+                                           ? Qt.darker(page.warningColor, 1.1)
+                                           : (rebootFirmwareBtn.hovered ? page.warningColor : (page.darkMode ? "#3A2E12" : "#FFFBEB"))
+                                    border.width: 1
+                                    border.color: page.warningColor
+                                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                                    RowLayout {
+                                        id: restartBtnRow
+                                        anchors.centerIn: parent
+                                        spacing: Math.round(4 * page.uiScale)
+
+                                        Label {
+                                            text: qsTr("Restart")
+                                            color: rebootFirmwareBtn.hovered ? "#FFFFFF" : page.warningColor
+                                            font.pixelSize: Math.round(12 * page.uiScale)
+                                            font.weight: Font.DemiBold
+                                            Behavior on color { ColorAnimation { duration: 120 } }
+                                        }
+
+                                        Label {
+                                            text: "↻"
+                                            color: rebootFirmwareBtn.hovered ? "#FFFFFF" : page.warningColor
+                                            font.pixelSize: Math.round(13 * page.uiScale)
+                                            font.weight: Font.Bold
+                                            Behavior on color { ColorAnimation { duration: 120 } }
+                                        }
+                                    }
                                 }
                             }
 
