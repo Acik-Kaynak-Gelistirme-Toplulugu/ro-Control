@@ -64,6 +64,8 @@ class FanController : public QObject {
           setBatteryProfileSyncEnabled NOTIFY batteryProfileSyncEnabledChanged)
   Q_PROPERTY(bool smoothingEnabled READ smoothingEnabled WRITE
                  setSmoothingEnabled NOTIFY smoothingEnabledChanged)
+  Q_PROPERTY(bool hardwareSetupComplete READ hardwareSetupComplete NOTIFY
+                 hardwareSetupCompleteChanged)
   Q_PROPERTY(int rampUpRatePercent READ rampUpRatePercent WRITE
                  setRampUpRatePercent NOTIFY rampRateChanged)
   Q_PROPERTY(int rampDownRatePercent READ rampDownRatePercent WRITE
@@ -124,6 +126,7 @@ public:
   bool batteryProfileSyncEnabled() const;
   void setBatteryProfileSyncEnabled(bool enabled);
   bool smoothingEnabled() const;
+  bool hardwareSetupComplete() const;
   int rampUpRatePercent() const;
   int rampDownRatePercent() const;
   int hysteresisTempC() const;
@@ -140,6 +143,8 @@ public:
   static QVector<FanCurvePoint> defaultCustomCurve();
 
   Q_INVOKABLE void refresh();
+  // Re-probes the real hardware topology. Used on first launch and by rescan.
+  Q_INVOKABLE void runHardwareSetup();
   Q_INVOKABLE void start();
   Q_INVOKABLE void stop();
   Q_INVOKABLE void setFanMode(const QString &mode);
@@ -211,6 +216,7 @@ signals:
   void coolbitsEnabledChanged();
   void batteryProfileSyncEnabledChanged();
   void smoothingEnabledChanged();
+  void hardwareSetupCompleteChanged();
   void rampRateChanged();
   void hysteresisTempCChanged();
   void profileExported(const QString &profileName, bool success);
@@ -247,7 +253,7 @@ private:
   int m_thermalRecoveryMarginC = 5;
   int m_hysteresisTempC = 2;
   int m_lastEvaluatedTempC = -1;
-  bool m_smoothingEnabled = true;
+  bool m_smoothingEnabled = false;
   int m_rampUpRatePercent = 20;
   int m_rampDownRatePercent = 5;
   QString m_statusMessage;
@@ -275,5 +281,6 @@ private:
   int m_selectedFanIndex = 0;
   QString m_selectedFanId = QStringLiteral("gpu_0");
   bool m_batteryProfileSyncEnabled = false;
+  bool m_hardwareSetupComplete = false;
   QString m_preBatteryFanMode;
 };

@@ -18,10 +18,20 @@ Item {
     property var fanSpeedHistory: []
     property var fanRpmHistory: []
     property var perFanHistories: ({})
-    property var fanOrderIds: []
     property var orderedFans: []
     property int draggingFanIndex: -1
+    // Priority is fixed to CPU → GPU → other detected channels.
     property bool reorderMode: false
+    readonly property bool hasDetectedFans: orderedFans.length > 0
+    readonly property bool hasControllableFan: {
+        for (var i = 0; i < orderedFans.length; ++i) {
+            if (orderedFans[i].controllable)
+                return true;
+        }
+        return false;
+    }
+    readonly property bool supportsBatteryFanSync: hasControllableFan
+                                                   && (systemInfo.onBattery || systemInfo.deviceType === "Laptop")
 
     readonly property color bgColor: theme && theme.card ? theme.card : (page.darkMode ? "#29233B" : "#FFFFFF")
     readonly property color cardColor: theme && theme.cardStrong ? theme.cardStrong : (page.darkMode ? "#342D4A" : "#F1F5F9")
@@ -96,48 +106,20 @@ Item {
             page.orderedFans = [];
             return;
         }
-        var currentIds = [];
-        for (var i = 0; i < raw.length; ++i) {
-            currentIds.push(raw[i].id);
-        }
-        var ids = page.fanOrderIds.slice();
-        if (ids.length === 0) {
-            ids = currentIds.slice();
-        } else {
-            var filtered = [];
-            for (var f = 0; f < ids.length; ++f) {
-                if (currentIds.indexOf(ids[f]) !== -1) {
-                    filtered.push(ids[f]);
-                }
+        var result = raw.slice();
+        result.sort(function(a, b) {
+            function priority(fan) {
+                if (fan.type === "CPU") return 0;
+                if (fan.type === "GPU") return 1;
+                return 2;
             }
-            for (var a = 0; a < currentIds.length; ++a) {
-                if (filtered.indexOf(currentIds[a]) === -1) {
-                    filtered.push(currentIds[a]);
-                }
-            }
-            ids = filtered;
-        }
-        page.fanOrderIds = ids;
-
-        var result = [];
-        for (var k = 0; k < ids.length; ++k) {
-            for (var j = 0; j < raw.length; ++j) {
-                if (raw[j].id === ids[k]) {
-                    result.push(raw[j]);
-                    break;
-                }
-            }
-        }
+            return priority(a) - priority(b);
+        });
         page.orderedFans = result;
     }
 
     function moveFan(fromIndex, toIndex) {
-        if (fromIndex < 0 || toIndex < 0 || fromIndex >= page.fanOrderIds.length || toIndex >= page.fanOrderIds.length || fromIndex === toIndex)
-            return;
-        var ids = page.fanOrderIds.slice();
-        var item = ids.splice(fromIndex, 1)[0];
-        ids.splice(toIndex, 0, item);
-        page.fanOrderIds = ids;
+        // Ordering represents thermal priority and is deliberately not mutable.
         page.syncOrderedFans();
     }
 
@@ -344,7 +326,11 @@ Item {
                                 verticalAlignment: Text.AlignVCenter
                             }
 
-                            onClicked: fanRescanPopup.openWizard()
+                            onClicked: {
+                                if (page.fanController)
+                                    page.fanController.runHardwareSetup();
+                                fanRescanPopup.openWizard();
+                            }
                         }
 
                         Components.RefreshToolButton {
@@ -395,10 +381,7 @@ Item {
                                     hoverEnabled: true
                                     cursorShape: page.reorderMode ? Qt.SizeAllCursor : Qt.PointingHandCursor
                                     pressAndHoldInterval: 350
-                                    onPressAndHold: {
-                                        page.reorderMode = true;
-                                        page.draggingFanIndex = fanCard.index;
-                                    }
+                                    onPressAndHold: { }
                                     onClicked: {
                                         if (page.reorderMode) {
                                             page.draggingFanIndex = fanCard.index;
@@ -1035,10 +1018,12 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: Math.round(12 * page.uiScale)
+                        visible: page.hasControllableFan || page.supportsBatteryFanSync
 
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredWidth: 1
+                            visible: page.hasControllableFan
                             implicitHeight: Math.round(58 * page.uiScale)
                             radius: 10
                             color: page.bgColor
@@ -1062,7 +1047,10 @@ Item {
                                     }
 
                                     Label {
-                                        text: qsTr("Smooth transitions using hysteresis (%1°C).").arg(page.fanController ? page.fanController.hysteresisTempC : 2)
+                                        text: !page.fanController ? ""
+                                              : (page.fanController.smoothingEnabled
+                                                 ? qsTr("Active — GPU changes are rate-limited (%1°C hysteresis).").arg(page.fanController.hysteresisTempC)
+                                                 : qsTr("Disabled — GPU changes apply immediately."))
                                         color: page.softTextColor
                                         font.pixelSize: Math.round(11 * page.uiScale)
                                     }
@@ -1070,7 +1058,7 @@ Item {
 
                                 Switch {
                                     id: smoothingSwitch
-                                    checked: page.fanController ? page.fanController.smoothingEnabled : true
+                                    checked: page.fanController ? page.fanController.smoothingEnabled : false
                                     implicitWidth: Math.round(44 * page.uiScale)
                                     implicitHeight: Math.round(24 * page.uiScale)
 
@@ -1107,6 +1095,7 @@ Item {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredWidth: 1
+                            visible: page.supportsBatteryFanSync
                             implicitHeight: Math.round(58 * page.uiScale)
                             radius: 10
                             color: page.bgColor
@@ -1130,7 +1119,12 @@ Item {
                                     }
 
                                     Label {
-                                        text: qsTr("Auto mode fallback when operating on battery.")
+                                        text: !page.fanController ? ""
+                                              : (!page.fanController.batteryProfileSyncEnabled
+                                                 ? qsTr("Disabled — does not alter fan profiles on battery.")
+                                                 : (page.systemInfo.onBattery
+                                                    ? qsTr("Active — controllable GPU fan uses Silent on battery.")
+                                                    : qsTr("Armed — uses Silent when battery power begins.")))
                                         color: page.softTextColor
                                         font.pixelSize: Math.round(11 * page.uiScale)
                                     }
