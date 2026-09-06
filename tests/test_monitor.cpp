@@ -345,6 +345,72 @@ private slots:
     QVERIFY(!gpu.killProcess(0));
     QVERIFY(!gpu.killProcess(1));
   }
+
+  void testRamFallbackWhenMemAvailableMissing() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString meminfoPath =
+        tempDir.filePath(QStringLiteral("meminfo_fallback"));
+    QFile meminfo(meminfoPath);
+    QVERIFY(meminfo.open(QIODevice::WriteOnly | QIODevice::Text));
+    meminfo.write("MemTotal:       16384000 kB\n");
+    // No MemAvailable field
+    meminfo.write("MemFree:         4096000 kB\n");
+    meminfo.write("Buffers:         1024000 kB\n");
+    meminfo.write("Cached:          4096000 kB\n");
+    meminfo.write("SReclaimable:     512000 kB\n");
+    meminfo.write("Shmem:            256000 kB\n");
+    meminfo.close();
+
+    qputenv("RO_CONTROL_MEMINFO_PATH", meminfoPath.toUtf8());
+
+    RamMonitor ram;
+    ram.stop();
+    ram.refresh();
+
+    QVERIFY(ram.available());
+    QCOMPARE(ram.totalMiB(), 16000);
+    // Calculated available = 4096000 + 1024000 + 4096000 + 512000 - 256000 =
+    // 9472000 kB Used = 16384000 - 9472000 = 6912000 kB = 6750 MiB
+    QCOMPARE(ram.usedMiB(), 6750);
+    QVERIFY(ram.usagePercent() > 0);
+
+    qunsetenv("RO_CONTROL_MEMINFO_PATH");
+  }
+
+  void testZramZeroPhysicalBytesHandlesDivisionByZeroGracefully() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString swapsPath = tempDir.filePath(QStringLiteral("swaps_empty"));
+    QFile swaps(swapsPath);
+    QVERIFY(swaps.open(QIODevice::WriteOnly | QIODevice::Text));
+    swaps.write("Filename\tType\tSize\tUsed\tPriority\n");
+    swaps.write("/dev/zram0 partition 1048576 0 100\n");
+    swaps.close();
+
+    const QString zramRoot = tempDir.filePath(QStringLiteral("block_empty"));
+    QVERIFY(QDir().mkpath(zramRoot + QStringLiteral("/zram0")));
+    QFile memoryStat(zramRoot + QStringLiteral("/zram0/mm_stat"));
+    QVERIFY(memoryStat.open(QIODevice::WriteOnly | QIODevice::Text));
+    // 0 original bytes, 0 physical bytes
+    memoryStat.write("0 0 0 0 0 0 0 0 0\n");
+    memoryStat.close();
+
+    qputenv("RO_CONTROL_SWAPS_PATH", swapsPath.toUtf8());
+    qputenv("RO_CONTROL_ZRAM_SYSFS_ROOT", zramRoot.toUtf8());
+
+    RamMonitor ram;
+    ram.stop();
+    ram.refresh();
+
+    QVERIFY(ram.zramAvailable());
+    QCOMPARE(ram.zramCompressionRatio(), 0.0);
+
+    qunsetenv("RO_CONTROL_SWAPS_PATH");
+    qunsetenv("RO_CONTROL_ZRAM_SYSFS_ROOT");
+  }
 };
 
 QTEST_MAIN(TestMonitor)

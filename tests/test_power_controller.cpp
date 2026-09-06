@@ -73,6 +73,37 @@ private slots:
 
     qunsetenv("RO_CONTROL_MOCK_POWER_CONTROL");
   }
+
+  void testPersistenceModeToggle() {
+    qputenv("RO_CONTROL_MOCK_POWER_CONTROL", "1");
+    PowerController controller;
+    QSignalSpy persistSpy(&controller,
+                          &PowerController::persistenceModeChanged);
+
+    QVERIFY(controller.setPersistenceMode(true));
+    QCOMPARE(controller.persistenceModeEnabled(), true);
+    QCOMPARE(persistSpy.count(), 1);
+
+    QVERIFY(controller.setPersistenceMode(false));
+    QCOMPARE(controller.persistenceModeEnabled(), false);
+    QCOMPARE(persistSpy.count(), 2);
+
+    qunsetenv("RO_CONTROL_MOCK_POWER_CONTROL");
+  }
+
+  void testPowerLimitSetting() {
+    qputenv("RO_CONTROL_MOCK_POWER_CONTROL", "1");
+    PowerController controller;
+    QSignalSpy limitSpy(&controller, &PowerController::powerLimitApplied);
+
+    QVERIFY(controller.setPowerLimit(150.0));
+    QCOMPARE(limitSpy.count(), 1);
+    QCOMPARE(controller.powerLimitW(), 150.0);
+
+    QVERIFY(controller.resetToDefault());
+
+    qunsetenv("RO_CONTROL_MOCK_POWER_CONTROL");
+  }
 };
 
 QTEST_MAIN(TestPowerController)

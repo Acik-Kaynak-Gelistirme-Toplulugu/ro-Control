@@ -1,7 +1,9 @@
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSettings>
 #include <QSignalSpy>
 #include <QStandardPaths>
 #include <QTemporaryDir>
@@ -33,6 +35,17 @@ class TestSystemIntegration : public QObject {
   Q_OBJECT
 
 private slots:
+  void init() {
+    QCoreApplication::setOrganizationName(
+        QStringLiteral("Project-Ro-ASD-TestSuite"));
+    QCoreApplication::setApplicationName(
+        QStringLiteral("ro-control-sysintegration-test"));
+
+    QSettings settings;
+    settings.clear();
+    settings.sync();
+  }
+
   void testCommandRunnerUsesProgramOverride() {
     QTemporaryDir tempDir = createExecutableTempDir();
     QVERIFY(tempDir.isValid());
@@ -327,6 +340,17 @@ private slots:
     QCOMPARE(
         jsonReport.object().value(QStringLiteral("graphicsCard")).toString(),
         QStringLiteral("NVIDIA RTX 4080"));
+
+    QSignalSpy prefSpy(&provider,
+                       &SystemInfoProvider::diagnosticReportPreferencesChanged);
+    provider.setDiagnosticReportFormat(QStringLiteral("json"));
+    QCOMPARE(provider.diagnosticReportFormat(), QStringLiteral("json"));
+    QCOMPARE(prefSpy.count(), 1);
+
+    provider.setDiagnosticReportDestination(QStringLiteral("clipboard"));
+    QCOMPARE(provider.diagnosticReportDestination(),
+             QStringLiteral("clipboard"));
+    QCOMPARE(prefSpy.count(), 2);
 
     QSignalSpy spy(&provider, &SystemInfoProvider::infoChanged);
     provider.refresh();

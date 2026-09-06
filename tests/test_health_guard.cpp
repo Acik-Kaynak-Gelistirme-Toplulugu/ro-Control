@@ -63,6 +63,55 @@ private slots:
     guard.clearAlert();
     QVERIFY(!guard.alertActive());
   }
+
+  void testCpuAlertTrigger() {
+    HealthGuard guard;
+    guard.setNotificationsEnabled(true);
+    guard.setCpuWarningThresholdC(80);
+    guard.setCpuCriticalThresholdC(95);
+
+    QSignalSpy alertSpy(&guard, &HealthGuard::thermalAlertTriggered);
+    guard.updateCpuTemperature(85);
+
+    QVERIFY(guard.alertActive());
+    QCOMPARE(guard.lastAlertSeverity(), QStringLiteral("warning"));
+    QCOMPARE(alertSpy.count(), 1);
+
+    guard.clearAlert();
+    guard.updateCpuTemperature(98);
+    QVERIFY(guard.alertActive());
+    QCOMPARE(guard.lastAlertSeverity(), QStringLiteral("critical"));
+    QCOMPARE(alertSpy.count(), 2);
+  }
+
+  void testNotificationDisabledSuppressesAlert() {
+    HealthGuard guard;
+    guard.setNotificationsEnabled(false);
+    guard.setGpuWarningThresholdC(50);
+
+    QSignalSpy alertSpy(&guard, &HealthGuard::thermalAlertTriggered);
+    guard.updateGpuTemperature(95);
+
+    QVERIFY(guard.alertActive());
+    QCOMPARE(guard.lastAlertSeverity(), QStringLiteral("critical"));
+    QCOMPARE(alertSpy.count(), 0);
+  }
+
+  void testThresholdClampingAndValidation() {
+    HealthGuard guard;
+    const int originalWarning = guard.gpuWarningThresholdC();
+
+    // Out of valid range (e.g. < 40 or > 110)
+    guard.setGpuWarningThresholdC(20);
+    QCOMPARE(guard.gpuWarningThresholdC(), originalWarning);
+
+    guard.setGpuWarningThresholdC(130);
+    QCOMPARE(guard.gpuWarningThresholdC(), originalWarning);
+
+    // Valid range update
+    guard.setGpuWarningThresholdC(80);
+    QCOMPARE(guard.gpuWarningThresholdC(), 80);
+  }
 };
 
 QTEST_MAIN(TestHealthGuard)
