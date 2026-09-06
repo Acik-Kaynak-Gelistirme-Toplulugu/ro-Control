@@ -1,5 +1,6 @@
 #include <QDir>
 #include <QFile>
+#include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QTextStream>
@@ -407,6 +408,70 @@ private slots:
 
     QVERIFY(ram.zramAvailable());
     QCOMPARE(ram.zramCompressionRatio(), 0.0);
+
+    qunsetenv("RO_CONTROL_SWAPS_PATH");
+    qunsetenv("RO_CONTROL_ZRAM_SYSFS_ROOT");
+  }
+
+  void testZramDynamicTelemetryUpdates() {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString swapsPath = tempDir.filePath(QStringLiteral("swaps_dynamic"));
+    const QString zramRoot = tempDir.filePath(QStringLiteral("block_dynamic"));
+    QVERIFY(QDir().mkpath(zramRoot + QStringLiteral("/zram0")));
+
+    auto writeState = [&](qint64 usedKiB, qint64 origBytes,
+                          qint64 physicalBytes) {
+      QFile swaps(swapsPath);
+      QVERIFY(swaps.open(QIODevice::WriteOnly | QIODevice::Text));
+      swaps.write(QStringLiteral("Filename\tType\tSize\tUsed\tPriority\n"
+                                 "/dev/zram0 partition 8388608 %1 100\n")
+                      .arg(usedKiB)
+                      .toUtf8());
+      swaps.close();
+
+      QFile disksize(zramRoot + QStringLiteral("/zram0/disksize"));
+      QVERIFY(disksize.open(QIODevice::WriteOnly | QIODevice::Text));
+      disksize.write("8589934592\n");
+      disksize.close();
+
+      QFile stat(zramRoot + QStringLiteral("/zram0/mm_stat"));
+      QVERIFY(stat.open(QIODevice::WriteOnly | QIODevice::Text));
+      stat.write(QStringLiteral("%1 0 %2 0 %2 0 0 0 0\n")
+                     .arg(origBytes)
+                     .arg(physicalBytes)
+                     .toUtf8());
+      stat.close();
+    };
+
+    // State 1: 512 MB swap used, 600 MB uncompressed, 200 MB compressed (3.0x
+    // ratio)
+    writeState(524288, 629145600, 209715200);
+
+    qputenv("RO_CONTROL_SWAPS_PATH", swapsPath.toUtf8());
+    qputenv("RO_CONTROL_ZRAM_SYSFS_ROOT", zramRoot.toUtf8());
+
+    RamMonitor ram;
+    ram.stop();
+    ram.refresh();
+
+    QVERIFY(ram.zramAvailable());
+    QCOMPARE(ram.zramTotalMiB(), 8192);
+    QCOMPARE(ram.zramUsedMiB(), 512);
+    QCOMPARE(ram.zramPhysicalMiB(), 200);
+    QCOMPARE(QString::number(ram.zramCompressionRatio(), 'f', 1),
+             QStringLiteral("3.0"));
+
+    // State 2: Dynamic change to 1024 MB swap used, 1500 MB uncompressed, 500
+    // MB compressed (3.0x ratio)
+    QSignalSpy spy(&ram, &RamMonitor::zramChanged);
+    writeState(1048576, 1572864000, 524288000);
+    ram.refresh();
+
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(ram.zramUsedMiB(), 1024);
+    QCOMPARE(ram.zramPhysicalMiB(), 500);
 
     qunsetenv("RO_CONTROL_SWAPS_PATH");
     qunsetenv("RO_CONTROL_ZRAM_SYSFS_ROOT");
