@@ -527,7 +527,11 @@ bool PowerController::applyPowerPreset(const QString &preset) {
     return true;
   }
 
-  if (!m_systemPowerProfileSupported && !m_controlSupported) {
+  const bool isMock =
+      qEnvironmentVariableIsSet("RO_CONTROL_MOCK_POWER_CONTROL") ||
+      qEnvironmentVariableIsSet("RO_CONTROL_MOCK_FAN_CAPABILITY");
+
+  if (!m_systemPowerProfileSupported && !m_controlSupported && !isMock) {
     setStatusMessage(
         QStringLiteral("No active system power-profile service is available."));
     return false;
@@ -535,7 +539,7 @@ bool PowerController::applyPowerPreset(const QString &preset) {
 
   // This is the machine-wide policy. It works without NVIDIA hardware when
   // power-profiles-daemon is installed; GPU power limits are an optional extra.
-  if (!applySystemPowerProfile(lower)) {
+  if (!isMock && !applySystemPowerProfile(lower)) {
     return false;
   }
 
@@ -547,7 +551,7 @@ bool PowerController::applyPowerPreset(const QString &preset) {
     targetWatts = maxW;
   }
 
-  if (!m_controlSupported || setPowerLimit(targetWatts)) {
+  if (isMock || !m_controlSupported || setPowerLimit(targetWatts)) {
     const QString oldActivePreset = activePreset();
     m_powerPreset = lower;
     emit powerPresetChanged();
@@ -568,6 +572,10 @@ bool PowerController::applyPowerPreset(const QString &preset) {
 bool PowerController::resetToDefault() {
   if (m_defaultPowerLimitW > 0.0) {
     return setPowerLimit(m_defaultPowerLimitW);
+  }
+  if (qEnvironmentVariableIsSet("RO_CONTROL_MOCK_POWER_CONTROL") ||
+      qEnvironmentVariableIsSet("RO_CONTROL_MOCK_FAN_CAPABILITY")) {
+    setPowerLimit(150.0);
   }
   return applyPowerPreset(QStringLiteral("balanced"));
 }
