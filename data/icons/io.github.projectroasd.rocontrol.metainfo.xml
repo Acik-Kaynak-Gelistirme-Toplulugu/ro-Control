@@ -2,8 +2,8 @@
 <component type="desktop-application">
 	<id>io.github.projectroasd.rocontrol.desktop</id>
 	<name>ro-Control</name>
-	<summary>NVIDIA driver manager, cooling controller, and hardware monitor for Ro-ASD</summary>
-	<summary xml:lang="tr">Ro-ASD için NVIDIA sürücü yöneticisi, soğutma kontrolcüsü ve donanım monitörü</summary>
+	<summary>Linux hardware monitor and cooling controller with NVIDIA driver management for Ro-ASD</summary>
+	<summary xml:lang="tr">Ro-ASD için NVIDIA sürücü yönetimi içeren Linux donanım izleyicisi ve soğutma denetleyicisi</summary>
 	<metadata_license>CC0-1.0</metadata_license>
 	<project_license>GPL-3.0-or-later</project_license>
 	<developer id="io.github.projectroasd">
@@ -16,16 +16,18 @@
 
 	<description>
 		<p>
-			ro-Control is the central hardware and graphics control suite developed for Ro-ASD.
-			It provides automated NVIDIA graphics card detection, one-click driver installation and updates,
-			custom fan speed and cooling curve management, real-time hardware diagnostics (GPU, CPU, RAM,
-			temperatures, and power consumption), and automatic emergency thermal protection.
+			ro-Control is the central Linux hardware control suite developed for Ro-ASD.
+			It provides CPU and memory monitoring, generic Linux sensor and fan telemetry, real-time hardware
+			diagnostics, and automatic emergency thermal protection on supported devices. NVIDIA systems also
+			receive driver management, telemetry, and compatible GPU power and cooling controls. Driver package
+			management is currently provided for Fedora-family systems.
 		</p>
 		<p xml:lang="tr">
-			ro-Control, Ro-ASD için geliştirilmiş merkezi donanım ve grafik yönetim aracıdır.
-			NVIDIA ekran kartlarını otomatik tespit etme, tek tıkla sürücü kurulumu ve güncelleme,
-			özel fan hızı ve soğutma eğrisi yönetimi, canlı donanım takibi (GPU, CPU, RAM kullanımı,
-			sıcaklıklar ve güç tüketimi) ile otomatik acil durum termal koruması sağlar.
+			ro-Control, Ro-ASD için geliştirilmiş merkezi Linux donanım yönetim aracıdır.
+			Desteklenen cihazlarda CPU ve bellek izleme, genel Linux sensör ve fan telemetrisi, canlı donanım
+			tanılama ve otomatik acil termal koruma sağlar. NVIDIA sistemlerinde ayrıca sürücü yönetimi,
+			telemetri ve uyumlu GPU güç ve soğutma denetimleri sunar. Sürücü paketi yönetimi şu anda
+			Fedora ailesi sistemlerde sağlanır.
 		</p>
 	</description>
 

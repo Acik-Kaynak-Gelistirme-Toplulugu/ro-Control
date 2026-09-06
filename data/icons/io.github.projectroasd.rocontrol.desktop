@@ -2,10 +2,10 @@
 Type=Application
 Name=ro-Control
 Name[tr]=ro-Control
-GenericName=NVIDIA Driver Manager
-GenericName[tr]=NVIDIA Sürücü Yöneticisi
-Comment=Smart NVIDIA driver manager, cooling controller, and hardware monitor for Ro-ASD
-Comment[tr]=Ro-ASD için geliştirilmiş akıllı NVIDIA sürücü yöneticisi, soğutma kontrolcüsü ve donanım monitörü
+GenericName=Hardware Monitor and Cooling Controller
+GenericName[tr]=Donanım İzleyicisi ve Soğutma Denetleyicisi
+Comment=Linux hardware monitor and cooling controller with NVIDIA driver management for Ro-ASD
+Comment[tr]=Ro-ASD için NVIDIA sürücü yönetimi içeren Linux donanım izleyicisi ve soğutma denetleyicisi
 Exec=ro-control
 Icon=io.github.projectroasd.rocontrol
 Terminal=false
