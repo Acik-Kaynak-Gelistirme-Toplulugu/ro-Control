@@ -5,6 +5,37 @@ All notable changes to **ro-Control** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Localized GPU Names:**
+  - Friendly, localized names for common NVIDIA GPU models across the system, NVIDIA, and monitor providers, now shown on the Monitor and System pages (TR/DE/ES).
+- **Fan Rescan Wizard V2:**
+  - Redesigned discovery wizard with a discovered cooling channel list (per-fan type icon, live RPM/speed, Controllable/Monitored badges).
+  - **Quick Acoustic Test (4s):** briefly forces a fan to 100% to verify audible airflow, then automatically restores the previous fan control state. Supported for CPU and GPU channels via `testFanSpeedForFan()` / `restoreFanControlForFan()`.
+  - Clear empty state when hardware exposes no direct PWM tachometers (ACPI standard thermal mode).
+- **Hardware re-detection:** `rescanHardware` forces a full hardware and platform re-detection from the GUI.
+- **zram/zswap telemetry:** summary card with compressed memory stats, compression ratio, and physical footprint.
+- **Modernized diagnostic report:** dynamic report cards, search/filter, and Markdown preview.
+
+### Changed
+- Driver and System pages revamped with hover feedback and responsive card/grid layouts; the GPU driver card hides cleanly when no NVIDIA GPU is detected.
+- Desktop entry uses the standard `SingleMainWindow` key and a single `Settings;HardwareSettings;Qt` menu category (no duplicate menu items).
+- Documentation: new `docs/CONFIGURATION.md` (QSettings reference); build/install/packaging docs now target Fedora-based Ro-ASD only, with Debian and Arch packaging removed.
+- FIFO/control settings and CLI reference aligned with the D-Bus surface (`SetFanSmoothing`, `SetClockOffsets`, `GetFanModes`, `GetGpuHealth`, ...).
+
+### Fixed
+- Fan telemetry: unreachable `nvidia-settings` fallback branches for RPM and speed queries are now actually reached.
+- Power profiles verify the active `tuned` state and reject stale system profile data.
+- zram telemetry accuracy and fan channel RPM/hardware reporting.
+- Potential static-initialization crash in the updater; CPU thermal warning threshold handling.
+- Redundant factory-success check in the `nvidia-settings` RPM query cleanup.
+
+### Tests
+- Expanded unit/integration coverage; 12/12 test targets passing (PowerController, HealthGuard, GpuMonitor multi-GPU/process, D-Bus service, GPU-name localization, CLI, metadata).
+
+---
+
 ## [v1.3.0] - 2026-09-01
 
 ### Added
