@@ -184,6 +184,22 @@ target_link_libraries(test_health_guard PRIVATE
 
 ro_control_register_test(test_health_guard)
 
+# ─── Main Window Tests ──────────────────────────────────────────────────────
+qt_add_executable(test_main_window
+    test_main_window.cpp
+)
+
+ro_control_configure_test(test_main_window)
+
+target_link_libraries(test_main_window PRIVATE
+    Qt6::Gui
+    Qt6::Quick
+    Qt6::Test
+    ro-control-backend
+)
+
+ro_control_register_test(test_main_window)
+
 # ─── D-Bus Service Tests ─────────────────────────────────────────────────────
 qt_add_executable(test_dbus_service
     test_dbus_service.cpp

@@ -962,7 +962,7 @@ int main(int argc, char *argv[]) {
           [&](int ms) { cpuMonitor.setUpdateInterval(ms); },
           [&](int ms) { gpuMonitor.setUpdateInterval(ms); },
           [&](int ms) { ramMonitor.setUpdateInterval(ms); }};
-      const auto applyVisibility = [&](bool visible) {
+      const auto applyVisibility = [throttlers](bool visible) {
         for (const auto &throttler : throttlers) {
           throttler(visible ? 1000 : 5000);
         }
