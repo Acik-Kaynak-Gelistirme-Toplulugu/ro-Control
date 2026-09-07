@@ -19,6 +19,8 @@
 #include <QtConcurrent>
 #include <QtQuickControls2/QQuickStyle>
 
+#include <functional>
+
 #include <QMenu>
 #include <QSystemTrayIcon>
 
@@ -940,6 +942,37 @@ int main(int argc, char *argv[]) {
       []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
 
   engine.loadFromModule("rocontrol", "Main");
+
+  const auto rootObjects = engine.rootObjects();
+  if (!rootObjects.isEmpty()) {
+    if (auto *window = qobject_cast<QQuickWindow *>(rootObjects.first())) {
+      // Desynchronize the 1s telemetry timers so they never fire back-to-back
+      // inside the same event-loop iteration / QML frame.
+      cpuMonitor.stop();
+      gpuMonitor.stop();
+      ramMonitor.stop();
+      QTimer::singleShot(0, &gpuMonitor, &GpuMonitor::start);
+      QTimer::singleShot(333, &cpuMonitor, &CpuMonitor::start);
+      QTimer::singleShot(666, &ramMonitor, &RamMonitor::start);
+
+      // Throttle telemetry to 5s when the window is hidden (tray mode); the
+      // daemon path never touches these monitors, so D-Bus clients keep a
+      // full 1s cadence.
+      const QList<std::function<void(int)>> throttlers{
+          [&](int ms) { cpuMonitor.setUpdateInterval(ms); },
+          [&](int ms) { gpuMonitor.setUpdateInterval(ms); },
+          [&](int ms) { ramMonitor.setUpdateInterval(ms); }};
+      const auto applyVisibility = [&](bool visible) {
+        for (const auto &throttler : throttlers) {
+          throttler(visible ? 1000 : 5000);
+        }
+      };
+      QObject::connect(
+          window, &QQuickWindow::visibleChanged, window,
+          [applyVisibility](bool visible) { applyVisibility(visible); });
+      applyVisibility(window->isVisible());
+    }
+  }
 
   return app.exec();
 }
