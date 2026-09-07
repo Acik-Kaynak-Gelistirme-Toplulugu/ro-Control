@@ -77,6 +77,8 @@ public:
   int updateInterval() const;
 
   Q_INVOKABLE void refresh();
+  // UI-triggered refreshes must not run nvidia-smi on the QML thread.
+  Q_INVOKABLE void requestRefresh();
   void refreshAsync();
   Q_INVOKABLE void start();
   Q_INVOKABLE void stop();

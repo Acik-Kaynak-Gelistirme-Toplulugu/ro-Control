@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QSettings>
 #include <QString>
@@ -264,6 +265,8 @@ private:
   int m_cpuTemperatureC = 0;
   int m_lastAppliedPercent = -1;
   bool m_lastAppliedModeWasAuto = true;
+  QElapsedTimer m_nvidiaTelemetryQueryTimer;
+  bool m_nvidiaTelemetryAvailable = true;
   QString m_verifiedHwmonPwmPath;
   QString m_verifiedHwmonPwmEnablePath;
   struct SystemFanProfile {

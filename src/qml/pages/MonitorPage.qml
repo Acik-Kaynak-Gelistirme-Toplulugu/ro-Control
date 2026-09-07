@@ -192,7 +192,7 @@ Item {
             page.cpuMonitor.refresh();
         } else if (page.telemetryRefreshStep === 2 && page.gpuMonitor) {
             page.gpuMonitor.start();
-            page.gpuMonitor.refresh();
+            page.gpuMonitor.requestRefresh();
         } else if (page.telemetryRefreshStep === 3 && page.fanController) {
             page.fanController.start();
             page.fanController.refresh();

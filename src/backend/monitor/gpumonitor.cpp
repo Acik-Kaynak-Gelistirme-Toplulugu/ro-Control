@@ -613,6 +613,8 @@ void GpuMonitor::refresh() {
   processRefreshResult(fetchNvidiaSmiTelemetryCsv(m_selectedGpuIndex));
 }
 
+void GpuMonitor::requestRefresh() { refreshAsync(); }
+
 void GpuMonitor::refreshAsync() {
   if (m_asyncRefreshInFlight) {
     return;

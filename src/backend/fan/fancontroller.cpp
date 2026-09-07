@@ -1420,10 +1420,23 @@ void FanController::readCurrentFanTelemetry() {
   CommandRunner::RunOptions options;
   options.timeoutMs = 500;
 
-  // 1. Live telemetry queries via nvidia-settings (when available)
+  // 1. Live telemetry queries via nvidia-settings (when available).
+  // A missing display/NV-CONTROL endpoint can otherwise make two timed-out
+  // subprocesses run on every two-second fan tick. Keep sysfs telemetry live
+  // while retrying that optional source at a conservative cadence.
   const QString nvidiaSettingsProg =
       CommandRunner::resolveProgramPath(QStringLiteral("nvidia-settings"));
-  if (!nvidiaSettingsProg.isEmpty()) {
+  constexpr qint64 kNvidiaTelemetrySuccessIntervalMs = 5000;
+  constexpr qint64 kNvidiaTelemetryFailureIntervalMs = 30000;
+  const qint64 retryIntervalMs = m_nvidiaTelemetryAvailable
+                                     ? kNvidiaTelemetrySuccessIntervalMs
+                                     : kNvidiaTelemetryFailureIntervalMs;
+  const bool shouldQueryNvidiaTelemetry =
+      !nvidiaSettingsProg.isEmpty() &&
+      (!m_nvidiaTelemetryQueryTimer.isValid() ||
+       m_nvidiaTelemetryQueryTimer.elapsed() >= retryIntervalMs);
+  if (shouldQueryNvidiaTelemetry) {
+    m_nvidiaTelemetryQueryTimer.restart();
     // Query live RPM
     auto rpmRes = runner.run(QStringLiteral("nvidia-settings"),
                              {QStringLiteral("-q"),
@@ -1452,6 +1465,7 @@ void FanController::readCurrentFanTelemetry() {
         setSupported(true);
       }
     }
+    m_nvidiaTelemetryAvailable = rpmRes.success();
   }
 
   // 2. Try sysfs hwmon fan input fallback
