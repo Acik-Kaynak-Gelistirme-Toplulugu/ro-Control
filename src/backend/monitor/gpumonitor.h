@@ -3,6 +3,8 @@
 #include <QObject>
 #include <QTimer>
 
+#include "system/commandrunner.h"
+
 // Gercek zamanli GPU istatistikleri
 class GpuMonitor : public QObject {
   Q_OBJECT
@@ -75,6 +77,7 @@ public:
   int updateInterval() const;
 
   Q_INVOKABLE void refresh();
+  void refreshAsync();
   Q_INVOKABLE void start();
   Q_INVOKABLE void stop();
   Q_INVOKABLE bool killProcess(int pid);
@@ -106,6 +109,7 @@ signals:
   void updateIntervalChanged();
 
 private:
+  void processRefreshResult(const CommandRunner::Result &result);
   void clearMetrics();
   void setAvailable(bool value);
   void setStatusMessage(const QString &value);
@@ -134,4 +138,5 @@ private:
   QVariantList m_gpuDevices;
   int m_selectedGpuIndex = 0;
   quint64 m_refreshTickCount = 0;
+  bool m_asyncRefreshInFlight = false;
 };

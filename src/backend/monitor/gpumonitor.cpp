@@ -5,7 +5,9 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QFutureWatcher>
 #include <QRegularExpression>
+#include <QtConcurrent>
 #include <algorithm>
 
 namespace {
@@ -508,12 +510,34 @@ bool readGenericLinuxGpuMetrics(int *temperatureC, int *utilizationPercent,
   return false;
 }
 
+CommandRunner::Result fetchNvidiaSmiTelemetryCsv(int gpuIndex) {
+  CommandRunner runner;
+  CommandRunner::RunOptions options;
+  options.timeoutMs = 1500;
+
+  QStringList queryArgs = {
+      QStringLiteral(
+          "--query-gpu=name,temperature.gpu,utilization.gpu,memory.used,"
+          "memory.total,fan.speed,power.draw,power.limit,"
+          "clocks.current.graphics,clocks.current.memory,"
+          "pcie.link.gen.current,pcie.link.gen.max,"
+          "pcie.link.width.current,pcie.link.width.max,"
+          "temperature.gpu.tlimit"),
+      QStringLiteral("--format=csv,noheader,nounits")};
+
+  if (gpuIndex > 0) {
+    queryArgs.prepend(QStringLiteral("--id=%1").arg(gpuIndex));
+  }
+
+  return runner.run(QStringLiteral("nvidia-smi"), queryArgs, options);
+}
+
 } // namespace
 
 GpuMonitor::GpuMonitor(QObject *parent) : QObject(parent) {
   m_timer.setInterval(1000);
   m_timer.setTimerType(Qt::CoarseTimer);
-  connect(&m_timer, &QTimer::timeout, this, &GpuMonitor::refresh);
+  connect(&m_timer, &QTimer::timeout, this, &GpuMonitor::refreshAsync);
 
   start();
   refresh();
@@ -586,27 +610,34 @@ void GpuMonitor::refresh() {
   ++m_refreshTickCount;
   queryGpuDevices(false);
   queryGpuProcesses(false);
+  processRefreshResult(fetchNvidiaSmiTelemetryCsv(m_selectedGpuIndex));
+}
 
-  CommandRunner runner;
-  CommandRunner::RunOptions options;
-  options.timeoutMs = 1500;
-
-  QStringList queryArgs = {
-      QStringLiteral(
-          "--query-gpu=name,temperature.gpu,utilization.gpu,memory.used,"
-          "memory.total,fan.speed,power.draw,power.limit,"
-          "clocks.current.graphics,clocks.current.memory,"
-          "pcie.link.gen.current,pcie.link.gen.max,"
-          "pcie.link.width.current,pcie.link.width.max,"
-          "temperature.gpu.tlimit"),
-      QStringLiteral("--format=csv,noheader,nounits")};
-
-  if (m_selectedGpuIndex > 0) {
-    queryArgs.prepend(QStringLiteral("--id=%1").arg(m_selectedGpuIndex));
+void GpuMonitor::refreshAsync() {
+  if (m_asyncRefreshInFlight) {
+    return;
   }
+  m_asyncRefreshInFlight = true;
 
-  const auto result =
-      runner.run(QStringLiteral("nvidia-smi"), queryArgs, options);
+  const int gpuIndex = m_selectedGpuIndex;
+  auto *watcher = new QFutureWatcher<CommandRunner::Result>(this);
+  watcher->setFuture(QtConcurrent::run(
+      [gpuIndex] { return fetchNvidiaSmiTelemetryCsv(gpuIndex); }));
+
+  connect(watcher, &QFutureWatcher<CommandRunner::Result>::finished, this,
+          [this, watcher]() {
+            const CommandRunner::Result result = watcher->result();
+            m_asyncRefreshInFlight = false;
+            ++m_refreshTickCount;
+            queryGpuDevices(false);
+            queryGpuProcesses(false);
+            processRefreshResult(result);
+            watcher->deleteLater();
+          });
+}
+
+void GpuMonitor::processRefreshResult(const CommandRunner::Result &result) {
+  CommandRunner runner;
 
   if (!result.success()) {
     int nextTemp = 0;
