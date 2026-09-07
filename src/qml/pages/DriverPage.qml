@@ -142,13 +142,6 @@ Item {
             border.width: tile.hovered && tile.enabled ? 1.5 : 1
             border.color: tile.hovered && tile.enabled ? tile.accentColor : page.borderColor
 
-            Behavior on border.color {
-                ColorAnimation { duration: 150 }
-            }
-            Behavior on color {
-                ColorAnimation { duration: 150 }
-            }
-
             Rectangle {
                 anchors.left: parent.left
                 anchors.top: parent.top

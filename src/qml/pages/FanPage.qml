@@ -772,8 +772,6 @@ Item {
                                     border.width: modeBtn.isCurrent ? 2 : 1
                                     border.color: modeBtn.isCurrent ? page.accentColor : page.borderColor
 
-                                    Behavior on color { ColorAnimation { duration: 120 } }
-                                    Behavior on border.color { ColorAnimation { duration: 120 } }
                                 }
 
                                 contentItem: ColumnLayout {
@@ -1092,7 +1090,6 @@ Item {
                                         border.width: 1
                                         border.color: smoothingSwitch.checked ? page.accentColor : page.borderColor
 
-                                        Behavior on color { ColorAnimation { duration: 150 } }
 
                                         Rectangle {
                                             x: smoothingSwitch.checked ? (parent.width - width - 2) : 2
@@ -1166,7 +1163,6 @@ Item {
                                         border.width: 1
                                         border.color: batterySyncSwitch.checked ? page.accentColor : page.borderColor
 
-                                        Behavior on color { ColorAnimation { duration: 150 } }
 
                                         Rectangle {
                                             x: batterySyncSwitch.checked ? (parent.width - width - 2) : 2

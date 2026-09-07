@@ -118,14 +118,6 @@ ToolButton {
             border.width: 1
             border.color: control.hovered && control.enabled ? control.theme.accentA
                                                              : control.theme.accentB
-
-            Behavior on color {
-                ColorAnimation { duration: 140 }
-            }
-
-            Behavior on border.color {
-                ColorAnimation { duration: 140 }
-            }
         }
     }
 

@@ -960,7 +960,6 @@ Item {
                                 border.width: 1
                                 border.color: processExpansionButton.hovered ? "#B8BAFF" : page.accentColor
 
-                                Behavior on color { ColorAnimation { duration: 110 } }
                             }
                             contentItem: RowLayout {
                                 id: processExpansionContent

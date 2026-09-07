@@ -578,7 +578,6 @@ Popup {
                                     border.width: 1
                                     border.color: popup.activeMode === modeBtn.modelData.mode ? popup.accentColor : popup.borderColor
 
-                                    Behavior on color { ColorAnimation { duration: 120 } }
                                 }
 
                                 contentItem: Text {
@@ -761,7 +760,6 @@ Popup {
                                                   : "transparent")
                                         border.width: 1
                                         border.color: resetBaselineButton.hovered ? popup.accentColor : popup.borderColor
-                                        Behavior on color { ColorAnimation { duration: 100 } }
                                     }
 
                                     contentItem: RowLayout {

@@ -425,8 +425,6 @@ Item {
                                        : page.bgColor
                                 border.width: diagnosticActionBtn.hovered ? 1.5 : 1
                                 border.color: diagnosticActionBtn.hovered ? page.accentColor : page.borderColor
-                                Behavior on border.color { ColorAnimation { duration: 120 } }
-                                Behavior on color { ColorAnimation { duration: 120 } }
                             }
 
                             contentItem: RowLayout {
@@ -474,7 +472,6 @@ Item {
                                            : (diagnosticActionBtn.hovered ? page.accentColor : (page.darkMode ? "#312E81" : "#EEF2FF"))
                                     border.width: 1
                                     border.color: page.accentColor
-                                    Behavior on color { ColorAnimation { duration: 120 } }
 
                                     RowLayout {
                                         id: openBtnRow
@@ -486,7 +483,6 @@ Item {
                                             color: diagnosticActionBtn.hovered ? "#FFFFFF" : page.accentColor
                                             font.pixelSize: Math.round(12 * page.uiScale)
                                             font.weight: Font.DemiBold
-                                            Behavior on color { ColorAnimation { duration: 120 } }
                                         }
 
                                         Label {
@@ -494,7 +490,6 @@ Item {
                                             color: diagnosticActionBtn.hovered ? "#FFFFFF" : page.accentColor
                                             font.pixelSize: Math.round(11 * page.uiScale)
                                             font.weight: Font.Bold
-                                            Behavior on color { ColorAnimation { duration: 120 } }
                                         }
                                     }
                                 }
@@ -520,8 +515,6 @@ Item {
                                        : page.bgColor
                                 border.width: rebootFirmwareBtn.hovered ? 1.5 : 1
                                 border.color: rebootFirmwareBtn.hovered ? page.warningColor : page.borderColor
-                                Behavior on border.color { ColorAnimation { duration: 120 } }
-                                Behavior on color { ColorAnimation { duration: 120 } }
                             }
 
                             contentItem: RowLayout {
@@ -568,7 +561,6 @@ Item {
                                            : (rebootFirmwareBtn.hovered ? page.warningColor : (page.darkMode ? "#3A2E12" : "#FFFBEB"))
                                     border.width: 1
                                     border.color: page.warningColor
-                                    Behavior on color { ColorAnimation { duration: 120 } }
 
                                     RowLayout {
                                         id: restartBtnRow
@@ -580,7 +572,6 @@ Item {
                                             color: rebootFirmwareBtn.hovered ? "#FFFFFF" : page.warningColor
                                             font.pixelSize: Math.round(12 * page.uiScale)
                                             font.weight: Font.DemiBold
-                                            Behavior on color { ColorAnimation { duration: 120 } }
                                         }
 
                                         Label {
@@ -588,7 +579,6 @@ Item {
                                             color: rebootFirmwareBtn.hovered ? "#FFFFFF" : page.warningColor
                                             font.pixelSize: Math.round(13 * page.uiScale)
                                             font.weight: Font.Bold
-                                            Behavior on color { ColorAnimation { duration: 120 } }
                                         }
                                     }
                                 }
@@ -813,7 +803,6 @@ Item {
                                 text: page.reportFilterText
                                 color: page.textColor
                                 font.pixelSize: Math.round(12 * page.uiScale)
-                                clip: true
                                 verticalAlignment: TextInput.AlignVCenter
                                 onTextChanged: page.reportFilterText = text
 
@@ -940,7 +929,6 @@ Item {
                                                     color: fmtItemBtn.hovered
                                                            ? (page.darkMode ? "#43385E" : "#E2E8F0")
                                                            : (fmtItemBtn.isSelected ? (page.darkMode ? "#342D4A" : "#F1F5F9") : "transparent")
-                                                    Behavior on color { ColorAnimation { duration: 100 } }
                                                 }
 
                                                 contentItem: RowLayout {
@@ -1066,7 +1054,6 @@ Item {
                                                     color: actItemBtn.hovered
                                                            ? (page.darkMode ? "#43385E" : "#E2E8F0")
                                                            : (actItemBtn.isSelected ? (page.darkMode ? "#342D4A" : "#F1F5F9") : "transparent")
-                                                    Behavior on color { ColorAnimation { duration: 100 } }
                                                 }
 
                                                 contentItem: RowLayout {
@@ -1200,8 +1187,6 @@ Item {
                                                 border.width: 1
                                                 border.color: tileMouse.containsMouse ? page.accentColor : page.borderColor
 
-                                                Behavior on color { ColorAnimation { duration: 100 } }
-                                                Behavior on border.color { ColorAnimation { duration: 100 } }
 
                                                 MouseArea {
                                                     id: tileMouse
@@ -1425,7 +1410,6 @@ Item {
                                                       : (copyReportBtn.hovered ? Qt.lighter(page.accentColor, 1.1) : page.accentColor)
                             border.width: 1
                             border.color: page.accentColor
-                            Behavior on color { ColorAnimation { duration: 100 } }
                         }
 
                         contentItem: Label {
