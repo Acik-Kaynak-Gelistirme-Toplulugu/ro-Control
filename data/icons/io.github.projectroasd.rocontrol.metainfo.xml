@@ -9,8 +9,6 @@
 	<developer id="io.github.projectroasd">
 		<name>Sopwit</name>
 	</developer>
-	<developer_name>Sopwit</developer_name>
-	<developer_name xml:lang="tr">Sopwit</developer_name>
 	<project_group>Sopwit</project_group>
 	<content_rating type="oars-1.1" />
 
@@ -48,6 +46,12 @@
 	</categories>
 
 	<releases>
+		<release version="1.3.1" date="2026-09-07">
+			<description>
+				<p>Improves responsiveness by moving user-triggered GPU refresh work off the UI thread and backing off optional NVIDIA fan RPM probes when NV-CONTROL is unavailable, while retaining live sysfs telemetry and thermal safety monitoring.</p>
+				<p xml:lang="tr">Kullanıcı tetiklemeli GPU yenileme işini arayüz iş parçacığından çıkarır; NV-CONTROL kullanılamadığında isteğe bağlı NVIDIA fan RPM sorgularını seyrekleştirir. Canlı sysfs telemetrisi ve termal güvenlik izleme korunur.</p>
+			</description>
+		</release>
 		<release version="1.3.0" date="2026-09-01">
 			<description>
 				<p>Major feature release adding GPU Power and TDP management, background Health Guard with thermal notifications, system tray integration, and Sentinel D-Bus IPC service.</p>

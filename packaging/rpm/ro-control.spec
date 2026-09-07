@@ -1,4 +1,4 @@
-%global upstream_version %{!?upstream_version:1.3.0}%{?upstream_version}
+%global upstream_version %{!?upstream_version:1.3.1}%{?upstream_version}
 %global debug_package %{nil}
 
 Name:           ro-control
@@ -112,6 +112,11 @@ fi
 %{_prefix}/lib/systemd/user/ro-control.service
 
 %changelog
+* Mon Sep 07 2026 Sopwit <sopwith.osdev@gmail.com> - 1.3.1-1
+- Keep GPU refresh work off the QML/UI thread.
+- Back off optional NVIDIA fan RPM probes when NV-CONTROL is unavailable.
+- Preserve live sysfs telemetry and thermal safety checks during probe backoff.
+
 * Tue Sep 01 2026 Sopwit <sopwith.osdev@gmail.com> - 1.3.0-1
 - SystemInfoProvider integration across Monitor, Driver, and Fan suites
 - Battery profile auto-sync and power source status indicators

@@ -5,7 +5,7 @@ All notable changes to **ro-Control** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v1.3.1] - 2026-09-07
 
 ### Added
 - **Localized GPU Names:**
@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Modernized diagnostic report:** dynamic report cards, search/filter, and Markdown preview.
 
 ### Changed
+- Fan RPM polling now backs off from five seconds to 30 seconds when the
+  optional `nvidia-settings` endpoint is unavailable, while keeping sysfs
+  telemetry and thermal safety evaluation live. This avoids repeated UI-thread
+  subprocess timeouts on unsupported or headless sessions.
+- The Monitor page now dispatches manual GPU refreshes asynchronously instead
+  of running `nvidia-smi` on the QML/UI thread.
 - Driver and System pages revamped with hover feedback and responsive card/grid layouts; the GPU driver card hides cleanly when no NVIDIA GPU is detected.
 - Desktop entry uses the standard `SingleMainWindow` key and a single `Settings;HardwareSettings;Qt` menu category (no duplicate menu items).
 - Documentation: new `docs/CONFIGURATION.md` (QSettings reference); build/install/packaging docs now target Fedora-based Ro-ASD only, with Debian and Arch packaging removed.
