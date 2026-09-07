@@ -8,9 +8,8 @@ Summary:        Smart NVIDIA driver manager and hardware monitor for Ro-ASD
 
 License:        GPL-3.0-or-later
 Vendor:         Sopwit
-Packager:       Sopwit <sopwith.osdev@gmail.com>
 URL:            https://github.com/Project-Ro-ASD/ro-Control
-Source0:        %{name}-%{version}.tar.gz
+Source0:        https://github.com/Project-Ro-ASD/ro-Control/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 ExclusiveArch:  x86_64 aarch64
 
 BuildRequires:  cmake
