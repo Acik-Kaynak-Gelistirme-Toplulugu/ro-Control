@@ -1415,7 +1415,7 @@ void FanController::readCurrentFanTelemetry() {
       }
     }
 
-    if (rpmRes.success() || rpmRes.exitCode == 0) {
+    if (rpmRes.success()) {
       // Query live speed percentage
       auto speedRes = runner.run(QStringLiteral("nvidia-settings"),
                                  {QStringLiteral("-q"),
