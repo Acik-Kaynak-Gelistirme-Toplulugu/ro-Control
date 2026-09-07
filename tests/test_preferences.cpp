@@ -17,6 +17,7 @@ private slots:
   void testUiPreferencesPersistChanges();
   void testUiPreferencesNormalizesInvalidThemeMode();
   void testLanguageManagerExposesEffectiveLanguageMetadata();
+  void testLanguageManagerDynamicLocaleChange();
 };
 
 void TestPreferences::init() {
@@ -92,6 +93,34 @@ void TestPreferences::testLanguageManagerExposesEffectiveLanguageMetadata() {
   }
   QVERIFY(languageCodes.contains(QStringLiteral("de")));
   QVERIFY(languageCodes.contains(QStringLiteral("es")));
+}
+
+void TestPreferences::testLanguageManagerDynamicLocaleChange() {
+  QQmlEngine engine;
+  QTranslator translator;
+  LanguageManager manager(QCoreApplication::instance(), &engine, &translator);
+
+  // By default (or when setting system), followsSystem is true
+  manager.setCurrentLanguage(QStringLiteral("system"));
+  QCOMPARE(manager.followsSystem(), true);
+
+  // Setting specific language sets followsSystem to false
+  manager.setCurrentLanguage(QStringLiteral("es"));
+  QCOMPARE(manager.followsSystem(), false);
+  QCOMPARE(manager.currentLanguage(), QStringLiteral("es"));
+
+  // Setting back to system
+  manager.setFollowsSystem(true);
+  QCOMPARE(manager.followsSystem(), true);
+
+  // Triggering LocaleChange event via QCoreApplication
+  QEvent localeEvent(QEvent::LocaleChange);
+  QCoreApplication::sendEvent(QCoreApplication::instance(), &localeEvent);
+
+  QEvent langEvent(QEvent::LanguageChange);
+  QCoreApplication::sendEvent(QCoreApplication::instance(), &langEvent);
+
+  QVERIFY(!manager.currentLanguage().isEmpty());
 }
 
 QTEST_MAIN(TestPreferences)
