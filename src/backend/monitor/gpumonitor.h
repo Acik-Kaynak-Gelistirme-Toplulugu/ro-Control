@@ -23,6 +23,8 @@ class GpuMonitor : public QObject {
                  memoryUsagePercentChanged)
   Q_PROPERTY(
       int fanSpeedPercent READ fanSpeedPercent NOTIFY fanSpeedPercentChanged)
+  Q_PROPERTY(int thermalLimitTemperatureC READ thermalLimitTemperatureC NOTIFY
+                 thermalLimitTemperatureCChanged)
   Q_PROPERTY(double powerDrawW READ powerDrawW NOTIFY powerDrawWChanged)
   Q_PROPERTY(double powerLimitW READ powerLimitW NOTIFY powerLimitWChanged)
   Q_PROPERTY(
@@ -58,6 +60,7 @@ public:
   int memoryTotalMiB() const;
   int memoryUsagePercent() const;
   int fanSpeedPercent() const;
+  int thermalLimitTemperatureC() const;
   double powerDrawW() const;
   double powerLimitW() const;
   int graphicsClockMHz() const;
@@ -90,6 +93,7 @@ signals:
   void memoryTotalMiBChanged();
   void memoryUsagePercentChanged();
   void fanSpeedPercentChanged();
+  void thermalLimitTemperatureCChanged();
   void powerDrawWChanged();
   void powerLimitWChanged();
   void graphicsClockMHzChanged();
@@ -120,6 +124,7 @@ private:
   int m_memoryTotalMiB = 0;
   int m_memoryUsagePercent = 0;
   int m_fanSpeedPercent = 0;
+  int m_thermalLimitC = 0;
   double m_powerDrawW = 0.0;
   double m_powerLimitW = 0.0;
   int m_graphicsClockMHz = 0;

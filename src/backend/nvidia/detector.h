@@ -69,6 +69,8 @@ public:
 
   Q_INVOKABLE void refresh();
 
+  void setDetectionResult(const GpuInfo &info);
+
   GpuInfo detect() const;
   bool hasNvidiaGpu() const;
   bool isDriverInstalled() const;

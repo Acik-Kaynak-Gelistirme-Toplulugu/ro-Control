@@ -543,6 +543,8 @@ int GpuMonitor::memoryUsagePercent() const { return m_memoryUsagePercent; }
 
 int GpuMonitor::fanSpeedPercent() const { return m_fanSpeedPercent; }
 
+int GpuMonitor::thermalLimitTemperatureC() const { return m_thermalLimitC; }
+
 double GpuMonitor::powerDrawW() const { return m_powerDrawW; }
 
 double GpuMonitor::powerLimitW() const { return m_powerLimitW; }
@@ -595,7 +597,8 @@ void GpuMonitor::refresh() {
           "memory.total,fan.speed,power.draw,power.limit,"
           "clocks.current.graphics,clocks.current.memory,"
           "pcie.link.gen.current,pcie.link.gen.max,"
-          "pcie.link.width.current,pcie.link.width.max"),
+          "pcie.link.width.current,pcie.link.width.max,"
+          "temperature.gpu.tlimit"),
       QStringLiteral("--format=csv,noheader,nounits")};
 
   if (m_selectedGpuIndex > 0) {
@@ -709,6 +712,7 @@ void GpuMonitor::refresh() {
   int nextUsed = 0;
   int nextTotal = 0;
   int nextFanSpeed = 0;
+  int nextTlimit = 0;
   double nextPowerDraw = 0.0;
   double nextPowerLimit = 0.0;
   int nextGraphicsClock = 0;
@@ -756,6 +760,10 @@ void GpuMonitor::refresh() {
         nextPcieLink = QStringLiteral("Gen %1 x%2").arg(curGen).arg(curWidth);
       }
     }
+  }
+
+  if (fields.size() >= 15) {
+    parseMetricInt(fields.at(14), &nextTlimit);
   }
 
   if (!tempAvailable) {
@@ -820,6 +828,11 @@ void GpuMonitor::refresh() {
   if (m_fanSpeedPercent != nextFanSpeed) {
     m_fanSpeedPercent = nextFanSpeed;
     emit fanSpeedPercentChanged();
+  }
+
+  if (nextTlimit > 0 && m_thermalLimitC != nextTlimit) {
+    m_thermalLimitC = nextTlimit;
+    emit thermalLimitTemperatureCChanged();
   }
 
   if (!qFuzzyCompare(m_powerDrawW, nextPowerDraw)) {
@@ -945,6 +958,11 @@ void GpuMonitor::clearMetrics() {
   if (m_fanSpeedPercent != 0) {
     m_fanSpeedPercent = 0;
     emit fanSpeedPercentChanged();
+  }
+
+  if (m_thermalLimitC != 0) {
+    m_thermalLimitC = 0;
+    emit thermalLimitTemperatureCChanged();
   }
 
   if (!qFuzzyIsNull(m_powerDrawW)) {

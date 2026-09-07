@@ -156,6 +156,8 @@ public:
   Q_INVOKABLE void resetToAuto();
   Q_INVOKABLE void updateTemperature(int tempC);
   Q_INVOKABLE void updateCpuTemperature(int tempC);
+  Q_INVOKABLE void updateGpuFanSpeed(int percent);
+  Q_INVOKABLE void updateGpuThermalLimit(int limitC);
   Q_INVOKABLE void selectFan(int index);
   Q_INVOKABLE void selectFanById(const QString &id);
   Q_INVOKABLE void setSelectedFanIndex(int index);

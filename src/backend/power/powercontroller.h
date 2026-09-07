@@ -122,4 +122,5 @@ private:
   int m_memoryClockOffsetMHz = 0;
   bool m_clockOffsetSupported = false;
   QString m_statusMessage;
+  quint64 m_refreshTickCount = 0;
 };

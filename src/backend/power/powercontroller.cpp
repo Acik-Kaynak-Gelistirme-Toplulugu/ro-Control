@@ -75,7 +75,9 @@ PowerController::PowerController(QObject *parent)
   detectCapabilities();
 
   connect(&m_timer, &QTimer::timeout, this, [this] {
-    querySystemPowerProfile();
+    if (++m_refreshTickCount % 10 == 1) {
+      querySystemPowerProfile();
+    }
     queryPowerMetrics();
   });
   m_timer.setInterval(3000);
@@ -280,6 +282,7 @@ void PowerController::updatePowerDraw(double watts) {
 
 void PowerController::refresh() {
   detectCapabilities();
+  querySystemPowerProfile();
   queryPowerMetrics();
 }
 

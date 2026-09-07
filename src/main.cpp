@@ -2,6 +2,7 @@
 #include <QApplication>
 #include <QCoreApplication>
 #include <QEventLoop>
+#include <QFutureWatcher>
 #include <QIcon>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -15,6 +16,7 @@
 #include <QTextStream>
 #include <QTranslator>
 #include <QVariant>
+#include <QtConcurrent>
 #include <QtQuickControls2/QQuickStyle>
 
 #include <QMenu>
@@ -719,6 +721,16 @@ int main(int argc, char *argv[]) {
       [&]() { powerController.updatePowerDraw(gpuMonitor.powerDrawW()); });
 
   QObject::connect(
+      &gpuMonitor, &GpuMonitor::fanSpeedPercentChanged, &fanController,
+      [&]() { fanController.updateGpuFanSpeed(gpuMonitor.fanSpeedPercent()); });
+
+  QObject::connect(&gpuMonitor, &GpuMonitor::thermalLimitTemperatureCChanged,
+                   &fanController, [&]() {
+                     fanController.updateGpuThermalLimit(
+                         gpuMonitor.thermalLimitTemperatureC());
+                   });
+
+  QObject::connect(
       &gpuMonitor, &GpuMonitor::temperatureCChanged, &healthGuard,
       [&]() { healthGuard.updateGpuTemperature(gpuMonitor.temperatureC()); });
 
@@ -726,7 +738,15 @@ int main(int argc, char *argv[]) {
       &cpuMonitor, &CpuMonitor::temperatureCChanged, &healthGuard,
       [&]() { healthGuard.updateCpuTemperature(cpuMonitor.temperatureC()); });
 
-  detector.refresh();
+  auto *detectionWatcher = new QFutureWatcher<NvidiaDetector::GpuInfo>(&app);
+  detectionWatcher->setFuture(
+      QtConcurrent::run([&detector] { return detector.detect(); }));
+  QObject::connect(detectionWatcher,
+                   &QFutureWatcher<NvidiaDetector::GpuInfo>::finished,
+                   detectionWatcher, [&detector, detectionWatcher]() {
+                     detector.setDetectionResult(detectionWatcher->result());
+                     detectionWatcher->deleteLater();
+                   });
 
   QQmlApplicationEngine engine;
   LanguageManager languageManager(&app, &engine, &translator);

@@ -6,7 +6,9 @@
 #include "system/systeminfoprovider.h"
 
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFile>
+#include <QMutex>
 #include <QRegularExpression>
 #include <QTextStream>
 #include <QtGlobal>
@@ -142,6 +144,11 @@ QString NvidiaDetector::verificationReport() const {
 
 void NvidiaDetector::refresh() {
   m_info = detect();
+  emit infoChanged();
+}
+
+void NvidiaDetector::setDetectionResult(const GpuInfo &info) {
+  m_info = info;
   emit infoChanged();
 }
 
@@ -393,9 +400,22 @@ struct InstalledPackagesSnapshot {
 };
 
 InstalledPackagesSnapshot queryInstalledDriverPackages() {
-  InstalledPackagesSnapshot snapshot;
+  static InstalledPackagesSnapshot cached;
+  static QElapsedTimer cacheTimer;
+  static bool cacheValid = false;
+  static QMutex cacheMutex;
+
+  QMutexLocker locker(&cacheMutex);
+  if (cacheValid && cacheTimer.isValid() && cacheTimer.elapsed() < 5000) {
+    return cached;
+  }
+
+  cached.installedPackages.clear();
+  cached.detectedVersion.clear();
+
   if (!CapabilityProbe::isToolAvailable(QStringLiteral("rpm"))) {
-    return snapshot;
+    cacheValid = false;
+    return cached;
   }
 
   CommandRunner runner;
@@ -421,14 +441,17 @@ InstalledPackagesSnapshot queryInstalledDriverPackages() {
       if (parts.size() >= 2) {
         const QString pkgName = parts.at(0).trimmed();
         const QString rawVer = parts.at(1).trimmed();
-        snapshot.installedPackages.insert(pkgName);
-        if (snapshot.detectedVersion.isEmpty()) {
-          snapshot.detectedVersion = normalizedRpmDriverVersion(rawVer);
+        cached.installedPackages.insert(pkgName);
+        if (cached.detectedVersion.isEmpty()) {
+          cached.detectedVersion = normalizedRpmDriverVersion(rawVer);
         }
       }
     }
   }
-  return snapshot;
+
+  cacheTimer.start();
+  cacheValid = true;
+  return cached;
 }
 
 QString NvidiaDetector::detectDriverPackageVersion() const {
